@@ -25,11 +25,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -147,7 +143,9 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
      */
     private int executeClearAllGlow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        
+
+        // TODO: Permission check for clearing all (is op for now)
+
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("Executing /mobglow all clear command");
         }
@@ -206,7 +204,9 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
     private int executeMobGlow(CommandContext<CommandSourceStack> context, ResourceLocation entityTypeId,
             String durationStr) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        
+
+        // TODO: Permission check for making mobs glow (is op for now)
+
         // Validate entity type
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(entityTypeId)) {
             source.sendFailure(Component.literal("Unknown entity type: " + entityTypeId)

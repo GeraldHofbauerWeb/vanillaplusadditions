@@ -12,15 +12,33 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 - Smart targeting system with player switching
 
 ### 💀 Wither Skeleton Enforcer
-- Prevents normal skeletons from spawning in the Nether
-- Optionally replaces them with Wither Skeletons
-- Server-wide broadcast messages for blocked spawns
+
+- Prevents normal skeletons from spawning in Nether fortresses
+- Replaces them with Wither Skeletons if enabled
+- Server-wide broadcast messages for blocked spawns (in debug mode)
+- TODO - Config to enable it only in Nether fortresses or the entire Nether
 
 ### ✨ MobGlow Command
 - Make specific mob types glow for easier tracking
 - Configurable duration (including infinite)
 - Clear glow effects by type or all at once
 - Perfect for server administration and debugging
+
+### 🐦‍🔥 Better Mobs
+
+- Enhances mob variety and challenge
+- Mobs can now spawn with customizable armor and potion effects
+- Configurable spawn chances and equipment tiers
+- Different settings based on Y-Levels or Nether/End dimensions
+- TODO - Better levels configuration (for twilight forest, etc.)
+
+### 🪦 Death Coords Logger
+
+- Logs player death coordinates to
+    - all players
+    - TODO - only the deceased player
+    - TODO - the server console
+- Operators can teleport to death locations by clicking the message
 
 ## 🔧 Configuration
 

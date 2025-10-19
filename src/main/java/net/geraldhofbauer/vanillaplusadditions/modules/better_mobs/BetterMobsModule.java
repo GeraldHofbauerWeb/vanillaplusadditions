@@ -404,6 +404,11 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
         }
         Random random = new Random(uuid.getLeastSignificantBits());
         enchants.forEach((enchant) -> {
+            // TODO: Log entfernen und min/max level aus config holen
+            //  (Derzeit returnt die Config-Liste random level, was'n bug is)
+            // FIXME: Get min/max level from config instead of random level from list... or does it work as intended
+            //  - Nope
+            getLogger().debug("Enchantment levels available: {}", enchantLevels);
             int level = Integer.parseInt(enchantLevels.get(random.nextInt(enchantLevels.size())));
             ResourceKey<Enchantment> enchantmentKey = switch (enchant) {
                 case "protection" -> Enchantments.PROTECTION;
