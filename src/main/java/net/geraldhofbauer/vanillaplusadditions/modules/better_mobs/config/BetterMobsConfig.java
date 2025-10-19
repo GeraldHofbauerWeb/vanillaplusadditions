@@ -9,12 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, BetterMobsConfig> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BetterMobsConfig.class);
@@ -173,6 +168,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:5");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:5");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:5");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:5");
 
         return config;
     }
@@ -227,17 +223,19 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
 
         // Enchantment levels
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":min_level:2");
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:5");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:4");
 
         // Potion effects
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
 
         return config;
     }
 
     private static @NotNull List<String> getNetherEndConf() {
+        // TODO: Unterschiedliche Konfiguration für Nether/End, falls gewünscht bzw. für andere Dimensionen
         List<String> config = new ArrayList<>();
 
         // Gear types
@@ -283,12 +281,13 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
 
         // Enchantment levels
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":min_level:2");
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:5");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:4");
 
         // Potion effects
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
 
         return config;
     }
