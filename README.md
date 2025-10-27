@@ -12,7 +12,6 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 - Smart targeting system with player switching
 
 ### 💀 Wither Skeleton Enforcer
-
 - Prevents normal skeletons from spawning in Nether fortresses
 - Replaces them with Wither Skeletons if enabled
 - Server-wide broadcast messages for blocked spawns (in debug mode)
