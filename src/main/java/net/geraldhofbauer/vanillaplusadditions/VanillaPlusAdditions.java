@@ -7,6 +7,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsMod
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -74,6 +75,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new MobGlowModule());
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
+        moduleManager.registerModule(new StackablesModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

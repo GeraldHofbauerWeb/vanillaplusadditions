@@ -39,7 +39,7 @@ public class DeathCoordinatesModule extends AbstractModule<
     @Override
     protected void onCommonSetup() {
         if (getConfig().shouldDebugLog()) {
-            getLogger().debug("Better Mobs module common setup complete");
+            getLogger().debug("Death Coordinates module common setup complete");
         }
     }
 

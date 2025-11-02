@@ -1,1 +1,0 @@
-/home/gerry/Sync-Projekte/Minecraft/minecraft-instance-manager/minecraft-instances
