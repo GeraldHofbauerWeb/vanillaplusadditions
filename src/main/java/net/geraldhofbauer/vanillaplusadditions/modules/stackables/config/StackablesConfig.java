@@ -97,7 +97,8 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             try {
                 return defaultPotionStackSize.get();
             } catch (Exception e) {
-                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 16 - {}", e.getMessage());
+                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 16 - {}",
+                        e.getMessage());
             }
         }
         return 16;
