@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.ModifyDefaultComponentsEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import org.slf4j.Logger;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -24,6 +25,10 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
                 "Allows certain items to be stacked beyond their normal stack size.",
                 StackablesConfig::new
         );
+    }
+
+    public Logger getModuleLogger() {
+        return super.getLogger();
     }
 
     @Override
@@ -46,20 +51,6 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
     protected void onCommonSetup() {
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("StackablesModule common setup complete.");
-
-            // Debug helper: list possible tough-as-nails items from registry for verification
-            try {
-                var keys = BuiltInRegistries.ITEM.keySet();
-                for (ResourceLocation rl : keys) {
-                    String ns = rl.getNamespace();
-                    String path = rl.getPath();
-                    if (ns.contains("tough") || path.contains("juice") || path.contains("ice") || path.contains("charc")) {
-                        getLogger().info("Candidate registry item: {}", rl);
-                    }
-                }
-            } catch (Throwable t) {
-                getLogger().debug("Unable to dump item registry keys for StackablesModule: {}", t.getMessage());
-            }
         }
     }
 
@@ -71,25 +62,40 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onModifyDefaultComponents(ModifyDefaultComponentsEvent event) {
-        getLogger().info("=== STACKABLES MODULE: Starting component patching ===");
+        if (!this.isModuleEnabled()) {
+            return;
+        }
+
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("=== STACKABLES MODULE: Starting component patching ===");
+            getLogger().info("Config stackable items count: {}", getConfig().getStackableItems().size());
+        }
 
         // Patch vanilla potions
         int desired = Math.max(2, getConfig().getDefaultPotionStackSize());
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("Using potion stack size from config: {}", desired);
+        }
         try {
             event.modify(Items.POTION, builder -> builder.set(DataComponents.MAX_STACK_SIZE, desired));
             event.modify(Items.SPLASH_POTION, builder -> builder.set(DataComponents.MAX_STACK_SIZE, desired));
             event.modify(Items.LINGERING_POTION, builder -> builder.set(DataComponents.MAX_STACK_SIZE, desired));
             event.modify(Items.TIPPED_ARROW, builder -> builder.set(DataComponents.MAX_STACK_SIZE, desired));
-            getLogger().info("Patched potion-related items default MAX_STACK_SIZE to {}", desired);
+            if (getConfig().shouldDebugLog()) {
+                getLogger().info("Patched potion-related items default MAX_STACK_SIZE to {}", desired);
+            }
         } catch (Throwable t) {
             getLogger().warn("Failed to patch potion default components: {}", t.getMessage());
         }
 
         // Build a set of items already handled by config to avoid duplicates
-        Set<ResourceLocation> handledByConfig = new HashSet<>();
+        // Not used currently since auto-detection is disabled
+//        Set<ResourceLocation> handledByConfig = new HashSet<>();
 
         // Patch items from config list
-        getLogger().info("=== Processing config items ===");
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("=== Processing config items ===");
+        }
         for (String entry : getConfig().getStackableItems()) {
             int lastColon = entry.lastIndexOf(':');
             if (lastColon <= 0 || lastColon == entry.length() - 1) {
@@ -112,31 +118,43 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
                 continue;
             }
 
-            handledByConfig.add(resourceLocation);
+//            handledByConfig.add(resourceLocation);
 
             Optional<Item> itemOpt = BuiltInRegistries.ITEM.getOptional(resourceLocation);
             if (itemOpt.isPresent()) {
                 Item item = itemOpt.get();
                 int currentMax = item.getDefaultMaxStackSize();
-                getLogger().info("Item {} current stack: {}, target: {}", resourceLocation, currentMax, desiredStackSize);
+                if (getConfig().shouldDebugLog()) {
+                    getLogger().info("Item {} current stack: {}, target: {}", resourceLocation, currentMax, desiredStackSize);
+                }
 
                 try {
                     event.modify(item, builder -> {
                         builder.set(DataComponents.MAX_STACK_SIZE, desiredStackSize);
-                        getLogger().debug("Set MAX_STACK_SIZE component for {} to {}", resourceLocation, desiredStackSize);
+                        if (getConfig().shouldDebugLog()) {
+                            getLogger().debug("Set MAX_STACK_SIZE component for {} to {}", resourceLocation, desiredStackSize);
+                        }
                     });
-                    getLogger().info("✓ Successfully patched {} to stack size {}", resourceLocation, desiredStackSize);
+                    if (getConfig().shouldDebugLog()) {
+                        getLogger().info("✓ Successfully patched {} to stack size {}", resourceLocation, desiredStackSize);
+                    }
                 } catch (Throwable t) {
                     getLogger().error("✗ Failed to patch {}: {}", resourceLocation, t.getMessage(), t);
                 }
             } else {
-                getLogger().warn("Item not found in registry: {}", resourceLocation);
+                if (getConfig().shouldDebugLog()) {
+                    getLogger().warn("Item not found in registry: {}", resourceLocation);
+                }
             }
         }
 
         // Auto-detect and patch tough as nails items
-        getLogger().info("=== Starting auto-detection for Tough as Nails items ===");
-        int patchedCount = 0;
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("=== Starting auto-detection for Tough as Nails items ===");
+        }
+        // TESTING: Disable auto-detection, only use config
+        /*int p
+        atchedCount = 0;
         int skippedDurability = 0;
         try {
             for (ResourceLocation rl : BuiltInRegistries.ITEM.keySet()) {
@@ -148,7 +166,9 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
 
                 // Skip if already handled by config
                 if (handledByConfig.contains(rl)) {
-                    getLogger().debug("Skipping {} - already handled by config", rl);
+                    if (getConfig().shouldDebugLog()) {
+                        getLogger().debug("Skipping {} - already handled by config", rl);
+                    }
                     continue;
                 }
 
@@ -171,24 +191,34 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
 
                     // Check if item has durability
                     if (currentMax == 1) {
-                        getLogger().debug("Skipping {} - appears to have durability (max stack = 1)", rl);
+                        if (getConfig().shouldDebugLog()) {
+                            getLogger().debug("Skipping {} - appears to have durability (max stack = 1)", rl);
+                        }
                         skippedDurability++;
                         continue;
                     }
 
                     int stackSize = 64;
-                    getLogger().info("Auto-detect: {} current stack: {}, target: {}", rl, currentMax, stackSize);
+                    if (getConfig().shouldDebugLog()) {
+                        getLogger().info("Auto-detect: {} current stack: {}, target: {}", rl, currentMax, stackSize);
+                    }
 
                     try {
                         event.modify(item, builder -> {
                             builder.set(DataComponents.MAX_STACK_SIZE, stackSize);
-                            getLogger().debug("Set MAX_STACK_SIZE component for {} to {}", rl, stackSize);
+                            if (getConfig().shouldDebugLog()) {
+                                getLogger().debug("Set MAX_STACK_SIZE component for {} to {}", rl, stackSize);
+                            }
                         });
-                        getLogger().info("✓ AUTO-PATCHED: {} to stack size {}", rl, stackSize);
+                        if (getConfig().shouldDebugLog()) {
+                            getLogger().info("✓ AUTO-PATCHED: {} to stack size {}", rl, stackSize);
+                        }
                         patchedCount++;
                     } catch (Throwable t) {
                         if (t.getMessage() != null && t.getMessage().contains("durability")) {
-                            getLogger().debug("Skipping {} - has durability", rl);
+                            if (getConfig().shouldDebugLog()) {
+                                getLogger().debug("Skipping {} - has durability", rl);
+                            }
                             skippedDurability++;
                         } else {
                             getLogger().error("✗ Failed to auto-patch {}: {}", rl, t.getMessage(), t);
@@ -196,17 +226,16 @@ public class StackablesModule extends AbstractModule<StackablesModule, Stackable
                     }
                 }
             }
-            getLogger().info("=== Auto-detection complete. Patched {} items, skipped {} items with durability ===",
-                           patchedCount, skippedDurability);
+            if (getConfig().shouldDebugLog()) {
+                getLogger().info("=== Auto-detection complete. Patched {} items, skipped {} items with durability ===",
+                               patchedCount, skippedDurability);
+            }
         } catch (Throwable t) {
             getLogger().error("Auto-detection of toughasnails items failed: {}", t.getMessage(), t);
         }
 
-        getLogger().info("=== STACKABLES MODULE: Component patching complete ===");
-    }
-
-    // Diese Methode wird nicht mehr verwendet
-    private void makeItemStackable(RegisterEvent event, ResourceLocation resourceLocation, Item oldItem, int desiredStack) {
-        // Deprecated - not used anymore
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("=== STACKABLES MODULE: Component patching complete ===");
+        }*/
     }
 }
