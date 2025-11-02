@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SplashPotionItem;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class StackableSplashPotionItem extends SplashPotionItem {
     public StackableSplashPotionItem() {
@@ -14,14 +14,14 @@ public class StackableSplashPotionItem extends SplashPotionItem {
     }
 
     @Override
-    public ItemStack getDefaultInstance() {
+    public @NotNull ItemStack getDefaultInstance() {
         ItemStack itemstack = super.getDefaultInstance();
         itemstack.set(DataComponents.POTION_CONTENTS, new PotionContents(Potions.WATER));
         return itemstack;
     }
 
     @Override
-    public int getMaxStackSize(@Nonnull ItemStack stack) {
+    public int getMaxStackSize(@NotNull ItemStack stack) {
         return this.getDefaultMaxStackSize();
     }
 }

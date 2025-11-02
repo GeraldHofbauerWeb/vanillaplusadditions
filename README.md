@@ -51,8 +51,6 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
   - Water bottles (dirty, purified)
   - Ice cream and Charc-Os
   - Empty canteens (all types)
-- **Note**: Module cannot be disabled via config. And the config will currently be ignored, as it is loaded too late.
-            This *may* be fixed in a future update.
 - **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
 
 ## 🔧 Configuration

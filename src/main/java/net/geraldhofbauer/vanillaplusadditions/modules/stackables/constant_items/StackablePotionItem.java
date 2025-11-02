@@ -6,7 +6,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class StackablePotionItem extends PotionItem {
     public StackablePotionItem() {
@@ -14,7 +14,7 @@ public class StackablePotionItem extends PotionItem {
     }
 
     @Override
-    public ItemStack getDefaultInstance() {
+    public @NotNull ItemStack getDefaultInstance() {
         ItemStack itemstack = super.getDefaultInstance();
         itemstack.set(DataComponents.POTION_CONTENTS, new PotionContents(Potions.WATER));
         return itemstack;
@@ -22,7 +22,7 @@ public class StackablePotionItem extends PotionItem {
 
     // Ensure the item's default max stack size is used for stacking decisions
     @Override
-    public int getMaxStackSize(@Nonnull ItemStack stack) {
+    public int getMaxStackSize(@NotNull ItemStack stack) {
         return this.getDefaultMaxStackSize();
     }
 }

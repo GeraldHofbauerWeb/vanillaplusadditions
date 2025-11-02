@@ -134,6 +134,9 @@ public class WitherSkeletonModule
      * Broadcasts a message to all players about the blocked skeleton spawn
      */
     private void broadcastSkeletonBlockedMessage(ServerLevel level, BlockPos position) {
+        if (!getConfig().shouldDebugLog()) {
+            return;
+        }
         Component message = Component
                 .literal("🔥 A normal skeleton tried to spawn in a Fortress but was blocked! 🔥")
                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
@@ -153,9 +156,7 @@ public class WitherSkeletonModule
             player.sendSystemMessage(message);
         }
 
-        if (getConfig().shouldDebugLog()) {
-            getLogger().info("Broadcasted skeleton block message for spawn at {}", position);
-        }
+        getLogger().info("Broadcasted skeleton block message for spawn at {}", position);
     }
 
     /**
