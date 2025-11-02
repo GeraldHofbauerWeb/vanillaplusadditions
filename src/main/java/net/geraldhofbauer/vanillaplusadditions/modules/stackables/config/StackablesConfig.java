@@ -9,6 +9,7 @@ import java.util.List;
 public class StackablesConfig extends AbstractModuleConfig<StackablesModule, StackablesConfig> {
 
     private ModConfigSpec.ConfigValue<List<? extends String>> stackableItems;
+    private ModConfigSpec.IntValue defaultPotionStackSize;
 
     public StackablesConfig(StackablesModule module) {
         super(module);
@@ -26,14 +27,11 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
                 // tough as nails water bottles (keep as 64 by default)
                 "toughasnails:dirty_water_bottle:64",
                 "toughasnails:purified_water_bottle:64",
-                // tough as nails juices / ice cream / charc-os — default to max stack 16 (user asked)
-                // These IDs are common guesses; verify and adjust to the mod's actual resource names if needed.
-                "toughasnails:juice:16",
-                "toughasnails:apple_juice:16",
-                "toughasnails:melon_juice:16",
-                "toughasnails:ice_cream:16",
-                "toughasnails:ice_cream_vanilla:16",
-                "toughasnails:charc_os:16"
+                // tough as nails juices / ice cream / charc-os — default to max stack 64
+                "toughasnails:apple_juice:64",
+                "toughasnails:melon_juice:64",
+                "toughasnails:ice_cream:64",
+                "toughasnails:charc_os:64"
         );
 
         stackableItems = builder
@@ -62,6 +60,10 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
                         return false;
                     }
                 });
+
+        defaultPotionStackSize = builder
+                .comment("Default stack size for potions, splash potions, lingering potions, and tipped arrows.")
+                .defineInRange("default_potion_stack_size", 16, 1, 64);
     }
 
     public java.util.List<String> getStackableItems() {
@@ -73,12 +75,14 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
                 "minecraft:suspicious_stew:64",
                 "toughasnails:dirty_water_bottle:64",
                 "toughasnails:purified_water_bottle:64",
-                "toughasnails:juice:16",
-                "toughasnails:apple_juice:16",
-                "toughasnails:melon_juice:16",
-                "toughasnails:ice_cream:16",
-                "toughasnails:ice_cream_vanilla:16",
-                "toughasnails:charc_os:16"
+                "toughasnails:apple_juice:64",
+                "toughasnails:melon_juice:64",
+                "toughasnails:ice_cream:64",
+                "toughasnails:charc_os:64"
         );
+    }
+
+    public int getDefaultPotionStackSize() {
+        return defaultPotionStackSize != null ? defaultPotionStackSize.get() : 16;
     }
 }

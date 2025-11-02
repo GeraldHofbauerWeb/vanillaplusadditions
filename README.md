@@ -39,6 +39,22 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
     - TODO - the server console
 - Operators can teleport to death locations by clicking the message
 
+### 📦 Stackables
+
+- Makes non-stackable items stackable (e.g., stews, potions)
+- Increases stack sizes for modded items (Tough as Nails support included)
+- Configurable stack sizes for vanilla items:
+  - Potions, splash potions, lingering potions (default: 16)
+  - Mushroom stew, rabbit stew, beetroot soup, suspicious stew (default: 64)
+- Auto-detection for Tough as Nails items:
+  - All juice types (apple, melon, cactus, sweet berry, chorus fruit, glow berry, pumpkin)
+  - Water bottles (dirty, purified)
+  - Ice cream and Charc-Os
+  - Empty canteens (all types)
+- **Note**: Module cannot be disabled via config. And the config will currently be ignored, as it is loaded too late.
+            This *may* be fixed in a future update.
+- **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
+
 ## 🔧 Configuration
 
 Each module has its own configuration options. See our detailed guides:
