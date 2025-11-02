@@ -2,11 +2,11 @@ package net.geraldhofbauer.vanillaplusadditions.modules.stackables;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.config.StackablesConfig;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.minecraft.core.component.DataComponents;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -14,9 +14,7 @@ import net.neoforged.neoforge.event.ModifyDefaultComponentsEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import org.slf4j.Logger;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
 public class StackablesModule extends AbstractModule<StackablesModule, StackablesConfig> {
     public StackablesModule() {
