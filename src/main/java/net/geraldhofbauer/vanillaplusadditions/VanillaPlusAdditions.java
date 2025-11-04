@@ -5,6 +5,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
@@ -76,6 +77,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
         moduleManager.registerModule(new StackablesModule());
+        moduleManager.registerModule(new HauntedHouseModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
