@@ -53,6 +53,19 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
   - Empty canteens (all types)
 - **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
 
+### 👻 Haunted House **[On Hold]**
+
+- Replaces witch spawns in Witch Villa structures with invisible Murmurs from Alex's Mobs
+- 10% replacement rate (hardcoded for now)
+- Murmurs remain invisible until a player looks directly at them
+- Advanced line-of-sight detection system
+- Requires:
+  - Alex's Mobs mod (alexsmobs)
+  - Dungeons and Taverns mod (mr_dungeons_andtaverns)
+- **Status**: Disabled by default - waiting for Alex's Mobs to be updated to Minecraft 1.21.x
+- TODO - Make replacement rate configurable
+- TODO - Add configuration for detection distance and angle
+
 ## 🔧 Configuration
 
 Each module has its own configuration options. See our detailed guides:
