@@ -2,7 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.haunted_house;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
-import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.config.HauntedHouseConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -29,10 +29,9 @@ import java.util.*;
 
 public class HauntedHouseModule extends AbstractModule<
         HauntedHouseModule,
-        AbstractModuleConfig.DefaultModuleConfig<HauntedHouseModule>
+        HauntedHouseConfig
         > {
     
-    private static final double REPLACEMENT_RATE = 0.10; // 10% chance to replace witch with murmur
     private static final Random RANDOM = new Random();
     
     // Track murmurs that should be invisible and whether they've been spotted
@@ -42,7 +41,7 @@ public class HauntedHouseModule extends AbstractModule<
         super("haunted_house",
                 "Haunted House",
                 "Spawns Murmurs from Alex's Mobs in Dungeons and Taverns' Witch Villas",
-                AbstractModuleConfig::createDefault
+                HauntedHouseConfig::new
         );
     }
 
@@ -108,8 +107,17 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        // Check if the entity is a witch
-        if (!event.getEntity().getType().equals(EntityType.WITCH)) {
+        // Get the entity type as a ResourceLocation
+        EntityType<?> entityType = event.getEntity().getType();
+        ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+        
+        if (entityTypeId == null) {
+            return;
+        }
+        
+        // Check if this mob type should be replaced according to configuration
+        String mobId = entityTypeId.toString();
+        if (!getConfig().shouldReplaceMob(mobId)) {
             return;
         }
 
@@ -126,28 +134,30 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        // Check if any of the structures is a Witch Villa from nova_structures mod
-        boolean insideWitchVilla = false;
+        // Check if any of the structures is in the target structure list
+        boolean insideTargetStructure = false;
         for (Structure structure : allStructures.keySet()) {
             ResourceLocation structureLocation = serverLevel.registryAccess()
                     .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
                     .getKey(structure);
 
-            if (structureLocation != null && structureLocation.toString().contains("witch_villa")) {
-                insideWitchVilla = true;
+            if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
+                insideTargetStructure = true;
                 if (getConfig().shouldDebugLog()) {
-                    getLogger().debug("Detected witch spawn inside Witch Villa at {}", spawnPos);
+                    getLogger().debug("Detected {} spawn inside target structure {} at {}", 
+                            mobId, structureLocation, spawnPos);
                 }
                 break;
             }
         }
 
-        if (!insideWitchVilla) {
+        if (!insideTargetStructure) {
             return;
         }
         
-        // Only replace 10% of witch spawns with murmurs
-        if (RANDOM.nextDouble() >= REPLACEMENT_RATE) {
+        // Check if this spawn should be replaced based on configured replacement rate
+        double replacementRate = getConfig().getReplacementRate(mobId);
+        if (RANDOM.nextDouble() >= replacementRate) {
             return;
         }
         
