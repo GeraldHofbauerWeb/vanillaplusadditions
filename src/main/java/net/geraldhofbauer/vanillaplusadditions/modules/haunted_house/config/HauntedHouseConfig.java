@@ -24,7 +24,7 @@ public class HauntedHouseConfig
     private ModConfigSpec.ConfigValue<List<? extends String>> targetStructures;
     
     // Cached parsed values
-    private Map<String, Double> mobReplacementRates;
+    private final Map<String, Double> mobReplacementRates;
 
     /**
      * Creates a new HauntedHouseConfig.
