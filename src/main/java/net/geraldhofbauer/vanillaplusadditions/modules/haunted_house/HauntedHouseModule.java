@@ -189,8 +189,8 @@ public class HauntedHouseModule extends AbstractModule<
                 MessageBroadcaster.broadcastDebugWithLocation(
                         serverLevel,
                         getConfig().shouldDebugLog(),
-                        "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: " + 
-                                String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
+                        "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: "
+                                + String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
                         spawnPos,
                         getLogger()
                 );
