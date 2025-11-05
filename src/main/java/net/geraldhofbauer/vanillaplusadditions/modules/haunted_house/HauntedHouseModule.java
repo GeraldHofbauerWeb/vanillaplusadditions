@@ -3,6 +3,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.haunted_house;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.config.HauntedHouseConfig;
+import net.geraldhofbauer.vanillaplusadditions.util.MessageBroadcaster;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -47,27 +48,29 @@ public class HauntedHouseModule extends AbstractModule<
 
     @Override
     protected boolean shouldInitialize() {
+        // TODO: Temporarily disabled for testing with zombies instead of murmurs
         // Check for required mods: Alex's Mobs and Dungeons and Taverns
-        final boolean alexMobsLoaded = ModList.get().isLoaded("alexsmobs");
-        final boolean dungeonsAndTavernsLoaded = ModList.get().isLoaded("mr_dungeons_andtaverns");
+        // final boolean alexMobsLoaded = ModList.get().isLoaded("alexsmobs");
+         final boolean dungeonsAndTavernsLoaded = ModList.get().isLoaded("mr_dungeons_andtaverns");
 
-        final boolean modsFound = alexMobsLoaded && dungeonsAndTavernsLoaded;
+        // final boolean modsFound = alexMobsLoaded && dungeonsAndTavernsLoaded;
 
-        if (!modsFound) {
-            StringBuilder missingMods = new StringBuilder();
-            if (!alexMobsLoaded) {
-                missingMods.append("Alex's Mobs (alexsmobs)");
-            }
-            if (!dungeonsAndTavernsLoaded) {
-                if (missingMods.length() > 0) {
-                    missingMods.append(" and ");
-                }
-                missingMods.append("Dungeons and Taverns (mr_dungeons_andtaverns)");
-            }
-            getLogger().warn("Haunted House module not initialized - Missing required mods: {}", missingMods.toString());
-        }
+        // if (!modsFound) {
+        //     StringBuilder missingMods = new StringBuilder();
+        //     if (!alexMobsLoaded) {
+        //         missingMods.append("Alex's Mobs (alexsmobs)");
+        //     }
+        //     if (!dungeonsAndTavernsLoaded) {
+        //         if (missingMods.length() > 0) {
+        //             missingMods.append(" and ");
+        //         }
+        //         missingMods.append("Dungeons and Taverns (mr_dungeons_andtaverns)");
+        //     }
+        //     getLogger().warn("Haunted House module not initialized - Missing required mods: {}", missingMods.toString());
+        // }
 
-        return modsFound;
+        // return modsFound;
+        return dungeonsAndTavernsLoaded;
     }
 
     @Override
@@ -75,7 +78,7 @@ public class HauntedHouseModule extends AbstractModule<
         // Register event listeners for this module
         NeoForge.EVENT_BUS.register(this);
 
-        getLogger().info("Haunted House module initialized - Murmurs may now spawn in Witch Villas!");
+        getLogger().info("Haunted House module initialized - Testing with zombies instead of murmurs!");
     }
 
     @Override
@@ -93,7 +96,7 @@ public class HauntedHouseModule extends AbstractModule<
     }
 
     /**
-     * Event handler that replaces witch spawns with murmurs in witch villa structures.
+     * Event handler that replaces mob spawns with zombies (for testing) in configured structures.
      * Uses HIGH priority to ensure we can cancel the spawn before other mods process it.
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -161,62 +164,77 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
         
-        // Cancel the witch spawn and replace it with a Murmur
+        // Cancel the mob spawn and replace it with a zombie (for testing)
         event.setSpawnCancelled(true);
 
-        if (getConfig().shouldDebugLog()) {
-            getLogger().debug("Cancelled witch spawn in Witch Villa at {}", spawnPos);
-        }
+        // Broadcast debug message about cancelled spawn
+        MessageBroadcaster.broadcastDebugWithLocation(
+                serverLevel,
+                getConfig().shouldDebugLog(),
+                "❌ Cancelled " + mobId + " spawn in target structure",
+                spawnPos,
+                getLogger()
+        );
 
-        // Spawn a Murmur in place of the witch
-        spawnMurmur(serverLevel, event.getEntity(), event.getSpawnType());
+        // Spawn a zombie in place of the cancelled mob (for testing)
+        spawnReplacementMob(serverLevel, event.getEntity(), event.getSpawnType());
     }
 
     /**
-     * Spawns a Murmur entity from Alex's Mobs at the position of the cancelled witch spawn.
+     * Spawns a replacement mob at the position of the cancelled spawn.
+     * TODO: For testing, spawns zombies. Will spawn murmurs when Alex's Mobs is available.
      */
-    private void spawnMurmur(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
+    private void spawnReplacementMob(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
         try {
-            // Get the Murmur entity type from Alex's Mobs
-            ResourceLocation murmurId = ResourceLocation.fromNamespaceAndPath("alexsmobs", "murmur");
-            Optional<EntityType<?>> murmurType = BuiltInRegistries.ENTITY_TYPE.getOptional(murmurId);
+            // TODO: Temporarily using zombies for testing instead of murmurs
+            // Get the Zombie entity type (for testing)
+            // ResourceLocation murmurId = ResourceLocation.fromNamespaceAndPath("alexsmobs", "murmur");
+            // Optional<EntityType<?>> murmurType = BuiltInRegistries.ENTITY_TYPE.getOptional(murmurId);
+            
+            ResourceLocation zombieId = ResourceLocation.fromNamespaceAndPath("minecraft", "zombie");
+            Optional<EntityType<?>> zombieType = BuiltInRegistries.ENTITY_TYPE.getOptional(zombieId);
 
-            if (murmurType.isEmpty()) {
-                getLogger().error("Failed to find Murmur entity type from Alex's Mobs");
+            if (zombieType.isEmpty()) {
+                getLogger().error("Failed to find Zombie entity type");
                 return;
             }
 
-            // Create the Murmur entity
-            Entity murmur = murmurType.get().create(level);
-            if (murmur == null) {
-                getLogger().error("Failed to create Murmur entity");
+            // Create the Zombie entity
+            Entity replacementMob = zombieType.get().create(level);
+            if (replacementMob == null) {
+                getLogger().error("Failed to create replacement mob");
                 return;
             }
 
-            // Position the Murmur at the same location as the original witch
-            murmur.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
+            // Position the replacement mob at the same location as the original
+            replacementMob.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
                     originalEntity.getYRot(), originalEntity.getXRot());
 
-            // Make the Murmur invisible by default
-            if (murmur instanceof Mob mob) {
+            // Make the replacement mob invisible by default
+            if (replacementMob instanceof Mob mob) {
                 mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
-                invisibleMurmurs.put(murmur.getUUID(), false); // false = not yet spotted
+                invisibleMurmurs.put(replacementMob.getUUID(), false); // false = not yet spotted
             }
             
-            // Add the Murmur to the world
-            level.addFreshEntity(murmur);
+            // Add the replacement mob to the world
+            level.addFreshEntity(replacementMob);
             
-            if (getConfig().shouldDebugLog()) {
-                getLogger().debug("Spawned invisible Murmur in Witch Villa at {}", murmur.blockPosition());
-            }
+            // Broadcast debug message to all players if debug logging is enabled
+            MessageBroadcaster.broadcastDebugWithLocation(
+                    level,
+                    getConfig().shouldDebugLog(),
+                    "👻 Spawned invisible replacement mob (zombie for testing)",
+                    replacementMob.blockPosition(),
+                    getLogger()
+            );
 
         } catch (Exception e) {
-            getLogger().error("Failed to spawn Murmur in Witch Villa", e);
+            getLogger().error("Failed to spawn replacement mob", e);
         }
     }
     
     /**
-     * Event handler that checks if players are looking at invisible murmurs and makes them visible.
+     * Event handler that checks if players are looking at invisible replacement mobs and makes them visible.
      */
     @SubscribeEvent
     public void onEntityTick(EntityTickEvent.Pre event) {
@@ -229,37 +247,37 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
         
-        // Check if this is a murmur we're tracking
-        if (!(event.getEntity() instanceof Mob murmur)) {
+        // Check if this is a replacement mob we're tracking
+        if (!(event.getEntity() instanceof Mob replacementMob)) {
             return;
         }
         
-        UUID murmurId = murmur.getUUID();
-        if (!invisibleMurmurs.containsKey(murmurId)) {
+        UUID mobId = replacementMob.getUUID();
+        if (!invisibleMurmurs.containsKey(mobId)) {
             return;
         }
         
         // If already spotted, no need to check further
-        if (invisibleMurmurs.get(murmurId)) {
+        if (invisibleMurmurs.get(mobId)) {
             return;
         }
         
         // Only process on server side
-        if (murmur.level().isClientSide) {
+        if (replacementMob.level().isClientSide) {
             return;
         }
         
-        ServerLevel serverLevel = (ServerLevel) murmur.level();
-        Vec3 murmurPos = murmur.getEyePosition();
+        ServerLevel serverLevel = (ServerLevel) replacementMob.level();
+        Vec3 mobPos = replacementMob.getEyePosition();
         
-        // Check if any non-spectator player is looking at the murmur
+        // Check if any non-spectator player is looking at the replacement mob
         for (ServerPlayer player : serverLevel.players()) {
             if (player.isSpectator()) {
                 continue;
             }
             
             // Check if player is within reasonable distance (32 blocks)
-            if (player.distanceToSqr(murmur) > 32 * 32) {
+            if (player.distanceToSqr(replacementMob) > 32 * 32) {
                 continue;
             }
             
@@ -267,41 +285,41 @@ public class HauntedHouseModule extends AbstractModule<
             Vec3 playerEyePos = player.getEyePosition();
             Vec3 playerLookVec = player.getLookAngle();
             
-            // Calculate vector from player to murmur
-            Vec3 toMurmur = murmurPos.subtract(playerEyePos).normalize();
+            // Calculate vector from player to replacement mob
+            Vec3 toMob = mobPos.subtract(playerEyePos).normalize();
             
-            // Check if player is looking roughly in the direction of the murmur
+            // Check if player is looking roughly in the direction of the replacement mob
             // (dot product > 0.95 means within about 18 degrees)
-            double dotProduct = playerLookVec.dot(toMurmur);
+            double dotProduct = playerLookVec.dot(toMob);
             if (dotProduct < 0.95) {
                 continue;
             }
             
-            // Perform raycast to check if player has line of sight to murmur
+            // Perform raycast to check if player has line of sight to replacement mob
             ClipContext clipContext = new ClipContext(
                     playerEyePos,
-                    murmurPos,
+                    mobPos,
                     ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE,
                     player
             );
             HitResult hitResult = serverLevel.clip(clipContext);
             
-            // If raycast hits something before reaching the murmur, continue
+            // If raycast hits something before reaching the replacement mob, continue
             if (hitResult.getType() != HitResult.Type.MISS) {
                 double distanceToHit = hitResult.getLocation().distanceToSqr(playerEyePos);
-                double distanceToMurmur = murmurPos.distanceToSqr(playerEyePos);
-                if (distanceToHit < distanceToMurmur - 0.5) { // Small tolerance
+                double distanceToMob = mobPos.distanceToSqr(playerEyePos);
+                if (distanceToHit < distanceToMob - 0.5) { // Small tolerance
                     continue;
                 }
             }
             
-            // Player is looking at the murmur! Make it visible
-            murmur.removeEffect(MobEffects.INVISIBILITY);
-            invisibleMurmurs.put(murmurId, true); // Mark as spotted
+            // Player is looking at the replacement mob! Make it visible
+            replacementMob.removeEffect(MobEffects.INVISIBILITY);
+            invisibleMurmurs.put(mobId, true); // Mark as spotted
             
             if (getConfig().shouldDebugLog()) {
-                getLogger().debug("Player {} spotted Murmur at {}", player.getName().getString(), murmur.blockPosition());
+                getLogger().debug("Player {} spotted replacement mob at {}", player.getName().getString(), replacementMob.blockPosition());
             }
             
             break; // No need to check other players
