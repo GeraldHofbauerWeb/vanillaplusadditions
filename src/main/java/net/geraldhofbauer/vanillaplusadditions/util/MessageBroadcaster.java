@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -11,7 +12,14 @@ import org.slf4j.Logger;
 /**
  * Utility class for broadcasting messages to all players on a server.
  */
-public class MessageBroadcaster {
+public final class MessageBroadcaster {
+
+    /**
+     * Private constructor to prevent instantiation of utility class.
+     */
+    private MessageBroadcaster() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
     /**
      * Broadcasts a simple message to all players on the server.
@@ -34,7 +42,10 @@ public class MessageBroadcaster {
      * @param formatting ChatFormatting styles to apply
      */
     public static void broadcast(ServerLevel level, String message, ChatFormatting... formatting) {
-        Component component = Component.literal(message).withStyle(formatting);
+        MutableComponent component = Component.literal(message);
+        if (formatting != null && formatting.length > 0) {
+            component = component.withStyle(formatting);
+        }
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
             player.sendSystemMessage(component);
         }
@@ -48,7 +59,7 @@ public class MessageBroadcaster {
      * @param position    The position to include in the message
      */
     public static void broadcastWithLocation(ServerLevel level, String mainMessage, BlockPos position) {
-        broadcastWithLocation(level, mainMessage, position, null);
+        broadcastWithLocation(level, mainMessage, position, (ChatFormatting[]) null);
     }
 
     /**
@@ -61,13 +72,13 @@ public class MessageBroadcaster {
      */
     public static void broadcastWithLocation(ServerLevel level, String mainMessage, BlockPos position, 
                                             ChatFormatting... mainFormatting) {
-        Component message = Component.literal(mainMessage);
+        MutableComponent message = Component.literal(mainMessage);
         
         if (mainFormatting != null && mainFormatting.length > 0) {
             message = message.withStyle(mainFormatting);
         }
         
-        message = message.append(Component
+        MutableComponent locationComponent = Component
                 .literal("\nLocation: %d, %d, %d".formatted(position.getX(), position.getY(), position.getZ()))
                 .withStyle(ChatFormatting.YELLOW)
                 .withStyle(style -> style.withClickEvent(
@@ -75,8 +86,9 @@ public class MessageBroadcaster {
                                 ClickEvent.Action.RUN_COMMAND,
                                 "/tp @p %d %d %d".formatted(position.getX(), position.getY(), position.getZ())
                         )
-                ))
-        );
+                ));
+        
+        message.append(locationComponent);
 
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
             player.sendSystemMessage(message);
