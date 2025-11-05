@@ -110,6 +110,11 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
+        // Cast to ServerLevel for broadcasting
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
         // Get the entity type as a ResourceLocation
         EntityType<?> entityType = event.getEntity().getType();
         ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
@@ -120,47 +125,99 @@ public class HauntedHouseModule extends AbstractModule<
         
         // Check if this mob type should be replaced according to configuration
         String mobId = entityTypeId.toString();
+        
+        MessageBroadcaster.broadcastDebug(
+                serverLevel,
+                getConfig().shouldDebugLog(),
+                "🔍 Step 1: Detected mob spawn: " + mobId,
+                getLogger()
+        );
+        
         if (!getConfig().shouldReplaceMob(mobId)) {
             return;
         }
+        
+        MessageBroadcaster.broadcastDebug(
+                serverLevel,
+                getConfig().shouldDebugLog(),
+                "✅ Step 2: Mob " + mobId + " is in replacement list",
+                getLogger()
+        );
 
-        // Cast to ServerLevel to access structure manager
-        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
-            return;
-        }
-
-        // Check if the witch is spawning inside a Witch Villa structure
+        // Check if the mob is spawning inside a structure
         BlockPos spawnPos = event.getEntity().blockPosition();
         Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(spawnPos);
 
         if (allStructures.isEmpty()) {
+            MessageBroadcaster.broadcastDebugWithLocation(
+                    serverLevel,
+                    getConfig().shouldDebugLog(),
+                    "❌ Step 3: No structures found at spawn location",
+                    spawnPos,
+                    getLogger()
+            );
             return;
         }
+        
+        MessageBroadcaster.broadcastDebugWithLocation(
+                serverLevel,
+                getConfig().shouldDebugLog(),
+                "✅ Step 3: Found " + allStructures.size() + " structure(s) at location",
+                spawnPos,
+                getLogger()
+        );
 
         // Check if any of the structures is in the target structure list
         boolean insideTargetStructure = false;
+        StringBuilder structureList = new StringBuilder();
+        
         for (Structure structure : allStructures.keySet()) {
             ResourceLocation structureLocation = serverLevel.registryAccess()
                     .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
                     .getKey(structure);
 
-            if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
-                insideTargetStructure = true;
-                if (getConfig().shouldDebugLog()) {
-                    getLogger().debug("Detected {} spawn inside target structure {} at {}", 
-                            mobId, structureLocation, spawnPos);
+            if (structureLocation != null) {
+                if (structureList.length() > 0) {
+                    structureList.append(", ");
                 }
-                break;
+                structureList.append(structureLocation.toString());
+                
+                if (getConfig().isTargetStructure(structureLocation.toString())) {
+                    insideTargetStructure = true;
+                    MessageBroadcaster.broadcastDebug(
+                            serverLevel,
+                            getConfig().shouldDebugLog(),
+                            "✅ Step 4: Found target structure: " + structureLocation,
+                            getLogger()
+                    );
+                    break;
+                }
             }
         }
 
         if (!insideTargetStructure) {
+            MessageBroadcaster.broadcastDebug(
+                    serverLevel,
+                    getConfig().shouldDebugLog(),
+                    "❌ Step 4: None of the structures match target list. Found: " + structureList,
+                    getLogger()
+            );
             return;
         }
         
         // Check if this spawn should be replaced based on configured replacement rate
         double replacementRate = getConfig().getReplacementRate(mobId);
-        if (RANDOM.nextDouble() >= replacementRate) {
+        double randomValue = RANDOM.nextDouble();
+        
+        MessageBroadcaster.broadcastDebug(
+                serverLevel,
+                getConfig().shouldDebugLog(),
+                String.format("🎲 Step 5: Replacement roll: %.2f < %.2f = %s", 
+                        randomValue, replacementRate, randomValue < replacementRate),
+                getLogger()
+        );
+        
+        if (randomValue >= replacementRate) {
             return;
         }
         
