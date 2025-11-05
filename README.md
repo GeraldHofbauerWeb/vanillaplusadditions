@@ -53,7 +53,7 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
   - Empty canteens (all types)
 - **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
 
-### 👻 Haunted House **[On Hold]**
+### 👻 Haunted House
 
 Creates an atmospheric and spooky experience in configured structures (default: Witch Villas).
 
@@ -88,8 +88,8 @@ Creates an atmospheric and spooky experience in configured structures (default: 
 - Dungeons and Taverns mod (mr_dungeons_andtaverns) - for Witch Villa structure
 
 #### Status:
-**Disabled by default** - Currently uses zombies for testing while waiting for Alex's Mobs to be updated to Minecraft 1.21.x. 
-When Alex's Mobs is available, the module will spawn actual Murmurs instead of zombies.
+**Disabled by default** - Module requires Alex's Mobs and Dungeons and Taverns mods to function. 
+Will automatically enable when both required mods are detected.
 
 #### Configuration Example:
 ```toml
