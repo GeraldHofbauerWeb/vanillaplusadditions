@@ -56,6 +56,7 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 ### 👻 Haunted House **[On Hold]**
 
 - Replaces mob spawns in specific structures with invisible Murmurs from Alex's Mobs
+- **Witch spawn boosting**: Configurable chance (default 50%) to replace mob spawns with witches in target structures
 - Configurable mob replacement list with individual replacement rates (default: minecraft:witch at 10%)
 - Configurable target structures (default: nova_structures:witch_villa)
 - Murmurs remain invisible until a player looks directly at them

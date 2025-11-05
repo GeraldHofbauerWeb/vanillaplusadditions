@@ -92,7 +92,117 @@ public class HauntedHouseModule extends AbstractModule<
     // Currently disabled by default because Alex's Mobs is not yet available for 1.21.x
     @Override
     public boolean isEnabledByDefault() {
-        return false;
+        return true;
+    }
+
+    /**
+     * Event handler that boosts witch spawn rates in target structures.
+     * Uses HIGHEST priority to run before the replacement handler.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onBoostWitchSpawns(FinalizeSpawnEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+
+        // Only process on server side
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+
+        // Cast to ServerLevel
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        // Check if witch spawn boost is enabled
+        double boostChance = getConfig().getWitchSpawnBoostChance();
+        if (boostChance <= 0) {
+            return;
+        }
+
+        // Get the entity type
+        EntityType<?> entityType = event.getEntity().getType();
+        ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
+        
+        if (entityTypeId == null) {
+            return;
+        }
+
+        String mobId = entityTypeId.toString();
+        
+        // Don't boost witches themselves
+        if (mobId.equals("minecraft:witch")) {
+            return;
+        }
+
+        // Check if we're in a target structure
+        BlockPos spawnPos = event.getEntity().blockPosition();
+        Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(spawnPos);
+
+        if (allStructures.isEmpty()) {
+            return;
+        }
+
+        // Check if any structure is a target
+        boolean insideTargetStructure = false;
+        for (Structure structure : allStructures.keySet()) {
+            ResourceLocation structureLocation = serverLevel.registryAccess()
+                    .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
+                    .getKey(structure);
+
+            if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
+                insideTargetStructure = true;
+                break;
+            }
+        }
+
+        if (!insideTargetStructure) {
+            return;
+        }
+
+        // Roll for witch spawn boost
+        double randomValue = RANDOM.nextDouble();
+        if (randomValue < boostChance) {
+            // Cancel current spawn and replace with witch
+            event.setSpawnCancelled(true);
+
+            MessageBroadcaster.broadcastDebugWithLocation(
+                    serverLevel,
+                    getConfig().shouldDebugLog(),
+                    "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: " + 
+                            String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
+                    spawnPos,
+                    getLogger()
+            );
+
+            spawnWitch(serverLevel, event.getEntity(), event.getSpawnType());
+        }
+    }
+
+    /**
+     * Spawns a witch at the given location.
+     */
+    private void spawnWitch(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
+        try {
+            EntityType<?> witchType = EntityType.WITCH;
+            Entity witch = witchType.create(level);
+            
+            if (witch == null) {
+                getLogger().error("Failed to create witch entity");
+                return;
+            }
+
+            // Position the witch at the same location as the original mob
+            witch.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
+                    originalEntity.getYRot(), originalEntity.getXRot());
+
+            // Add the witch to the world
+            level.addFreshEntity(witch);
+
+        } catch (Exception e) {
+            getLogger().error("Failed to spawn witch", e);
+        }
     }
 
     /**

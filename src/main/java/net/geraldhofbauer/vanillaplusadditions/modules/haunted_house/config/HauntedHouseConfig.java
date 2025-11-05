@@ -22,6 +22,7 @@ public class HauntedHouseConfig
     // Configuration values
     private ModConfigSpec.ConfigValue<List<? extends String>> targetMobs;
     private ModConfigSpec.ConfigValue<List<? extends String>> targetStructures;
+    private ModConfigSpec.DoubleValue witchSpawnBoostChance;
     
     // Cached parsed values
     private final Map<String, Double> mobReplacementRates;
@@ -52,6 +53,12 @@ public class HauntedHouseConfig
                         List.of("nova_structures:witch_villa"),
                         obj -> obj instanceof String && isValidStructureEntry((String) obj));
 
+        witchSpawnBoostChance = builder
+                .comment("Chance (0-100%) that a mob spawn in target structures will be replaced with a witch",
+                        "This helps ensure more witches spawn in witch villas for replacement",
+                        "Set to 0 to disable witch spawning boost")
+                .defineInRange("witch_spawn_boost_chance", 50.0, 0.0, 100.0);
+
         LOGGER.debug("Built module-specific configuration for Haunted House module");
     }
 
@@ -66,6 +73,7 @@ public class HauntedHouseConfig
         if (targetMobs != null && targetStructures != null) {
             LOGGER.debug("  - Target mobs: {}", targetMobs.get());
             LOGGER.debug("  - Target structures: {}", targetStructures.get());
+            LOGGER.debug("  - Witch spawn boost chance: {}%", witchSpawnBoostChance.get());
             LOGGER.debug("  - Parsed replacement rates: {}", mobReplacementRates);
         }
     }
@@ -189,5 +197,14 @@ public class HauntedHouseConfig
             }
         }
         return false;
+    }
+
+    /**
+     * Gets the witch spawn boost chance.
+     *
+     * @return The chance (0.0 to 1.0) that a mob spawn will be replaced with a witch
+     */
+    public double getWitchSpawnBoostChance() {
+        return witchSpawnBoostChance != null ? witchSpawnBoostChance.get() / 100.0 : 0.5;
     }
 }
