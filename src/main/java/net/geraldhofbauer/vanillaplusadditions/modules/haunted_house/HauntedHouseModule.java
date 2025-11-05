@@ -33,15 +33,15 @@ public class HauntedHouseModule extends AbstractModule<
         HauntedHouseModule,
         HauntedHouseConfig
         > {
-    
+
     private static final Random RANDOM = new Random();
-    
+
     // Track murmurs that should be invisible and whether they've been spotted
     private final HashMap<UUID, Boolean> invisibleMurmurs = new HashMap<>();
-    
+
     // Track players inside target structures for fog effect
     private final HashMap<UUID, Long> playersInStructure = new HashMap<>();
-    
+
     public HauntedHouseModule() {
         super("haunted_house",
                 "Haunted House",
@@ -55,7 +55,7 @@ public class HauntedHouseModule extends AbstractModule<
         // TODO: Temporarily disabled for testing with zombies instead of murmurs
         // Check for required mods: Alex's Mobs and Dungeons and Taverns
         // final boolean alexMobsLoaded = ModList.get().isLoaded("alexsmobs");
-         final boolean dungeonsAndTavernsLoaded = ModList.get().isLoaded("mr_dungeons_andtaverns");
+        final boolean dungeonsAndTavernsLoaded = ModList.get().isLoaded("mr_dungeons_andtaverns");
 
         // final boolean modsFound = alexMobsLoaded && dungeonsAndTavernsLoaded;
 
@@ -128,13 +128,13 @@ public class HauntedHouseModule extends AbstractModule<
         // Get the entity type
         EntityType<?> entityType = event.getEntity().getType();
         ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-        
+
         if (entityTypeId == null) {
             return;
         }
 
         String mobId = entityTypeId.toString();
-        
+
         // Don't boost witches themselves
         if (mobId.equals("minecraft:witch")) {
             return;
@@ -168,24 +168,40 @@ public class HauntedHouseModule extends AbstractModule<
         // Roll for witch spawn boost
         double randomValue = RANDOM.nextDouble();
         if (randomValue < boostChance) {
-            // Cancel current spawn and replace with witch
+            // Cancel current spawn and replace with witch (or replacement)
             event.setSpawnCancelled(true);
 
-            MessageBroadcaster.broadcastDebugWithLocation(
-                    serverLevel,
-                    getConfig().shouldDebugLog(),
-                    "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: " + 
-                            String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
-                    spawnPos,
-                    getLogger()
-            );
+            // Decide if we should directly replace the boosted witch with the configured replacement (e.g., zombie/murmur)
+            double witchReplacementRate = getConfig().getReplacementRate("minecraft:witch");
+            boolean replaceBoostedWitch = witchReplacementRate > 0 && RANDOM.nextDouble() < witchReplacementRate;
 
-            spawnWitch(serverLevel, event.getEntity(), event.getSpawnType());
+            if (replaceBoostedWitch) {
+                MessageBroadcaster.broadcastDebugWithLocation(
+                        serverLevel,
+                        getConfig().shouldDebugLog(),
+                        "🧙➡️👻 Boosted witch spawn replaced with test mob due to replacement rate",
+                        spawnPos,
+                        getLogger()
+                );
+                // Spawn replacement mob (currently zombie for testing)
+                spawnReplacementMob(serverLevel, event.getEntity(), event.getSpawnType());
+            } else {
+                MessageBroadcaster.broadcastDebugWithLocation(
+                        serverLevel,
+                        getConfig().shouldDebugLog(),
+                        "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: " + 
+                                String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
+                        spawnPos,
+                        getLogger()
+                );
+                spawnWitch(serverLevel, event.getEntity(), event.getSpawnType());
+            }
         }
     }
 
     /**
      * Spawns a witch at the given location.
+     * Uses finalizeSpawn to ensure the witch properly triggers spawn events.
      */
     private void spawnWitch(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
         try {
@@ -200,6 +216,12 @@ public class HauntedHouseModule extends AbstractModule<
             // Position the witch at the same location as the original mob
             witch.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
                     originalEntity.getYRot(), originalEntity.getXRot());
+
+            // Finalize spawn so it triggers FinalizeSpawnEvent for replacement handler
+            if (witch instanceof net.minecraft.world.entity.Mob mob) {
+                mob.finalizeSpawn(level, level.getCurrentDifficultyAt(witch.blockPosition()),
+                        spawnType, null);
+            }
 
             // Add the witch to the world
             level.addFreshEntity(witch);
@@ -232,25 +254,25 @@ public class HauntedHouseModule extends AbstractModule<
         // Get the entity type as a ResourceLocation
         EntityType<?> entityType = event.getEntity().getType();
         ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-        
+
         if (entityTypeId == null) {
             return;
         }
-        
+
         // Check if this mob type should be replaced according to configuration
         String mobId = entityTypeId.toString();
-        
+
         MessageBroadcaster.broadcastDebug(
                 serverLevel,
                 getConfig().shouldDebugLog(),
                 "🔍 Step 1: Detected mob spawn: " + mobId,
                 getLogger()
         );
-        
+
         if (!getConfig().shouldReplaceMob(mobId)) {
             return;
         }
-        
+
         MessageBroadcaster.broadcastDebug(
                 serverLevel,
                 getConfig().shouldDebugLog(),
@@ -272,7 +294,7 @@ public class HauntedHouseModule extends AbstractModule<
             );
             return;
         }
-        
+
         MessageBroadcaster.broadcastDebugWithLocation(
                 serverLevel,
                 getConfig().shouldDebugLog(),
@@ -284,7 +306,7 @@ public class HauntedHouseModule extends AbstractModule<
         // Check if any of the structures is in the target structure list
         boolean insideTargetStructure = false;
         StringBuilder structureList = new StringBuilder();
-        
+
         for (Structure structure : allStructures.keySet()) {
             ResourceLocation structureLocation = serverLevel.registryAccess()
                     .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
@@ -295,7 +317,7 @@ public class HauntedHouseModule extends AbstractModule<
                     structureList.append(", ");
                 }
                 structureList.append(structureLocation.toString());
-                
+
                 if (getConfig().isTargetStructure(structureLocation.toString())) {
                     insideTargetStructure = true;
                     MessageBroadcaster.broadcastDebug(
@@ -318,23 +340,23 @@ public class HauntedHouseModule extends AbstractModule<
             );
             return;
         }
-        
+
         // Check if this spawn should be replaced based on configured replacement rate
         double replacementRate = getConfig().getReplacementRate(mobId);
         double randomValue = RANDOM.nextDouble();
-        
+
         MessageBroadcaster.broadcastDebug(
                 serverLevel,
                 getConfig().shouldDebugLog(),
-                String.format("🎲 Step 5: Replacement roll: %.2f < %.2f = %s", 
+                String.format("🎲 Step 5: Replacement roll: %.2f < %.2f = %s",
                         randomValue, replacementRate, randomValue < replacementRate),
                 getLogger()
         );
-        
+
         if (randomValue >= replacementRate) {
             return;
         }
-        
+
         // Cancel the mob spawn and replace it with a zombie (for testing)
         event.setSpawnCancelled(true);
 
@@ -361,7 +383,7 @@ public class HauntedHouseModule extends AbstractModule<
             // Get the Zombie entity type (for testing)
             // ResourceLocation murmurId = ResourceLocation.fromNamespaceAndPath("alexsmobs", "murmur");
             // Optional<EntityType<?>> murmurType = BuiltInRegistries.ENTITY_TYPE.getOptional(murmurId);
-            
+
             ResourceLocation zombieId = ResourceLocation.fromNamespaceAndPath("minecraft", "zombie");
             Optional<EntityType<?>> zombieType = BuiltInRegistries.ENTITY_TYPE.getOptional(zombieId);
 
@@ -386,10 +408,10 @@ public class HauntedHouseModule extends AbstractModule<
                 mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
                 invisibleMurmurs.put(replacementMob.getUUID(), false); // false = not yet spotted
             }
-            
+
             // Add the replacement mob to the world
             level.addFreshEntity(replacementMob);
-            
+
             // Broadcast debug message to all players if debug logging is enabled
             MessageBroadcaster.broadcastDebugWithLocation(
                     level,
@@ -403,7 +425,7 @@ public class HauntedHouseModule extends AbstractModule<
             getLogger().error("Failed to spawn replacement mob", e);
         }
     }
-    
+
     /**
      * Event handler that checks if players are looking at invisible replacement mobs and makes them visible.
      */
@@ -412,60 +434,60 @@ public class HauntedHouseModule extends AbstractModule<
         if (!isModuleEnabled()) {
             return;
         }
-        
+
         // Only check every 10 ticks (0.5 seconds) for performance
         if (event.getEntity().tickCount % 10 != 0) {
             return;
         }
-        
+
         // Check if this is a replacement mob we're tracking
         if (!(event.getEntity() instanceof Mob replacementMob)) {
             return;
         }
-        
+
         UUID mobId = replacementMob.getUUID();
         if (!invisibleMurmurs.containsKey(mobId)) {
             return;
         }
-        
+
         // If already spotted, no need to check further
         if (invisibleMurmurs.get(mobId)) {
             return;
         }
-        
+
         // Only process on server side
         if (replacementMob.level().isClientSide) {
             return;
         }
-        
+
         ServerLevel serverLevel = (ServerLevel) replacementMob.level();
         Vec3 mobPos = replacementMob.getEyePosition();
-        
+
         // Check if any non-spectator player is looking at the replacement mob
         for (ServerPlayer player : serverLevel.players()) {
             if (player.isSpectator()) {
                 continue;
             }
-            
+
             // Check if player is within reasonable distance (32 blocks)
             if (player.distanceToSqr(replacementMob) > 32 * 32) {
                 continue;
             }
-            
+
             // Get player's look vector
             Vec3 playerEyePos = player.getEyePosition();
             Vec3 playerLookVec = player.getLookAngle();
-            
+
             // Calculate vector from player to replacement mob
             Vec3 toMob = mobPos.subtract(playerEyePos).normalize();
-            
+
             // Check if player is looking roughly in the direction of the replacement mob
             // (dot product > 0.95 means within about 18 degrees)
             double dotProduct = playerLookVec.dot(toMob);
             if (dotProduct < 0.95) {
                 continue;
             }
-            
+
             // Perform raycast to check if player has line of sight to replacement mob
             ClipContext clipContext = new ClipContext(
                     playerEyePos,
@@ -475,7 +497,7 @@ public class HauntedHouseModule extends AbstractModule<
                     player
             );
             HitResult hitResult = serverLevel.clip(clipContext);
-            
+
             // If raycast hits something before reaching the replacement mob, continue
             if (hitResult.getType() != HitResult.Type.MISS) {
                 double distanceToHit = hitResult.getLocation().distanceToSqr(playerEyePos);
@@ -484,19 +506,19 @@ public class HauntedHouseModule extends AbstractModule<
                     continue;
                 }
             }
-            
+
             // Player is looking at the replacement mob! Make it visible
             replacementMob.removeEffect(MobEffects.INVISIBILITY);
             invisibleMurmurs.put(mobId, true); // Mark as spotted
-            
+
             if (getConfig().shouldDebugLog()) {
                 getLogger().debug("Player {} spotted replacement mob at {}", player.getName().getString(), replacementMob.blockPosition());
             }
-            
+
             break; // No need to check other players
         }
     }
-    
+
     /**
      * Event handler that applies fog effect to players inside target structures.
      */
@@ -505,58 +527,58 @@ public class HauntedHouseModule extends AbstractModule<
         if (!isModuleEnabled()) {
             return;
         }
-        
+
         // Only check players
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        
+
         // Only process on server side
         if (player.level().isClientSide) {
             return;
         }
-        
+
         // Only check every 20 ticks (1 second) for performance
         if (player.tickCount % 20 != 0) {
             return;
         }
-        
+
         // Check if fog effect is enabled
         if (!getConfig().isFogEffectEnabled()) {
             return;
         }
-        
+
         ServerLevel serverLevel = (ServerLevel) player.level();
         BlockPos playerPos = player.blockPosition();
-        
+
         // Check if player is in a target structure
         Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(playerPos);
-        
+
         boolean insideTargetStructure = false;
         if (!allStructures.isEmpty()) {
             for (Structure structure : allStructures.keySet()) {
                 ResourceLocation structureLocation = serverLevel.registryAccess()
                         .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
                         .getKey(structure);
-                
+
                 if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
                     insideTargetStructure = true;
                     break;
                 }
             }
         }
-        
+
         UUID playerId = player.getUUID();
-        
+
         if (insideTargetStructure) {
-            // Player is inside - apply fog effect
+            // Player is inside - apply fog effect (darkness is like natural cave fog)
             int amplifier = getConfig().getFogEffectAmplifier();
-            player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, amplifier, false, false));
-            
+            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 40, amplifier, false, false));
+
             // Track first entry for debug message
             if (!playersInStructure.containsKey(playerId)) {
                 playersInStructure.put(playerId, System.currentTimeMillis());
-                
+
                 MessageBroadcaster.broadcastDebug(
                         serverLevel,
                         getConfig().shouldDebugLog(),
