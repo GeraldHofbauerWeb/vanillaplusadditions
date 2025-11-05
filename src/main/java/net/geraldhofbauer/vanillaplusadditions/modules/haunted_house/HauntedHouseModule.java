@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.HitResult;
@@ -37,6 +38,9 @@ public class HauntedHouseModule extends AbstractModule<
     
     // Track murmurs that should be invisible and whether they've been spotted
     private final HashMap<UUID, Boolean> invisibleMurmurs = new HashMap<>();
+    
+    // Track players inside target structures for fog effect
+    private final HashMap<UUID, Long> playersInStructure = new HashMap<>();
     
     public HauntedHouseModule() {
         super("haunted_house",
@@ -490,6 +494,86 @@ public class HauntedHouseModule extends AbstractModule<
             }
             
             break; // No need to check other players
+        }
+    }
+    
+    /**
+     * Event handler that applies fog effect to players inside target structures.
+     */
+    @SubscribeEvent
+    public void onPlayerTick(EntityTickEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        
+        // Only check players
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        
+        // Only process on server side
+        if (player.level().isClientSide) {
+            return;
+        }
+        
+        // Only check every 20 ticks (1 second) for performance
+        if (player.tickCount % 20 != 0) {
+            return;
+        }
+        
+        // Check if fog effect is enabled
+        if (!getConfig().isFogEffectEnabled()) {
+            return;
+        }
+        
+        ServerLevel serverLevel = (ServerLevel) player.level();
+        BlockPos playerPos = player.blockPosition();
+        
+        // Check if player is in a target structure
+        Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(playerPos);
+        
+        boolean insideTargetStructure = false;
+        if (!allStructures.isEmpty()) {
+            for (Structure structure : allStructures.keySet()) {
+                ResourceLocation structureLocation = serverLevel.registryAccess()
+                        .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
+                        .getKey(structure);
+                
+                if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
+                    insideTargetStructure = true;
+                    break;
+                }
+            }
+        }
+        
+        UUID playerId = player.getUUID();
+        
+        if (insideTargetStructure) {
+            // Player is inside - apply fog effect
+            int amplifier = getConfig().getFogEffectAmplifier();
+            player.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 40, amplifier, false, false));
+            
+            // Track first entry for debug message
+            if (!playersInStructure.containsKey(playerId)) {
+                playersInStructure.put(playerId, System.currentTimeMillis());
+                
+                MessageBroadcaster.broadcastDebug(
+                        serverLevel,
+                        getConfig().shouldDebugLog(),
+                        "🌫️ Player " + player.getName().getString() + " entered haunted structure - applying fog effect",
+                        getLogger()
+                );
+            }
+        } else {
+            // Player left structure - remove from tracking
+            if (playersInStructure.remove(playerId) != null) {
+                MessageBroadcaster.broadcastDebug(
+                        serverLevel,
+                        getConfig().shouldDebugLog(),
+                        "☀️ Player " + player.getName().getString() + " left haunted structure - fog will dissipate",
+                        getLogger()
+                );
+            }
         }
     }
 

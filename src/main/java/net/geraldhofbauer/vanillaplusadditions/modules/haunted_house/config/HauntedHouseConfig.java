@@ -23,6 +23,8 @@ public class HauntedHouseConfig
     private ModConfigSpec.ConfigValue<List<? extends String>> targetMobs;
     private ModConfigSpec.ConfigValue<List<? extends String>> targetStructures;
     private ModConfigSpec.DoubleValue witchSpawnBoostChance;
+    private ModConfigSpec.BooleanValue enableFogEffect;
+    private ModConfigSpec.IntValue fogEffectAmplifier;
     
     // Cached parsed values
     private final Map<String, Double> mobReplacementRates;
@@ -59,6 +61,16 @@ public class HauntedHouseConfig
                         "Set to 0 to disable witch spawning boost")
                 .defineInRange("witch_spawn_boost_chance", 50.0, 0.0, 100.0);
 
+        enableFogEffect = builder
+                .comment("Enable fog/blindness effect for players inside target structures",
+                        "Creates a spooky atmosphere in haunted locations")
+                .define("enable_fog_effect", true);
+
+        fogEffectAmplifier = builder
+                .comment("Amplifier for the fog effect (0 = light fog, 1 = medium fog, 2+ = heavy fog)",
+                        "Higher values create denser fog")
+                .defineInRange("fog_effect_amplifier", 0, 0, 5);
+
         LOGGER.debug("Built module-specific configuration for Haunted House module");
     }
 
@@ -74,6 +86,8 @@ public class HauntedHouseConfig
             LOGGER.debug("  - Target mobs: {}", targetMobs.get());
             LOGGER.debug("  - Target structures: {}", targetStructures.get());
             LOGGER.debug("  - Witch spawn boost chance: {}%", witchSpawnBoostChance.get());
+            LOGGER.debug("  - Fog effect enabled: {}", enableFogEffect.get());
+            LOGGER.debug("  - Fog effect amplifier: {}", fogEffectAmplifier.get());
             LOGGER.debug("  - Parsed replacement rates: {}", mobReplacementRates);
         }
     }
@@ -206,5 +220,23 @@ public class HauntedHouseConfig
      */
     public double getWitchSpawnBoostChance() {
         return witchSpawnBoostChance != null ? witchSpawnBoostChance.get() / 100.0 : 0.5;
+    }
+
+    /**
+     * Checks if fog effect is enabled.
+     *
+     * @return true if fog effect should be applied, false otherwise
+     */
+    public boolean isFogEffectEnabled() {
+        return enableFogEffect != null && enableFogEffect.get();
+    }
+
+    /**
+     * Gets the fog effect amplifier level.
+     *
+     * @return The amplifier level (0-5)
+     */
+    public int getFogEffectAmplifier() {
+        return fogEffectAmplifier != null ? fogEffectAmplifier.get() : 0;
     }
 }

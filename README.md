@@ -57,8 +57,10 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 
 - Replaces mob spawns in specific structures with invisible Murmurs from Alex's Mobs
 - **Witch spawn boosting**: Configurable chance (default 50%) to replace mob spawns with witches in target structures
+- **Fog effect**: Configurable blindness/fog effect for players inside haunted structures (toggleable)
 - Configurable mob replacement list with individual replacement rates (default: minecraft:witch at 10%)
 - Configurable target structures (default: nova_structures:witch_villa)
+- Configurable fog amplifier (0-5) for light to heavy fog
 - Murmurs remain invisible until a player looks directly at them
 - Advanced line-of-sight detection system with raycast verification
 - Requires:
