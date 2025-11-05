@@ -55,19 +55,53 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 
 ### 👻 Haunted House **[On Hold]**
 
-- Replaces mob spawns in specific structures with invisible Murmurs from Alex's Mobs
-- **Witch spawn boosting**: Configurable chance (default 50%) to replace mob spawns with witches in target structures
-- **Fog effect**: Configurable blindness/fog effect for players inside haunted structures (toggleable)
-- Configurable mob replacement list with individual replacement rates (default: minecraft:witch at 10%)
-- Configurable target structures (default: nova_structures:witch_villa)
-- Configurable fog amplifier (0-5) for light to heavy fog
-- Murmurs remain invisible until a player looks directly at them
-- Advanced line-of-sight detection system with raycast verification
-- Requires:
-  - Alex's Mobs mod (alexsmobs)
-  - Dungeons and Taverns mod (mr_dungeons_andtaverns)
-- **Status**: Disabled by default - waiting for Alex's Mobs to be updated to Minecraft 1.21.x
-- TODO - Add configuration for detection distance and angle
+Creates an atmospheric and spooky experience in configured structures (default: Witch Villas).
+
+#### Features:
+- 🧙 **Witch Spawn Boosting**: Increases witch population in target structures
+  - Default 50% chance to replace mob spawns with witches
+  - Ensures sufficient witches for replacement mechanic
+  - Configurable via `witch_spawn_boost_chance`
+
+- 👻 **Invisible Entity Replacement**: Replaces witches with invisible Murmurs (currently zombies for testing)
+  - Default 10% of witches become invisible entities
+  - Entities remain invisible until a player looks directly at them
+  - Advanced line-of-sight detection with raycast verification
+  - Combined effect: ~5% of all mob spawns become invisible entities
+  - Configurable via `target_mobs` list
+
+- 🌫️ **Atmospheric Fog**: Creates spooky ambiance inside structures
+  - Applies darkness effect (natural cave-like fog)
+  - Configurable on/off via `enable_fog_effect` (default: true)
+  - Adjustable intensity (0-5) via `fog_effect_amplifier` (default: 0)
+  - Automatically dissipates when leaving structure
+
+- ⚙️ **Fully Configurable**:
+  - Target structures list (default: `nova_structures:witch_villa`)
+  - Mob replacement rates per entity type
+  - Witch spawn boost percentage
+  - Fog effect toggle and intensity
+  - Comprehensive debug logging
+
+#### Requirements:
+- Alex's Mobs mod (alexsmobs) - for Murmur entity
+- Dungeons and Taverns mod (mr_dungeons_andtaverns) - for Witch Villa structure
+
+#### Status:
+**Disabled by default** - Currently uses zombies for testing while waiting for Alex's Mobs to be updated to Minecraft 1.21.x. 
+When Alex's Mobs is available, the module will spawn actual Murmurs instead of zombies.
+
+#### Configuration Example:
+```toml
+[haunted_house]
+    enabled = true
+    debug_logging = true
+    witch_spawn_boost_chance = 50.0
+    enable_fog_effect = true
+    fog_effect_amplifier = 0
+    target_mobs = ["minecraft:witch:10"]
+    target_structures = ["nova_structures:witch_villa"]
+```
 
 ## 🔧 Configuration
 
