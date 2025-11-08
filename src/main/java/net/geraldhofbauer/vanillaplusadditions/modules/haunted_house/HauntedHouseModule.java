@@ -548,15 +548,46 @@ public class HauntedHouseModule extends AbstractModule<
         Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(playerPos);
 
         boolean insideTargetStructure = false;
-        if (!allStructures.isEmpty()) {
+
+        // Skip the detection if in creative or spectator mode
+        if (!allStructures.isEmpty() && !player.isCreative() && !player.isSpectator()) {
             for (Structure structure : allStructures.keySet()) {
                 ResourceLocation structureLocation = serverLevel.registryAccess()
                         .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
                         .getKey(structure);
 
                 if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
-                    insideTargetStructure = true;
-                    break;
+                    // Get the structure boundaries at this position
+                    LongSet structureChunks = allStructures.get(structure);
+                    
+                    // Get structure start for this position
+                    var structureStart = serverLevel.structureManager()
+                            .getStructureAt(playerPos, structure);
+                    
+                    if (structureStart.isValid()) {
+                        // Get the bounding box of the structure
+                        var boundingBox = structureStart.getBoundingBox();
+                        
+                        // Check if player is within the Y-level range of the structure
+                        int playerY = playerPos.getY();
+                        int minY = boundingBox.minY();
+                        int maxY = boundingBox.maxY();
+                        
+                        if (playerY >= minY && playerY <= maxY) {
+                            insideTargetStructure = true;
+                            
+                            if (getConfig().shouldDebugLog()) {
+                                getLogger().debug("Player {} inside structure Y-range: {} (structure Y: {} - {})",
+                                        player.getName().getString(), playerY, minY, maxY);
+                            }
+                            break;
+                        } else {
+                            if (getConfig().shouldDebugLog()) {
+                                getLogger().debug("Player {} outside structure Y-range: {} (structure Y: {} - {})",
+                                        player.getName().getString(), playerY, minY, maxY);
+                            }
+                        }
+                    }
                 }
             }
         }
