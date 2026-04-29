@@ -40,6 +40,16 @@ jobs:
           body: |
             ## VanillaPlusAdditions v${{ env.VERSION }}
             
+            ### ✨ What's New
+            - **Food Effects Module**: A new configurable module that lets you assign potion effects to any food item!
+              - 🍪 Cookie grants Speed II (8s)
+              - 🥘 Rabbit Stew grants Heating (60min) — *Tough As Nails*
+              - 🍄 Mushroom Stew grants Heating (10min) — *Tough As Nails*
+              - 🥣 Beetroot Soup grants Heating (10min) — *Tough As Nails*
+              - 🧟 Magma Rotten Flesh grants Heating (30min) — *Rotten Creatures*
+              - 🧊 Frozen Rotten Flesh grants Cooling (30min) — *Rotten Creatures*
+            - Fully configurable via the server config — add your own food/effect combos!
+            
             ### 🚀 Installation
             1. Download the jar file
             2. Place it in your mods folder
@@ -49,6 +59,7 @@ jobs:
             - **Hostile Zombified Piglins**: Enhanced Nether difficulty
             - **Wither Skeleton Enforcer**: No normal skeletons in Nether
             - **MobGlow Command**: Visualize and track entities
+            - **Food Effects**: Configurable potion effects on food items
             
             ### 🔧 Configuration
             See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/MODULE_CONFIG_GUIDE.md)
