@@ -106,7 +106,6 @@ Will automatically enable when both required mods are detected.
 ## 🔧 Configuration
 
 Each module has its own configuration options. See our detailed guides:
-TODO - Create these guides
 - [Module Configuration Guide](MODULE_CONFIG_GUIDE.md)
 - [Debug Logging Configuration](DEBUG_LOGGING_CONFIG.md)
 - [MobGlow Command Guide](MOBGLOW_MODULE_GUIDE.md)
