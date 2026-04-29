@@ -37,8 +37,8 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
     @Override
     protected void buildModuleSpecificConfig(ModConfigSpec.Builder builder) {
         foodEffects = builder
-                .comment("List of food effects. Format: item_id;effect_id;duration_in_ticks;amplifier\n" +
-                        "Example: minecraft:apple;minecraft:speed;200;0")
+                .comment("List of food effects. Format: item_id;effect_id;duration_in_ticks;amplifier\n"
+                        + "Example: minecraft:apple;minecraft:speed;200;0")
                 .defineList("food_effects", DEFAULT_FOOD_EFFECTS, () -> "minecraft:apple;minecraft:speed;200;0", o -> {
                     if (!(o instanceof String s)) {
                         return false;
@@ -51,10 +51,14 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
                         ResourceLocation.parse(parts[0]);
                         ResourceLocation.parse(parts[1]);
                         int duration = Integer.parseInt(parts[2]);
-                        if (duration < 0) return false;
+                        if (duration < 0) {
+                            return false;
+                        }
                         if (parts.length == 4) {
                             int amplifier = Integer.parseInt(parts[3]);
-                            if (amplifier < 0) return false;
+                            if (amplifier < 0) {
+                                return false;
+                            }
                         }
                         return true;
                     } catch (Exception e) {
