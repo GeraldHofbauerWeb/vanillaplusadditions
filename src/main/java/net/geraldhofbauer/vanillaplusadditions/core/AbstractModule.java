@@ -93,10 +93,24 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
 
         logger.debug("Initializing module: {}", displayName);
 
+        if (!shouldInitialize()) {
+            logger.info("Module '{}' is disabled and will not be initialized", displayName);
+            return;
+        }
+
         // Call the implementation-specific initialization
         onInitialize();
 
         logger.debug("Module initialized: {}", displayName);
+    }
+
+    /**
+     * Determines whether this module should be initialized.
+     *
+     * @return true if the module should be initialized, false otherwise
+     */
+    protected boolean shouldInitialize() {
+        return true;
     }
 
     /**
