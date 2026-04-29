@@ -9,6 +9,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsM
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.minecraft.client.Minecraft;
@@ -80,6 +81,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new StackablesModule());
         moduleManager.registerModule(new HauntedHouseModule());
         moduleManager.registerModule(new FoodEffectsModule());
+        moduleManager.registerModule(new OverpackedSlowdownModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
