@@ -595,6 +595,8 @@ public class HauntedHouseModule extends AbstractModule<
         UUID playerId = player.getUUID();
 
         if (insideTargetStructure) {
+            // TODO: Check if inside buildings only (not just the structure area) (no sky access)
+            // TODO: Check if not underground in caves
             // Player is inside - apply fog effect (darkness is like natural cave fog)
             int amplifier = getConfig().getFogEffectAmplifier();
             player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 40, amplifier, false, false));
