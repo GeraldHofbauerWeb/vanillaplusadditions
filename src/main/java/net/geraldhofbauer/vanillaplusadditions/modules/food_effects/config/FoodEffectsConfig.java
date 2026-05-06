@@ -18,6 +18,7 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
             "minecraft:mushroom_stew;toughasnails:heating;12000;0",
             "minecraft:beetroot_soup;toughasnails:heating;12000;0",
             "rottencreatures:magma_rotten_flesh;toughasnails:heating;36000;0",
+            "create:builders_tea;toughasnails:heating;12000;0",
             // Cooling effect (Tough As Nails)
             "rottencreatures:frozen_rotten_flesh;toughasnails:cooling;36000;0"
     );

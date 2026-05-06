@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class StackableTippedArrowItem extends TippedArrowItem {
     public StackableTippedArrowItem() {
-        super(new Item.Properties().stacksTo(16));
+        super(new Item.Properties().stacksTo(64));
     }
 
     @Override
