@@ -78,7 +78,7 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
 
         defaultPotionStackSize = builder
                 .comment("Default stack size for potions, splash potions, lingering potions, and tipped arrows.")
-                .defineInRange("default_potion_stack_size", 16, 1, 64);
+                .defineInRange("default_potion_stack_size", 64, 1, 64);
     }
 
     public java.util.List<String> getStackableItems() {
@@ -99,7 +99,7 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             try {
                 return defaultPotionStackSize.get();
             } catch (Exception e) {
-                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 16 - {}",
+                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 64 - {}",
                         e.getMessage());
             }
         }
