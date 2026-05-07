@@ -1,5 +1,7 @@
 # VanillaPlusAdditions
 
+![Banner](docs/github_banner.png)
+
 ![Logo](src/main/resources/logo.png)
 
 A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions while maintaining the original feel.
