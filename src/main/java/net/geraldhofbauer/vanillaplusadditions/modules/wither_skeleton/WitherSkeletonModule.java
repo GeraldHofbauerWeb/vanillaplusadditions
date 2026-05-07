@@ -2,17 +2,26 @@ package net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton;
 
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
-import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.config.WitherSkeletonConfig;
+import net.geraldhofbauer.vanillaplusadditions.util.MessageBroadcaster;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.monster.WitherSkeleton;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.structures.NetherFortressStructure;
@@ -20,8 +29,13 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Wither Skeleton Module
@@ -37,14 +51,16 @@ import java.util.Map;
  * - Configurable message format and replacement behavior
  */
 public class WitherSkeletonModule
-        extends AbstractModule<WitherSkeletonModule, AbstractModuleConfig.DefaultModuleConfig<WitherSkeletonModule>> {
+        extends AbstractModule<WitherSkeletonModule, WitherSkeletonConfig> {
+
+    private final Map<Item, Float> additionalDropsCache = new HashMap<>();
 
     public WitherSkeletonModule() {
         super("wither_skeleton",
                 "Wither Skeleton Enforcer",
                 "Prevents normal skeletons from spawning in the Nether and broadcasts messages "
                         + "about blocked spawns",
-                AbstractModuleConfig::createDefault
+                WitherSkeletonConfig::new
         );
     }
 
@@ -58,8 +74,71 @@ public class WitherSkeletonModule
 
     @Override
     protected void onCommonSetup() {
+        reloadAdditionalDropsCache();
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("Wither Skeleton module common setup complete");
+        }
+    }
+
+    public void reloadAdditionalDropsCache() {
+        additionalDropsCache.clear();
+        if (!isModuleEnabled()) {
+            return;
+        }
+
+        List<String> entries = getConfig().getAdditionalDrops();
+        for (String entry : entries) {
+            String[] parts = entry.split(";");
+            if (parts.length != 2) {
+                continue;
+            }
+
+            try {
+                ResourceLocation itemRl = ResourceLocation.parse(parts[0]);
+                float chance = Float.parseFloat(parts[1]);
+
+                Item item = BuiltInRegistries.ITEM.get(itemRl);
+
+                if (item != Items.AIR) {
+                    additionalDropsCache.put(item, chance);
+                } else {
+                    if (getConfig().shouldDebugLog()) {
+                        getLogger().warn("Additional drop config: Item not found: {}", parts[0]);
+                    }
+                }
+            } catch (Exception e) {
+                getLogger().error("Failed to parse additional drop entry: {}", entry, e);
+            }
+        }
+
+        if (getConfig().shouldDebugLog()) {
+            getLogger().debug("Additional drops cache reloaded. {} items configured.", additionalDropsCache.size());
+        }
+    }
+
+    /**
+     * Event handler that increases the drop rate of wither skeleton skulls
+     */
+    @SubscribeEvent
+    public void onEntityKill(LivingDropsEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+
+        if (event.getEntity() instanceof WitherSkeleton witherSkeleton) {
+            // Additional configurable drops (including Wither Skulls)
+            for (Map.Entry<Item, Float> entry : additionalDropsCache.entrySet()) {
+                if (witherSkeleton.getRandom().nextFloat() < entry.getValue()) {
+                    event.getDrops().add(new ItemEntity(witherSkeleton.level(),
+                            witherSkeleton.getX(), witherSkeleton.getY(), witherSkeleton.getZ(),
+                            new ItemStack(entry.getKey())));
+
+                    if (getConfig().shouldDebugLog()) {
+                        getLogger().debug("Added additional drop {} at {} (Chance: {})",
+                                entry.getKey().toString(), witherSkeleton.blockPosition(), entry.getValue());
+                    }
+                }
+            }
         }
     }
 
@@ -99,8 +178,12 @@ public class WitherSkeletonModule
             return;
         }
         boolean insideFortress = false;
+        Registry<Structure> structureRegistry = serverLevel.registryAccess()
+                .registryOrThrow(Registries.STRUCTURE);
         for (Structure structure : allStructures.keySet()) {
-            if (structure instanceof NetherFortressStructure) {
+            if (structure instanceof NetherFortressStructure
+                    || ResourceLocation.fromNamespaceAndPath("betterfortresses", "fortress")
+                    .equals(structureRegistry.getKey(structure))) {
                 // Allow normal skeleton spawn inside Nether Fortress
                 if (getConfig().shouldDebugLog()) {
                     getLogger().debug("Allowed normal skeleton spawn inside Nether Fortress at {}",
