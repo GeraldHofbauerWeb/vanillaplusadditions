@@ -2,8 +2,6 @@
 
 ![Banner](docs/github_banner.png)
 
-![Logo](src/main/resources/logo.png)
-
 A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions while maintaining the original feel.
 
 > 🤖 **AI Collaboration Notice**: This project was developed in collaboration with the Warp AI assistant (powered by Claude 3.5 Sonnet). The AI helped with code implementation, documentation, and project structure. While the core ideas and direction came from human creativity, the AI's assistance made this project more robust and feature-complete. We believe in transparency about AI usage while celebrating the potential of human-AI collaboration in software development.
