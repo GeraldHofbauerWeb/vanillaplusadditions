@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-05-07
+### Added
+- EndOxygenModule: New module that introduces oxygen mechanics in the End dimension.
+- Custom damage type `create_gravity:out_of_oxygen` with localized death messages (EN, DE, ES, FR).
+- Configuration options for oxygen consumption speed and Water Breathing effect synergy.
+
 ## [0.8.2] - 2026-05-07
 ### Changed
 - BetterMobsModule: Spawn-Raten für Ausrüstung und Wahrscheinlichkeiten für Verzauberungen angepasst.
