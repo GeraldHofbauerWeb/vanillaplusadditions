@@ -245,7 +245,7 @@ public class FoodEffectsModule extends AbstractModule<FoodEffectsModule, FoodEff
             String chanceStr = entry.chance() < 1.0f ? " (" + (int) (entry.chance() * 100) + "%)" : "";
             event.getToolTip().add(Component.literal("\uD83D\uDCA7 ")
                     .append(Component.literal("+" + amount + " "))
-                    .append(Component.translatable("desc.toughasnails.thirst_restored"))
+                    .append(Component.translatable("desc.vpa.toughasnails.thirst_restored"))
                     .append(Component.literal(chanceStr))
                     .withStyle(ChatFormatting.BLUE));
         }
