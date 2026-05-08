@@ -1,3 +1,22 @@
 {
-  "desc.vpa.toughasnails.thirst_restored": "Durst wiederhergestellt"
+  "desc.vpa.toughasnails.thirst_restored": "Durst wiederhergestellt",
+  "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s ist der Sauerstoff ausgegangen",
+  "message.action_bar.remaining_oxygen": "Verbleibender Sauerstoff: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cWARNUNG: WENIG SAUERSTOFF",
+  "command.vpa.mobglow.no_entities_clear": "Keine leuchtenden Einheiten zum Entfernen gefunden",
+  "command.vpa.mobglow.cleared_all": "Leuchteffekt von %s Einheiten entfernt",
+  "command.vpa.mobglow.unknown_type": "Unbekannter Einheitstyp: %s",
+  "command.vpa.mobglow.no_entities_type_clear": "Keine leuchtenden %s Einheiten zum Entfernen gefunden",
+  "command.vpa.mobglow.cleared_type": "Leuchteffekt von %s %s Einheiten entfernt",
+  "command.vpa.mobglow.no_players": "Leuchteffekt kann nicht auf Spieler angewendet werden",
+  "command.vpa.mobglow.max_duration": "Dauer darf %s Sekunden nicht überschreiten",
+  "command.vpa.mobglow.invalid_duration": "Ungültige Dauer: %s. Verwende eine Zahl oder 'infinite'",
+  "command.vpa.mobglow.no_entities_apply": "Keine %s Einheiten gefunden, um den Leuchteffekt anzuwenden",
+  "command.vpa.mobglow.already_glowing": "Alle %s %s Einheiten haben bereits einen Leuchteffekt",
+  "command.vpa.mobglow.applied_success": "Leuchteffekt auf %s %s Einheiten %s angewendet",
+  "command.vpa.mobglow.applied_new": "Leuchteffekt auf %s neue %s Einheiten %s angewendet",
+  "command.vpa.mobglow.infinite": "unendlich",
+  "command.vpa.mobglow.for_seconds": "für %s Sekunden",
+  "message.vpa.death_coords": "Spieler %s ist an folgenden Koordinaten gestorben: X=%d, Y=%d, Z=%d in Dimension %s",
+  "message.vpa.death_coords.hover": "Klicken, um zum Todesort zu teleportieren"
 }

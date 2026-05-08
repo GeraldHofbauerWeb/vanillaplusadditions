@@ -1,0 +1,22 @@
+{
+  "desc.vpa.toughasnails.thirst_restored": "Sed restaurada",
+  "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s se quedó sin oxígeno",
+  "message.action_bar.remaining_oxygen": "Oxígeno restante: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cALERTA DE OXÍGENO BAJO",
+  "command.vpa.mobglow.no_entities_clear": "No se han encontrado entidades brillantes para limpiar",
+  "command.vpa.mobglow.cleared_all": "Se ha eliminado el efecto de brillo de %s entidades",
+  "command.vpa.mobglow.unknown_type": "Tipo de entidad desconocido: %s",
+  "command.vpa.mobglow.no_entities_type_clear": "No se han encontrado entidades %s brillantes para limpiar",
+  "command.vpa.mobglow.cleared_type": "Se ha eliminado el efecto de brillo de %s entidades %s",
+  "command.vpa.mobglow.no_players": "No se puede aplicar el efecto de brillo a los jugadores",
+  "command.vpa.mobglow.max_duration": "La duración no puede exceder los %s segundos",
+  "command.vpa.mobglow.invalid_duration": "Duración inválida: %s. Usa un número o 'infinite'",
+  "command.vpa.mobglow.no_entities_apply": "No se han encontrado entidades %s para aplicar el efecto de brillo",
+  "command.vpa.mobglow.already_glowing": "Todas las %s entidades %s ya tienen el efecto de brillo",
+  "command.vpa.mobglow.applied_success": "Efecto de brillo aplicado a %s entidades %s %s",
+  "command.vpa.mobglow.applied_new": "Efecto de brillo aplicado a %s nuevas entidades %s %s",
+  "command.vpa.mobglow.infinite": "indefinidamente",
+  "command.vpa.mobglow.for_seconds": "durante %s segundos",
+  "message.vpa.death_coords": "El jugador %s murió en las coordenadas: X=%d, Y=%d, Z=%d en la dimensión %s",
+  "message.vpa.death_coords.hover": "Haz clic para teletransportarte al lugar de la muerte"
+}

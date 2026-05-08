@@ -33,17 +33,17 @@ import java.util.List;
 public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenConfig> {
     public static final ResourceKey<DamageType> OUT_OF_OXYGEN = ResourceKey.create(
             Registries.DAMAGE_TYPE,
-            ResourceLocation.fromNamespaceAndPath("create_gravity", "out_of_oxygen")
+            ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "out_of_oxygen")
     );
 
     public static final TagKey<Item> BACKTANKS = TagKey.create(
             Registries.ITEM,
-            ResourceLocation.fromNamespaceAndPath("create_gravity", "backtanks")
+            ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "backtanks")
     );
 
     public static final TagKey<Item> DIVING_HELMETS = TagKey.create(
             Registries.ITEM,
-            ResourceLocation.fromNamespaceAndPath("create_gravity", "diving_helmets")
+            ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "diving_helmets")
     );
 
     private static final ResourceLocation AIR_LEVEL_LAYER = ResourceLocation.withDefaultNamespace("air_level");

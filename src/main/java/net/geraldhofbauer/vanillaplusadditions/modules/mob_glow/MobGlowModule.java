@@ -153,10 +153,10 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
         int clearedCount = clearGlowEffects(source, null);
         
         if (clearedCount == 0) {
-            source.sendSuccess(() -> Component.literal("No glowing entities found to clear")
+            source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.no_entities_clear")
                     .withStyle(ChatFormatting.YELLOW), true);
         } else {
-            source.sendSuccess(() -> Component.literal("Cleared glow effect from " + clearedCount + " entities")
+            source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.cleared_all", clearedCount)
                     .withStyle(ChatFormatting.GREEN), true);
         }
         
@@ -172,7 +172,7 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
         
         // Validate entity type
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(entityTypeId)) {
-            source.sendFailure(Component.literal("Unknown entity type: " + entityTypeId)
+            source.sendFailure(Component.translatable("command.vpa.mobglow.unknown_type", entityTypeId)
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -186,12 +186,10 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
         int clearedCount = clearGlowEffects(source, entityType);
         
         if (clearedCount == 0) {
-            source.sendSuccess(() -> Component.literal("No glowing " + entityTypeId
-                            + " entities found to clear")
+            source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.no_entities_type_clear", entityTypeId)
                     .withStyle(ChatFormatting.YELLOW), true);
         } else {
-            source.sendSuccess(() -> Component.literal("Cleared glow effect from " + clearedCount
-                            + " " + entityTypeId + " entities")
+            source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.cleared_type", clearedCount, entityTypeId)
                     .withStyle(ChatFormatting.GREEN), true);
         }
         
@@ -209,14 +207,14 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
 
         // Validate entity type
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(entityTypeId)) {
-            source.sendFailure(Component.literal("Unknown entity type: " + entityTypeId)
+            source.sendFailure(Component.translatable("command.vpa.mobglow.unknown_type", entityTypeId)
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
 
         EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(entityTypeId);
         if (entityType == EntityType.PLAYER) {
-            source.sendFailure(Component.literal("Cannot apply glow effect to players")
+            source.sendFailure(Component.translatable("command.vpa.mobglow.no_players")
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -240,16 +238,15 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
                 // Check maximum duration limit
                 int maxDuration = getConfig().getMaxDurationValue();
                 if (maxDuration > 0 && durationSeconds > maxDuration) {
-                    source.sendFailure(Component.literal("Duration cannot exceed " + maxDuration + " seconds")
+                    source.sendFailure(Component.translatable("command.vpa.mobglow.max_duration", maxDuration)
                             .withStyle(ChatFormatting.RED));
                     return 0;
                 }
                 
                 durationTicks = durationSeconds * 20; // Convert seconds to ticks
             } catch (NumberFormatException e) {
-                source.sendFailure(Component.literal("Invalid duration: " + durationStr
-                                + ". Use a number or 'infinite'")
-                        .withStyle(ChatFormatting.RED));
+                source.sendFailure(Component.translatable("command.vpa.mobglow.invalid_duration", durationStr)
+                                .withStyle(ChatFormatting.RED));
                 return 0;
             }
         }
@@ -293,27 +290,26 @@ public class MobGlowModule extends AbstractModule<MobGlowModule, MobGlowConfig> 
 
         // Send result message
         if (totalWithEffectCount.get() == 0) {
-            source.sendSuccess(() -> Component.literal("No " + entityTypeId
-                            + " entities found to apply glow effect")
+            source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.no_entities_apply", entityTypeId)
                     .withStyle(ChatFormatting.YELLOW), true);
         } else {
-            String durationText = isInfinite ? "indefinitely" : "for " + (durationTicks / 20) + " seconds";
+            Component durationComponent = isInfinite ? Component.translatable("command.vpa.mobglow.infinite")
+                    : Component.translatable("command.vpa.mobglow.for_seconds", (durationTicks / 20));
+
             if (changedCount.get() == 0) {
-                source.sendSuccess(() -> Component.literal("All " + totalWithEffectCount.get() + " "
-                                + entityTypeId + " entities already have glow effect")
+                source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.already_glowing",
+                                totalWithEffectCount.get(), entityTypeId)
                         .withStyle(ChatFormatting.YELLOW), true);
             } else {
-                String message;
                 if (changedCount.get() == totalWithEffectCount.get()) {
-                    message = "Applied glow effect to " + changedCount.get() + " " + entityTypeId
-                            + " entities " + durationText;
+                    source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.applied_success",
+                                    changedCount.get(), entityTypeId, durationComponent)
+                            .withStyle(ChatFormatting.GREEN), true);
                 } else {
-                    message = "Applied glow effect to " + changedCount.get() + " new " + entityTypeId
-                            + " entities " + durationText + " ("
-                            + totalWithEffectCount.get()
-                            + " total now glowing)";
+                    source.sendSuccess(() -> Component.translatable("command.vpa.mobglow.applied_new",
+                                    changedCount.get(), entityTypeId, durationComponent)
+                            .withStyle(ChatFormatting.GREEN), true);
                 }
-                source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.GREEN), true);
             }
             
             if (getConfig().shouldDebugLog()) {

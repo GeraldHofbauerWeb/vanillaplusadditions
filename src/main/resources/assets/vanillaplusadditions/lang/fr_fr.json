@@ -1,0 +1,22 @@
+{
+  "desc.vpa.toughasnails.thirst_restored": "Soif restaurée",
+  "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s a manqué d'oxygène",
+  "message.action_bar.remaining_oxygen": "Oxygène restant : %s %s",
+  "message.action_bar.low_oxygen_alert": "§cALERTE OXYGÈNE FAIBLE",
+  "command.vpa.mobglow.no_entities_clear": "Aucune entité brillante trouvée à effacer",
+  "command.vpa.mobglow.cleared_all": "Effet de surbrillance retiré de %s entités",
+  "command.vpa.mobglow.unknown_type": "Type d'entité inconnu : %s",
+  "command.vpa.mobglow.no_entities_type_clear": "Aucune entité %s brillante trouvée à effacer",
+  "command.vpa.mobglow.cleared_type": "Effet de surbrillance retiré de %s entités %s",
+  "command.vpa.mobglow.no_players": "Impossible d'appliquer l'effet de surbrillance aux joueurs",
+  "command.vpa.mobglow.max_duration": "La durée ne peut pas dépasser %s secondes",
+  "command.vpa.mobglow.invalid_duration": "Durée invalide : %s. Utilisez un nombre ou 'infinite'",
+  "command.vpa.mobglow.no_entities_apply": "Aucune entité %s trouvée pour appliquer l'effet de surbrillance",
+  "command.vpa.mobglow.already_glowing": "Toutes les %s entités %s ont déjà l'effet de surbrillance",
+  "command.vpa.mobglow.applied_success": "Effet de surbrillance appliqué à %s entités %s %s",
+  "command.vpa.mobglow.applied_new": "Effet de surbrillance appliqué à %s nouvelles entités %s %s",
+  "command.vpa.mobglow.infinite": "indéfiniment",
+  "command.vpa.mobglow.for_seconds": "pendant %s secondes",
+  "message.vpa.death_coords": "Le joueur %s est mort aux coordonnées : X=%d, Y=%d, Z=%d dans la dimension %s",
+  "message.vpa.death_coords.hover": "Cliquez pour vous téléporter au lieu de la mort"
+}
