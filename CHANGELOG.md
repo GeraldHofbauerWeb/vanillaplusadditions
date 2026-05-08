@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.3] - 2026-05-08
+### Changed
+- Lokalisierung: Alle Sprachdateien wurden im Namensraum `vanillaplusadditions` konsolidiert.
+- Code-Bereinigung: Hardcoded Strings in `MobGlowModule` und `DeathCoordinatesModule` wurden durch translatable Components ersetzt.
+- Ressourcen-Management: Veraltete `create_gravity` Ressourcen entfernt und Damage-Type Definitionen verschoben.
+
 ## [0.10.2] - 2026-05-08
 ### Added
 - Tough As Nails Tooltip: Grafische Anzeige der Durst-Wiederherstellung (Icons) anstelle von reinem Text.
