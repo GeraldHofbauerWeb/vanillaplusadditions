@@ -24,8 +24,9 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
             "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0",
             "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0",
             // Thirst effect (Tough As Nails)
-            "minecraft:golden_apple;toughasnails:thirst;600;0.25",
-            "minecraft:golden_carrot;toughasnails:thirst;600;0.25",
+            "minecraft:golden_apple;toughasnails:thirst;600;0;0.25",
+            "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25",
+            "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25",
             // Other effects
             "minecraft:glow_berries;minecraft:glowing;60;0",
             "toughasnails:melon_juice;minecraft:regeneration;60;0",
@@ -45,8 +46,7 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
             "minecraft:beetroot_soup;6;",
             "minecraft:mushroom_stew;2;",
             "minecraft:rabbit_stew;2;",
-            "minecraft:melon_slice;2;",
-            "minecraft:enchanted_golden_apple;8;0.25"
+            "minecraft:melon_slice;2;"
     );
 
     private ModConfigSpec.ConfigValue<List<? extends String>> foodEffects;

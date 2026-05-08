@@ -1,3 +1,5 @@
 {
-  "death.attack.create_gravity.out_of_oxygen": "%1$s ran out of oxygen"
+  "death.attack.create_gravity.out_of_oxygen": "%1$s ran out of oxygen",
+  "message.action_bar.remaining_oxygen": "Remaining Oxygen: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cLOW OXYGEN ALERT"
 }

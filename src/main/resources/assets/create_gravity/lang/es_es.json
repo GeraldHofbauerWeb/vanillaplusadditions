@@ -1,3 +1,5 @@
 {
-  "death.attack.create_gravity.out_of_oxygen": "%1$s se quedó sin oxígeno"
+  "death.attack.create_gravity.out_of_oxygen": "%1$s se quedó sin oxígeno",
+  "message.action_bar.remaining_oxygen": "Oxígeno restante: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cALERTA DE OXÍGENO BAJO"
 }

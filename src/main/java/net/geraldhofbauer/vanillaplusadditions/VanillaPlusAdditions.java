@@ -23,7 +23,10 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.ThirstClientTooltip;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.ThirstTooltipData;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
@@ -137,6 +140,11 @@ public class VanillaPlusAdditions {
 
             LOGGER.info("VanillaPlusAdditions client setup complete with {} enabled modules",
                         ModuleManager.getInstance().getEnabledModules().size());
+        }
+
+        @SubscribeEvent
+        static void registerTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+            event.register(ThirstTooltipData.class, ThirstClientTooltip::new);
         }
     }
 }

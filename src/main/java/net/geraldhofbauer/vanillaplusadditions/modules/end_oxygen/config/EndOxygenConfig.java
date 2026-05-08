@@ -13,6 +13,8 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
     private ModConfigSpec.DoubleValue outOfAirDamage;
     private ModConfigSpec.IntValue damageTick;
     private ModConfigSpec.IntValue waterBreathingEffectIntervalBonus;
+    private ModConfigSpec.IntValue backtankDepletionRate;
+    private ModConfigSpec.BooleanValue requiresFullSet;
 
     public EndOxygenConfig(EndOxygenModule module) {
         super(module);
@@ -35,6 +37,16 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
         damageTick = builder
                 .comment("The interval (in ticks) at which damage is applied when out of air.")
                 .defineInRange("damage_tick", 20, 1, 200);
+
+        builder.push("backtank");
+        backtankDepletionRate = builder
+                .comment("The number of ticks between each backtank air depletion (0 to disable depletion).")
+                .defineInRange("backtank_depletion_rate", 20, 0, 1000);
+
+        requiresFullSet = builder
+                .comment("Whether a diving helmet is required along with the backtank to breathe.")
+                .define("requires_full_set", true);
+        builder.pop();
     }
 
     public int getAirConsumptionInterval() {
@@ -51,5 +63,13 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
 
     public int getDamageTick() {
         return damageTick.get();
+    }
+
+    public int getBacktankDepletionRate() {
+        return backtankDepletionRate.get();
+    }
+
+    public boolean requiresFullSet() {
+        return requiresFullSet.get();
     }
 }

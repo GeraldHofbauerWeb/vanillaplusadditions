@@ -1,3 +1,5 @@
 {
-  "death.attack.create_gravity.out_of_oxygen": "%1$s ist der Sauerstoff ausgegangen"
+  "death.attack.create_gravity.out_of_oxygen": "%1$s ist der Sauerstoff ausgegangen",
+  "message.action_bar.remaining_oxygen": "Verbleibender Sauerstoff: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cWARNUNG: WENIG SAUERSTOFF"
 }

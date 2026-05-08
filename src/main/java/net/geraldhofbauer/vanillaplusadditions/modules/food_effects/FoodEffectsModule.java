@@ -21,6 +21,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.ModifyDefaultComponentsEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.ThirstTooltipData;
 import net.neoforged.fml.ModList;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.compat.TANIntegration;
 import net.minecraft.world.entity.player.Player;
@@ -238,16 +240,18 @@ public class FoodEffectsModule extends AbstractModule<FoodEffectsModule, FoodEff
                 }
             }
         }
+    }
 
-        if (isTANLoaded && thirstCache.containsKey(item)) {
+    @SubscribeEvent
+    public void onGatherTooltipComponents(RenderTooltipEvent.GatherComponents event) {
+        if (!isModuleEnabled() || !isTANLoaded) {
+            return;
+        }
+
+        Item item = event.getItemStack().getItem();
+        if (thirstCache.containsKey(item)) {
             ThirstEntry entry = thirstCache.get(item);
-            int amount = entry.amount();
-            String chanceStr = entry.chance() < 1.0f ? " (" + (int) (entry.chance() * 100) + "%)" : "";
-            event.getToolTip().add(Component.literal("\uD83D\uDCA7 ")
-                    .append(Component.literal("+" + amount + " "))
-                    .append(Component.translatable("desc.vpa.toughasnails.thirst_restored"))
-                    .append(Component.literal(chanceStr))
-                    .withStyle(ChatFormatting.BLUE));
+            event.getTooltipElements().add(com.mojang.datafixers.util.Either.right(new ThirstTooltipData(entry.amount(), entry.chance())));
         }
     }
 
