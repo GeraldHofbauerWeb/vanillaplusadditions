@@ -25,6 +25,19 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 - Clear glow effects by type or all at once
 - Perfect for server administration and debugging
 
+### 🍎 Food Effects
+
+Enhances food items with additional potion effects and thirst restoration.
+
+- **Custom Potion Effects**: Add any potion effect to any item via configuration.
+- **Tough As Nails Support**: 
+  - Thirst restoration for drinks and food.
+  - Heating/Cooling effect tooltips for items that provide them.
+  - Optional dependency: works automatically if Tough As Nails is installed.
+- **Always Edible**: Items configured with effects automatically become edible even if the player is full.
+- **Probability System**: Effects can have a specific chance to occur (e.g., 25% chance for a gold apple to restore thirst).
+- **Extensive Defaults**: Includes many default effects for Vanilla, Create, and Tough As Nails items.
+
 ### 🐦‍🔥 Better Mobs
 
 - Enhances mob variety and challenge

@@ -162,7 +162,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:3");
 
         // Potion effects
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:5");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:5");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:5");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:5");
@@ -280,7 +280,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:4");
 
         // Potion effects
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:20");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");

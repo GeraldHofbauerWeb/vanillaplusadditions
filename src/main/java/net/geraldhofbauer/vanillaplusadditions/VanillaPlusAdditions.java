@@ -23,6 +23,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public class VanillaPlusAdditions {
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::loadComplete);
 
         // All item/block registration is now handled by individual modules
 
@@ -104,6 +106,13 @@ public class VanillaPlusAdditions {
 
         LOGGER.info("VanillaPlusAdditions common setup complete with {} enabled modules",
                     ModuleManager.getInstance().getEnabledModules().size());
+    }
+
+    private void loadComplete(FMLLoadCompleteEvent event) {
+        // Run module load complete
+        ModuleManager.getInstance().loadComplete();
+
+        LOGGER.info("VanillaPlusAdditions load complete");
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call

@@ -77,6 +77,14 @@ description='''${mod_description}'''
     # Side this dependency is applied on - BOTH, CLIENT, or SERVER
     side="BOTH"
 
+# Tough As Nails dependency
+[[dependencies.${mod_id}]]
+    modId="toughasnails"
+    type="optional"
+    versionRange="[10.1.0,)"
+    ordering="NONE"
+    side="BOTH"
+
 # Here's another dependency
 [[dependencies.${mod_id}]]
     modId="minecraft"

@@ -4,6 +4,18 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-05-08
+### Added
+- Tough As Nails Integration: Optionale Unterstützung für die Tough As Nails Mod.
+- Thirst System: Gegenstände können nun Durst wiederherstellen, wenn Tough As Nails installiert ist.
+- Food Effects Expansion: Umfangreiche Liste an neuen Standard-Effekten für Vanilla, Create und Tough As Nails Items.
+- Probability System: Effekte (Potion & Durst) können nun mit einer konfigurierbaren Wahrscheinlichkeit auftreten.
+- Tooltip Integration: Dynamische Anzeige von Durst-Wiederherstellung und Temperatur-Effekten in Item-Tooltips.
+
+### Changed
+- FoodEffectsModule: Automatische Umwandlung von konfigurierten Items in essbare Gegenstände (Always Edible).
+- Code Quality: Umfassende Checkstyle-Bereinigung und Refactoring zur besseren Modularität.
+
 ## [0.9.0] - 2026-05-07
 ### Added
 - EndOxygenModule: New module that introduces oxygen mechanics in the End dimension.
