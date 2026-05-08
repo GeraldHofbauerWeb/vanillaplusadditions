@@ -121,9 +121,9 @@ Will automatically enable when both required mods are detected.
 ## 🔧 Configuration
 
 Each module has its own configuration options. See our detailed guides:
-- [Module Configuration Guide](MODULE_CONFIG_GUIDE.md)
-- [Debug Logging Configuration](DEBUG_LOGGING_CONFIG.md)
-- [MobGlow Command Guide](MOBGLOW_MODULE_GUIDE.md)
+- [Module Configuration Guide](docs/MODULE_CONFIG_GUIDE.md)
+- [Debug Logging Configuration](docs/DEBUG_LOGGING_CONFIG.md)
+- [MobGlow Command Guide](docs/MOBGLOW_MODULE_GUIDE.md)
 
 ## 🚀 Installation
 
@@ -177,16 +177,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Documentation
 
-- [Module System Overview](MODULE_SYSTEM.md)
-- [Configuration System](CONFIGURATION_SYSTEM_SUMMARY.md)
-- [Testing Guide](TESTING.md)
+- [Module System Overview](docs/MODULE_SYSTEM.md)
+- [Configuration System](docs/CONFIGURATION_SYSTEM_SUMMARY.md)
+- [Testing Guide](docs/TESTING.md)
+- [Warp AI Development (WARP)](WARP.md)
 
 ## 🐛 Debug Logging
 
 VanillaPlusAdditions includes a sophisticated debug logging system:
 - Global and per-module control
 - Detailed log messages for troubleshooting
-- See [Debug Logging Guide](DEBUG_LOGGING_CONFIG.md)
+- See [Debug Logging Guide](docs/DEBUG_LOGGING_CONFIG.md)
 
 ## 🔗 Links
 
