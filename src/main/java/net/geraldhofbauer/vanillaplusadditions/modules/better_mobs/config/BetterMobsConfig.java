@@ -134,6 +134,15 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":projectile_protection:3");
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:4");
 
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":sharpness:5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":fire_aspect:2");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":knockback:3");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":unbreaking:5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":power:5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":punch:2");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":flame:2");
+
         // Chestplate enchantments
         config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:5");
         config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":fire_protection:2");
@@ -167,6 +176,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:5");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:5");
 
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:sword:15");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:axe:15");
+
         return config;
     }
 
@@ -193,6 +206,15 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":respiration:20");
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":aqua_affinity:15");
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:10");
+
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":sharpness:25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":fire_aspect:10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":knockback:10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":unbreaking:20");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":power:20");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":punch:10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":flame:10");
 
         // Chestplate enchantments
         config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:30");
@@ -228,6 +250,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
 
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:sword:15");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:axe:15");
+
         return config;
     }
 
@@ -250,6 +276,15 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":blast_protection:15");
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":projectile_protection:15");
         config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:10");
+
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":sharpness:30");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":fire_aspect:15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":knockback:15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":unbreaking:25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":power:25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":punch:15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ":flame:15");
 
         // Chestplate enchantments
         config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:30");
@@ -284,6 +319,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
+
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:sword:15");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ":minecraft:skeleton:axe:15");
 
         return config;
     }
@@ -432,7 +471,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         Map<BetterMobsConfigKey, List<String[]>> groupedEntries = new HashMap<>();
         for (String entry : configEntries) {
             String[] parts = entry.split(":");
-            if (parts.length != 3) {
+            if (parts.length < 3) {
                 continue;
             }
 
@@ -525,6 +564,35 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
             if (!selectedEffects.isEmpty()) {
                 equipment.put(BetterMobsConfigKey.POTION_EFFECTS, selectedEffects);
             }
+        }
+
+        // Weapon Enchantments
+        List<String[]> weaponEnchants = groupedEntries.get(BetterMobsConfigKey.WEAPON_ENCHANTMENTS);
+        if (weaponEnchants != null) {
+            List<String> selectedEnchants = new ArrayList<>();
+            for (String[] enchant : weaponEnchants) {
+                if (random.nextInt(100) < Integer.parseInt(enchant[2])) {
+                    selectedEnchants.add(enchant[1]);
+                }
+            }
+            if (!selectedEnchants.isEmpty()) {
+                equipment.put(BetterMobsConfigKey.WEAPON_ENCHANTMENTS, selectedEnchants);
+            }
+        }
+
+        // Weapon Randomizers
+        List<String[]> weaponRandomizers = groupedEntries.get(BetterMobsConfigKey.WEAPON_RANDOMIZER);
+        if (weaponRandomizers != null) {
+            // Wir müssen das Mob-ID an diese Methode übergeben oder die Randomizer hier filtern
+            // Da wir die Mob-ID hier nicht haben, geben wir alle relevanten Randomizer zurück
+            // und lassen das Modul entscheiden.
+            List<String> randomizers = new ArrayList<>();
+            for (String[] rand : weaponRandomizers) {
+                if (rand.length >= 4) {
+                    randomizers.add(rand[1] + ":" + rand[2] + ":" + rand[3]);
+                }
+            }
+            equipment.put(BetterMobsConfigKey.WEAPON_RANDOMIZER, randomizers);
         }
 
         // Initialize all keys to avoid null checks later

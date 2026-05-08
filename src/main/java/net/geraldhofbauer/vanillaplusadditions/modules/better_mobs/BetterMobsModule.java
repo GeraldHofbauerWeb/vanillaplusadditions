@@ -99,6 +99,53 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             getLogger().debug("Applying gear type '{}' to mob '{}' at Y: {}", material, mobId, y);
         }
 
+        // Weapon Randomizer
+        var weaponRandomizers = setup.get(BetterMobsConfigKey.WEAPON_RANDOMIZER);
+        if (weaponRandomizers != null && !weaponRandomizers.isEmpty()) {
+            int randVal = new Random(uuid.getLeastSignificantBits() ^ 0x5EED).nextInt(100);
+            int cumulativeChance = 0;
+            String selectedWeapon = null;
+
+            for (String entry : weaponRandomizers) {
+                String[] parts = entry.split(":");
+                if (parts.length == 3 && parts[0].equals(mobId)) {
+                    int chance = Integer.parseInt(parts[2]);
+                    cumulativeChance += chance;
+                    if (randVal < cumulativeChance) {
+                        selectedWeapon = parts[1];
+                        break;
+                    }
+                }
+            }
+
+            if (selectedWeapon != null) {
+                ItemStack weapon = getItemForTypeAndMaterial(selectedWeapon, material);
+                if (weapon != null && !weapon.isEmpty()) {
+                    int maxDurability = weapon.getMaxDamage();
+                    int percentDurability = config.getMaxDurabilityValue();
+                    int percentDropChance = config.getDropChanceValue();
+                    if (maxDurability > 0) {
+                        weapon.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    }
+                    mob.setDropChance(EquipmentSlot.MAINHAND, percentDropChance / 100.0f);
+                    mob.setItemSlot(EquipmentSlot.MAINHAND, weapon);
+                    debugInfo.append("Weapon: ").append(getItemNameStr(weapon)).append("\n");
+
+                    // Verzauberungen für die Waffe
+                    applyArmorEnchantments(serverLevel,
+                            uuid,
+                            weapon,
+                            setup.get(BetterMobsConfigKey.WEAPON_ENCHANTMENTS),
+                            setup.get(BetterMobsConfigKey.ENCHANTMENT_LEVELS));
+                    if (weapon.isEnchanted()) {
+                        debugInfo.append("Weapon Enchantments: ")
+                                .append(getEnchantmentNameStr(weapon, serverLevel.registryAccess()))
+                                .append("\n");
+                    }
+                }
+            }
+        }
+
         // Armor nur für Mobs aus enabledMobsWithArmor
         if (config.getEnabledMobsWithArmor().contains(mobId)) {
             // Hole die Liste der Rüstungsteile, die spawnen sollen
@@ -389,6 +436,25 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                 case "netherite" -> new ItemStack(Items.NETHERITE_BOOTS);
                 default -> ItemStack.EMPTY;
             };
+            case "sword" -> switch (material) {
+                case "gold" -> new ItemStack(Items.GOLDEN_SWORD);
+                case "iron" -> new ItemStack(Items.IRON_SWORD);
+                case "chainmail", "leather" -> new ItemStack(Items.WOODEN_SWORD);
+                case "diamond" -> new ItemStack(Items.DIAMOND_SWORD);
+                case "netherite" -> new ItemStack(Items.NETHERITE_SWORD);
+                default -> ItemStack.EMPTY;
+            };
+            case "axe" -> switch (material) {
+                case "gold" -> new ItemStack(Items.GOLDEN_AXE);
+                case "iron" -> new ItemStack(Items.IRON_AXE);
+                case "chainmail", "leather" -> new ItemStack(Items.WOODEN_AXE);
+                case "diamond" -> new ItemStack(Items.DIAMOND_AXE);
+                case "netherite" -> new ItemStack(Items.NETHERITE_AXE);
+                default -> ItemStack.EMPTY;
+            };
+            case "bow" -> new ItemStack(Items.BOW);
+            case "crossbow" -> new ItemStack(Items.CROSSBOW);
+            case "trident" -> new ItemStack(Items.TRIDENT);
             default -> ItemStack.EMPTY;
         };
     }
@@ -422,6 +488,32 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                 case "depth_strider" -> Enchantments.DEPTH_STRIDER;
                 case "frost_walker" -> Enchantments.FROST_WALKER;
                 case "binding_curse" -> Enchantments.BINDING_CURSE;
+                case "sharpness" -> Enchantments.SHARPNESS;
+                case "smite" -> Enchantments.SMITE;
+                case "bane_of_arthropods" -> Enchantments.BANE_OF_ARTHROPODS;
+                case "knockback" -> Enchantments.KNOCKBACK;
+                case "fire_aspect" -> Enchantments.FIRE_ASPECT;
+                case "looting" -> Enchantments.LOOTING;
+                case "sweeping_edge" -> Enchantments.SWEEPING_EDGE;
+                case "efficiency" -> Enchantments.EFFICIENCY;
+                case "silk_touch" -> Enchantments.SILK_TOUCH;
+                case "unbreaking" -> Enchantments.UNBREAKING;
+                case "fortune" -> Enchantments.FORTUNE;
+                case "power" -> Enchantments.POWER;
+                case "punch" -> Enchantments.PUNCH;
+                case "flame" -> Enchantments.FLAME;
+                case "infinity" -> Enchantments.INFINITY;
+                case "luck_of_the_sea" -> Enchantments.LUCK_OF_THE_SEA;
+                case "lure" -> Enchantments.LURE;
+                case "loyalty" -> Enchantments.LOYALTY;
+                case "impaling" -> Enchantments.IMPALING;
+                case "riptide" -> Enchantments.RIPTIDE;
+                case "channeling" -> Enchantments.CHANNELING;
+                case "multishot" -> Enchantments.MULTISHOT;
+                case "quick_charge" -> Enchantments.QUICK_CHARGE;
+                case "piercing" -> Enchantments.PIERCING;
+                case "mending" -> Enchantments.MENDING;
+                case "vanishing_curse" -> Enchantments.VANISHING_CURSE;
                 default -> null;
             };
             if (enchantmentKey != null) {
