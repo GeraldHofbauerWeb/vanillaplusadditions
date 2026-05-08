@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - FoodEffectsModule: Automatische Umwandlung von konfigurierten Items in essbare Gegenstände (Always Edible).
 - Code Quality: Umfassende Checkstyle-Bereinigung und Refactoring zur besseren Modularität.
 
+## [0.9.3] - 2026-05-08
+### Changed
+- Stackables: Standard-Stackgröße für Tränke auf 64 erhöht.
+
+## [0.9.2] - 2026-05-07
+### Changed
+- README: GitHub Banner hinzugefügt und Logo entfernt.
+
 ## [0.9.0] - 2026-05-07
 ### Added
 - EndOxygenModule: New module that introduces oxygen mechanics in the End dimension.
@@ -60,24 +68,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - WitherSkeletonModule: Die Konfiguration für Wither-Skelett-Schädel wurde in die Liste der zusätzlichen Drops integriert.
 
-## [Unreleased]
-### Added
-- None
-
+## [0.7.1] - 2026-05-06
 ### Changed
-- None
+- Stackables: Stack-Limits erhöht und neue stapelbare Gegenstände hinzugefügt.
 
-### Deprecated
-- None
+## [0.7.0] - 2026-04-30
+### Added
+- Overpacked Slowdown: Neues Modul, das die Verlangsamung der "Overpacked" Mod mit einem konfigurierbaren Multiplikator überschreibt.
 
-### Removed
-- None
+## [0.6.1] - 2026-04-30
+### Added
+- Dokumentation: Leitfäden für Modul-Konfiguration und Debug-Logging hinzugefügt.
+
+## [0.6.0] - 2026-04-29
+### Added
+- Food Effects: Neues Modul für konfigurierbare Trankeffekte beim Verzehr von Lebensmitteln.
 
 ### Fixed
-- None
+- Food Effects: Checkstyle-Warnungen in der Konfiguration behoben.
 
-### Security
-- None
+## [0.5.1] - 2025-11-08
+### Changed
+- Haunted House: Kleinere interne Anpassungen und Versions-Bump.
+
+## [0.5.0] - 2025-11-05
+### Added
+- Haunted House: Neues Modul für atmosphärische Effekte (Nebel) und verstärktes Witch-Spawning in bestimmten Strukturen.
+- Dokumentation: Umfassende Dokumentation für das Haunted House Modul hinzugefügt.
+
+## [0.4.1] - 2025-11-02
+### Fixed
+- Stackables: Initialisierung der Konfiguration und Logging verbessert.
+
+## [0.4.0] - 2025-11-02
+### Added
+- Stackables: Modul zum Ändern der maximalen Stapelgröße von Gegenständen (initialer Fokus auf nicht-Trank-Items).
+- Death Coordinates: Modul zur Anzeige der Koordinaten beim Tod.
+
+## [0.3.0] - 2025-10-19
+### Changed
+- Better Mobs: Debug-Nachrichten weiter verbessert.
+
+## [0.2.3] - 2025-10-09
+### Changed
+- Better Mobs: Debug-Nachrichten optimiert.
+
+## [0.2.2] - 2025-10-09
+### Added
+- Better Mobs: Dimensionsspezifische Konfigurationen hinzugefügt.
+
+### Changed
+- Better Mobs: Ausrüstungssystem für Mobs verbessert.
+
+## [0.2.1] - 2025-10-08
+### Changed
+- Better Mobs & Wither Skeleton: Module aktualisiert.
+
+## [0.2.0] - 2025-10-08
+### Added
+- Better Mobs: Initiales Modul mit Konfigurationssystem hinzugefügt.
+
+### Fixed
+- Code Quality: Diverse Probleme behoben und GitHub Actions auf v4 aktualisiert.
 
 ## [0.1.0] - 2025-10-07
 ### Added
