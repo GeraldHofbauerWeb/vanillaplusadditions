@@ -90,11 +90,9 @@ public class HauntedHouseModule extends AbstractModule<
         }
     }
 
-    // TODO: Re-enable when Alex's Mobs becomes available for Minecraft 1.21.x
-    // Currently disabled by default because Alex's Mobs is not yet available for 1.21.x
     @Override
     public boolean isEnabledByDefault() {
-        return false;
+        return true;
     }
 
     /**

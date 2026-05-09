@@ -4,6 +4,11 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2026-05-09
+### Changed
+- HauntedHouseModule: Modul standardmäßig aktiviert, da Alex's Mobs für 1.21.x verfügbar ist.
+- HauntedHouseConfig: Standard-Zielstrukturen um `dungeons_and_taverns:witch_villa` erweitert.
+
 ## [0.11.0] - 2026-05-08
 ### Added
 - BetterMobsModule: Weapon Randomizer Feature hinzugefügt. Mobs können nun zufällig mit Schwertern, Äxten oder Bögen ausgerüstet werden (konfigurierbar).

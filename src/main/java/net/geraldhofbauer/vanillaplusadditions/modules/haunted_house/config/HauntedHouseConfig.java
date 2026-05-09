@@ -50,9 +50,9 @@ public class HauntedHouseConfig
 
         targetStructures = builder
                 .comment("List of structure IDs where mob replacements should occur",
-                        "Example: 'nova_structures:witch_villa'")
+                        "Example: 'dungeons_and_taverns:witch_villa'")
                 .defineList("target_structures",
-                        List.of("nova_structures:witch_villa"),
+                        List.of("nova_structures:witch_villa", "dungeons_and_taverns:witch_villa"),
                         obj -> obj instanceof String && isValidStructureEntry((String) obj));
 
         witchSpawnBoostChance = builder
