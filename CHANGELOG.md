@@ -4,6 +4,11 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-05-10
+### Changed
+- Release workflow: Release-Notes werden jetzt automatisch aus `CHANGELOG.md` extrahiert — kein manuelles Pflegen des `release.yml`-Bodies mehr nötig.
+- Release workflow: Beim Pushen eines neuen Tags werden alle bestehenden GitHub-Releases rückwirkend mit den korrekten Changelog-Einträgen aktualisiert (Backfill).
+
 ## [0.13.0] - 2026-05-10
 ### Added
 - CustomCraftingRecipesModule: Neues konfigurierbares Modul für benutzerdefinierte Handwerksrezepte eingeführt.

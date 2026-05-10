@@ -33,43 +33,69 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ env.VERSION }}"
+          # Extract the block between ## [VERSION] and the next ## [
+          NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+          # Store multiline output via environment file
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## VanillaPlusAdditions v${VERSION}"
+            echo ""
+            echo "${NOTES}"
+            echo ""
+            echo "### 🚀 Installation"
+            echo "1. Download the jar file"
+            echo "2. Place it in your \`mods\` folder"
+            echo "3. Make sure you have NeoForge for Minecraft 1.21.1 installed"
+            echo ""
+            echo "### 🔧 Configuration"
+            echo "See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)"
+            echo ""
+            echo "### 🐛 Debug Logging"
+            echo "See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: VanillaPlusAdditions v${{ env.VERSION }}
-          body: |
-            ## VanillaPlusAdditions v${{ env.VERSION }}
-            
-            ### ✨ What's New
-            - **Food Effects Module**: A new configurable module that lets you assign potion effects to any food item!
-              - 🍪 Cookie grants Speed II (8s)
-              - 🥘 Rabbit Stew grants Heating (60min) — *Tough As Nails*
-              - 🍄 Mushroom Stew grants Heating (10min) — *Tough As Nails*
-              - 🥣 Beetroot Soup grants Heating (10min) — *Tough As Nails*
-              - 🧟 Magma Rotten Flesh grants Heating (30min) — *Rotten Creatures*
-              - 🧊 Frozen Rotten Flesh grants Cooling (30min) — *Rotten Creatures*
-            - Fully configurable via the server config — add your own food/effect combos!
-            
-            ### 🚀 Installation
-            1. Download the jar file
-            2. Place it in your mods folder
-            3. Make sure you have NeoForge for Minecraft 1.21 installed
-            
-            ### 📦 Modules
-            - **Hostile Zombified Piglins**: Enhanced Nether difficulty
-            - **Wither Skeleton Enforcer**: No normal skeletons in Nether
-            - **MobGlow Command**: Visualize and track entities
-            - **Food Effects**: Configurable potion effects on food items
-            
-            ### 🔧 Configuration
-            See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/MODULE_CONFIG_GUIDE.md)
-            
-            ### 🐛 Debug Logging
-            See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/DEBUG_LOGGING_CONFIG.md)
+          body: ${{ env.RELEASE_NOTES }}
           files: |
             build/libs/*.jar
           draft: false
           prerelease: false
+
+      - name: Backfill release notes for all existing tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # For every vX.Y.Z tag that already has a release, update its body from CHANGELOG.md
+          git tag -l 'v*' | sort -V | while read TAG; do
+            VER="${TAG#v}"
+            NOTES=$(awk "/^## \[${VER}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+            if [ -n "$NOTES" ]; then
+              BODY="## VanillaPlusAdditions v${VER}
+
+${NOTES}
+
+### 🚀 Installation
+1. Download the jar file
+2. Place it in your \`mods\` folder
+3. Make sure you have NeoForge for Minecraft 1.21.1 installed
+
+### 🔧 Configuration
+See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)
+
+### 🐛 Debug Logging
+See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+              # --tag is optional here; gh release edit identifies by tag name
+              gh release edit "$TAG" --notes "$BODY" 2>/dev/null || true
+            fi
+          done
 
       - name: Upload to CurseForge
         if: false  # Disabled until CurseForge API key is configured

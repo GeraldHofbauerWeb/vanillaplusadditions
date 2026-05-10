@@ -25,6 +25,13 @@
 - There are currently no checked-in `*Test*.java` files, so `./gradlew test` is wired up but manual in-game testing is the real verification path.
 - SpotBugs is advisory (`ignoreFailures = true`); Checkstyle is enforced (`ignoreFailures = false`, `maxWarnings = 0`).
 
+## Release checklist
+When tagging and pushing a new release (e.g. `git tag vX.Y.Z && git push --tags`), **always** update these files **before** committing/tagging:
+1. `gradle.properties` → bump `mod_version`
+2. `CHANGELOG.md` → add a new `## [X.Y.Z]` section describing all changes
+3. `CHANGELOG.md` entry is the single source of truth for release notes. The workflow `.github/workflows/release.yml` reads the matching `## [X.Y.Z]` block automatically — **no manual edits to `release.yml` needed for the body**. The workflow also backfills all existing GitHub releases from `CHANGELOG.md` on every new tag push.
+4. Commit everything, then `git tag vX.Y.Z` and `git push && git push --tags`
+
 ## Project-specific conventions
 - Put `if (!isModuleEnabled()) return;` at the top of event handlers and guard side-specific logic explicitly with `level.isClientSide()` / server-side casts.
 - Event priority is part of feature behavior: `HauntedHouseModule` uses `HIGHEST`/`HIGH` on `FinalizeSpawnEvent`; `OverpackedSlowdownModule` uses `LOW` to run after Overpacked’s default handler.
