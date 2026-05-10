@@ -78,22 +78,24 @@ jobs:
             VER="${TAG#v}"
             NOTES=$(awk "/^## \[${VER}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
             if [ -n "$NOTES" ]; then
-              BODY="## VanillaPlusAdditions v${VER}
-
-${NOTES}
-
-### 🚀 Installation
-1. Download the jar file
-2. Place it in your \`mods\` folder
-3. Make sure you have NeoForge for Minecraft 1.21.1 installed
-
-### 🔧 Configuration
-See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)
-
-### 🐛 Debug Logging
-See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+              {
+                echo "## VanillaPlusAdditions v${VER}"
+                echo
+                echo "${NOTES}"
+                echo
+                echo "### 🚀 Installation"
+                echo "1. Download the jar file"
+                echo "2. Place it in your \`mods\` folder"
+                echo "3. Make sure you have NeoForge for Minecraft 1.21.1 installed"
+                echo
+                echo "### 🔧 Configuration"
+                echo "See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)"
+                echo
+                echo "### 🐛 Debug Logging"
+                echo "See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+              } > /tmp/release_notes.txt
               # --tag is optional here; gh release edit identifies by tag name
-              gh release edit "$TAG" --notes "$BODY" 2>/dev/null || true
+              gh release edit "$TAG" --notes-file /tmp/release_notes.txt 2>/dev/null || true
             fi
           done
 
