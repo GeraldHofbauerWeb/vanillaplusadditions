@@ -4,6 +4,19 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-05-10
+### Added
+- MobDropsModule: Eigenständiges, konfigurierbares Modul für zusätzliche Mob-Drops eingeführt (`mob_id;item_id;chance[;max_drops]`).
+- HauntedHouseConfig: Umfangreiche Spawn-Tuning-Optionen ergänzt (Presets, Material-Scan, Verteilung, direkte Area-Spawns, Cache- und Fog-Trail-Parameter).
+- BetterMobsConfig: Neuer Schlüssel `WEAPON_TYPES` für materialbasierte Nahkampfwaffen hinzugefügt.
+
+### Changed
+- HauntedHouseModule: Spawn-Logik stark überarbeitet (konfigurierbare Replacement-Entity, verteilte Spawnpositionen, Cave-/Sky-Filter, direkte Spawns aus gecachten Indoor/Garden-Spots).
+- HauntedHouseModule: Initialisierung nur noch von `mr_dungeons_andtaverns` abhängig; die Replacement-Entity ist nun frei konfigurierbar.
+- BetterMobsModule/Config: Zonenlisten auf `;` als Trennzeichen umgestellt und Weapon-Randomizer/Materialzuordnung für Skeleton-Waffen verbessert (inkl. Goal-Reassessment).
+- WitherSkeletonModule: Zusätzliche Drop-Logik entfernt; Drop-Konfiguration in das neue `mob_drops`-Modul verschoben.
+- DeathCoordinatesModule und MobGlowModule: Spieler-/Command-Feedback auf direkte Textausgaben umgestellt.
+
 ## [0.11.1] - 2026-05-09
 ### Changed
 - HauntedHouseModule: Modul standardmäßig aktiviert, da Alex's Mobs für 1.21.x verfügbar ist.

@@ -68,10 +68,12 @@ Adds a `/mobglow` command to make specific mob types glow for easier tracking.
 - **Enabled by default**: Yes
 
 ### Better Mobs (`better_mobs`)
-Enhances mob variety — mobs can spawn with armor and potion effects.
+Enhances mob variety — mobs can spawn with armor, potion effects and region-specific weapon loadouts.
 
 - **Enabled by default**: Yes
 - **Extra settings**: `drop_chance`, `max_durability`, `above_zero`, `below_zero`, `nether_end`, `enabled_mobs`, `enabled_mobs_with_armor`
+- **Notable config keys inside the zone lists**: `GEAR_TYPES`, `WEAPON_TYPES`, `WEAPON_RANDOMIZER`, `WEAPON_ENCHANTMENTS`, `ARMOR_CHANCES`, `POTION_EFFECTS`
+- **List format**: Better-Mobs-Zoneneinträge verwenden `;` als Trennzeichen, z. B. `GEAR_TYPES;gold;10` oder `WEAPON_RANDOMIZER;minecraft:skeleton;sword;12`
 
 ### Death Coords Logger (`death_coordinates`)
 Logs player death coordinates in chat. Operators can click to teleport.

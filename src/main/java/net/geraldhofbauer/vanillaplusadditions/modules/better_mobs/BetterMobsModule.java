@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -107,7 +108,7 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             String selectedWeapon = null;
 
             for (String entry : weaponRandomizers) {
-                String[] parts = entry.split(":");
+                String[] parts = entry.split(";");
                 if (parts.length == 3 && parts[0].equals(mobId)) {
                     int chance = Integer.parseInt(parts[2]);
                     cumulativeChance += chance;
@@ -119,7 +120,20 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             }
 
             if (selectedWeapon != null) {
-                ItemStack weapon = getItemForTypeAndMaterial(selectedWeapon, material);
+                String weaponMaterial = material;
+                if (isMaterialBasedWeapon(selectedWeapon)) {
+                    var weaponTypes = setup.get(BetterMobsConfigKey.WEAPON_TYPES);
+                    if (weaponTypes != null && !weaponTypes.isEmpty()) {
+                        weaponMaterial = weaponTypes.getFirst();
+                    }
+                }
+
+                ItemStack weapon = getItemForTypeAndMaterial(selectedWeapon, weaponMaterial);
+                if ((weapon == null || weapon.isEmpty()) && !weaponMaterial.equals(material)) {
+                    weaponMaterial = material;
+                    weapon = getItemForTypeAndMaterial(selectedWeapon, weaponMaterial);
+                }
+
                 if (weapon != null && !weapon.isEmpty()) {
                     int maxDurability = weapon.getMaxDamage();
                     int percentDurability = config.getMaxDurabilityValue();
@@ -129,7 +143,12 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                     }
                     mob.setDropChance(EquipmentSlot.MAINHAND, percentDropChance / 100.0f);
                     mob.setItemSlot(EquipmentSlot.MAINHAND, weapon);
-                    debugInfo.append("Weapon: ").append(getItemNameStr(weapon)).append("\n");
+                    refreshWeaponBehavior(mob);
+                    debugInfo.append("Weapon: ").append(getItemNameStr(weapon));
+                    if (isMaterialBasedWeapon(selectedWeapon)) {
+                        debugInfo.append(" (").append(weaponMaterial).append(")");
+                    }
+                    debugInfo.append("\n");
 
                     // Verzauberungen für die Waffe
                     applyArmorEnchantments(serverLevel,
@@ -330,6 +349,22 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
         return Component.translatable(itemStack.getDescriptionId()).getString();
     }
 
+    private static boolean isMaterialBasedWeapon(String type) {
+        return "sword".equals(type) || "axe".equals(type);
+    }
+
+    private void refreshWeaponBehavior(Monster mob) {
+        if (mob instanceof AbstractSkeleton skeleton) {
+            skeleton.reassessWeaponGoal();
+
+            if (getConfig().shouldDebugLog()) {
+                getLogger().debug("Reassessed weapon goal for skeleton '{}' with weapon '{}'",
+                        BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()),
+                        mob.getMainHandItem().getDescriptionId());
+            }
+        }
+    }
+
     /**
      * Liefert alle Enchantment-Namen des ItemStacks als String, z. B. "Schärfe V, Haltbarkeit III".
      *
@@ -439,7 +474,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             case "sword" -> switch (material) {
                 case "gold" -> new ItemStack(Items.GOLDEN_SWORD);
                 case "iron" -> new ItemStack(Items.IRON_SWORD);
-                case "chainmail", "leather" -> new ItemStack(Items.WOODEN_SWORD);
+                case "wood", "wooden", "chainmail", "leather" -> new ItemStack(Items.WOODEN_SWORD);
+                case "stone" -> new ItemStack(Items.STONE_SWORD);
                 case "diamond" -> new ItemStack(Items.DIAMOND_SWORD);
                 case "netherite" -> new ItemStack(Items.NETHERITE_SWORD);
                 default -> ItemStack.EMPTY;
@@ -447,7 +483,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             case "axe" -> switch (material) {
                 case "gold" -> new ItemStack(Items.GOLDEN_AXE);
                 case "iron" -> new ItemStack(Items.IRON_AXE);
-                case "chainmail", "leather" -> new ItemStack(Items.WOODEN_AXE);
+                case "wood", "wooden", "chainmail", "leather" -> new ItemStack(Items.WOODEN_AXE);
+                case "stone" -> new ItemStack(Items.STONE_AXE);
                 case "diamond" -> new ItemStack(Items.DIAMOND_AXE);
                 case "netherite" -> new ItemStack(Items.NETHERITE_AXE);
                 default -> ItemStack.EMPTY;

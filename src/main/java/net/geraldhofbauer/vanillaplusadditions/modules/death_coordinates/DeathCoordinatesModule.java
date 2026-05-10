@@ -60,18 +60,23 @@ public class DeathCoordinatesModule extends AbstractModule<
             // Get the death coordinates
             net.minecraft.core.BlockPos deathPos = player.blockPosition();
             ResourceLocation location = level.dimension().location();
-            MutableComponent deathMessage = Component.translatable("message.vpa.death_coords",
-                            player.getName().getString(),
-                            deathPos.getX(), deathPos.getY(), deathPos.getZ(),
-                            location.toString())
-                    .withStyle(net.minecraft.ChatFormatting.GRAY);
+            MutableComponent deathMessage = Component.literal("Player ")
+                    .append(Component.literal(player.getName().getString())
+                            .withStyle(net.minecraft.ChatFormatting.BOLD, net.minecraft.ChatFormatting.GOLD))
+                    .append(Component.literal(" died at coordinates: "))
+                    .append(Component.literal(String.format("X=%d, Y=%d, Z=%d",
+                                    deathPos.getX(), deathPos.getY(), deathPos.getZ()))
+                            .withStyle(net.minecraft.ChatFormatting.AQUA))
+                    .append(Component.literal(" in dimension "))
+                    .append(Component.literal(location.toString() + location.getNamespace())
+                            .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
             // TODO: Make the permission level configurable aka make it a config option to enable for spectators
             //  (and/or ops) or all players
             if (player.hasPermissions(2)) {
                 deathMessage = deathMessage.withStyle(style -> style
                         .withHoverEvent(new HoverEvent(
                                 HoverEvent.Action.SHOW_TEXT,
-                                Component.translatable("message.vpa.death_coords.hover")
+                                Component.literal("Click to teleport to death location")
                         ))
                         .withClickEvent(
                                 new net.minecraft.network.chat.ClickEvent(
