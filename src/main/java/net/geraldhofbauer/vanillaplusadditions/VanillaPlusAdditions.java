@@ -5,6 +5,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
@@ -89,6 +90,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new HauntedHouseModule());
         moduleManager.registerModule(new FoodEffectsModule());
         moduleManager.registerModule(new OverpackedSlowdownModule());
+        moduleManager.registerModule(new CustomCraftingRecipesModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

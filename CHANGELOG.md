@@ -4,6 +4,18 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-05-10
+### Added
+- CustomCraftingRecipesModule: Neues konfigurierbares Modul für benutzerdefinierte Handwerksrezepte eingeführt.
+  - Unterstützt **Shaped Recipes** (`recipe_id;result_item;result_count;pattern;keys`) mit Zeilen-Trenn­zeichen `|` oder gequoteten Zeilen.
+  - Unterstützt **Shapeless Recipes** (`ingredient1,ingredient2,...->result_item[;result_count[;recipe_id]]`).
+  - Zutaten können Item-IDs oder Tag-Referenzen (Präfix `#`) sein.
+  - Rezepte werden über einen ReloadListener nach jedem `/reload` neu angewandt.
+
+### Changed
+- BetterMobsConfig: Dimension-Konfig-Lookup in private Methode `getDimensionConfigEntries()` extrahiert; Null-Safety und Fehlerbehandlung verbessert.
+- HauntedHouseConfig: Standard-Beispielwerte für Spawn-Einträge (Hexen-Spawn, Struktur-ID, Block-Materialien) auf sinnvolle Defaults gesetzt.
+
 ## [0.12.0] - 2026-05-10
 ### Added
 - MobDropsModule: Eigenständiges, konfigurierbares Modul für zusätzliche Mob-Drops eingeführt (`mob_id;item_id;chance[;max_drops]`).

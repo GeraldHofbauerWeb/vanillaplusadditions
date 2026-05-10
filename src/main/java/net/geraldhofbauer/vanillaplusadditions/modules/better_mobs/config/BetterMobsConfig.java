@@ -490,12 +490,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
     public Map<BetterMobsConfigKey, List<String>> getRandomEquipmentSetupForMob(ResourceKey<Level> dimension,
                                                                                 UUID uuid,
                                                                                 int y) {
-        List<String> configEntries;
-        if (dimension == Level.END || dimension == Level.NETHER) {
-            configEntries = netherEndConfig.get();
-        } else {
-            configEntries = y >= 0 ? aboveZeroConfig.get() : belowZeroConfig.get();
-        }
+        List<String> configEntries = getDimensionConfigEntries(dimension, y);
         Random random = new Random(uuid.getLeastSignificantBits()); // Seed basierend auf Y-Koordinate
         Map<BetterMobsConfigKey, List<String>> equipment = new java.util.HashMap<>();
 
@@ -649,6 +644,20 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
                         .collect(java.util.stream.Collectors.toList()));
 
         return equipment;
+    }
+
+    private List<String> getDimensionConfigEntries(ResourceKey<Level> dimension, int y) {
+        try {
+            if (dimension == Level.END || dimension == Level.NETHER) {
+                return netherEndConfig != null ? List.copyOf(netherEndConfig.get()) : List.of();
+            }
+            return y >= 0
+                    ? (aboveZeroConfig != null ? List.copyOf(aboveZeroConfig.get()) : List.of())
+                    : (belowZeroConfig != null ? List.copyOf(belowZeroConfig.get()) : List.of());
+        } catch (Exception e) {
+            LOGGER.debug("Better Mobs config not available yet for dimension lookup, using empty list: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     private String selectWeightedProperty(List<String[]> entries, Random random) {

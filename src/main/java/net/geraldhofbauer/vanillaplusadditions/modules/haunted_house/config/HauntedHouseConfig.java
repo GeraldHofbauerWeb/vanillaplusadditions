@@ -89,7 +89,7 @@ public class HauntedHouseConfig
                         "Example: 'minecraft:witch:10' means 10% of witches will be replaced with murmurs")
                 .defineListAllowEmpty("target_mobs",
                         List.of("minecraft:witch:10"),
-                        () -> "",
+                        () -> "minecraft:witch:10",
                         obj -> obj instanceof String && isValidMobEntry((String) obj));
 
         targetStructures = builder
@@ -97,7 +97,7 @@ public class HauntedHouseConfig
                         "Example: 'dungeons_and_taverns:witch_villa'")
                 .defineListAllowEmpty("target_structures",
                         List.of("nova_structures:witch_villa", "dungeons_and_taverns:witch_villa"),
-                        () -> "",
+                        () -> "nova_structures:witch_villa",
                         obj -> obj instanceof String && isValidStructureEntry((String) obj));
 
         replacementEntityId = builder
@@ -194,7 +194,7 @@ public class HauntedHouseConfig
                                 "minecraft:coarse_dirt",
                                 "minecraft:moss_block"
                         ),
-                        () -> "",
+                        () -> "minecraft:stone_bricks",
                         obj -> obj instanceof String && isValidBlockEntry((String) obj));
 
         undergroundMaterialBlocks = builder
@@ -209,7 +209,7 @@ public class HauntedHouseConfig
                                 "minecraft:granite",
                                 "minecraft:tuff"
                         ),
-                        () -> "",
+                        () -> "minecraft:stone",
                         obj -> obj instanceof String && isValidBlockEntry((String) obj));
 
         enableDirectAreaSpawning = builder
