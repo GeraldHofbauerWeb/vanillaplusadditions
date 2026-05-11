@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.4] - 2026-05-11
+### Fixed
+- DeathCoordinatesModule: Teleport-Befehl korrigiert — verwendet jetzt `@s` statt `@p`, um den Spieler zu teleportieren, der auf die Nachricht klickt, statt willkürlich den nächsten Spieler.
+
 ## [0.13.3] - 2026-05-11
 ### Fixed
 - EndOxygenModule: Client-only GUI/Render-Code in eine dedizierte Client-Event-Klasse ausgelagert, damit auf Dedicated-Servern keine Client-Klassen mehr aus Common-Code geladen werden.
