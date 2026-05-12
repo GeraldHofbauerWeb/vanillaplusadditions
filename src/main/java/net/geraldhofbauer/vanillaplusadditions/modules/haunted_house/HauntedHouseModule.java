@@ -19,7 +19,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -58,9 +57,6 @@ public class HauntedHouseModule extends AbstractModule<
     // Cache discovered indoor/garden spawn spots per dimension for direct haunted spawning.
     private final Map<ResourceKey<Level>, Map<Long, CachedSpawnSpot>> cachedSpawnSpotsByLevel = new HashMap<>();
 
-    // Chunk index for faster nearby cached-spot queries.
-    private final Map<ResourceKey<Level>, Map<Long, Set<Long>>> cachedSpawnSpotChunkIndexByLevel = new HashMap<>();
-
     private static final class CachedSpawnSpot {
         private final BlockPos pos;
         private final boolean skyAccess;
@@ -85,11 +81,6 @@ public class HauntedHouseModule extends AbstractModule<
                 "Replaces configured mob spawns with an invisible replacement entity in haunted structures",
                 HauntedHouseConfig::new
         );
-    }
-
-    @Override
-    public boolean isEnabledByDefault() {
-        return false;
     }
 
     @Override
@@ -707,16 +698,14 @@ public class HauntedHouseModule extends AbstractModule<
     private void refreshSpawnSpotCacheAround(ServerLevel level, BlockPos origin) {
         ResourceKey<Level> levelKey = level.dimension();
         Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.computeIfAbsent(levelKey, ignored -> new HashMap<>());
-        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.computeIfAbsent(levelKey, ignored -> new HashMap<>());
 
         long now = level.getGameTime();
         long ttlTicks = Math.max(20L, getConfig().getCacheTtlSeconds() * 20L);
-        pruneExpiredSpots(levelCache, chunkIndex, now);
+        levelCache.entrySet().removeIf(entry -> entry.getValue().expiresAtGameTick < now);
 
         int radius = getConfig().getAreaScanRadius();
-        int scanStep = Math.max(1, getConfig().getCacheScanStep());
-        for (int dx = -radius; dx <= radius; dx += scanStep) {
-            for (int dz = -radius; dz <= radius; dz += scanStep) {
+        for (int dx = -radius; dx <= radius; dx += 2) {
+            for (int dz = -radius; dz <= radius; dz += 2) {
                 for (int dy = -2; dy <= 2; dy++) {
                     BlockPos candidate = origin.offset(dx, dy, dz);
                     if (isOutsideTargetStructure(level, candidate)) {
@@ -736,8 +725,6 @@ public class HauntedHouseModule extends AbstractModule<
 
                     boolean skyAccess = level.canSeeSky(candidate);
                     levelCache.put(packedPos, new CachedSpawnSpot(candidate.immutable(), skyAccess, now + ttlTicks));
-                    long chunkKey = ChunkPos.asLong(candidate.getX() >> 4, candidate.getZ() >> 4);
-                    chunkIndex.computeIfAbsent(chunkKey, ignored -> new HashSet<>()).add(packedPos);
                 }
             }
         }
@@ -748,72 +735,9 @@ public class HauntedHouseModule extends AbstractModule<
             entries.sort(Comparator.comparingLong(entry -> entry.getValue().expiresAtGameTick));
             int overflow = levelCache.size() - maxCachedSpots;
             for (int i = 0; i < overflow; i++) {
-                long packedPos = entries.get(i).getKey();
-                CachedSpawnSpot removed = levelCache.remove(packedPos);
-                if (removed != null) {
-                    long chunkKey = ChunkPos.asLong(removed.pos.getX() >> 4, removed.pos.getZ() >> 4);
-                    removeFromChunkIndex(chunkIndex, chunkKey, packedPos);
-                }
+                levelCache.remove(entries.get(i).getKey());
             }
         }
-    }
-
-    private void pruneExpiredSpots(Map<Long, CachedSpawnSpot> levelCache,
-                                   Map<Long, Set<Long>> chunkIndex,
-                                   long now) {
-        Iterator<Map.Entry<Long, CachedSpawnSpot>> iterator = levelCache.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<Long, CachedSpawnSpot> entry = iterator.next();
-            CachedSpawnSpot spot = entry.getValue();
-            if (spot.expiresAtGameTick >= now) {
-                continue;
-            }
-            iterator.remove();
-            long chunkKey = ChunkPos.asLong(spot.pos.getX() >> 4, spot.pos.getZ() >> 4);
-            removeFromChunkIndex(chunkIndex, chunkKey, entry.getKey());
-        }
-    }
-
-    private void removeFromChunkIndex(Map<Long, Set<Long>> chunkIndex, long chunkKey, long packedPos) {
-        Set<Long> chunkSpots = chunkIndex.get(chunkKey);
-        if (chunkSpots == null) {
-            return;
-        }
-        chunkSpots.remove(packedPos);
-        if (chunkSpots.isEmpty()) {
-            chunkIndex.remove(chunkKey);
-        }
-    }
-
-    private List<CachedSpawnSpot> getNearbyCachedSpots(ServerLevel level, BlockPos centerPos) {
-        ResourceKey<Level> levelKey = level.dimension();
-        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
-        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
-        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
-            return List.of();
-        }
-
-        int chunkRadius = Math.max(0, getConfig().getCacheQueryChunkRadius());
-        int centerChunkX = centerPos.getX() >> 4;
-        int centerChunkZ = centerPos.getZ() >> 4;
-
-        List<CachedSpawnSpot> spots = new ArrayList<>();
-        for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
-            for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
-                long chunkKey = ChunkPos.asLong(centerChunkX + dx, centerChunkZ + dz);
-                Set<Long> chunkSpots = chunkIndex.get(chunkKey);
-                if (chunkSpots == null || chunkSpots.isEmpty()) {
-                    continue;
-                }
-                for (long packedPos : chunkSpots) {
-                    CachedSpawnSpot spot = levelCache.get(packedPos);
-                    if (spot != null) {
-                        spots.add(spot);
-                    }
-                }
-            }
-        }
-        return spots;
     }
 
     private void tryDirectAreaSpawn(ServerLevel level, Player anchorPlayer) {
@@ -830,15 +754,13 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        ResourceKey<Level> levelKey = level.dimension();
-        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
-        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
-        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(level.dimension());
+        if (levelCache == null || levelCache.isEmpty()) {
             return;
         }
 
         long now = level.getGameTime();
-        pruneExpiredSpots(levelCache, chunkIndex, now);
+        levelCache.entrySet().removeIf(entry -> entry.getValue().expiresAtGameTick < now);
         if (levelCache.isEmpty()) {
             return;
         }
@@ -848,7 +770,7 @@ public class HauntedHouseModule extends AbstractModule<
         double minDistanceSqr = minDistance * minDistance;
         double maxDistanceSqr = maxDistance * maxDistance;
 
-        List<CachedSpawnSpot> spots = getNearbyCachedSpots(level, anchorPlayer.blockPosition());
+        List<CachedSpawnSpot> spots = new ArrayList<>(levelCache.values());
         if (spots.isEmpty()) {
             return;
         }
@@ -909,7 +831,7 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         // Clamp the interpolation cost in case of teleports or lag spikes.
-        int steps = Math.min(getConfig().getMovementInterpolationMaxSteps(), maxDelta);
+        int steps = Math.min(16, maxDelta);
         for (int i = 0; i <= steps; i++) {
             double t = (double) i / (double) steps;
             int sampleX = previousPos.getX() + (int) Math.round(dx * t);
@@ -930,10 +852,8 @@ public class HauntedHouseModule extends AbstractModule<
     }
 
     private FogZone resolveFogZoneFromCache(ServerLevel level, BlockPos origin) {
-        ResourceKey<Level> levelKey = level.dimension();
-        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
-        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
-        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(level.dimension());
+        if (levelCache == null || levelCache.isEmpty()) {
             return FogZone.NONE;
         }
 
@@ -943,10 +863,13 @@ public class HauntedHouseModule extends AbstractModule<
         int fogCacheProximityRadius = getConfig().getFogCacheProximityRadius();
         int maxDistanceSqr = fogCacheProximityRadius * fogCacheProximityRadius;
 
-        pruneExpiredSpots(levelCache, chunkIndex, now);
-
-        List<CachedSpawnSpot> nearbySpots = getNearbyCachedSpots(level, origin);
-        for (CachedSpawnSpot spot : nearbySpots) {
+        Iterator<Map.Entry<Long, CachedSpawnSpot>> iterator = levelCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            CachedSpawnSpot spot = iterator.next().getValue();
+            if (spot.expiresAtGameTick < now) {
+                iterator.remove();
+                continue;
+            }
 
             if (spot.pos.distSqr(origin) > maxDistanceSqr) {
                 continue;
