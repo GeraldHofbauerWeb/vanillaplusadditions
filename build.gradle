@@ -206,6 +206,58 @@ tasks.register('copyJarToTestEnvironments') {
 // Automatically copy JAR after successful build
 build.finalizedBy 'copyJarToTestEnvironments'
 
+// Local Minecraft deployment helpers
+def localMinecraftDir = providers.environmentVariable('MINECRAFT_HOME')
+        .orElse("${System.getProperty('user.home')}/.minecraft")
+def localMinecraftModsDir = localMinecraftDir.map { "${it}/mods" }
+def localMinecraftConfigFile = localMinecraftDir.map { "${it}/config/vanillaplusadditions-common.toml" }
+
+tasks.register('deployJarToLocalMinecraftMods', Copy) {
+    description = 'Copies the built JAR to ~/.minecraft/mods and removes older vanillaplusadditions JARs'
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar', Jar).flatMap { it.archiveFile })
+    into localMinecraftModsDir
+
+    doFirst {
+        def modsDir = new File(localMinecraftModsDir.get())
+        modsDir.mkdirs()
+        modsDir.listFiles()?.findAll { it.isFile() && it.name ==~ /vanillaplusadditions-.*\.jar/ }?.each { it.delete() }
+        logger.lifecycle("Deploying built VanillaPlusAdditions JAR to ${modsDir}")
+    }
+}
+
+tasks.register('resetLocalMinecraftVpaConfig') {
+    description = 'Removes ~/.minecraft/config/vanillaplusadditions-common.toml if present'
+    doLast {
+        def configFile = new File(localMinecraftConfigFile.get())
+        if (configFile.exists()) {
+            configFile.delete()
+            logger.lifecycle("Removed config file: ${configFile}")
+        } else {
+            logger.lifecycle("Config file does not exist, nothing to remove: ${configFile}")
+        }
+    }
+}
+
+tasks.register('enableHauntedHouseInLocalConfig') {
+    description = 'Writes ~/.minecraft/config/vanillaplusadditions-common.toml with haunted_house enabled=true'
+    dependsOn 'resetLocalMinecraftVpaConfig'
+    doLast {
+        def configFile = new File(localMinecraftConfigFile.get())
+        configFile.parentFile.mkdirs()
+        configFile.text = '''[modules.haunted_house]
+enabled = true
+debug_logging = "AUTO"
+'''
+        logger.lifecycle("Wrote config file: ${configFile}")
+    }
+}
+
+tasks.register('deployToLocalMinecraft') {
+    description = 'Builds and deploys jar to ~/.minecraft/mods, then resets config and enables haunted_house'
+    dependsOn 'deployJarToLocalMinecraftMods', 'enableHauntedHouseInLocalConfig'
+}
+
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
     module {

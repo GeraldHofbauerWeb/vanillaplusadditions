@@ -18,14 +18,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -43,14 +41,20 @@ public class HauntedHouseModule extends AbstractModule<
         > {
 
     private static final Random RANDOM = new Random();
-    // Track replacement entities that should be invisible and whether they've been spotted
-    private final HashMap<UUID, Boolean> invisibleReplacementEntities = new HashMap<>();
+    private static final int REVEAL_CHECK_INTERVAL_TICKS = 10;
+    private static final int REVEAL_CHECK_BACKOFF_TICKS = 40;
+    // Track only replacement entities that are still invisible and waiting to be spotted.
+    private final HashSet<UUID> pendingInvisibleReplacementEntities = new HashSet<>();
+    private final HashMap<UUID, Integer> nextRevealCheckTick = new HashMap<>();
 
     // Track players inside target structures for fog effect
     private final HashMap<UUID, Long> playersInStructure = new HashMap<>();
 
     // Track last player positions to transfer movement paths into spawn-spot cache.
     private final HashMap<UUID, BlockPos> lastTrackedPlayerPositions = new HashMap<>();
+
+    // Track last expensive cache refresh tick per player.
+    private final HashMap<UUID, Long> lastCacheRefreshTickByPlayer = new HashMap<>();
 
     // Track fog persistence so indoor exposure lasts longer than outside/garden exposure.
     private final HashMap<UUID, Integer> playerFogTrailTicks = new HashMap<>();
@@ -60,6 +64,9 @@ public class HauntedHouseModule extends AbstractModule<
 
     // Chunk index for faster nearby cached-spot queries.
     private final Map<ResourceKey<Level>, Map<Long, Set<Long>>> cachedSpawnSpotChunkIndexByLevel = new HashMap<>();
+
+    // Cache expensive direct-spot validations for a short interval.
+    private final Map<ResourceKey<Level>, Map<Long, CachedSpotValidation>> cachedDirectSpotValidationByLevel = new HashMap<>();
 
     private static final class CachedSpawnSpot {
         private final BlockPos pos;
@@ -73,10 +80,28 @@ public class HauntedHouseModule extends AbstractModule<
         }
     }
 
+    private static final class CachedSpotValidation {
+        private final boolean blocked;
+        private final boolean nearbyMobs;
+        private final long validUntilTick;
+
+        private CachedSpotValidation(boolean blocked, boolean nearbyMobs, long validUntilTick) {
+            this.blocked = blocked;
+            this.nearbyMobs = nearbyMobs;
+            this.validUntilTick = validUntilTick;
+        }
+    }
+
     private enum FogZone {
         NONE,
         GARDEN,
         INDOOR
+    }
+
+    public enum PlayerLocationState {
+        INSIDE,
+        OUTSIDE_IN_STRUCTURE,
+        OUTSIDE_STRUCTURE
     }
 
     public HauntedHouseModule() {
@@ -445,7 +470,10 @@ public class HauntedHouseModule extends AbstractModule<
             // Make living replacements invisible by default and track reveal state.
             if (replacementEntity instanceof LivingEntity livingEntity) {
                 livingEntity.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
-                invisibleReplacementEntities.put(replacementEntity.getUUID(), false); // false = not yet spotted
+                UUID replacementEntityUuid = replacementEntity.getUUID();
+                pendingInvisibleReplacementEntities.add(replacementEntityUuid);
+                // Stagger checks a bit so many entities do not all evaluate on the same tick.
+                nextRevealCheckTick.put(replacementEntityUuid, replacementEntity.tickCount + RANDOM.nextInt(REVEAL_CHECK_INTERVAL_TICKS));
             } else {
                 getLogger().warn(
                         "Configured replacement entity {} is not a LivingEntity - invisibility cannot be applied",
@@ -475,10 +503,14 @@ public class HauntedHouseModule extends AbstractModule<
             return true;
         }
 
-        if (!hasStructureMaterialsNearby(level, pos,
+        boolean hasStructureMaterials = hasStructureMaterialsNearby(level, pos,
                 getConfig().getMaterialScanHorizontalRadius(),
                 getConfig().getMaterialScanVerticalRadius(),
-                getConfig().getStructureMaterialThreshold())) {
+                getConfig().getStructureMaterialThreshold());
+
+        // In winding structures, material lists can miss some interior palette variants.
+        // Keep a permissive fallback for roofed/interior-adjacent spots.
+        if (!hasStructureMaterials && !hasRoofNearby(level, pos) && !isNearStructureGarden(level, pos)) {
             return true;
         }
 
@@ -523,6 +555,31 @@ public class HauntedHouseModule extends AbstractModule<
         return true;
     }
 
+    /**
+     * Classifies player position into three states for debugging/commands.
+     */
+    public PlayerLocationState getPlayerLocationState(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel serverLevel)) {
+            return PlayerLocationState.OUTSIDE_STRUCTURE;
+        }
+
+        BlockPos pos = player.blockPosition();
+        if (isOutsideTargetStructure(serverLevel, pos)) {
+            return PlayerLocationState.OUTSIDE_STRUCTURE;
+        }
+
+        if (isBlockedFogArea(serverLevel, pos)) {
+            return PlayerLocationState.OUTSIDE_IN_STRUCTURE;
+        }
+
+        // Sky access without overhead cover = garden/courtyard, not truly indoor
+        if (!hasRoofNearby(serverLevel, pos) && serverLevel.canSeeSky(pos)) {
+            return PlayerLocationState.OUTSIDE_IN_STRUCTURE;
+        }
+
+        return PlayerLocationState.INSIDE;
+    }
+
     private boolean isLikelyUndergroundCave(ServerLevel level, BlockPos pos) {
         int nearbyCaveMaterials = countNearbyMatchingBlocks(
                 level,
@@ -540,8 +597,15 @@ public class HauntedHouseModule extends AbstractModule<
                 this::isStructureMaterial
         );
 
-        if (nearbyCaveMaterials >= getConfig().getCaveMaterialThreshold()
-                && nearbyStructureMaterials < getConfig().getStructureMaterialThreshold()) {
+        int structureThreshold = getConfig().getStructureMaterialThreshold();
+        int caveThreshold = getConfig().getCaveMaterialThreshold();
+
+        // Strong structure signal always wins over cave heuristics.
+        if (nearbyStructureMaterials >= structureThreshold) {
+            return false;
+        }
+
+        if (nearbyCaveMaterials >= caveThreshold) {
             return true;
         }
 
@@ -675,6 +739,34 @@ public class HauntedHouseModule extends AbstractModule<
                 entity -> !(entity instanceof Player)).isEmpty();
     }
 
+    private CachedSpotValidation getDirectSpotValidation(ServerLevel level, BlockPos pos, long now) {
+        ResourceKey<Level> levelKey = level.dimension();
+        Map<Long, CachedSpotValidation> validationCache = cachedDirectSpotValidationByLevel
+                .computeIfAbsent(levelKey, ignored -> new HashMap<>());
+
+        long packedPos = pos.asLong();
+        CachedSpotValidation cached = validationCache.get(packedPos);
+        if (cached != null && cached.validUntilTick >= now) {
+            return cached;
+        }
+
+        boolean blocked = isBlockedDirectSpawnSpot(level, pos);
+        boolean nearbyMobs = !blocked && hasNearbyLivingMobs(level, pos);
+        long validationTtl = Math.max(1, getConfig().getDirectSpotValidationIntervalTicks());
+        CachedSpotValidation computed = new CachedSpotValidation(blocked, nearbyMobs, now + validationTtl);
+        validationCache.put(packedPos, computed);
+        return computed;
+    }
+
+    private void pruneExpiredDirectSpotValidation(ServerLevel level, long now) {
+        Map<Long, CachedSpotValidation> validationCache = cachedDirectSpotValidationByLevel.get(level.dimension());
+        if (validationCache == null || validationCache.isEmpty()) {
+            return;
+        }
+
+        validationCache.entrySet().removeIf(entry -> entry.getValue().validUntilTick < now);
+    }
+
     private boolean isWalkableSpawnCandidate(ServerLevel level, BlockPos candidate) {
         BlockPos below = candidate.below();
         return level.isEmptyBlock(candidate)
@@ -711,7 +803,8 @@ public class HauntedHouseModule extends AbstractModule<
 
         long now = level.getGameTime();
         long ttlTicks = Math.max(20L, getConfig().getCacheTtlSeconds() * 20L);
-        pruneExpiredSpots(levelCache, chunkIndex, now);
+        pruneExpiredSpots(levelKey, levelCache, chunkIndex, now);
+        pruneExpiredDirectSpotValidation(level, now);
 
         int radius = getConfig().getAreaScanRadius();
         int scanStep = Math.max(1, getConfig().getCacheScanStep());
@@ -719,18 +812,19 @@ public class HauntedHouseModule extends AbstractModule<
             for (int dz = -radius; dz <= radius; dz += scanStep) {
                 for (int dy = -2; dy <= 2; dy++) {
                     BlockPos candidate = origin.offset(dx, dy, dz);
-                    if (isOutsideTargetStructure(level, candidate)) {
-                        continue;
-                    }
-
-                    if (isBlockedDirectSpawnSpot(level, candidate)) {
-                        continue;
-                    }
-
                     long packedPos = candidate.asLong();
                     CachedSpawnSpot existing = levelCache.get(packedPos);
                     if (existing != null) {
                         existing.expiresAtGameTick = now + ttlTicks;
+                        continue;
+                    }
+
+                    if (isOutsideTargetStructure(level, candidate)) {
+                        continue;
+                    }
+
+                    CachedSpotValidation validation = getDirectSpotValidation(level, candidate, now);
+                    if (validation.blocked || validation.nearbyMobs) {
                         continue;
                     }
 
@@ -753,12 +847,14 @@ public class HauntedHouseModule extends AbstractModule<
                 if (removed != null) {
                     long chunkKey = ChunkPos.asLong(removed.pos.getX() >> 4, removed.pos.getZ() >> 4);
                     removeFromChunkIndex(chunkIndex, chunkKey, packedPos);
+                    removeDirectSpotValidation(levelKey, packedPos);
                 }
             }
         }
     }
 
-    private void pruneExpiredSpots(Map<Long, CachedSpawnSpot> levelCache,
+    private void pruneExpiredSpots(ResourceKey<Level> levelKey,
+                                   Map<Long, CachedSpawnSpot> levelCache,
                                    Map<Long, Set<Long>> chunkIndex,
                                    long now) {
         Iterator<Map.Entry<Long, CachedSpawnSpot>> iterator = levelCache.entrySet().iterator();
@@ -771,6 +867,14 @@ public class HauntedHouseModule extends AbstractModule<
             iterator.remove();
             long chunkKey = ChunkPos.asLong(spot.pos.getX() >> 4, spot.pos.getZ() >> 4);
             removeFromChunkIndex(chunkIndex, chunkKey, entry.getKey());
+            removeDirectSpotValidation(levelKey, entry.getKey());
+        }
+    }
+
+    private void removeDirectSpotValidation(ResourceKey<Level> levelKey, long packedPos) {
+        Map<Long, CachedSpotValidation> validationCache = cachedDirectSpotValidationByLevel.get(levelKey);
+        if (validationCache != null) {
+            validationCache.remove(packedPos);
         }
     }
 
@@ -838,7 +942,8 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         long now = level.getGameTime();
-        pruneExpiredSpots(levelCache, chunkIndex, now);
+        pruneExpiredSpots(levelKey, levelCache, chunkIndex, now);
+        pruneExpiredDirectSpotValidation(level, now);
         if (levelCache.isEmpty()) {
             return;
         }
@@ -854,18 +959,20 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         int samples = Math.max(1, getConfig().getDirectSpawnCandidateSamples());
+        Set<Integer> sampledIndexes = new HashSet<>();
         for (int i = 0; i < samples; i++) {
-            CachedSpawnSpot selected = spots.get(RANDOM.nextInt(spots.size()));
+            int selectedIndex = RANDOM.nextInt(spots.size());
+            if (!sampledIndexes.add(selectedIndex)) {
+                continue;
+            }
+            CachedSpawnSpot selected = spots.get(selectedIndex);
 
             if (isOutsideTargetStructure(level, selected.pos)) {
                 continue;
             }
 
-            if (isBlockedDirectSpawnSpot(level, selected.pos)) {
-                continue;
-            }
-
-            if (hasNearbyLivingMobs(level, selected.pos)) {
+            CachedSpotValidation validation = getDirectSpotValidation(level, selected.pos, now);
+            if (validation.blocked || validation.nearbyMobs) {
                 continue;
             }
 
@@ -888,12 +995,22 @@ public class HauntedHouseModule extends AbstractModule<
 
     private void updateCacheFromPlayerMovement(ServerLevel level, Player player) {
         UUID playerId = player.getUUID();
+        long now = level.getGameTime();
+        long refreshInterval = Math.max(1L, getConfig().getCacheRefreshIntervalTicks());
+        long lastRefresh = lastCacheRefreshTickByPlayer.getOrDefault(playerId, Long.MIN_VALUE);
+
+        if (now - lastRefresh < refreshInterval) {
+            lastTrackedPlayerPositions.put(playerId, player.blockPosition().immutable());
+            return;
+        }
+
         BlockPos currentPos = player.blockPosition();
         BlockPos previousPos = lastTrackedPlayerPositions.put(playerId, currentPos.immutable());
 
         // First observation in structure: refresh around current location only.
         if (previousPos == null) {
             refreshSpawnSpotCacheAround(level, currentPos);
+            lastCacheRefreshTickByPlayer.put(playerId, now);
             return;
         }
 
@@ -905,6 +1022,7 @@ public class HauntedHouseModule extends AbstractModule<
         // Ignore tiny/no movement to reduce redundant scans.
         if (maxDelta <= 1) {
             refreshSpawnSpotCacheAround(level, currentPos);
+            lastCacheRefreshTickByPlayer.put(playerId, now);
             return;
         }
 
@@ -927,6 +1045,8 @@ public class HauntedHouseModule extends AbstractModule<
 
             refreshSpawnSpotCacheAround(level, samplePos);
         }
+
+        lastCacheRefreshTickByPlayer.put(playerId, now);
     }
 
     private FogZone resolveFogZoneFromCache(ServerLevel level, BlockPos origin) {
@@ -943,7 +1063,7 @@ public class HauntedHouseModule extends AbstractModule<
         int fogCacheProximityRadius = getConfig().getFogCacheProximityRadius();
         int maxDistanceSqr = fogCacheProximityRadius * fogCacheProximityRadius;
 
-        pruneExpiredSpots(levelCache, chunkIndex, now);
+        pruneExpiredSpots(levelKey, levelCache, chunkIndex, now);
 
         List<CachedSpawnSpot> nearbySpots = getNearbyCachedSpots(level, origin);
         for (CachedSpawnSpot spot : nearbySpots) {
@@ -978,7 +1098,7 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         // Only check every 10 ticks (0.5 seconds) for performance
-        if (event.getEntity().tickCount % 10 != 0) {
+        if (event.getEntity().tickCount % REVEAL_CHECK_INTERVAL_TICKS != 0) {
             return;
         }
 
@@ -988,12 +1108,19 @@ public class HauntedHouseModule extends AbstractModule<
         }
         
         UUID replacementEntityUuid = replacementEntity.getUUID();
-        if (!invisibleReplacementEntities.containsKey(replacementEntityUuid)) {
+        if (!pendingInvisibleReplacementEntities.contains(replacementEntityUuid)) {
             return;
         }
 
-        // If already spotted, no need to check further
-        if (invisibleReplacementEntities.get(replacementEntityUuid)) {
+        // Cleanup stale tracking if entity is gone.
+        if (!replacementEntity.isAlive() || replacementEntity.isRemoved()) {
+            pendingInvisibleReplacementEntities.remove(replacementEntityUuid);
+            nextRevealCheckTick.remove(replacementEntityUuid);
+            return;
+        }
+
+        int nextCheckTick = nextRevealCheckTick.getOrDefault(replacementEntityUuid, 0);
+        if (replacementEntity.tickCount < nextCheckTick) {
             return;
         }
         
@@ -1007,13 +1134,23 @@ public class HauntedHouseModule extends AbstractModule<
         if (!(replacementEntity.level() instanceof ServerLevel serverLevel)) {
             return;
         }
+
+        List<ServerPlayer> nearbyPlayers = serverLevel.getEntitiesOfClass(
+                ServerPlayer.class,
+                replacementEntity.getBoundingBox().inflate(32.0D),
+                player -> !player.isSpectator()
+        );
+
+        if (nearbyPlayers.isEmpty()) {
+            nextRevealCheckTick.put(replacementEntityUuid, replacementEntity.tickCount + REVEAL_CHECK_BACKOFF_TICKS);
+            return;
+        }
+
+        nextRevealCheckTick.put(replacementEntityUuid, replacementEntity.tickCount + REVEAL_CHECK_INTERVAL_TICKS);
         Vec3 replacementEntityPos = replacementEntity.getEyePosition();
 
-        // Check if any non-spectator player is looking at the murmur
-        for (ServerPlayer player : serverLevel.players()) {
-            if (player.isSpectator()) {
-                continue;
-            }
+        // Check if any nearby non-spectator player is looking at the entity.
+        for (ServerPlayer player : nearbyPlayers) {
 
             // Check if player is within reasonable distance (32 blocks)
             if (player.distanceToSqr(replacementEntity) > 32 * 32) {
@@ -1033,29 +1170,15 @@ public class HauntedHouseModule extends AbstractModule<
             if (dotProduct < 0.95) {
                 continue;
             }
-            
-            // Perform araycast to check if player has line of sight to murmur
-            ClipContext clipContext = new ClipContext(
-                    playerEyePos,
-                    replacementEntityPos,
-                    ClipContext.Block.COLLIDER,
-                    ClipContext.Fluid.NONE,
-                    player
-            );
-            HitResult hitResult = serverLevel.clip(clipContext);
-            
-            // If raycast hits something before reaching the murmur, continue
-            if (hitResult.getType() != HitResult.Type.MISS) {
-                double distanceToHit = hitResult.getLocation().distanceToSqr(playerEyePos);
-                double distanceToReplacementEntity = replacementEntityPos.distanceToSqr(playerEyePos);
-                if (distanceToHit < distanceToReplacementEntity - 0.5) { // Small tolerance
-                    continue;
-                }
+
+            if (!player.hasLineOfSight(replacementEntity)) {
+                continue;
             }
             
             // Player is looking at the replacement entity! Make it visible.
             replacementEntity.removeEffect(MobEffects.INVISIBILITY);
-            invisibleReplacementEntities.put(replacementEntityUuid, true); // Mark as spotted
+            pendingInvisibleReplacementEntities.remove(replacementEntityUuid);
+            nextRevealCheckTick.remove(replacementEntityUuid);
 
             if (getConfig().shouldDebugLog()) {
                 getLogger().debug("Player {} spotted replacement entity at {}",
@@ -1109,39 +1232,50 @@ public class HauntedHouseModule extends AbstractModule<
 
         // Skip the detection if in creative or spectator mode
         if (!allStructures.isEmpty() && !player.isCreative() && !player.isSpectator()) {
-            for (Structure structure : allStructures.keySet()) {
+            outerLoop:
+            for (Map.Entry<Structure, LongSet> structureEntry : allStructures.entrySet()) {
+                Structure structure = structureEntry.getKey();
                 ResourceLocation structureLocation = serverLevel.registryAccess()
                         .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
                         .getKey(structure);
 
-                if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
+                if (structureLocation == null || !getConfig().isTargetStructure(structureLocation.toString())) {
+                    continue;
+                }
 
-                    // Get structure start for this position
+                // getStructureAt(playerPos, structure) only finds the start when the player is in the
+                // structure's START chunk. For multi-chunk structures the player is usually elsewhere.
+                // Instead, iterate the LongSet (start-chunk keys) and look up the start there.
+                for (long chunkKey : structureEntry.getValue()) {
+                    int startChunkX = ChunkPos.getX(chunkKey);
+                    int startChunkZ = ChunkPos.getZ(chunkKey);
+                    BlockPos posInStartChunk = new BlockPos(
+                            startChunkX * 16 + 8, playerPos.getY(), startChunkZ * 16 + 8);
+
                     var structureStart = serverLevel.structureManager()
-                            .getStructureAt(playerPos, structure);
-                    
-                    if (structureStart.isValid()) {
-                        // Get the bounding box of the structure
-                        var boundingBox = structureStart.getBoundingBox();
-                        
-                        // Check if player is within the Y-level range of the structure
-                        int playerY = playerPos.getY();
-                        int minY = boundingBox.minY();
-                        int maxY = boundingBox.maxY();
-                        
-                        if (playerY >= minY && playerY <= maxY) {
-                            insideTargetStructure = true;
-                            
-                            if (getConfig().shouldDebugLog()) {
-                                getLogger().debug("Player {} inside structure Y-range: {} (structure Y: {} - {})",
-                                        player.getName().getString(), playerY, minY, maxY);
-                            }
-                            break;
-                        } else {
-                            if (getConfig().shouldDebugLog()) {
-                                getLogger().debug("Player {} outside structure Y-range: {} (structure Y: {} - {})",
-                                        player.getName().getString(), playerY, minY, maxY);
-                            }
+                            .getStructureAt(posInStartChunk, structure);
+
+                    if (!structureStart.isValid()) {
+                        continue;
+                    }
+
+                    var boundingBox = structureStart.getBoundingBox();
+                    int playerY = playerPos.getY();
+                    int minY = boundingBox.minY();
+                    int maxY = boundingBox.maxY();
+
+                    if (playerY >= minY && playerY <= maxY) {
+                        insideTargetStructure = true;
+
+                        if (getConfig().shouldDebugLog()) {
+                            getLogger().debug("Player {} inside structure Y-range: {} (structure Y: {} - {})",
+                                    player.getName().getString(), playerY, minY, maxY);
+                        }
+                        break outerLoop;
+                    } else {
+                        if (getConfig().shouldDebugLog()) {
+                            getLogger().debug("Player {} outside structure Y-range: {} (structure Y: {} - {})",
+                                    player.getName().getString(), playerY, minY, maxY);
                         }
                     }
                 }
@@ -1201,6 +1335,7 @@ public class HauntedHouseModule extends AbstractModule<
             }
         } else {
             lastTrackedPlayerPositions.remove(playerId);
+            lastCacheRefreshTickByPlayer.remove(playerId);
 
             if (fogTrail > 0) {
                 int amplifier = getConfig().getFogEffectAmplifier();

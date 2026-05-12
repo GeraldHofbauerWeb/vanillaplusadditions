@@ -58,7 +58,9 @@ public class HauntedHouseConfig
     private ModConfigSpec.IntValue cacheScanStep;
     private ModConfigSpec.IntValue cacheQueryChunkRadius;
     private ModConfigSpec.IntValue movementInterpolationMaxSteps;
+    private ModConfigSpec.IntValue cacheRefreshIntervalTicks;
     private ModConfigSpec.IntValue cacheTtlSeconds;
+    private ModConfigSpec.IntValue directSpotValidationIntervalTicks;
     private ModConfigSpec.IntValue directSpawnMinPlayerDistance;
     private ModConfigSpec.IntValue directSpawnMaxPlayerDistance;
     private ModConfigSpec.IntValue maxCachedSpawnSpotsPerLevel;
@@ -251,9 +253,17 @@ public class HauntedHouseConfig
                 .comment("Max interpolation steps for movement-based cache updates")
                 .defineInRange("movement_interpolation_max_steps", 10, 1, 64);
 
+        cacheRefreshIntervalTicks = builder
+                .comment("Minimum ticks between movement-driven cache refresh passes per player")
+                .defineInRange("cache_refresh_interval_ticks", 20, 1, 400);
+
         cacheTtlSeconds = builder
                 .comment("How long cached spawn spots stay valid before being dropped")
                 .defineInRange("cache_ttl_seconds", 180, 30, 1800);
+
+        directSpotValidationIntervalTicks = builder
+                .comment("Ticks to reuse direct-spot validation before rechecking expensive cave/material/mob checks")
+                .defineInRange("direct_spot_validation_interval_ticks", 60, 1, 1200);
 
         directSpawnMinPlayerDistance = builder
                 .comment("Minimum distance to players for direct haunted spawns")
@@ -328,7 +338,9 @@ public class HauntedHouseConfig
             LOGGER.debug("  - Cache scan step: {}", cacheScanStep.get());
             LOGGER.debug("  - Cache query chunk radius: {}", cacheQueryChunkRadius.get());
             LOGGER.debug("  - Movement interpolation max steps: {}", movementInterpolationMaxSteps.get());
+            LOGGER.debug("  - Cache refresh interval ticks: {}", cacheRefreshIntervalTicks.get());
             LOGGER.debug("  - Cache TTL seconds: {}", cacheTtlSeconds.get());
+            LOGGER.debug("  - Direct spot validation interval ticks: {}", directSpotValidationIntervalTicks.get());
             LOGGER.debug("  - Direct spawn min player distance: {}", directSpawnMinPlayerDistance.get());
             LOGGER.debug("  - Direct spawn max player distance: {}", directSpawnMaxPlayerDistance.get());
             LOGGER.debug("  - Max cached spawn spots per level: {}", maxCachedSpawnSpotsPerLevel.get());
@@ -720,8 +732,16 @@ public class HauntedHouseConfig
         return movementInterpolationMaxSteps != null ? movementInterpolationMaxSteps.get() : 10;
     }
 
+    public int getCacheRefreshIntervalTicks() {
+        return cacheRefreshIntervalTicks != null ? cacheRefreshIntervalTicks.get() : 20;
+    }
+
     public int getCacheTtlSeconds() {
         return cacheTtlSeconds != null ? cacheTtlSeconds.get() : 180;
+    }
+
+    public int getDirectSpotValidationIntervalTicks() {
+        return directSpotValidationIntervalTicks != null ? directSpotValidationIntervalTicks.get() : 60;
     }
 
     public int getDirectSpawnMinPlayerDistance() {
