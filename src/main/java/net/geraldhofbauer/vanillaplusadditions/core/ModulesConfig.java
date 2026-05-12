@@ -30,7 +30,8 @@ public final class ModulesConfig {
 
     // Global debug logging configuration
     private static ModConfigSpec.BooleanValue globalDebugLogging;
-    
+    private static ModConfigSpec.BooleanValue worldgenCrashGuardEnabled;
+
     // The configuration specification - built dynamically
     private static ModConfigSpec spec = null;
     private static boolean configBuilt = false;
@@ -60,7 +61,12 @@ public final class ModulesConfig {
         globalDebugLogging = builder
                 .comment("Enable debug logging for all modules (can be overridden by individual module settings)")
                 .define("globalDebugLogging", false);
-        
+
+        worldgenCrashGuardEnabled = builder
+                .comment("Emergency workaround: suppress IndexOutOfBoundsException during structure start generation.",
+                        "Use only to keep servers running while isolating incompatible worldgen mods.")
+                .define("worldgenCrashGuardEnabled", false);
+
         builder.push("modules");
 
         // Build configuration for each registered module
@@ -151,6 +157,15 @@ public final class ModulesConfig {
      */
     public static boolean isGlobalDebugLoggingEnabled() {
         return globalDebugLogging != null && globalDebugLogging.get();
+    }
+
+    /**
+     * Checks if the worldgen crash guard is enabled.
+     *
+     * @return true if IndexOutOfBoundsExceptions in structure-start generation should be suppressed
+     */
+    public static boolean isWorldgenCrashGuardEnabled() {
+        return worldgenCrashGuardEnabled != null && worldgenCrashGuardEnabled.get();
     }
 
     /**

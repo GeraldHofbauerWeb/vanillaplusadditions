@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "net.geraldhofbauer.vanillaplusadditions.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ChunkStatusTasksMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+
