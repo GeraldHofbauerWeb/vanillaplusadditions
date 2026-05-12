@@ -50,6 +50,13 @@ public interface Module {
     }
 
     /**
+     * Called when the mod loading process is complete and all mods are registered.
+     */
+    default void loadComplete() {
+        // Default empty implementation
+    }
+
+    /**
      * Called during client setup phase.
      * Only called on the client side.
      */

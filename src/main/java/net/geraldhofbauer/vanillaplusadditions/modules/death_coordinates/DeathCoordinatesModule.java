@@ -81,8 +81,8 @@ public class DeathCoordinatesModule extends AbstractModule<
                         .withClickEvent(
                                 new net.minecraft.network.chat.ClickEvent(
                                         net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
-                                        // "/execute in %s as @p run tp @p %d %d %d" // permission detection included
-                                        "/execute in %s as @p run tp @p %d %d %d"
+                                        // Use @s to teleport the player who clicked the message
+                                        "/execute in %s as @s run tp @s %d %d %d"
                                                 .formatted(
                                                         location.toString(),
                                                         deathPos.getX(),

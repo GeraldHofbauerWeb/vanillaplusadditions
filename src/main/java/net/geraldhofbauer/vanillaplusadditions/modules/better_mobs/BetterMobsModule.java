@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.monster.AbstractSkeleton;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -97,6 +98,71 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
 
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("Applying gear type '{}' to mob '{}' at Y: {}", material, mobId, y);
+        }
+
+        // Weapon Randomizer
+        var weaponRandomizers = setup.get(BetterMobsConfigKey.WEAPON_RANDOMIZER);
+        if (weaponRandomizers != null && !weaponRandomizers.isEmpty()) {
+            int randVal = new Random(uuid.getLeastSignificantBits() ^ 0x5EED).nextInt(100);
+            int cumulativeChance = 0;
+            String selectedWeapon = null;
+
+            for (String entry : weaponRandomizers) {
+                String[] parts = entry.split(";");
+                if (parts.length == 3 && parts[0].equals(mobId)) {
+                    int chance = Integer.parseInt(parts[2]);
+                    cumulativeChance += chance;
+                    if (randVal < cumulativeChance) {
+                        selectedWeapon = parts[1];
+                        break;
+                    }
+                }
+            }
+
+            if (selectedWeapon != null) {
+                String weaponMaterial = material;
+                if (isMaterialBasedWeapon(selectedWeapon)) {
+                    var weaponTypes = setup.get(BetterMobsConfigKey.WEAPON_TYPES);
+                    if (weaponTypes != null && !weaponTypes.isEmpty()) {
+                        weaponMaterial = weaponTypes.getFirst();
+                    }
+                }
+
+                ItemStack weapon = getItemForTypeAndMaterial(selectedWeapon, weaponMaterial);
+                if ((weapon == null || weapon.isEmpty()) && !weaponMaterial.equals(material)) {
+                    weaponMaterial = material;
+                    weapon = getItemForTypeAndMaterial(selectedWeapon, weaponMaterial);
+                }
+
+                if (weapon != null && !weapon.isEmpty()) {
+                    int maxDurability = weapon.getMaxDamage();
+                    int percentDurability = config.getMaxDurabilityValue();
+                    int percentDropChance = config.getDropChanceValue();
+                    if (maxDurability > 0) {
+                        weapon.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    }
+                    mob.setDropChance(EquipmentSlot.MAINHAND, percentDropChance / 100.0f);
+                    mob.setItemSlot(EquipmentSlot.MAINHAND, weapon);
+                    refreshWeaponBehavior(mob);
+                    debugInfo.append("Weapon: ").append(getItemNameStr(weapon));
+                    if (isMaterialBasedWeapon(selectedWeapon)) {
+                        debugInfo.append(" (").append(weaponMaterial).append(")");
+                    }
+                    debugInfo.append("\n");
+
+                    // Verzauberungen für die Waffe
+                    applyArmorEnchantments(serverLevel,
+                            uuid,
+                            weapon,
+                            setup.get(BetterMobsConfigKey.WEAPON_ENCHANTMENTS),
+                            setup.get(BetterMobsConfigKey.ENCHANTMENT_LEVELS));
+                    if (weapon.isEnchanted()) {
+                        debugInfo.append("Weapon Enchantments: ")
+                                .append(getEnchantmentNameStr(weapon, serverLevel.registryAccess()))
+                                .append("\n");
+                    }
+                }
+            }
         }
 
         // Armor nur für Mobs aus enabledMobsWithArmor
@@ -283,6 +349,22 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
         return Component.translatable(itemStack.getDescriptionId()).getString();
     }
 
+    private static boolean isMaterialBasedWeapon(String type) {
+        return "sword".equals(type) || "axe".equals(type);
+    }
+
+    private void refreshWeaponBehavior(Monster mob) {
+        if (mob instanceof AbstractSkeleton skeleton) {
+            skeleton.reassessWeaponGoal();
+
+            if (getConfig().shouldDebugLog()) {
+                getLogger().debug("Reassessed weapon goal for skeleton '{}' with weapon '{}'",
+                        BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()),
+                        mob.getMainHandItem().getDescriptionId());
+            }
+        }
+    }
+
     /**
      * Liefert alle Enchantment-Namen des ItemStacks als String, z. B. "Schärfe V, Haltbarkeit III".
      *
@@ -389,6 +471,27 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                 case "netherite" -> new ItemStack(Items.NETHERITE_BOOTS);
                 default -> ItemStack.EMPTY;
             };
+            case "sword" -> switch (material) {
+                case "gold" -> new ItemStack(Items.GOLDEN_SWORD);
+                case "iron" -> new ItemStack(Items.IRON_SWORD);
+                case "wood", "wooden", "chainmail", "leather" -> new ItemStack(Items.WOODEN_SWORD);
+                case "stone" -> new ItemStack(Items.STONE_SWORD);
+                case "diamond" -> new ItemStack(Items.DIAMOND_SWORD);
+                case "netherite" -> new ItemStack(Items.NETHERITE_SWORD);
+                default -> ItemStack.EMPTY;
+            };
+            case "axe" -> switch (material) {
+                case "gold" -> new ItemStack(Items.GOLDEN_AXE);
+                case "iron" -> new ItemStack(Items.IRON_AXE);
+                case "wood", "wooden", "chainmail", "leather" -> new ItemStack(Items.WOODEN_AXE);
+                case "stone" -> new ItemStack(Items.STONE_AXE);
+                case "diamond" -> new ItemStack(Items.DIAMOND_AXE);
+                case "netherite" -> new ItemStack(Items.NETHERITE_AXE);
+                default -> ItemStack.EMPTY;
+            };
+            case "bow" -> new ItemStack(Items.BOW);
+            case "crossbow" -> new ItemStack(Items.CROSSBOW);
+            case "trident" -> new ItemStack(Items.TRIDENT);
             default -> ItemStack.EMPTY;
         };
     }
@@ -422,6 +525,32 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                 case "depth_strider" -> Enchantments.DEPTH_STRIDER;
                 case "frost_walker" -> Enchantments.FROST_WALKER;
                 case "binding_curse" -> Enchantments.BINDING_CURSE;
+                case "sharpness" -> Enchantments.SHARPNESS;
+                case "smite" -> Enchantments.SMITE;
+                case "bane_of_arthropods" -> Enchantments.BANE_OF_ARTHROPODS;
+                case "knockback" -> Enchantments.KNOCKBACK;
+                case "fire_aspect" -> Enchantments.FIRE_ASPECT;
+                case "looting" -> Enchantments.LOOTING;
+                case "sweeping_edge" -> Enchantments.SWEEPING_EDGE;
+                case "efficiency" -> Enchantments.EFFICIENCY;
+                case "silk_touch" -> Enchantments.SILK_TOUCH;
+                case "unbreaking" -> Enchantments.UNBREAKING;
+                case "fortune" -> Enchantments.FORTUNE;
+                case "power" -> Enchantments.POWER;
+                case "punch" -> Enchantments.PUNCH;
+                case "flame" -> Enchantments.FLAME;
+                case "infinity" -> Enchantments.INFINITY;
+                case "luck_of_the_sea" -> Enchantments.LUCK_OF_THE_SEA;
+                case "lure" -> Enchantments.LURE;
+                case "loyalty" -> Enchantments.LOYALTY;
+                case "impaling" -> Enchantments.IMPALING;
+                case "riptide" -> Enchantments.RIPTIDE;
+                case "channeling" -> Enchantments.CHANNELING;
+                case "multishot" -> Enchantments.MULTISHOT;
+                case "quick_charge" -> Enchantments.QUICK_CHARGE;
+                case "piercing" -> Enchantments.PIERCING;
+                case "mending" -> Enchantments.MENDING;
+                case "vanishing_curse" -> Enchantments.VANISHING_CURSE;
                 default -> null;
             };
             if (enchantmentKey != null) {

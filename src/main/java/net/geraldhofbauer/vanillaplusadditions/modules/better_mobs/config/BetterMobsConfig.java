@@ -117,58 +117,72 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         List<String> config = new ArrayList<>();
 
         // Gear types
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":gold:5");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":chainmail:10");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":leather:15");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";gold;10");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";chainmail;10");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";leather;20");
 
         // Armor spawn chances
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":helmet:60");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":chestplate:50");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":leggings:45");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":boots:40");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";helmet;60");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";chestplate;50");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";leggings;45");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";boots;40");
 
         // Helmet enchantments
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":protection:20");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":fire_protection:10");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":blast_protection:10");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":projectile_protection:10");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":respiration:10");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":aqua_affinity:10");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:5");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";protection;5");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";fire_protection;2");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";blast_protection;3");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";projectile_protection;3");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";thorns;4");
+
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";sharpness;5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";fire_aspect;2");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";knockback;3");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";unbreaking;5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";power;5");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";punch;2");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";flame;2");
 
         // Chestplate enchantments
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:20");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":fire_protection:10");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":blast_protection:10");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":projectile_protection:10");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":thorns:5");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";protection;5");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";fire_protection;2");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";blast_protection;3");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";projectile_protection;3");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";thorns;4");
 
         // Leggings enchantments
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":protection:20");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":fire_protection:10");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":blast_protection:10");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":projectile_protection:10");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":thorns:5");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";protection;5");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";fire_protection;2");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";blast_protection;3");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";projectile_protection;3");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";thorns;4");
 
         // Boots enchantments
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":protection:20");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":fire_protection:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":blast_protection:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":projectile_protection:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":feather_falling:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":thorns:5");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":depth_strider:5");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":frost_walker:5");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";protection;5");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";fire_protection;2");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";blast_protection;3");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";projectile_protection;3");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";feather_falling;2");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";thorns;4");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";frost_walker;5");
 
         // Enchantment levels
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":min_level:1");
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:3");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;1");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;3");
 
         // Potion effects
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:5");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:5");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:5");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:5");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;5");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";haste;5");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";fire_resistance;5");
+
+        // Weapon material types für Nahkampfwaffen
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";wood;65");
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";stone;35");
+
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;sword;35");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;axe;25");
 
         return config;
     }
@@ -177,59 +191,77 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         List<String> config = new ArrayList<>();
 
         // Gear types
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":gold:10");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":iron:30");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":leather:10");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":diamond:30");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";gold;10");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";iron;30");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";leather;10");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";diamond;30");
 
         // Armor spawn chances (höhere Chancen unter Y=0)
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":helmet:80");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":chestplate:70");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":leggings:65");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":boots:60");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";helmet;80");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";chestplate;70");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";leggings;65");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";boots;60");
 
         // Helmet enchantments
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":respiration:20");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":aqua_affinity:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";respiration;20");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";aqua_affinity;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";thorns;10");
+
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";sharpness;25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";fire_aspect;10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";knockback;10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";unbreaking;20");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";power;20");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";punch;10");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";flame;10");
 
         // Chestplate enchantments
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";thorns;10");
 
         // Leggings enchantments
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";thorns;10");
 
         // Boots enchantments
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":feather_falling:20");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":thorns:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":depth_strider:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":frost_walker:10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";feather_falling;20");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";thorns;10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";depth_strider;10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";frost_walker;10");
 
         // Enchantment levels
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":min_level:2");
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:4");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;2");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;4");
 
         // Potion effects
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";haste;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";fire_resistance;10");
+
+        // Weapon material types für Nahkampfwaffen
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";iron;50");
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";gold;20");
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";diamond;30");
+
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;sword;40");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;axe;30");
 
         return config;
     }
@@ -239,55 +271,71 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         List<String> config = new ArrayList<>();
 
         // Gear types
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":gold:30");
-        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ":netherite:20");
+        config.add(BetterMobsConfigKey.GEAR_TYPES.name() + ";netherite;30");
 
         // Armor spawn chances (höhere Chancen unter Y=0)
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":helmet:80");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":chestplate:70");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":leggings:65");
-        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ":boots:60");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";helmet;80");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";chestplate;70");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";leggings;65");
+        config.add(BetterMobsConfigKey.ARMOR_CHANCES.name() + ";boots;60");
 
         // Helmet enchantments
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.HELMET_ENCHANTMENTS.name() + ";thorns;10");
+
+        // Weapon enchantments
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";sharpness;30");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";fire_aspect;15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";knockback;15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";unbreaking;25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";power;25");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";punch;15");
+        config.add(BetterMobsConfigKey.WEAPON_ENCHANTMENTS.name() + ";flame;15");
 
         // Chestplate enchantments
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.CHESTPLATE_ENCHANTMENTS.name() + ";thorns;10");
 
         // Leggings enchantments
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ":thorns:10");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.LEGGINGS_ENCHANTMENTS.name() + ";thorns;10");
 
         // Boots enchantments
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":protection:30");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":fire_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":blast_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":projectile_protection:15");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":feather_falling:20");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":thorns:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":depth_strider:10");
-        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ":frost_walker:10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";protection;30");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";fire_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";blast_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";projectile_protection;15");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";feather_falling;20");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";thorns;10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";depth_strider;10");
+        config.add(BetterMobsConfigKey.BOOTS_ENCHANTMENTS.name() + ";frost_walker;10");
 
         // Enchantment levels
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":min_level:2");
-        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ":max_level:4");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;2");
+        config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;4");
 
         // Potion effects
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":speed:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":strength:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":haste:10");
-        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ":fire_resistance:10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;20");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";haste;10");
+        config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";fire_resistance;10");
+
+        // Weapon material types für Nahkampfwaffen
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";gold;65");
+        config.add(BetterMobsConfigKey.WEAPON_TYPES.name() + ";netherite;35");
+
+        // Weapon randomizers
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;sword;45");
+        config.add(BetterMobsConfigKey.WEAPON_RANDOMIZER.name() + ";minecraft:skeleton;axe;35");
 
         return config;
     }
@@ -370,14 +418,33 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         Map<BetterMobsConfigKey, Map<String, Integer>> output = new HashMap<>();
 
         for (String entry : input) {
-            String[] parts = entry.split(":");
-            if (parts.length != 3) {
+            String[] parts = splitConfigEntry(entry);
+            if (parts.length < 3) {
                 LOGGER.warn("Invalid config entry format: {}", entry);
                 continue;
             }
 
             try {
                 BetterMobsConfigKey key = BetterMobsConfigKey.valueOf(parts[0]);
+
+                if (key == BetterMobsConfigKey.WEAPON_RANDOMIZER) {
+                    WeaponRandomizerEntry weaponRandomizerEntry = parseWeaponRandomizer(parts);
+                    if (weaponRandomizerEntry == null) {
+                        LOGGER.warn("Invalid weapon randomizer entry format: {}", entry);
+                        continue;
+                    }
+
+                    output.computeIfAbsent(key, k -> new HashMap<>())
+                            .put(weaponRandomizerEntry.mobId() + ";" + weaponRandomizerEntry.weaponType(),
+                                    weaponRandomizerEntry.chance());
+                    continue;
+                }
+
+                if (parts.length != 3) {
+                    LOGGER.warn("Invalid config entry format: {}", entry);
+                    continue;
+                }
+
                 String property = parts[1];
                 int value = Integer.parseInt(parts[2]);
 
@@ -423,20 +490,15 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
     public Map<BetterMobsConfigKey, List<String>> getRandomEquipmentSetupForMob(ResourceKey<Level> dimension,
                                                                                 UUID uuid,
                                                                                 int y) {
-        List<String> configEntries;
-        if (dimension == Level.END || dimension == Level.NETHER) {
-            configEntries = netherEndConfig.get();
-        } else {
-            configEntries = y >= 0 ? aboveZeroConfig.get() : belowZeroConfig.get();
-        }
+        List<String> configEntries = getDimensionConfigEntries(dimension, y);
         Random random = new Random(uuid.getLeastSignificantBits()); // Seed basierend auf Y-Koordinate
         Map<BetterMobsConfigKey, List<String>> equipment = new java.util.HashMap<>();
 
         // Gruppiere Einträge nach ConfigKey
         Map<BetterMobsConfigKey, List<String[]>> groupedEntries = new HashMap<>();
         for (String entry : configEntries) {
-            String[] parts = entry.split(":");
-            if (parts.length != 3) {
+            String[] parts = splitConfigEntry(entry);
+            if (parts.length < 3) {
                 continue;
             }
 
@@ -444,7 +506,7 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
                 BetterMobsConfigKey key = BetterMobsConfigKey.valueOf(parts[0]);
                 groupedEntries.computeIfAbsent(key, k -> new ArrayList<>()).add(parts);
             } catch (IllegalArgumentException e) {
-                continue;
+                // Unbekannte Config-Keys ignorieren
             }
         }
 
@@ -466,6 +528,13 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
                     break;
                 }
             }
+        }
+
+        // Weapon Types - wähle einen gewichteten Typ für Waffenmaterialien aus
+        List<String[]> weaponTypes = groupedEntries.get(BetterMobsConfigKey.WEAPON_TYPES);
+        String selectedWeaponType = selectWeightedProperty(weaponTypes, random);
+        if (selectedWeaponType != null) {
+            equipment.put(BetterMobsConfigKey.WEAPON_TYPES, List.of(selectedWeaponType));
         }
 
         // Enchantments für jedes Ausrüstungsteil (nur wenn das entsprechende Teil spawnen soll)
@@ -531,6 +600,37 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
             }
         }
 
+        // Weapon Enchantments
+        List<String[]> weaponEnchants = groupedEntries.get(BetterMobsConfigKey.WEAPON_ENCHANTMENTS);
+        if (weaponEnchants != null) {
+            List<String> selectedEnchants = new ArrayList<>();
+            for (String[] enchant : weaponEnchants) {
+                if (random.nextInt(100) < Integer.parseInt(enchant[2])) {
+                    selectedEnchants.add(enchant[1]);
+                }
+            }
+            if (!selectedEnchants.isEmpty()) {
+                equipment.put(BetterMobsConfigKey.WEAPON_ENCHANTMENTS, selectedEnchants);
+            }
+        }
+
+        // Weapon Randomizers
+        List<String[]> weaponRandomizers = groupedEntries.get(BetterMobsConfigKey.WEAPON_RANDOMIZER);
+        if (weaponRandomizers != null) {
+            List<String> randomizers = new ArrayList<>();
+            for (String[] rand : weaponRandomizers) {
+                WeaponRandomizerEntry weaponRandomizerEntry = parseWeaponRandomizer(rand);
+                if (weaponRandomizerEntry != null) {
+                    randomizers.add(weaponRandomizerEntry.mobId() + ";"
+                            + weaponRandomizerEntry.weaponType() + ";"
+                            + weaponRandomizerEntry.chance());
+                }
+            }
+            if (!randomizers.isEmpty()) {
+                equipment.put(BetterMobsConfigKey.WEAPON_RANDOMIZER, randomizers);
+            }
+        }
+
         // Initialize all keys to avoid null checks later
         for (BetterMobsConfigKey key : BetterMobsConfigKey.values()) {
             equipment.putIfAbsent(key, List.of());
@@ -544,5 +644,73 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
                         .collect(java.util.stream.Collectors.toList()));
 
         return equipment;
+    }
+
+    private List<String> getDimensionConfigEntries(ResourceKey<Level> dimension, int y) {
+        try {
+            if (dimension == Level.END || dimension == Level.NETHER) {
+                return netherEndConfig != null ? List.copyOf(netherEndConfig.get()) : List.of();
+            }
+            return y >= 0
+                    ? (aboveZeroConfig != null ? List.copyOf(aboveZeroConfig.get()) : List.of())
+                    : (belowZeroConfig != null ? List.copyOf(belowZeroConfig.get()) : List.of());
+        } catch (Exception e) {
+            LOGGER.debug("Better Mobs config not available yet for dimension lookup, using empty list: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private String selectWeightedProperty(List<String[]> entries, Random random) {
+        if (entries == null || entries.isEmpty()) {
+            return null;
+        }
+
+        int totalWeight = 0;
+        for (String[] entry : entries) {
+            if (entry.length < 3) {
+                continue;
+            }
+            totalWeight += Math.max(0, Integer.parseInt(entry[2]));
+        }
+
+        if (totalWeight <= 0) {
+            return null;
+        }
+
+        int roll = random.nextInt(totalWeight);
+        int cumulativeWeight = 0;
+        for (String[] entry : entries) {
+            if (entry.length < 3) {
+                continue;
+            }
+
+            int weight = Math.max(0, Integer.parseInt(entry[2]));
+            cumulativeWeight += weight;
+            if (roll < cumulativeWeight) {
+                return entry[1];
+            }
+        }
+
+        return null;
+    }
+
+    private WeaponRandomizerEntry parseWeaponRandomizer(String[] parts) {
+        if (parts.length != 4) {
+            return null;
+        }
+
+        return new WeaponRandomizerEntry(parts[1], parts[2], Integer.parseInt(parts[3]));
+    }
+
+    private String[] splitConfigEntry(String entry) {
+        if (!entry.contains(";") && entry.contains(":")) {
+            throw new IllegalArgumentException(
+                    "Better Mobs config entry uses ':' as delimiter. Use ';' instead: " + entry);
+        }
+
+        return entry.split(";");
+    }
+
+    private record WeaponRandomizerEntry(String mobId, String weaponType, int chance) {
     }
 }

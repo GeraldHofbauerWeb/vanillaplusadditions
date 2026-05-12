@@ -134,6 +134,19 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
     }
 
     @Override
+    public void loadComplete() {
+        logger.debug("Running load complete for module: {}", displayName);
+        onLoadComplete();
+    }
+
+    /**
+     * Override this method to implement logic after all mods are loaded.
+     */
+    protected void onLoadComplete() {
+        // Default empty implementation
+    }
+
+    @Override
     public void clientSetup() {
         logger.debug("Running client setup for module: {}", displayName);
         onClientSetup();

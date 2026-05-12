@@ -9,4 +9,7 @@ public enum BetterMobsConfigKey {
     ENCHANTMENT_LEVELS,
     POTION_EFFECTS,
     ARMOR_CHANCES, // Chancen für das Spawnen einzelner Rüstungsteile
+    WEAPON_RANDOMIZER, // Zufällige Waffen für bestimmte Mobs
+    WEAPON_TYPES, // Material-/Qualitätsstufen für Waffen
+    WEAPON_ENCHANTMENTS, // Verzauberungen für Waffen
 }

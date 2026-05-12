@@ -117,6 +117,12 @@ dependencies {
     // Example project dependency using a sister or child project:
     // implementation project(":myproject")
 
+    // Create dependency
+    implementation files("libs/create-1.21.1-6.0.9.jar")
+
+    // Tough As Nails dependency
+    implementation files("libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar")
+
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html

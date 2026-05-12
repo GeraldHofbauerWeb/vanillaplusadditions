@@ -1,5 +1,7 @@
 # VanillaPlusAdditions
 
+![Banner](docs/github_banner.png)
+
 A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions while maintaining the original feel.
 
 > 🤖 **AI Collaboration Notice**: This project was developed in collaboration with the Warp AI assistant (powered by Claude 3.5 Sonnet). The AI helped with code implementation, documentation, and project structure. While the core ideas and direction came from human creativity, the AI's assistance made this project more robust and feature-complete. We believe in transparency about AI usage while celebrating the potential of human-AI collaboration in software development.
@@ -22,6 +24,19 @@ A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions wh
 - Configurable duration (including infinite)
 - Clear glow effects by type or all at once
 - Perfect for server administration and debugging
+
+### 🍎 Food Effects
+
+Enhances food items with additional potion effects and thirst restoration.
+
+- **Custom Potion Effects**: Add any potion effect to any item via configuration.
+- **Tough As Nails Support**: 
+  - Thirst restoration for drinks and food.
+  - Heating/Cooling effect tooltips for items that provide them.
+  - Optional dependency: works automatically if Tough As Nails is installed.
+- **Always Edible**: Items configured with effects automatically become edible even if the player is full.
+- **Probability System**: Effects can have a specific chance to occur (e.g., 25% chance for a gold apple to restore thirst).
+- **Extensive Defaults**: Includes many default effects for Vanilla, Create, and Tough As Nails items.
 
 ### 🐦‍🔥 Better Mobs
 
@@ -106,10 +121,9 @@ Will automatically enable when both required mods are detected.
 ## 🔧 Configuration
 
 Each module has its own configuration options. See our detailed guides:
-TODO - Create these guides
-- [Module Configuration Guide](MODULE_CONFIG_GUIDE.md)
-- [Debug Logging Configuration](DEBUG_LOGGING_CONFIG.md)
-- [MobGlow Command Guide](MOBGLOW_MODULE_GUIDE.md)
+- [Module Configuration Guide](docs/MODULE_CONFIG_GUIDE.md)
+- [Debug Logging Configuration](docs/DEBUG_LOGGING_CONFIG.md)
+- [MobGlow Command Guide](docs/MOBGLOW_MODULE_GUIDE.md)
 
 ## 🚀 Installation
 
@@ -163,16 +177,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Documentation
 
-- [Module System Overview](MODULE_SYSTEM.md)
-- [Configuration System](CONFIGURATION_SYSTEM_SUMMARY.md)
-- [Testing Guide](TESTING.md)
+- [Module System Overview](docs/MODULE_SYSTEM.md)
+- [Configuration System](docs/CONFIGURATION_SYSTEM_SUMMARY.md)
+- [Testing Guide](docs/TESTING.md)
+- [Warp AI Development (WARP)](WARP.md)
 
 ## 🐛 Debug Logging
 
 VanillaPlusAdditions includes a sophisticated debug logging system:
 - Global and per-module control
 - Detailed log messages for troubleshooting
-- See [Debug Logging Guide](DEBUG_LOGGING_CONFIG.md)
+- See [Debug Logging Guide](docs/DEBUG_LOGGING_CONFIG.md)
 
 ## 🔗 Links
 

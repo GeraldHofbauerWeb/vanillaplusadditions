@@ -5,9 +5,13 @@ import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.minecraft.client.Minecraft;
@@ -20,6 +24,10 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.ThirstClientTooltip;
+import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.ThirstTooltipData;
+import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
@@ -45,6 +53,7 @@ public class VanillaPlusAdditions {
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::loadComplete);
 
         // All item/block registration is now handled by individual modules
 
@@ -76,8 +85,12 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new MobGlowModule());
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
+        moduleManager.registerModule(new EndOxygenModule());
         moduleManager.registerModule(new StackablesModule());
         moduleManager.registerModule(new HauntedHouseModule());
+        moduleManager.registerModule(new FoodEffectsModule());
+        moduleManager.registerModule(new OverpackedSlowdownModule());
+        moduleManager.registerModule(new CustomCraftingRecipesModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
@@ -98,6 +111,13 @@ public class VanillaPlusAdditions {
 
         LOGGER.info("VanillaPlusAdditions common setup complete with {} enabled modules",
                     ModuleManager.getInstance().getEnabledModules().size());
+    }
+
+    private void loadComplete(FMLLoadCompleteEvent event) {
+        // Run module load complete
+        ModuleManager.getInstance().loadComplete();
+
+        LOGGER.info("VanillaPlusAdditions load complete");
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
@@ -122,6 +142,11 @@ public class VanillaPlusAdditions {
 
             LOGGER.info("VanillaPlusAdditions client setup complete with {} enabled modules",
                         ModuleManager.getInstance().getEnabledModules().size());
+        }
+
+        @SubscribeEvent
+        static void registerTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+            event.register(ThirstTooltipData.class, ThirstClientTooltip::new);
         }
     }
 }

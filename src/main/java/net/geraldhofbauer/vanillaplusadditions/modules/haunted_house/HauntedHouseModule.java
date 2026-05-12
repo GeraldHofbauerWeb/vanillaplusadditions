@@ -5,19 +5,26 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.config.HauntedHouseConfig;
 import net.geraldhofbauer.vanillaplusadditions.util.MessageBroadcaster;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
@@ -28,6 +35,7 @@ import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 public class HauntedHouseModule extends AbstractModule<
         HauntedHouseModule,
@@ -35,41 +43,62 @@ public class HauntedHouseModule extends AbstractModule<
         > {
 
     private static final Random RANDOM = new Random();
-
-    // Track murmurs that should be invisible and whether they've been spotted
-    private final HashMap<UUID, Boolean> invisibleMurmurs = new HashMap<>();
+    // Track replacement entities that should be invisible and whether they've been spotted
+    private final HashMap<UUID, Boolean> invisibleReplacementEntities = new HashMap<>();
 
     // Track players inside target structures for fog effect
     private final HashMap<UUID, Long> playersInStructure = new HashMap<>();
 
+    // Track last player positions to transfer movement paths into spawn-spot cache.
+    private final HashMap<UUID, BlockPos> lastTrackedPlayerPositions = new HashMap<>();
+
+    // Track fog persistence so indoor exposure lasts longer than outside/garden exposure.
+    private final HashMap<UUID, Integer> playerFogTrailTicks = new HashMap<>();
+
+    // Cache discovered indoor/garden spawn spots per dimension for direct haunted spawning.
+    private final Map<ResourceKey<Level>, Map<Long, CachedSpawnSpot>> cachedSpawnSpotsByLevel = new HashMap<>();
+
+    // Chunk index for faster nearby cached-spot queries.
+    private final Map<ResourceKey<Level>, Map<Long, Set<Long>>> cachedSpawnSpotChunkIndexByLevel = new HashMap<>();
+
+    private static final class CachedSpawnSpot {
+        private final BlockPos pos;
+        private final boolean skyAccess;
+        private long expiresAtGameTick;
+
+        private CachedSpawnSpot(BlockPos pos, boolean skyAccess, long expiresAtGameTick) {
+            this.pos = pos;
+            this.skyAccess = skyAccess;
+            this.expiresAtGameTick = expiresAtGameTick;
+        }
+    }
+
+    private enum FogZone {
+        NONE,
+        GARDEN,
+        INDOOR
+    }
+
     public HauntedHouseModule() {
         super("haunted_house",
                 "Haunted House",
-                "Spawns Murmurs from Alex's Mobs in Dungeons and Taverns' Witch Villas",
+                "Replaces configured mob spawns with an invisible replacement entity in haunted structures",
                 HauntedHouseConfig::new
         );
     }
 
     @Override
-    protected boolean shouldInitialize() {
-        // Check for required mods: Alex's Mobs and Dungeons and Taverns
-        final boolean alexMobsLoaded = ModList.get().isLoaded("alexsmobs");
-        final boolean dungeonsAndTavernsLoaded = ModList.get().isLoaded("mr_dungeons_andtaverns");
+    public boolean isEnabledByDefault() {
+        return false;
+    }
 
-        final boolean modsFound = alexMobsLoaded && dungeonsAndTavernsLoaded;
+    @Override
+    protected boolean shouldInitialize() {
+        // Check for required mod: Dungeons and Taverns
+        final boolean modsFound = ModList.get().isLoaded("mr_dungeons_andtaverns");
 
         if (!modsFound) {
-            StringBuilder missingMods = new StringBuilder();
-            if (!alexMobsLoaded) {
-                missingMods.append("Alex's Mobs (alexsmobs)");
-            }
-            if (!dungeonsAndTavernsLoaded) {
-                if (missingMods.length() > 0) {
-                    missingMods.append(" and ");
-                }
-                missingMods.append("Dungeons and Taverns (mr_dungeons_andtaverns)");
-            }
-            getLogger().warn("Haunted House module not initialized - Missing required mods: {}", missingMods.toString());
+            getLogger().warn("Haunted House module not initialized - Missing required mod: Dungeons and Taverns (mr_dungeons_andtaverns)");
         }
 
         return modsFound;
@@ -80,7 +109,8 @@ public class HauntedHouseModule extends AbstractModule<
         // Register event listeners for this module
         NeoForge.EVENT_BUS.register(this);
 
-        getLogger().info("Haunted House module initialized - Murmurs may now spawn in Witch Villas!");
+        getLogger().info("Haunted House module initialized - Replacement entity configured as {}",
+                getConfig().getReplacementEntityId());
     }
 
     @Override
@@ -88,13 +118,6 @@ public class HauntedHouseModule extends AbstractModule<
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("Haunted House module common setup complete");
         }
-    }
-
-    // TODO: Re-enable when Alex's Mobs becomes available for Minecraft 1.21.x
-    // Currently disabled by default because Alex's Mobs is not yet available for 1.21.x
-    @Override
-    public boolean isEnabledByDefault() {
-        return false;
     }
 
     /**
@@ -126,10 +149,6 @@ public class HauntedHouseModule extends AbstractModule<
         // Get the entity type
         EntityType<?> entityType = event.getEntity().getType();
         ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-
-        if (entityTypeId == null) {
-            return;
-        }
 
         String mobId = entityTypeId.toString();
 
@@ -163,6 +182,15 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
+        if (isBlockedHauntedSpawnLocation(serverLevel, spawnPos)) {
+            return;
+        }
+
+        Optional<BlockPos> distributedSpawnPos = findDistributedSpawnPos(serverLevel, spawnPos);
+        if (distributedSpawnPos.isEmpty()) {
+            return;
+        }
+
         // Roll for witch spawn boost
         double randomValue = RANDOM.nextDouble();
         if (randomValue < boostChance) {
@@ -177,31 +205,30 @@ public class HauntedHouseModule extends AbstractModule<
                 MessageBroadcaster.broadcastDebugWithLocation(
                         serverLevel,
                         getConfig().shouldDebugLog(),
-                        "🧙➡️👻 Boosted witch spawn replaced with murmur due to replacement rate",
-                        spawnPos,
+                        "🧙➡️👻 Boosted witch spawn replaced with configured entity due to replacement rate",
+                        distributedSpawnPos.get(),
                         getLogger()
                 );
-                // Spawn murmur directly
-                spawnMurmur(serverLevel, event.getEntity(), event.getSpawnType());
+                // Spawn configured replacement entity directly
+                spawnReplacementEntity(serverLevel, event.getEntity(), distributedSpawnPos.get());
             } else {
                 MessageBroadcaster.broadcastDebugWithLocation(
                         serverLevel,
                         getConfig().shouldDebugLog(),
                         "🧙 Boosted witch spawn: Replaced " + mobId + " with witch (roll: "
                                 + String.format("%.2f", randomValue) + " < " + String.format("%.2f", boostChance) + ")",
-                        spawnPos,
+                        distributedSpawnPos.get(),
                         getLogger()
                 );
-                spawnWitch(serverLevel, event.getEntity(), event.getSpawnType());
+                spawnWitch(serverLevel, event.getEntity(), distributedSpawnPos.get());
             }
         }
     }
 
     /**
      * Spawns a witch at the given location.
-     * Uses finalizeSpawn to ensure the witch properly triggers spawn events.
      */
-    private void spawnWitch(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
+    private void spawnWitch(ServerLevel level, Entity originalEntity, BlockPos spawnPos) {
         try {
             EntityType<?> witchType = EntityType.WITCH;
             Entity witch = witchType.create(level);
@@ -212,14 +239,8 @@ public class HauntedHouseModule extends AbstractModule<
             }
 
             // Position the witch at the same location as the original mob
-            witch.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
+            witch.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
                     originalEntity.getYRot(), originalEntity.getXRot());
-
-            // Finalize spawn so it triggers FinalizeSpawnEvent for replacement handler
-            if (witch instanceof net.minecraft.world.entity.Mob mob) {
-                mob.finalizeSpawn(level, level.getCurrentDifficultyAt(witch.blockPosition()),
-                        spawnType, null);
-            }
 
             // Add the witch to the world
             level.addFreshEntity(witch);
@@ -230,7 +251,7 @@ public class HauntedHouseModule extends AbstractModule<
     }
 
     /**
-     * Event handler that replaces mob spawns with murmurs in configured structures.
+     * Event handler that replaces configured mob spawns in configured structures.
      * Uses HIGH priority to ensure we can cancel the spawn before other mods process it.
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
@@ -252,10 +273,6 @@ public class HauntedHouseModule extends AbstractModule<
         // Get the entity type as a ResourceLocation
         EntityType<?> entityType = event.getEntity().getType();
         ResourceLocation entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
-
-        if (entityTypeId == null) {
-            return;
-        }
 
         // Check if this mob type should be replaced according to configuration
         String mobId = entityTypeId.toString();
@@ -311,10 +328,10 @@ public class HauntedHouseModule extends AbstractModule<
                     .getKey(structure);
 
             if (structureLocation != null) {
-                if (structureList.length() > 0) {
+                if (!structureList.isEmpty()) {
                     structureList.append(", ");
                 }
-                structureList.append(structureLocation.toString());
+                structureList.append(structureLocation);
 
                 if (getConfig().isTargetStructure(structureLocation.toString())) {
                     insideTargetStructure = true;
@@ -339,6 +356,29 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
+        if (isBlockedHauntedSpawnLocation(serverLevel, spawnPos)) {
+            MessageBroadcaster.broadcastDebugWithLocation(
+                    serverLevel,
+                    getConfig().shouldDebugLog(),
+                    "❌ Step 4b: Spawn location is not a house-like area (or is likely cave/too open)",
+                    spawnPos,
+                    getLogger()
+            );
+            return;
+        }
+
+        Optional<BlockPos> distributedSpawnPos = findDistributedSpawnPos(serverLevel, spawnPos);
+        if (distributedSpawnPos.isEmpty()) {
+            MessageBroadcaster.broadcastDebugWithLocation(
+                    serverLevel,
+                    getConfig().shouldDebugLog(),
+                    "❌ Step 4c: No suitable distributed spawn position in target structure found",
+                    spawnPos,
+                    getLogger()
+            );
+            return;
+        }
+
         // Check if this spawn should be replaced based on configured replacement rate
         double replacementRate = getConfig().getReplacementRate(mobId);
         double randomValue = RANDOM.nextDouble();
@@ -355,7 +395,7 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        // Cancel the mob spawn and replace it with a murmur
+        // Cancel the mob spawn and replace it with the configured replacement entity
         event.setSpawnCancelled(true);
 
         // Broadcast debug message about cancelled spawn
@@ -363,64 +403,573 @@ public class HauntedHouseModule extends AbstractModule<
                 serverLevel,
                 getConfig().shouldDebugLog(),
                 "❌ Cancelled " + mobId + " spawn in target structure",
-                spawnPos,
+                distributedSpawnPos.get(),
                 getLogger()
         );
 
-        // Spawn a murmur in place of the cancelled mob
-        spawnMurmur(serverLevel, event.getEntity(), event.getSpawnType());
+        // Spawn configured replacement entity in place of the cancelled mob
+        spawnReplacementEntity(serverLevel, event.getEntity(), distributedSpawnPos.get());
     }
 
     /**
-     * Spawns a Murmur entity from Alex's Mobs at the position of the cancelled spawn.
+     * Spawns the configured replacement entity at the position of the cancelled spawn.
      */
-    private void spawnMurmur(ServerLevel level, Entity originalEntity, MobSpawnType spawnType) {
+    private void spawnReplacementEntity(ServerLevel level, Entity originalEntity, BlockPos spawnPos) {
         try {
-            // Get the Murmur entity type from Alex's Mobs
-            ResourceLocation murmurId = ResourceLocation.fromNamespaceAndPath("alexsmobs", "murmur");
-            Optional<EntityType<?>> murmurType = BuiltInRegistries.ENTITY_TYPE.getOptional(murmurId);
-
-            if (murmurType.isEmpty()) {
-                getLogger().error("Failed to find Murmur entity type from Alex's Mobs");
+            String configuredEntityId = getConfig().getReplacementEntityId();
+            String[] entityIdParts = configuredEntityId.split(":", 2);
+            if (entityIdParts.length != 2) {
+                getLogger().error("Invalid replacement entity ID configured: {}", configuredEntityId);
                 return;
             }
 
-            // Create the Murmur entity
-            Entity murmur = murmurType.get().create(level);
-            if (murmur == null) {
-                getLogger().error("Failed to create Murmur entity");
+            ResourceLocation replacementEntityId = ResourceLocation.fromNamespaceAndPath(entityIdParts[0], entityIdParts[1]);
+            Optional<EntityType<?>> replacementEntityType = BuiltInRegistries.ENTITY_TYPE.getOptional(replacementEntityId);
+
+            if (replacementEntityType.isEmpty()) {
+                getLogger().error("Failed to find configured replacement entity type: {}", configuredEntityId);
                 return;
             }
 
-            // Position the Murmur at the same location as the original mob
-            murmur.moveTo(originalEntity.getX(), originalEntity.getY(), originalEntity.getZ(),
+            // Create the replacement entity
+            Entity replacementEntity = replacementEntityType.get().create(level);
+            if (replacementEntity == null) {
+                getLogger().error("Failed to create replacement entity: {}", configuredEntityId);
+                return;
+            }
+
+            // Position the replacement entity at the same location as the original mob
+            replacementEntity.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D,
                     originalEntity.getYRot(), originalEntity.getXRot());
 
-            // Make the Murmur invisible by default
-            if (murmur instanceof Mob mob) {
-                mob.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
-                invisibleMurmurs.put(murmur.getUUID(), false); // false = not yet spotted
+            // Make living replacements invisible by default and track reveal state.
+            if (replacementEntity instanceof LivingEntity livingEntity) {
+                livingEntity.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Integer.MAX_VALUE, 0, false, false));
+                invisibleReplacementEntities.put(replacementEntity.getUUID(), false); // false = not yet spotted
+            } else {
+                getLogger().warn(
+                        "Configured replacement entity {} is not a LivingEntity - invisibility cannot be applied",
+                        configuredEntityId
+                );
             }
             
-            // Add the Murmur to the world
-            level.addFreshEntity(murmur);
-            
+            // Add the replacement entity to the world
+            level.addFreshEntity(replacementEntity);
+
             // Broadcast debug message to all players if debug logging is enabled
             MessageBroadcaster.broadcastDebugWithLocation(
                     level,
                     getConfig().shouldDebugLog(),
-                    "👻 Spawned invisible Murmur in Witch Villa",
-                    murmur.blockPosition(),
+                    "👻 Spawned invisible replacement entity: " + configuredEntityId,
+                    replacementEntity.blockPosition(),
                     getLogger()
             );
 
         } catch (Exception e) {
-            getLogger().error("Failed to spawn Murmur in Witch Villa", e);
+            getLogger().error("Failed to spawn configured replacement entity", e);
         }
     }
 
+    private boolean isBlockedHauntedSpawnLocation(ServerLevel level, BlockPos pos) {
+        if (isLikelyUndergroundCave(level, pos)) {
+            return true;
+        }
+
+        if (!hasStructureMaterialsNearby(level, pos,
+                getConfig().getMaterialScanHorizontalRadius(),
+                getConfig().getMaterialScanVerticalRadius(),
+                getConfig().getStructureMaterialThreshold())) {
+            return true;
+        }
+
+        if (!level.canSeeSky(pos)) {
+            return false;
+        }
+
+        return !isNearStructureGarden(level, pos)
+                || RANDOM.nextDouble() >= getConfig().getSkyAccessAroundBuildingChance();
+    }
+
+    private boolean isBlockedFogArea(ServerLevel level, BlockPos pos) {
+        if (isLikelyUndergroundCave(level, pos)) {
+            return true;
+        }
+
+        if (hasStructureMaterialsNearby(level, pos,
+                getConfig().getMaterialScanHorizontalRadius(),
+                getConfig().getMaterialScanVerticalRadius(),
+                getConfig().getStructureMaterialThreshold())) {
+            return false;
+        }
+
+        if (hasRoofNearby(level, pos)) {
+            return false;
+        }
+
+        return level.canSeeSky(pos) && !isNearStructureGarden(level, pos);
+    }
+
+    private boolean isOutsideTargetStructure(ServerLevel level, BlockPos pos) {
+        Map<Structure, LongSet> structures = level.structureManager().getAllStructuresAt(pos);
+        for (Structure structure : structures.keySet()) {
+            ResourceLocation structureLocation = level.registryAccess()
+                    .registryOrThrow(net.minecraft.core.registries.Registries.STRUCTURE)
+                    .getKey(structure);
+
+            if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isLikelyUndergroundCave(ServerLevel level, BlockPos pos) {
+        int nearbyCaveMaterials = countNearbyMatchingBlocks(
+                level,
+                pos,
+                getConfig().getMaterialScanHorizontalRadius(),
+                getConfig().getMaterialScanVerticalRadius(),
+                this::isUndergroundMaterial
+        );
+
+        int nearbyStructureMaterials = countNearbyMatchingBlocks(
+                level,
+                pos,
+                getConfig().getMaterialScanHorizontalRadius(),
+                getConfig().getMaterialScanVerticalRadius(),
+                this::isStructureMaterial
+        );
+
+        if (nearbyCaveMaterials >= getConfig().getCaveMaterialThreshold()
+                && nearbyStructureMaterials < getConfig().getStructureMaterialThreshold()) {
+            return true;
+        }
+
+        int surfaceYMotionBlocking = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos.getX(), pos.getZ());
+        int surfaceYWorldSurface = level.getHeight(Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ());
+        int surfaceY = Math.max(surfaceYMotionBlocking, surfaceYWorldSurface);
+        return pos.getY() < surfaceY - getConfig().getCaveDepthTolerance();
+    }
+
+    private boolean hasRoofNearby(ServerLevel level, BlockPos pos) {
+        for (int dy = 1; dy <= 6; dy++) {
+            BlockPos above = pos.above(dy);
+            BlockState state = level.getBlockState(above);
+            if (!state.isAir() && state.isFaceSturdy(level, above, Direction.DOWN)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isNearStructureGarden(ServerLevel level, BlockPos origin) {
+        int radius = getConfig().getSkyAccessNearBuildingRadius();
+        int requiredMaterials = getConfig().getStructureMaterialThreshold() * 2;
+        return hasStructureMaterialsNearby(level, origin, radius, 2, requiredMaterials);
+    }
+
+    private boolean hasStructureMaterialsNearby(ServerLevel level, BlockPos origin,
+                                                int horizontalRadius, int verticalRadius, int threshold) {
+        int structureMaterials = countNearbyMatchingBlocks(
+                level,
+                origin,
+                horizontalRadius,
+                verticalRadius,
+                this::isStructureMaterial
+        );
+        return structureMaterials >= threshold;
+    }
+
+    private int countNearbyMatchingBlocks(ServerLevel level, BlockPos origin,
+                                          int horizontalRadius, int verticalRadius,
+                                          Predicate<BlockState> matcher) {
+        int matches = 0;
+        for (int dx = -horizontalRadius; dx <= horizontalRadius; dx++) {
+            for (int dy = -verticalRadius; dy <= verticalRadius; dy++) {
+                for (int dz = -horizontalRadius; dz <= horizontalRadius; dz++) {
+                    BlockPos sample = origin.offset(dx, dy, dz);
+                    BlockState state = level.getBlockState(sample);
+                    if (matcher.test(state)) {
+                        matches++;
+                    }
+                }
+            }
+        }
+        return matches;
+    }
+
+    private boolean isUndergroundMaterial(BlockState state) {
+        return isConfiguredMaterial(state, getConfig().getConfiguredUndergroundMaterialBlockIds());
+    }
+
+    private boolean isStructureMaterial(BlockState state) {
+        return state.is(BlockTags.LOGS)
+                || state.is(BlockTags.PLANKS)
+                || state.is(BlockTags.WOODEN_STAIRS)
+                || state.is(BlockTags.WOODEN_SLABS)
+                || state.is(BlockTags.FENCES)
+                || state.is(BlockTags.FENCE_GATES)
+                || isConfiguredMaterial(state, getConfig().getConfiguredStructureMaterialBlockIds());
+    }
+
+    private boolean isConfiguredMaterial(BlockState state, Set<ResourceLocation> configuredMaterialBlockIds) {
+        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        return configuredMaterialBlockIds.contains(blockId);
+    }
+
+    private Optional<BlockPos> findDistributedSpawnPos(ServerLevel level, BlockPos origin) {
+        int baseRadius = Math.max(1, getConfig().getDistributionRadius());
+        int attempts = Math.max(1, getConfig().getDistributionAttempts());
+        BlockPos fallbackInsideStructure = null;
+
+        for (int attempt = 0; attempt < attempts; attempt++) {
+            int adaptiveRadius = Math.min(baseRadius * 3,
+                    baseRadius + (attempt * baseRadius) / Math.max(1, attempts / 2));
+            int offsetX = RANDOM.nextInt(adaptiveRadius * 2 + 1) - adaptiveRadius;
+            int offsetZ = RANDOM.nextInt(adaptiveRadius * 2 + 1) - adaptiveRadius;
+            BlockPos sampled = origin.offset(offsetX, 0, offsetZ);
+
+            if (isOutsideTargetStructure(level, sampled)) {
+                continue;
+            }
+
+            BlockPos aligned = alignToWalkablePosition(level, sampled, origin.getY());
+
+            if (isOutsideTargetStructure(level, aligned)) {
+                continue;
+            }
+
+            if (isBlockedHauntedSpawnLocation(level, aligned)) {
+                continue;
+            }
+
+            if (hasNearbyLivingMobs(level, aligned)) {
+                if (fallbackInsideStructure == null) {
+                    fallbackInsideStructure = aligned;
+                }
+                continue;
+            }
+
+            return Optional.of(aligned);
+        }
+
+        return Optional.ofNullable(fallbackInsideStructure);
+    }
+
+    private BlockPos alignToWalkablePosition(ServerLevel level, BlockPos pos, int baseY) {
+        for (int dy = 2; dy >= -2; dy--) {
+            BlockPos candidate = new BlockPos(pos.getX(), baseY + dy, pos.getZ());
+            BlockPos below = candidate.below();
+            if (level.isEmptyBlock(candidate)
+                    && level.isEmptyBlock(candidate.above())
+                    && level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) {
+                return candidate;
+            }
+        }
+        return new BlockPos(pos.getX(), baseY, pos.getZ());
+    }
+
+    private boolean hasNearbyLivingMobs(ServerLevel level, BlockPos pos) {
+        AABB searchArea = new AABB(pos).inflate(getConfig().getMinDistanceToOtherMobs());
+        return !level.getEntitiesOfClass(LivingEntity.class, searchArea,
+                entity -> !(entity instanceof Player)).isEmpty();
+    }
+
+    private boolean isWalkableSpawnCandidate(ServerLevel level, BlockPos candidate) {
+        BlockPos below = candidate.below();
+        return level.isEmptyBlock(candidate)
+                && level.isEmptyBlock(candidate.above())
+                && level.getBlockState(below).isFaceSturdy(level, below, Direction.UP);
+    }
+
+    private boolean isBlockedDirectSpawnSpot(ServerLevel level, BlockPos pos) {
+        if (isLikelyUndergroundCave(level, pos)) {
+            return true;
+        }
+
+        if (!hasStructureMaterialsNearby(
+                level,
+                pos,
+                getConfig().getMaterialScanHorizontalRadius(),
+                getConfig().getMaterialScanVerticalRadius(),
+                getConfig().getStructureMaterialThreshold()
+        )) {
+            return true;
+        }
+
+        if (level.canSeeSky(pos) && !isNearStructureGarden(level, pos)) {
+            return true;
+        }
+
+        return !isWalkableSpawnCandidate(level, pos);
+    }
+
+    private void refreshSpawnSpotCacheAround(ServerLevel level, BlockPos origin) {
+        ResourceKey<Level> levelKey = level.dimension();
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.computeIfAbsent(levelKey, ignored -> new HashMap<>());
+        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.computeIfAbsent(levelKey, ignored -> new HashMap<>());
+
+        long now = level.getGameTime();
+        long ttlTicks = Math.max(20L, getConfig().getCacheTtlSeconds() * 20L);
+        pruneExpiredSpots(levelCache, chunkIndex, now);
+
+        int radius = getConfig().getAreaScanRadius();
+        int scanStep = Math.max(1, getConfig().getCacheScanStep());
+        for (int dx = -radius; dx <= radius; dx += scanStep) {
+            for (int dz = -radius; dz <= radius; dz += scanStep) {
+                for (int dy = -2; dy <= 2; dy++) {
+                    BlockPos candidate = origin.offset(dx, dy, dz);
+                    if (isOutsideTargetStructure(level, candidate)) {
+                        continue;
+                    }
+
+                    if (isBlockedDirectSpawnSpot(level, candidate)) {
+                        continue;
+                    }
+
+                    long packedPos = candidate.asLong();
+                    CachedSpawnSpot existing = levelCache.get(packedPos);
+                    if (existing != null) {
+                        existing.expiresAtGameTick = now + ttlTicks;
+                        continue;
+                    }
+
+                    boolean skyAccess = level.canSeeSky(candidate);
+                    levelCache.put(packedPos, new CachedSpawnSpot(candidate.immutable(), skyAccess, now + ttlTicks));
+                    long chunkKey = ChunkPos.asLong(candidate.getX() >> 4, candidate.getZ() >> 4);
+                    chunkIndex.computeIfAbsent(chunkKey, ignored -> new HashSet<>()).add(packedPos);
+                }
+            }
+        }
+
+        int maxCachedSpots = getConfig().getMaxCachedSpawnSpotsPerLevel();
+        if (levelCache.size() > maxCachedSpots) {
+            List<Map.Entry<Long, CachedSpawnSpot>> entries = new ArrayList<>(levelCache.entrySet());
+            entries.sort(Comparator.comparingLong(entry -> entry.getValue().expiresAtGameTick));
+            int overflow = levelCache.size() - maxCachedSpots;
+            for (int i = 0; i < overflow; i++) {
+                long packedPos = entries.get(i).getKey();
+                CachedSpawnSpot removed = levelCache.remove(packedPos);
+                if (removed != null) {
+                    long chunkKey = ChunkPos.asLong(removed.pos.getX() >> 4, removed.pos.getZ() >> 4);
+                    removeFromChunkIndex(chunkIndex, chunkKey, packedPos);
+                }
+            }
+        }
+    }
+
+    private void pruneExpiredSpots(Map<Long, CachedSpawnSpot> levelCache,
+                                   Map<Long, Set<Long>> chunkIndex,
+                                   long now) {
+        Iterator<Map.Entry<Long, CachedSpawnSpot>> iterator = levelCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Long, CachedSpawnSpot> entry = iterator.next();
+            CachedSpawnSpot spot = entry.getValue();
+            if (spot.expiresAtGameTick >= now) {
+                continue;
+            }
+            iterator.remove();
+            long chunkKey = ChunkPos.asLong(spot.pos.getX() >> 4, spot.pos.getZ() >> 4);
+            removeFromChunkIndex(chunkIndex, chunkKey, entry.getKey());
+        }
+    }
+
+    private void removeFromChunkIndex(Map<Long, Set<Long>> chunkIndex, long chunkKey, long packedPos) {
+        Set<Long> chunkSpots = chunkIndex.get(chunkKey);
+        if (chunkSpots == null) {
+            return;
+        }
+        chunkSpots.remove(packedPos);
+        if (chunkSpots.isEmpty()) {
+            chunkIndex.remove(chunkKey);
+        }
+    }
+
+    private List<CachedSpawnSpot> getNearbyCachedSpots(ServerLevel level, BlockPos centerPos) {
+        ResourceKey<Level> levelKey = level.dimension();
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
+        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
+        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
+            return List.of();
+        }
+
+        int chunkRadius = Math.max(0, getConfig().getCacheQueryChunkRadius());
+        int centerChunkX = centerPos.getX() >> 4;
+        int centerChunkZ = centerPos.getZ() >> 4;
+
+        List<CachedSpawnSpot> spots = new ArrayList<>();
+        for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
+            for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
+                long chunkKey = ChunkPos.asLong(centerChunkX + dx, centerChunkZ + dz);
+                Set<Long> chunkSpots = chunkIndex.get(chunkKey);
+                if (chunkSpots == null || chunkSpots.isEmpty()) {
+                    continue;
+                }
+                for (long packedPos : chunkSpots) {
+                    CachedSpawnSpot spot = levelCache.get(packedPos);
+                    if (spot != null) {
+                        spots.add(spot);
+                    }
+                }
+            }
+        }
+        return spots;
+    }
+
+    private void tryDirectAreaSpawn(ServerLevel level, Player anchorPlayer) {
+        if (!getConfig().isDirectAreaSpawningEnabled()) {
+            return;
+        }
+
+        int interval = Math.max(20, getConfig().getDirectSpawnIntervalTicks());
+        if (anchorPlayer.tickCount % interval != 0) {
+            return;
+        }
+
+        if (RANDOM.nextDouble() >= getConfig().getDirectSpawnAttemptChance()) {
+            return;
+        }
+
+        ResourceKey<Level> levelKey = level.dimension();
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
+        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
+        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
+            return;
+        }
+
+        long now = level.getGameTime();
+        pruneExpiredSpots(levelCache, chunkIndex, now);
+        if (levelCache.isEmpty()) {
+            return;
+        }
+
+        double minDistance = getConfig().getDirectSpawnMinPlayerDistance();
+        double maxDistance = Math.max(minDistance + 2.0, getConfig().getDirectSpawnMaxPlayerDistance());
+        double minDistanceSqr = minDistance * minDistance;
+        double maxDistanceSqr = maxDistance * maxDistance;
+
+        List<CachedSpawnSpot> spots = getNearbyCachedSpots(level, anchorPlayer.blockPosition());
+        if (spots.isEmpty()) {
+            return;
+        }
+
+        int samples = Math.max(1, getConfig().getDirectSpawnCandidateSamples());
+        for (int i = 0; i < samples; i++) {
+            CachedSpawnSpot selected = spots.get(RANDOM.nextInt(spots.size()));
+
+            if (isOutsideTargetStructure(level, selected.pos)) {
+                continue;
+            }
+
+            if (isBlockedDirectSpawnSpot(level, selected.pos)) {
+                continue;
+            }
+
+            if (hasNearbyLivingMobs(level, selected.pos)) {
+                continue;
+            }
+
+            Vec3 spotCenter = Vec3.atCenterOf(selected.pos);
+            double distanceSqr = anchorPlayer.distanceToSqr(spotCenter);
+            if (distanceSqr < minDistanceSqr || distanceSqr > maxDistanceSqr) {
+                continue;
+            }
+
+            if (!selected.skyAccess || isNearStructureGarden(level, selected.pos)) {
+                if (RANDOM.nextDouble() < getConfig().getDirectSpawnReplacementChance()) {
+                    spawnReplacementEntity(level, anchorPlayer, selected.pos);
+                } else {
+                    spawnWitch(level, anchorPlayer, selected.pos);
+                }
+                return;
+            }
+        }
+    }
+
+    private void updateCacheFromPlayerMovement(ServerLevel level, Player player) {
+        UUID playerId = player.getUUID();
+        BlockPos currentPos = player.blockPosition();
+        BlockPos previousPos = lastTrackedPlayerPositions.put(playerId, currentPos.immutable());
+
+        // First observation in structure: refresh around current location only.
+        if (previousPos == null) {
+            refreshSpawnSpotCacheAround(level, currentPos);
+            return;
+        }
+
+        int dx = currentPos.getX() - previousPos.getX();
+        int dy = currentPos.getY() - previousPos.getY();
+        int dz = currentPos.getZ() - previousPos.getZ();
+        int maxDelta = Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
+
+        // Ignore tiny/no movement to reduce redundant scans.
+        if (maxDelta <= 1) {
+            refreshSpawnSpotCacheAround(level, currentPos);
+            return;
+        }
+
+        // Clamp the interpolation cost in case of teleports or lag spikes.
+        int steps = Math.min(getConfig().getMovementInterpolationMaxSteps(), maxDelta);
+        for (int i = 0; i <= steps; i++) {
+            double t = (double) i / (double) steps;
+            int sampleX = previousPos.getX() + (int) Math.round(dx * t);
+            int sampleY = previousPos.getY() + (int) Math.round(dy * t);
+            int sampleZ = previousPos.getZ() + (int) Math.round(dz * t);
+            BlockPos samplePos = new BlockPos(sampleX, sampleY, sampleZ);
+
+            if (isOutsideTargetStructure(level, samplePos)) {
+                continue;
+            }
+
+            if (isBlockedFogArea(level, samplePos)) {
+                continue;
+            }
+
+            refreshSpawnSpotCacheAround(level, samplePos);
+        }
+    }
+
+    private FogZone resolveFogZoneFromCache(ServerLevel level, BlockPos origin) {
+        ResourceKey<Level> levelKey = level.dimension();
+        Map<Long, CachedSpawnSpot> levelCache = cachedSpawnSpotsByLevel.get(levelKey);
+        Map<Long, Set<Long>> chunkIndex = cachedSpawnSpotChunkIndexByLevel.get(levelKey);
+        if (levelCache == null || levelCache.isEmpty() || chunkIndex == null || chunkIndex.isEmpty()) {
+            return FogZone.NONE;
+        }
+
+        long now = level.getGameTime();
+        int indoorMatches = 0;
+        int gardenMatches = 0;
+        int fogCacheProximityRadius = getConfig().getFogCacheProximityRadius();
+        int maxDistanceSqr = fogCacheProximityRadius * fogCacheProximityRadius;
+
+        pruneExpiredSpots(levelCache, chunkIndex, now);
+
+        List<CachedSpawnSpot> nearbySpots = getNearbyCachedSpots(level, origin);
+        for (CachedSpawnSpot spot : nearbySpots) {
+
+            if (spot.pos.distSqr(origin) > maxDistanceSqr) {
+                continue;
+            }
+
+            if (spot.skyAccess) {
+                gardenMatches++;
+            } else {
+                indoorMatches++;
+            }
+        }
+
+        if (indoorMatches > 0 && indoorMatches >= gardenMatches) {
+            return FogZone.INDOOR;
+        }
+        if (gardenMatches > 0) {
+            return FogZone.GARDEN;
+        }
+        return FogZone.NONE;
+    }
+
     /**
-     * Event handler that checks if players are looking at invisible murmurs and makes them visible.
+     * Event handler that checks if players are looking at invisible replacement entities and makes them visible.
      */
     @SubscribeEvent
     public void onEntityTick(EntityTickEvent.Pre event) {
@@ -433,29 +982,33 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        // Check if this is a murmur we're tracking
-        if (!(event.getEntity() instanceof Mob murmur)) {
+        // Check if this is a living replacement entity we're tracking
+        if (!(event.getEntity() instanceof LivingEntity replacementEntity)) {
             return;
         }
         
-        UUID murmurId = murmur.getUUID();
-        if (!invisibleMurmurs.containsKey(murmurId)) {
+        UUID replacementEntityUuid = replacementEntity.getUUID();
+        if (!invisibleReplacementEntities.containsKey(replacementEntityUuid)) {
             return;
         }
 
         // If already spotted, no need to check further
-        if (invisibleMurmurs.get(murmurId)) {
+        if (invisibleReplacementEntities.get(replacementEntityUuid)) {
             return;
         }
         
         // Only process on server side
-        if (murmur.level().isClientSide) {
+        //noinspection resource
+        if (replacementEntity.level().isClientSide) {
             return;
         }
         
-        ServerLevel serverLevel = (ServerLevel) murmur.level();
-        Vec3 murmurPos = murmur.getEyePosition();
-        
+        //noinspection resource
+        if (!(replacementEntity.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        Vec3 replacementEntityPos = replacementEntity.getEyePosition();
+
         // Check if any non-spectator player is looking at the murmur
         for (ServerPlayer player : serverLevel.players()) {
             if (player.isSpectator()) {
@@ -463,7 +1016,7 @@ public class HauntedHouseModule extends AbstractModule<
             }
 
             // Check if player is within reasonable distance (32 blocks)
-            if (player.distanceToSqr(murmur) > 32 * 32) {
+            if (player.distanceToSqr(replacementEntity) > 32 * 32) {
                 continue;
             }
             
@@ -471,20 +1024,20 @@ public class HauntedHouseModule extends AbstractModule<
             Vec3 playerEyePos = player.getEyePosition();
             Vec3 playerLookVec = player.getLookAngle();
             
-            // Calculate vector from player to murmur
-            Vec3 toMurmur = murmurPos.subtract(playerEyePos).normalize();
-            
+            // Calculate vector from player to replacement entity
+            Vec3 toReplacementEntity = replacementEntityPos.subtract(playerEyePos).normalize();
+
             // Check if player is looking roughly in the direction of the murmur
             // (dot product > 0.95 means within about 18 degrees)
-            double dotProduct = playerLookVec.dot(toMurmur);
+            double dotProduct = playerLookVec.dot(toReplacementEntity);
             if (dotProduct < 0.95) {
                 continue;
             }
             
-            // Perform raycast to check if player has line of sight to murmur
+            // Perform araycast to check if player has line of sight to murmur
             ClipContext clipContext = new ClipContext(
                     playerEyePos,
-                    murmurPos,
+                    replacementEntityPos,
                     ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE,
                     player
@@ -494,18 +1047,19 @@ public class HauntedHouseModule extends AbstractModule<
             // If raycast hits something before reaching the murmur, continue
             if (hitResult.getType() != HitResult.Type.MISS) {
                 double distanceToHit = hitResult.getLocation().distanceToSqr(playerEyePos);
-                double distanceToMurmur = murmurPos.distanceToSqr(playerEyePos);
-                if (distanceToHit < distanceToMurmur - 0.5) { // Small tolerance
+                double distanceToReplacementEntity = replacementEntityPos.distanceToSqr(playerEyePos);
+                if (distanceToHit < distanceToReplacementEntity - 0.5) { // Small tolerance
                     continue;
                 }
             }
             
-            // Player is looking at the murmur! Make it visible
-            murmur.removeEffect(MobEffects.INVISIBILITY);
-            invisibleMurmurs.put(murmurId, true); // Mark as spotted
-            
+            // Player is looking at the replacement entity! Make it visible.
+            replacementEntity.removeEffect(MobEffects.INVISIBILITY);
+            invisibleReplacementEntities.put(replacementEntityUuid, true); // Mark as spotted
+
             if (getConfig().shouldDebugLog()) {
-                getLogger().debug("Player {} spotted Murmur at {}", player.getName().getString(), murmur.blockPosition());
+                getLogger().debug("Player {} spotted replacement entity at {}",
+                        player.getName().getString(), replacementEntity.blockPosition());
             }
 
             break; // No need to check other players
@@ -527,6 +1081,7 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         // Only process on server side
+        //noinspection resource
         if (player.level().isClientSide) {
             return;
         }
@@ -541,7 +1096,10 @@ public class HauntedHouseModule extends AbstractModule<
             return;
         }
 
-        ServerLevel serverLevel = (ServerLevel) player.level();
+        //noinspection resource
+        if (!(player.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
         BlockPos playerPos = player.blockPosition();
 
         // Check if player is in a target structure
@@ -557,9 +1115,7 @@ public class HauntedHouseModule extends AbstractModule<
                         .getKey(structure);
 
                 if (structureLocation != null && getConfig().isTargetStructure(structureLocation.toString())) {
-                    // Get the structure boundaries at this position
-                    LongSet structureChunks = allStructures.get(structure);
-                    
+
                     // Get structure start for this position
                     var structureStart = serverLevel.structureManager()
                             .getStructureAt(playerPos, structure);
@@ -593,13 +1149,44 @@ public class HauntedHouseModule extends AbstractModule<
         }
 
         UUID playerId = player.getUUID();
+        int fogTrail = playerFogTrailTicks.getOrDefault(playerId, 0);
+
+        if (insideTargetStructure && isBlockedFogArea(serverLevel, playerPos)) {
+            insideTargetStructure = false;
+        }
 
         if (insideTargetStructure) {
-            // TODO: Check if inside buildings only (not just the structure area) (no sky access)
-            // TODO: Check if not underground in caves
-            // Player is inside - apply fog effect (darkness is like natural cave fog)
+            updateCacheFromPlayerMovement(serverLevel, player);
+        }
+
+        if (insideTargetStructure && getConfig().isDirectAreaSpawningEnabled()) {
+            tryDirectAreaSpawn(serverLevel, player);
+        }
+
+        if (insideTargetStructure) {
+            FogZone fogZone = resolveFogZoneFromCache(serverLevel, playerPos);
+            if (fogZone == FogZone.NONE) {
+                fogZone = serverLevel.canSeeSky(playerPos) ? FogZone.GARDEN : FogZone.INDOOR;
+            }
+
+            int baseDuration;
+            if (fogZone == FogZone.INDOOR) {
+                fogTrail = Math.min(getConfig().getFogTrailMaxTicks(), fogTrail + 50);
+                baseDuration = getConfig().getFogIndoorBaseDurationTicks();
+            } else {
+                fogTrail = Math.max(0, fogTrail - getConfig().getFogTrailDecayTicks());
+                baseDuration = getConfig().getFogGardenBaseDurationTicks();
+            }
+
+            playerFogTrailTicks.put(playerId, fogTrail);
+
+            // Indoor cache zones extend fog noticeably longer than garden/open zones.
             int amplifier = getConfig().getFogEffectAmplifier();
-            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 40, amplifier, false, false));
+            player.addEffect(new MobEffectInstance(MobEffects.DARKNESS,
+                    baseDuration + fogTrail,
+                    amplifier,
+                    false,
+                    false));
 
             // Track first entry for debug message
             if (!playersInStructure.containsKey(playerId)) {
@@ -613,6 +1200,24 @@ public class HauntedHouseModule extends AbstractModule<
                 );
             }
         } else {
+            lastTrackedPlayerPositions.remove(playerId);
+
+            if (fogTrail > 0) {
+                int amplifier = getConfig().getFogEffectAmplifier();
+                player.addEffect(new MobEffectInstance(MobEffects.DARKNESS,
+                        Math.min(40, fogTrail),
+                        amplifier,
+                        false,
+                        false));
+
+                int reducedTrail = Math.max(0, fogTrail - getConfig().getFogTrailDecayTicks());
+                if (reducedTrail == 0) {
+                    playerFogTrailTicks.remove(playerId);
+                } else {
+                    playerFogTrailTicks.put(playerId, reducedTrail);
+                }
+            }
+
             // Player left structure - remove from tracking
             if (playersInStructure.remove(playerId) != null) {
                 MessageBroadcaster.broadcastDebug(

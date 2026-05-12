@@ -13,6 +13,7 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             "minecraft:rabbit_stew:64",
             "minecraft:beetroot_soup:64",
             "minecraft:suspicious_stew:64",
+            "minecraft:ender_pearl:64",
             // tough as nails water bottles (keep as 64 by default)
             "toughasnails:dirty_water_bottle:64",
             "toughasnails:purified_water_bottle:64",
@@ -25,7 +26,8 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             "toughasnails:pumpkin_juice:64",
             "toughasnails:sweet_berry_juice:64",
             "toughasnails:ice_cream:64",
-            "toughasnails:charc_os:64"
+            "toughasnails:charc_os:64",
+            "create:builders_tea:64"
     );
 
     private ModConfigSpec.ConfigValue<List<? extends String>> stackableItems;
@@ -76,7 +78,7 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
 
         defaultPotionStackSize = builder
                 .comment("Default stack size for potions, splash potions, lingering potions, and tipped arrows.")
-                .defineInRange("default_potion_stack_size", 16, 1, 64);
+                .defineInRange("default_potion_stack_size", 64, 1, 64);
     }
 
     public java.util.List<String> getStackableItems() {
@@ -97,10 +99,10 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             try {
                 return defaultPotionStackSize.get();
             } catch (Exception e) {
-                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 16 - {}",
+                getModule().getModuleLogger().debug("Config not yet loaded for default_potion_stack_size, using default: 64 - {}",
                         e.getMessage());
             }
         }
-        return 16;
+        return 64;
     }
 }

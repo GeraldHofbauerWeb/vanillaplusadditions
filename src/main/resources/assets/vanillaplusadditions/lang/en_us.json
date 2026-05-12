@@ -1,0 +1,22 @@
+{
+  "desc.vpa.toughasnails.thirst_restored": "Thirst Restored",
+  "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s ran out of oxygen",
+  "message.action_bar.remaining_oxygen": "Remaining Oxygen: %s %s",
+  "message.action_bar.low_oxygen_alert": "§cLOW OXYGEN ALERT",
+  "command.vpa.mobglow.no_entities_clear": "No glowing entities found to clear",
+  "command.vpa.mobglow.cleared_all": "Cleared glow effect from %s entities",
+  "command.vpa.mobglow.unknown_type": "Unknown entity type: %s",
+  "command.vpa.mobglow.no_entities_type_clear": "No glowing %s entities found to clear",
+  "command.vpa.mobglow.cleared_type": "Cleared glow effect from %s %s entities",
+  "command.vpa.mobglow.no_players": "Cannot apply glow effect to players",
+  "command.vpa.mobglow.max_duration": "Duration cannot exceed %s seconds",
+  "command.vpa.mobglow.invalid_duration": "Invalid duration: %s. Use a number or 'infinite'",
+  "command.vpa.mobglow.no_entities_apply": "No %s entities found to apply glow effect",
+  "command.vpa.mobglow.already_glowing": "All %s %s entities already have glow effect",
+  "command.vpa.mobglow.applied_success": "Applied glow effect to %s %s entities %s",
+  "command.vpa.mobglow.applied_new": "Applied glow effect to %s new %s entities %s",
+  "command.vpa.mobglow.infinite": "indefinitely",
+  "command.vpa.mobglow.for_seconds": "for %s seconds",
+  "message.vpa.death_coords": "Player %s died at coordinates: X=%d, Y=%d, Z=%d in dimension %s",
+  "message.vpa.death_coords.hover": "Click to teleport to death location"
+}

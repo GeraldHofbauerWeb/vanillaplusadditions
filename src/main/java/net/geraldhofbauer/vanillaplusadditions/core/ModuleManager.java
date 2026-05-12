@@ -133,6 +133,26 @@ public final class ModuleManager {
             }
         }
     }
+
+    /**
+     * Calls load complete for all enabled modules.
+     */
+    public void loadComplete() {
+        if (!initialized) {
+            LOGGER.error("Cannot call load complete before initialization");
+            return;
+        }
+
+        LOGGER.debug("Running load complete for {} modules", enabledModules.size());
+
+        for (Module module : enabledModules) {
+            try {
+                module.loadComplete();
+            } catch (Exception e) {
+                LOGGER.error("Failed load complete for module: {}", module.getDisplayName(), e);
+            }
+        }
+    }
     
     /**
      * Calls client setup for all enabled modules.

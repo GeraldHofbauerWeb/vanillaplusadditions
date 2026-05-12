@@ -1,12 +1,15 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton;
 
-import it.unimi.dsi.fastutil.longs.LongSet;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
-import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.config.WitherSkeletonConfig;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
@@ -37,14 +40,15 @@ import java.util.Map;
  * - Configurable message format and replacement behavior
  */
 public class WitherSkeletonModule
-        extends AbstractModule<WitherSkeletonModule, AbstractModuleConfig.DefaultModuleConfig<WitherSkeletonModule>> {
+        extends AbstractModule<WitherSkeletonModule, WitherSkeletonConfig> {
+
 
     public WitherSkeletonModule() {
         super("wither_skeleton",
                 "Wither Skeleton Enforcer",
                 "Prevents normal skeletons from spawning in the Nether and broadcasts messages "
                         + "about blocked spawns",
-                AbstractModuleConfig::createDefault
+                WitherSkeletonConfig::new
         );
     }
 
@@ -62,6 +66,7 @@ public class WitherSkeletonModule
             getLogger().debug("Wither Skeleton module common setup complete");
         }
     }
+
 
     /**
      * Event handler that prevents normal skeleton spawns in the Nether and broadcasts messages
@@ -99,8 +104,12 @@ public class WitherSkeletonModule
             return;
         }
         boolean insideFortress = false;
+        Registry<Structure> structureRegistry = serverLevel.registryAccess()
+                .registryOrThrow(Registries.STRUCTURE);
         for (Structure structure : allStructures.keySet()) {
-            if (structure instanceof NetherFortressStructure) {
+            if (structure instanceof NetherFortressStructure
+                    || ResourceLocation.fromNamespaceAndPath("betterfortresses", "fortress")
+                    .equals(structureRegistry.getKey(structure))) {
                 // Allow normal skeleton spawn inside Nether Fortress
                 if (getConfig().shouldDebugLog()) {
                     getLogger().debug("Allowed normal skeleton spawn inside Nether Fortress at {}",
