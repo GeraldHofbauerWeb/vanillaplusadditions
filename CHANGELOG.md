@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.5] - 2026-05-13
+### Added
+- Neue Admin-Befehle: `/vpa module status|enable|disable|clear` für Runtime-Overrides ohne Config-Datei-Edit sowie `/hauntedhouse whereami` für In-/Outdoor-Debugging.
+- Build-Tasks für lokale Tests: `deployJarToLocalMinecraftMods`, `resetLocalMinecraftVpaConfig`, `enableHauntedHouseInLocalConfig` und `deployToLocalMinecraft`.
+
+### Changed
+- HauntedHouseModule: Spawn-/Reveal-Logik robuster und performanter gemacht (gedrosselte Reveal-Checks, Cache-Refresh-Intervall, gecachte Direct-Spot-Validierung, verbesserte Cave-vs-Structure-Heuristik).
+- HauntedHouseConfig: Neue Tuning-Optionen `cache_refresh_interval_ticks` und `direct_spot_validation_interval_ticks` ergänzt.
+- ModuleManager/AbstractModule: Runtime-Override-Pfad ergänzt, damit Module zur Laufzeit gezielt an/ausgeschaltet werden können.
+
 ## [0.13.4] - 2026-05-11
 ### Fixed
 - DeathCoordinatesModule: Teleport-Befehl korrigiert — verwendet jetzt `@s` statt `@p`, um den Spieler zu teleportieren, der auf die Nachricht klickt, statt willkürlich den nächsten Spieler.

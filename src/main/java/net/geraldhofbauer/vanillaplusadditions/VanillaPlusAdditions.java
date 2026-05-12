@@ -1,7 +1,12 @@
 package net.geraldhofbauer.vanillaplusadditions;
 
 import com.mojang.logging.LogUtils;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
+import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
@@ -15,6 +20,12 @@ import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.Overp
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -29,8 +40,11 @@ import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.client.Thirs
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
+
+import java.util.Comparator;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(VanillaPlusAdditions.MODID)
@@ -39,6 +53,14 @@ public class VanillaPlusAdditions {
     public static final String MODID = "vanillaplusadditions";
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final SuggestionProvider<CommandSourceStack> MODULE_ID_SUGGESTIONS = (context, builder) ->
+            SharedSuggestionProvider.suggest(
+                    ModuleManager.getInstance().getAllModules().stream()
+                            .map(Module::getModuleId)
+                            .sorted(),
+                    builder
+            );
 
     // The constructor for the mod class is the first code that is run when your mod is loaded.
     // FML will recognize some parameter types like IEventBus or ModContainer and pass them in automatically.
@@ -125,6 +147,184 @@ public class VanillaPlusAdditions {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+    }
+
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+
+        registerGlobalModuleCommand(dispatcher);
+        registerHauntedHouseDebugCommand(dispatcher);
+    }
+
+    private void registerGlobalModuleCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(
+                Commands.literal("vpa")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("module")
+                                .then(Commands.literal("status")
+                                        .executes(this::executeModuleStatusList)
+                                        .then(Commands.argument("module_id", StringArgumentType.word())
+                                                .suggests(MODULE_ID_SUGGESTIONS)
+                                                .executes(this::executeModuleStatusSingle)
+                                        )
+                                )
+                                .then(Commands.literal("enable")
+                                        .then(Commands.argument("module_id", StringArgumentType.word())
+                                                .suggests(MODULE_ID_SUGGESTIONS)
+                                                .executes(context -> executeSetModuleRuntimeEnabled(context, true))
+                                        )
+                                )
+                                .then(Commands.literal("disable")
+                                        .then(Commands.argument("module_id", StringArgumentType.word())
+                                                .suggests(MODULE_ID_SUGGESTIONS)
+                                                .executes(context -> executeSetModuleRuntimeEnabled(context, false))
+                                        )
+                                )
+                                .then(Commands.literal("clear")
+                                        .then(Commands.argument("module_id", StringArgumentType.word())
+                                                .suggests(MODULE_ID_SUGGESTIONS)
+                                                .executes(this::executeClearModuleRuntimeOverride)
+                                        )
+                                )
+                        )
+        );
+    }
+
+    private void registerHauntedHouseDebugCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(
+                Commands.literal("hauntedhouse")
+                        .then(Commands.literal("whereami")
+                                .executes(this::executeHauntedHouseWhereAmI)
+                        )
+        );
+    }
+
+    private int executeModuleStatusList(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ModuleManager moduleManager = ModuleManager.getInstance();
+
+        source.sendSuccess(() -> Component.literal("VanillaPlusAdditions module status:")
+                .withStyle(ChatFormatting.GOLD), false);
+
+        moduleManager.getAllModules().stream()
+                .sorted(Comparator.comparing(Module::getModuleId))
+                .forEach(module -> {
+                    String moduleId = module.getModuleId();
+                    boolean configEnabled = module.getConfig().isEnabled();
+                    Boolean runtimeOverride = moduleManager.getRuntimeModuleOverride(moduleId);
+                    boolean effectiveEnabled = moduleManager.isModuleEnabled(moduleId);
+
+                    String runtimeText = runtimeOverride == null ? "none" : runtimeOverride.toString();
+                    source.sendSuccess(() -> Component.literal(String.format(
+                            "- %s: effective=%s, config=%s, runtime_override=%s",
+                            moduleId,
+                            effectiveEnabled,
+                            configEnabled,
+                            runtimeText
+                    )), false);
+                });
+
+        return 1;
+    }
+
+    private int executeModuleStatusSingle(CommandContext<CommandSourceStack> context) {
+        String moduleId = StringArgumentType.getString(context, "module_id");
+        CommandSourceStack source = context.getSource();
+        ModuleManager moduleManager = ModuleManager.getInstance();
+        Module module = moduleManager.getModule(moduleId);
+
+        if (module == null) {
+            source.sendFailure(Component.literal("Unknown module: " + moduleId)
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        boolean configEnabled = module.getConfig().isEnabled();
+        Boolean runtimeOverride = moduleManager.getRuntimeModuleOverride(moduleId);
+        boolean effectiveEnabled = moduleManager.isModuleEnabled(moduleId);
+        String runtimeText = runtimeOverride == null ? "none" : runtimeOverride.toString();
+
+        source.sendSuccess(() -> Component.literal(String.format(
+                "%s -> effective=%s, config=%s, runtime_override=%s",
+                moduleId,
+                effectiveEnabled,
+                configEnabled,
+                runtimeText
+        )).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private int executeSetModuleRuntimeEnabled(CommandContext<CommandSourceStack> context, boolean enabled) {
+        String moduleId = StringArgumentType.getString(context, "module_id");
+        CommandSourceStack source = context.getSource();
+        ModuleManager moduleManager = ModuleManager.getInstance();
+
+        if (!moduleManager.setRuntimeModuleEnabled(moduleId, enabled)) {
+            source.sendFailure(Component.literal("Unknown module: " + moduleId)
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal(String.format(
+                "Runtime override set: %s = %s (effective=%s)",
+                moduleId,
+                enabled,
+                moduleManager.isModuleEnabled(moduleId)
+        )).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private int executeClearModuleRuntimeOverride(CommandContext<CommandSourceStack> context) {
+        String moduleId = StringArgumentType.getString(context, "module_id");
+        CommandSourceStack source = context.getSource();
+        ModuleManager moduleManager = ModuleManager.getInstance();
+
+        if (moduleManager.getModule(moduleId) == null) {
+            source.sendFailure(Component.literal("Unknown module: " + moduleId)
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        boolean cleared = moduleManager.clearRuntimeModuleOverride(moduleId);
+        source.sendSuccess(() -> Component.literal(String.format(
+                "Runtime override %s for %s. Effective=%s",
+                cleared ? "cleared" : "was not set",
+                moduleId,
+                moduleManager.isModuleEnabled(moduleId)
+        )).withStyle(ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
+    private int executeHauntedHouseWhereAmI(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        Module module = ModuleManager.getInstance().getModule("haunted_house");
+
+        if (!(module instanceof HauntedHouseModule hauntedHouseModule)) {
+            source.sendFailure(Component.literal("Haunted House module is not registered")
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception ex) {
+            source.sendFailure(Component.literal("This command can only be used by a player")
+                    .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        HauntedHouseModule.PlayerLocationState state = hauntedHouseModule.getPlayerLocationState(player);
+        String stateText = switch (state) {
+            case INSIDE -> "inside";
+            case OUTSIDE_IN_STRUCTURE -> "outside (inside structure area)";
+            case OUTSIDE_STRUCTURE -> "outside structure";
+        };
+
+        source.sendSuccess(() -> Component.literal("Haunted House location state: " + stateText)
+                .withStyle(ChatFormatting.AQUA), false);
+        return 1;
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class

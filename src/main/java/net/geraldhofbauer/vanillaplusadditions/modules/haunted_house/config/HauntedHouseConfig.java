@@ -55,7 +55,12 @@ public class HauntedHouseConfig
     private ModConfigSpec.DoubleValue directSpawnReplacementChance;
     private ModConfigSpec.IntValue directSpawnCandidateSamples;
     private ModConfigSpec.IntValue areaScanRadius;
+    private ModConfigSpec.IntValue cacheScanStep;
+    private ModConfigSpec.IntValue cacheQueryChunkRadius;
+    private ModConfigSpec.IntValue movementInterpolationMaxSteps;
+    private ModConfigSpec.IntValue cacheRefreshIntervalTicks;
     private ModConfigSpec.IntValue cacheTtlSeconds;
+    private ModConfigSpec.IntValue directSpotValidationIntervalTicks;
     private ModConfigSpec.IntValue directSpawnMinPlayerDistance;
     private ModConfigSpec.IntValue directSpawnMaxPlayerDistance;
     private ModConfigSpec.IntValue maxCachedSpawnSpotsPerLevel;
@@ -236,9 +241,29 @@ public class HauntedHouseConfig
                 .comment("Horizontal scan radius around players to discover and cache indoor/garden spawn spots")
                 .defineInRange("area_scan_radius", 8, 2, 48);
 
+        cacheScanStep = builder
+                .comment("Step size for cache area scans (higher = less CPU, less precision)")
+                .defineInRange("cache_scan_step", 3, 1, 8);
+
+        cacheQueryChunkRadius = builder
+                .comment("Chunk radius used when querying cached spots around players")
+                .defineInRange("cache_query_chunk_radius", 1, 0, 4);
+
+        movementInterpolationMaxSteps = builder
+                .comment("Max interpolation steps for movement-based cache updates")
+                .defineInRange("movement_interpolation_max_steps", 10, 1, 64);
+
+        cacheRefreshIntervalTicks = builder
+                .comment("Minimum ticks between movement-driven cache refresh passes per player")
+                .defineInRange("cache_refresh_interval_ticks", 20, 1, 400);
+
         cacheTtlSeconds = builder
                 .comment("How long cached spawn spots stay valid before being dropped")
                 .defineInRange("cache_ttl_seconds", 180, 30, 1800);
+
+        directSpotValidationIntervalTicks = builder
+                .comment("Ticks to reuse direct-spot validation before rechecking expensive cave/material/mob checks")
+                .defineInRange("direct_spot_validation_interval_ticks", 60, 1, 1200);
 
         directSpawnMinPlayerDistance = builder
                 .comment("Minimum distance to players for direct haunted spawns")
@@ -310,7 +335,12 @@ public class HauntedHouseConfig
             LOGGER.debug("  - Direct spawn replacement chance: {}%", directSpawnReplacementChance.get());
             LOGGER.debug("  - Direct spawn candidate samples: {}", directSpawnCandidateSamples.get());
             LOGGER.debug("  - Area scan radius: {}", areaScanRadius.get());
+            LOGGER.debug("  - Cache scan step: {}", cacheScanStep.get());
+            LOGGER.debug("  - Cache query chunk radius: {}", cacheQueryChunkRadius.get());
+            LOGGER.debug("  - Movement interpolation max steps: {}", movementInterpolationMaxSteps.get());
+            LOGGER.debug("  - Cache refresh interval ticks: {}", cacheRefreshIntervalTicks.get());
             LOGGER.debug("  - Cache TTL seconds: {}", cacheTtlSeconds.get());
+            LOGGER.debug("  - Direct spot validation interval ticks: {}", directSpotValidationIntervalTicks.get());
             LOGGER.debug("  - Direct spawn min player distance: {}", directSpawnMinPlayerDistance.get());
             LOGGER.debug("  - Direct spawn max player distance: {}", directSpawnMaxPlayerDistance.get());
             LOGGER.debug("  - Max cached spawn spots per level: {}", maxCachedSpawnSpotsPerLevel.get());
@@ -690,8 +720,28 @@ public class HauntedHouseConfig
         return areaScanRadius != null ? areaScanRadius.get() : 8;
     }
 
+    public int getCacheScanStep() {
+        return cacheScanStep != null ? cacheScanStep.get() : 3;
+    }
+
+    public int getCacheQueryChunkRadius() {
+        return cacheQueryChunkRadius != null ? cacheQueryChunkRadius.get() : 1;
+    }
+
+    public int getMovementInterpolationMaxSteps() {
+        return movementInterpolationMaxSteps != null ? movementInterpolationMaxSteps.get() : 10;
+    }
+
+    public int getCacheRefreshIntervalTicks() {
+        return cacheRefreshIntervalTicks != null ? cacheRefreshIntervalTicks.get() : 20;
+    }
+
     public int getCacheTtlSeconds() {
         return cacheTtlSeconds != null ? cacheTtlSeconds.get() : 180;
+    }
+
+    public int getDirectSpotValidationIntervalTicks() {
+        return directSpotValidationIntervalTicks != null ? directSpotValidationIntervalTicks.get() : 60;
     }
 
     public int getDirectSpawnMinPlayerDistance() {

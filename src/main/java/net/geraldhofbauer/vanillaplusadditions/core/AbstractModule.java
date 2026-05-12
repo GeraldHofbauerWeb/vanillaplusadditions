@@ -207,7 +207,7 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
         }
 
         try {
-            return config.isEnabled();
+            return ModuleManager.getInstance().resolveModuleEnabled(moduleId, config.isEnabled());
         } catch (Exception e) {
             // If config not available yet, return true to allow initialization
             logger.debug("Config not available during module enabled check: {}", e.getMessage());

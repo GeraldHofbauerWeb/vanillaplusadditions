@@ -22,6 +22,7 @@ public final class ModuleManager {
     private static volatile ModuleManager instance;
     private final Map<String, Module> registeredModules = new ConcurrentHashMap<>();
     private final Map<String, Boolean> moduleEnabledState = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> runtimeModuleOverrides = new ConcurrentHashMap<>();
     private final List<Module> enabledModules = new ArrayList<>();
     
     private boolean initialized = false;
@@ -191,9 +192,44 @@ public final class ModuleManager {
      * @return true if the module is enabled
      */
     public boolean isModuleEnabled(String moduleId) {
+        Boolean override = runtimeModuleOverrides.get(moduleId);
+        if (override != null) {
+            return override;
+        }
         return moduleEnabledState.getOrDefault(moduleId, false);
     }
-    
+
+    /**
+     * Resolves module enabled state using runtime override first, then config state.
+     */
+    public boolean resolveModuleEnabled(String moduleId, boolean configEnabled) {
+        Boolean override = runtimeModuleOverrides.get(moduleId);
+        return override != null ? override : configEnabled;
+    }
+
+    /**
+     * Sets a runtime override for a module's enabled state.
+     * This does not persist to config files and applies until restart or clear.
+     */
+    public boolean setRuntimeModuleEnabled(String moduleId, boolean enabled) {
+        if (!registeredModules.containsKey(moduleId)) {
+            return false;
+        }
+        runtimeModuleOverrides.put(moduleId, enabled);
+        return true;
+    }
+
+    /**
+     * Clears runtime override for a module and falls back to config state.
+     */
+    public boolean clearRuntimeModuleOverride(String moduleId) {
+        return runtimeModuleOverrides.remove(moduleId) != null;
+    }
+
+    public Boolean getRuntimeModuleOverride(String moduleId) {
+        return runtimeModuleOverrides.get(moduleId);
+    }
+
     /**
      * Gets all registered modules.
      * 
