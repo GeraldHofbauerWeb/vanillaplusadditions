@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.3] - 2026-05-13
+### Added
+- Worldgen Diagnostics Tool: Automatically detects incompatible mod combinations (lithostitched, sable, yungsapi, mr_dungeons_andtaverns) and provides remediation guidance when worldgen crashes occur.
+- Clear documentation: Crash Guard is a **temporary workaround**, not a permanent fix. It requires incompatible mods to be disabled or replaced with compatible alternatives.
+
+### Changed
+- Worldgen Guard documentation clarified: ArrayIndexOutOfBoundsException in Aquifer generation is caused by Mod A modifying worldgen structures in ways that Mod B doesn't expect. This is a root-cause mod conflict that cannot be fixed by protection code alone.
+- Server startup now reports diagnos tics summary when `worldgenCrashGuardEnabled=true`.
+
 ## [0.14.2] - 2026-05-13
 ### Added
 - Worldgen Crash Guard: Auto-Cleanup-Feature bei Fehlern — korrupte Region-Dateien (region/, poi/, entities/) werden automatisch gelöscht.

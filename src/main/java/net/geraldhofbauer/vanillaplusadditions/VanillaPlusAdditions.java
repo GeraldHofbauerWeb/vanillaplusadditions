@@ -19,6 +19,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
+import net.geraldhofbauer.vanillaplusadditions.util.WorldgenDiagnostics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -146,8 +147,10 @@ public class VanillaPlusAdditions {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
+        // Run worldgen diagnostics if guard is enabled
+        if (ModulesConfig.isWorldgenCrashGuardEnabled()) {
+            WorldgenDiagnostics.diagnoseAndReport();
+        }
     }
 
     @SubscribeEvent
