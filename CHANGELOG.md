@@ -8,17 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Neues **Flying Fish**-Modul mit eigenem Wasser-Ambient-Mob, Spawn-Egg, Bucket und speziellen Flying-Fish-Boots.
 - Neue Food-Items: roher und gegarter Flying Fish inklusive Smelting-, Smoking- und Campfire-Rezepten.
-- Zentraler **Vanilla Plus Additions**-Creative-Tab, in den Module ihre Inhalte gesammelt eintragen koennen.
-- Eigene Item- und Entity-Texturen fuer Flying Fish, Flying-Fish-Bucket und Flying-Fish-Boots sowie Lokalisierungen in mehreren Sprachen.
+- Zentraler **Vanilla Plus Additions**-Creative-Tab, in den Module ihre Inhalte gesammelt eintragen können.
+- Eigene Item- und Entity-Texturen für Flying Fish, Flying-Fish-Bucket und Flying-Fish-Boots sowie Lokalisierungen in mehreren Sprachen.
 
 ### Changed
-- Flying-Fish-Boots basieren jetzt auf Diamond-Boots-Stats und koennen ueber ein eigenes Rezept mit Diamond Boots + Flying Fish Bucket hergestellt werden.
-- Flying-Fish-Crafting wird nun direkt im `FlyingFishModule` zur Laufzeit wie im konfigurierbaren Crafting-Modul injiziert, damit das Rezept serverseitig robust verfuegbar ist.
-- Flying-Fish-Items werden nicht mehr auf verschiedene Vanilla-Tabs verteilt, sondern ueber die neue zentrale Creative-Tab-Infrastruktur angezeigt.
+- Flying-Fish-Boots basieren jetzt auf Diamond-Boots-Stats und können über ein eigenes Rezept mit Diamond Boots + Flying Fish Bucket hergestellt werden.
+- Flying-Fish-Crafting wird nun direkt im `FlyingFishModule` zur Laufzeit wie im konfigurierbaren Crafting-Modul injiziert, damit das Rezept serverseitig robust verfügbar ist.
+- Flying-Fish-Items werden nicht mehr auf verschiedene Vanilla-Tabs verteilt, sondern über die neue zentrale Creative-Tab-Infrastruktur angezeigt.
 
 ### Fixed
-- Flying Fish droppen jetzt verlaesslich ihren Fisch-Item-Drop; falls die Loot-Table nicht greift, sorgt ein Modul-Fallback fuer den korrekten Raw-/Cooked-Drop.
-- Mehrere Flying-Fish-Assets und Modelle wurden ueberarbeitet, damit Bucket-, Boots- und Item-Darstellung konsistent im Spiel erscheinen.
+- Flying Fish droppen jetzt verlässlich ihren Fisch-Item-Drop; falls die Loot-Table nicht greift, sorgt ein Modul-Fallback für den korrekten Raw-/Cooked-Drop.
+- Mehrere Flying-Fish-Assets und Modelle wurden überarbeitet, damit Bucket-, Boots- und Item-Darstellung konsistent im Spiel erscheinen.
 
 ## [0.14.6] - 2026-05-13
 ### Fixed
@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Worldgen Guard documentation clarified: ArrayIndexOutOfBoundsException in Aquifer generation is caused by Mod A modifying worldgen structures in ways that Mod B doesn't expect. This is a root-cause mod conflict that cannot be fixed by protection code alone.
-- Server startup now reports diagnos tics summary when `worldgenCrashGuardEnabled=true`.
+- Server startup now reports diagnostics summary when `worldgenCrashGuardEnabled=true`.
 
 ## [0.14.2] - 2026-05-13
 ### Added
@@ -68,17 +68,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.1] - 2026-05-13
 ### Changed
-- Worldgen Crash Guard: Verbessertes Debug-Logging mit globaler Debug-Flag-Unterstützung, um Administratoren beim Isolieren inkompatsibler Mods zu helfen.
-- Command `/vpa module status`: Neue dekorative Box-Formatierung mit Farben und Symbolen (✓/✗, ▲/▼) fuer bessere Lesbarkeit.
-- Command `/vpa module status <module_id>`: Detailliertes Format mit UI-Kaesten und Farb-Highlights fuer einzelne Module.
+- Worldgen Crash Guard: Verbessertes Debug-Logging mit globaler Debug-Flag-Unterstützung, um Administratoren beim Isolieren inkompatibler Mods zu helfen.
+- Command `/vpa module status`: Neue dekorative Box-Formatierung mit Farben und Symbolen (✓/✗, ▲/▼) für bessere Lesbarkeit.
+- Command `/vpa module status <module_id>`: Detailliertes Format mit UI-Kästen und Farb-Highlights für einzelne Module.
 
 ## [0.14.0] - 2026-05-13
 ### Added
-- Emergency-Worldgen-Crash-Guard als Mixin eingefuehrt: Faengt `IndexOutOfBoundsException` waehrend `structure_starts`-Generierung optional ab, um Serverabstuerze bei inkompatiblen Worldgen-Mod-Kombinationen zu vermeiden.
-- Neue Mixin-Konfigurationsdatei `vanillaplusadditions.mixins.json` hinzugefuegt und in der Mod-Metadatei aktiviert.
+- Emergency-Worldgen-Crash-Guard als Mixin eingeführt: Fängt `IndexOutOfBoundsException` während `structure_starts`-Generierung optional ab, um Serverabstürze bei inkompatiblen Worldgen-Mod-Kombinationen zu vermeiden.
+- Neue Mixin-Konfigurationsdatei `vanillaplusadditions.mixins.json` hinzugefügt und in der Mod-Metadatei aktiviert.
 
 ### Changed
-- Globale Config um `worldgenCrashGuardEnabled` erweitert (Default: `false`), damit der Guard bewusst als temporaerer Workaround ein-/ausgeschaltet werden kann.
+- Globale Config um `worldgenCrashGuardEnabled` erweitert (Default: `false`), damit der Guard bewusst als temporärer Workaround ein-/ausgeschaltet werden kann.
 
 ## [0.13.5] - 2026-05-13
 ### Added
@@ -101,7 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.2] - 2026-05-10
 ### Fixed
 - Release workflow: YAML-Syntaxfehler in `.github/workflows/release.yml` behoben, sodass GitHub Actions den Workflow wieder korrekt laden kann.
-- Release workflow: Backfill-Step erstellt Release-Text jetzt robust ueber eine temporaere Datei statt eines mehrzeiligen Inline-Strings.
+- Release workflow: Backfill-Step erstellt Release-Text jetzt robust über eine temporäre Datei statt eines mehrzeiligen Inline-Strings.
 
 ## [0.13.1] - 2026-05-10
 ### Changed
