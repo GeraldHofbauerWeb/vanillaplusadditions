@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:smelting",
+  "category": "food",
+  "ingredient": {
+    "item": "vanillaplusadditions:flying_fish"
+  },
+  "result": "vanillaplusadditions:cooked_flying_fish",
+  "experience": 0.35,
+  "cookingtime": 200
+}
+

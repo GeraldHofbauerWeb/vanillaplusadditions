@@ -1,4 +1,5 @@
 {
+  "itemGroup.vanillaplusadditions.main": "Vanilla Plus Additions",
   "desc.vpa.toughasnails.thirst_restored": "Soif restaurée",
   "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s a manqué d'oxygène",
   "message.action_bar.remaining_oxygen": "Oxygène restant : %s %s",
@@ -18,5 +19,13 @@
   "command.vpa.mobglow.infinite": "indéfiniment",
   "command.vpa.mobglow.for_seconds": "pendant %s secondes",
   "message.vpa.death_coords": "Le joueur %s est mort aux coordonnées : X=%d, Y=%d, Z=%d dans la dimension %s",
-  "message.vpa.death_coords.hover": "Cliquez pour vous téléporter au lieu de la mort"
+  "message.vpa.death_coords.hover": "Cliquez pour vous téléporter au lieu de la mort",
+  "entity.vanillaplusadditions.flying_fish": "Poisson volant",
+  "item.vanillaplusadditions.flying_fish": "Poisson volant",
+  "item.vanillaplusadditions.cooked_flying_fish": "Poisson volant cuit",
+  "item.vanillaplusadditions.flying_fish_bucket": "Seau de poisson volant",
+  "item.vanillaplusadditions.flying_fish_boots": "Bottes de poisson volant",
+  "item.vanillaplusadditions.flying_fish_spawn_egg": "Oeuf d'apparition de poisson volant",
+  "item.vanillaplusadditions.flying_fish_boots.desc_1": "Glissez plus vite sur la surface de l'eau",
+  "item.vanillaplusadditions.flying_fish_boots.desc_2": "En sprintant sur l'eau, vous bondissez et planez un court instant"
 }

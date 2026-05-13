@@ -4,6 +4,22 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-05-13
+### Added
+- Neues **Flying Fish**-Modul mit eigenem Wasser-Ambient-Mob, Spawn-Egg, Bucket und speziellen Flying-Fish-Boots.
+- Neue Food-Items: roher und gegarter Flying Fish inklusive Smelting-, Smoking- und Campfire-Rezepten.
+- Zentraler **Vanilla Plus Additions**-Creative-Tab, in den Module ihre Inhalte gesammelt eintragen koennen.
+- Eigene Item- und Entity-Texturen fuer Flying Fish, Flying-Fish-Bucket und Flying-Fish-Boots sowie Lokalisierungen in mehreren Sprachen.
+
+### Changed
+- Flying-Fish-Boots basieren jetzt auf Diamond-Boots-Stats und koennen ueber ein eigenes Rezept mit Diamond Boots + Flying Fish Bucket hergestellt werden.
+- Flying-Fish-Crafting wird nun direkt im `FlyingFishModule` zur Laufzeit wie im konfigurierbaren Crafting-Modul injiziert, damit das Rezept serverseitig robust verfuegbar ist.
+- Flying-Fish-Items werden nicht mehr auf verschiedene Vanilla-Tabs verteilt, sondern ueber die neue zentrale Creative-Tab-Infrastruktur angezeigt.
+
+### Fixed
+- Flying Fish droppen jetzt verlaesslich ihren Fisch-Item-Drop; falls die Loot-Table nicht greift, sorgt ein Modul-Fallback fuer den korrekten Raw-/Cooked-Drop.
+- Mehrere Flying-Fish-Assets und Modelle wurden ueberarbeitet, damit Bucket-, Boots- und Item-Darstellung konsistent im Spiel erscheinen.
+
 ## [0.14.6] - 2026-05-13
 ### Fixed
 - **Critical**: Server no longer hangs for 60 seconds (watchdog timeout) caused by region file deletion.

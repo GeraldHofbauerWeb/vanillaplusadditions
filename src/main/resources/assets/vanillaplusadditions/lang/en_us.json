@@ -1,4 +1,5 @@
 {
+  "itemGroup.vanillaplusadditions.main": "Vanilla Plus Additions",
   "desc.vpa.toughasnails.thirst_restored": "Thirst Restored",
   "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s ran out of oxygen",
   "message.action_bar.remaining_oxygen": "Remaining Oxygen: %s %s",
@@ -18,5 +19,13 @@
   "command.vpa.mobglow.infinite": "indefinitely",
   "command.vpa.mobglow.for_seconds": "for %s seconds",
   "message.vpa.death_coords": "Player %s died at coordinates: X=%d, Y=%d, Z=%d in dimension %s",
-  "message.vpa.death_coords.hover": "Click to teleport to death location"
+  "message.vpa.death_coords.hover": "Click to teleport to death location",
+  "entity.vanillaplusadditions.flying_fish": "Flying Fish",
+  "item.vanillaplusadditions.flying_fish": "Flying Fish",
+  "item.vanillaplusadditions.cooked_flying_fish": "Cooked Flying Fish",
+  "item.vanillaplusadditions.flying_fish_bucket": "Bucket of Flying Fish",
+  "item.vanillaplusadditions.flying_fish_boots": "Flying Fish Boots",
+  "item.vanillaplusadditions.flying_fish_spawn_egg": "Flying Fish Spawn Egg",
+  "item.vanillaplusadditions.flying_fish_boots.desc_1": "Skim faster across the water surface",
+  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Gain short leaps and gentle glide while sprinting on water"
 }

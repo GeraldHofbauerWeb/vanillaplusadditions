@@ -1,4 +1,5 @@
 {
+  "itemGroup.vanillaplusadditions.main": "Vanilla Plus Additions",
   "desc.vpa.toughasnails.thirst_restored": "Durst wiederhergestellt",
   "death.attack.vanillaplusadditions.out_of_oxygen": "%1$s ist der Sauerstoff ausgegangen",
   "message.action_bar.remaining_oxygen": "Verbleibender Sauerstoff: %s %s",
@@ -18,5 +19,13 @@
   "command.vpa.mobglow.infinite": "unendlich",
   "command.vpa.mobglow.for_seconds": "für %s Sekunden",
   "message.vpa.death_coords": "Spieler %s ist an folgenden Koordinaten gestorben: X=%d, Y=%d, Z=%d in Dimension %s",
-  "message.vpa.death_coords.hover": "Klicken, um zum Todesort zu teleportieren"
+  "message.vpa.death_coords.hover": "Klicken, um zum Todesort zu teleportieren",
+  "entity.vanillaplusadditions.flying_fish": "Fliegender Fisch",
+  "item.vanillaplusadditions.flying_fish": "Fliegender Fisch",
+  "item.vanillaplusadditions.cooked_flying_fish": "Gegarter fliegender Fisch",
+  "item.vanillaplusadditions.flying_fish_bucket": "Eimer mit fliegendem Fisch",
+  "item.vanillaplusadditions.flying_fish_boots": "Fliegender-Fisch-Stiefel",
+  "item.vanillaplusadditions.flying_fish_spawn_egg": "Fliegender-Fisch-Spawn-Ei",
+  "item.vanillaplusadditions.flying_fish_boots.desc_1": "Lass dich schneller ueber die Wasseroberflaeche treiben",
+  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Beim Sprinten auf Wasser springst du kurz auf und gleitest sanft"
 }

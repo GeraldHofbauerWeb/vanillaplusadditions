@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "rolls": 1.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "vanillaplusadditions:flying_fish"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "vanillaplusadditions:entities/flying_fish"
+}
+

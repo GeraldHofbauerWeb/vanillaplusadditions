@@ -1,0 +1,11 @@
+# VanillaPlusAdditions Module Configuration
+
+# Emergency workaround: suppress IndexOutOfBoundsException during structure start generation.
+# Use only to keep servers running while isolating incompatible worldgen mods.
+worldgenCrashGuardEnabled = true
+
+# Enable debug logging for all modules (can be overridden by individual module settings)
+globalDebugLogging = false
+
+[modules]
+

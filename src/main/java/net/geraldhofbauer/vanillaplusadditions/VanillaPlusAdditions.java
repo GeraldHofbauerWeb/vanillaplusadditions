@@ -8,10 +8,12 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
+import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
@@ -69,6 +71,8 @@ public class VanillaPlusAdditions {
     public VanillaPlusAdditions(IEventBus modEventBus, ModContainer modContainer) {
         LOGGER.info("Initializing VanillaPlusAdditions with module system");
 
+        VanillaPlusCreativeTabs.register(modEventBus);
+
         // Register modules first
         registerModules();
 
@@ -110,6 +114,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
         moduleManager.registerModule(new EndOxygenModule());
+        moduleManager.registerModule(new FlyingFishModule());
         moduleManager.registerModule(new StackablesModule());
         moduleManager.registerModule(new HauntedHouseModule());
         moduleManager.registerModule(new FoodEffectsModule());
