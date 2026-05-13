@@ -4,7 +4,8 @@
   "package": "net.geraldhofbauer.vanillaplusadditions.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ChunkStatusTasksMixin"
+    "ChunkStatusTasksMixin",
+    "GenerationChunkHolderMixin"
   ],
   "injectors": {
     "defaultRequire": 1

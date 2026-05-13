@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.5] - 2026-05-13
+### Fixed
+- **Critical**: Server no longer crashes on `ArrayIndexOutOfBoundsException` (Aquifer) or `IllegalStateException: Parent chunk missing` during async chunk generation.
+- Root cause: Both exceptions propagate through `GenerationChunkHolder.lambda$applyStep$0` where they get wrapped in `ReportedException` and kill the server. New `GenerationChunkHolderMixin` intercepts the `CompletableFuture.handle()` callback BEFORE the wrapping and suppresses known exceptions gracefully.
+- Chunks that fail with known exceptions are now silently skipped instead of crashing.
+
 ## [0.14.4] - 2026-05-13
 ### Added
 - Worldgen Guard: Extended exception handling to catch `IllegalStateException: Parent chunk missing` errors.
