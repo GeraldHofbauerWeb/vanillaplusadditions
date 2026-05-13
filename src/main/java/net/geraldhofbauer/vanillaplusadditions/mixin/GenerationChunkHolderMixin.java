@@ -1,5 +1,4 @@
 package net.geraldhofbauer.vanillaplusadditions.mixin;
-
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,10 +6,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
-
 /**
  * Intercepts the CompletableFuture.handle() callback in GenerationChunkHolder.applyStep
  * to suppress known worldgen exceptions BEFORE they get wrapped in
@@ -19,13 +17,18 @@ import java.util.function.BiFunction;
  * <p>Both exception types end up in the .handle() at line 67:
  * - ArrayIndexOutOfBoundsException from Aquifer (lithostitched/sable conflict)
  * - IllegalStateException "Parent chunk missing" (chunks outside world border)
+ *
+ * <p>Returns null to skip the problematic chunk instead of crashing.
+ * Logs are rate-limited to prevent spam filling disk/causing lag.
  */
 @Mixin(targets = "net.minecraft.server.level.GenerationChunkHolder")
 public abstract class GenerationChunkHolderMixin {
-
     @Unique
     private static final Logger VPA_LOGGER = LoggerFactory.getLogger(GenerationChunkHolderMixin.class);
-
+    @Unique
+    private static final long LOG_COOLDOWN_MS = 5_000L;
+    @Unique
+    private static final AtomicLong LAST_LOG_MS = new AtomicLong(0L);
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Redirect(
             method = "applyStep",
@@ -43,30 +46,31 @@ public abstract class GenerationChunkHolderMixin {
         if (!ModulesConfig.isWorldgenCrashGuardEnabled()) {
             return future.handle(originalHandler);
         }
-
         return future.handle((result, rawThrowable) -> {
             Throwable throwable = (rawThrowable instanceof Throwable t) ? t : null;
             if (throwable != null) {
                 Throwable cause = throwable;
                 while (cause != null) {
                     if (isKnownChunkGenException(cause)) {
-                        VPA_LOGGER.error(
-                                "[Worldgen Guard] Suppressed {} during async chunk generation: {} — "
-                                        + "skipping chunk to prevent server crash (incompatible worldgen mods)",
-                                cause.getClass().getSimpleName(),
-                                cause.getMessage() != null ? cause.getMessage() : "(no message)"
-                        );
-                        // Return null to mark chunk as skipped instead of crashing server
+                        long now = System.currentTimeMillis();
+                        long last = LAST_LOG_MS.get();
+                        if (now - last >= LOG_COOLDOWN_MS && LAST_LOG_MS.compareAndSet(last, now)) {
+                            VPA_LOGGER.warn(
+                                    "[Worldgen Guard] Suppressed {} during async chunk generation"
+                                            + " (incompatible worldgen mods — see earlier logs for chunk coords)",
+                                    cause.getClass().getSimpleName()
+                            );
+                        }
+                        // Return null: chunk skipped instead of crashing the server
                         return null;
                     }
                     cause = cause.getCause();
                 }
             }
-            // For unknown exceptions or no exception: delegate to original handler
+            // Unknown exception or no exception: delegate to original handler
             return originalHandler.apply(result, rawThrowable);
         });
     }
-
     @Unique
     private static boolean isKnownChunkGenException(Throwable t) {
         if (t instanceof ArrayIndexOutOfBoundsException) {
@@ -80,4 +84,3 @@ public abstract class GenerationChunkHolderMixin {
         return false;
     }
 }
-

@@ -4,6 +4,18 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.6] - 2026-05-13
+### Fixed
+- **Critical**: Server no longer hangs for 60 seconds (watchdog timeout) caused by region file deletion.
+  - Root cause: deleting `.mca` files at runtime caused an infinite chunk regeneration loop:
+    chunk fails → file deleted → server retries load → file missing → regenerates → fails again → ∞
+  - Region files are **never deleted at runtime** anymore. Admins are instructed via log/chat to
+    delete the file after a clean shutdown.
+- **Threading**: Broadcasts to players are now always scheduled on the main server thread via
+  `server.execute()` instead of being called from ForkJoinPool worker threads (potential deadlock).
+- **Spam prevention**: Log messages and player broadcasts are now rate-limited (5s / 10s cooldown)
+  to prevent log disk fill and chat flood when many chunks fail quickly.
+
 ## [0.14.5] - 2026-05-13
 ### Fixed
 - **Critical**: Server no longer crashes on `ArrayIndexOutOfBoundsException` (Aquifer) or `IllegalStateException: Parent chunk missing` during async chunk generation.

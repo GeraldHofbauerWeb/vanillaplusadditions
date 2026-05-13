@@ -103,15 +103,15 @@ public abstract class ChunkStatusTasksMixin {
                 exception
         );
 
-        // Auto-delete corrupted region files and broadcast warning
+        // Log and (rate-limited) broadcast — safe from any thread, does NOT delete files
         try {
             Object level = chunk.getLevel();
             if (level instanceof net.minecraft.server.level.ServerLevel serverLevel
                     && !serverLevel.isClientSide()) {
-                WorldgenGuardService.deleteCorruptedRegionAndBroadcast(chunkPos, serverLevel);
+                WorldgenGuardService.logAndBroadcast(chunkPos, serverLevel, exception.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            VPA_LOGGER.warn("Failed to delete corrupted region files: {}", e.getMessage());
+            VPA_LOGGER.warn("Failed to broadcast worldgen guard warning: {}", e.getMessage());
         }
 
         if (ModulesConfig.isGlobalDebugLoggingEnabled()) {
