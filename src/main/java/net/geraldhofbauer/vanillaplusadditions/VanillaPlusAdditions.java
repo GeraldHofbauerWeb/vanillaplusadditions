@@ -25,6 +25,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -204,27 +205,50 @@ public class VanillaPlusAdditions {
         CommandSourceStack source = context.getSource();
         ModuleManager moduleManager = ModuleManager.getInstance();
 
-        source.sendSuccess(() -> Component.literal("VanillaPlusAdditions module status:")
-                .withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal("═══════════════════════════════════════════════")
+                .withStyle(ChatFormatting.DARK_GRAY), false);
+        source.sendSuccess(() -> Component.literal("VanillaPlusAdditions Module Status")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD), false);
+        source.sendSuccess(() -> Component.literal("═══════════════════════════════════════════════")
+                .withStyle(ChatFormatting.DARK_GRAY), false);
 
         moduleManager.getAllModules().stream()
                 .sorted(Comparator.comparing(Module::getModuleId))
                 .forEach(module -> {
                     String moduleId = module.getModuleId();
+                    String displayName = module.getDisplayName();
                     boolean configEnabled = module.getConfig().isEnabled();
                     Boolean runtimeOverride = moduleManager.getRuntimeModuleOverride(moduleId);
                     boolean effectiveEnabled = moduleManager.isModuleEnabled(moduleId);
 
-                    String runtimeText = runtimeOverride == null ? "none" : runtimeOverride.toString();
-                    source.sendSuccess(() -> Component.literal(String.format(
-                            "- %s: effective=%s, config=%s, runtime_override=%s",
-                            moduleId,
-                            effectiveEnabled,
-                            configEnabled,
-                            runtimeText
-                    )), false);
+                    MutableComponent moduleLine = Component.literal("▸ ")
+                            .withStyle(ChatFormatting.DARK_GRAY)
+                            .append(Component.literal(displayName).withStyle(ChatFormatting.AQUA))
+                            .append(Component.literal(" (" + moduleId + ")").withStyle(ChatFormatting.GRAY));
+
+                    ChatFormatting effectiveColor = effectiveEnabled ? ChatFormatting.GREEN : ChatFormatting.RED;
+                    moduleLine.append(Component.literal("\n  └─ Status: ")
+                            .withStyle(ChatFormatting.DARK_GRAY))
+                            .append(Component.literal(effectiveEnabled ? "✓ ENABLED" : "✗ DISABLED")
+                                    .withStyle(effectiveColor, ChatFormatting.BOLD));
+
+                    if (configEnabled != effectiveEnabled) {
+                        moduleLine.append(Component.literal(" (override)")
+                                .withStyle(ChatFormatting.YELLOW, ChatFormatting.ITALIC));
+                    }
+
+                    if (runtimeOverride != null) {
+                        moduleLine.append(Component.literal("\n  └─ Runtime: ")
+                                .withStyle(ChatFormatting.DARK_GRAY))
+                                .append(Component.literal(runtimeOverride ? "▲ ON" : "▼ OFF")
+                                        .withStyle(runtimeOverride ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY));
+                    }
+
+                    source.sendSuccess(() -> moduleLine, false);
                 });
 
+        source.sendSuccess(() -> Component.literal("═══════════════════════════════════════════════")
+                .withStyle(ChatFormatting.DARK_GRAY), false);
         return 1;
     }
 
@@ -235,7 +259,7 @@ public class VanillaPlusAdditions {
         Module module = moduleManager.getModule(moduleId);
 
         if (module == null) {
-            source.sendFailure(Component.literal("Unknown module: " + moduleId)
+            source.sendFailure(Component.literal("❌ Unknown module: " + moduleId)
                     .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -243,15 +267,49 @@ public class VanillaPlusAdditions {
         boolean configEnabled = module.getConfig().isEnabled();
         Boolean runtimeOverride = moduleManager.getRuntimeModuleOverride(moduleId);
         boolean effectiveEnabled = moduleManager.isModuleEnabled(moduleId);
-        String runtimeText = runtimeOverride == null ? "none" : runtimeOverride.toString();
 
-        source.sendSuccess(() -> Component.literal(String.format(
-                "%s -> effective=%s, config=%s, runtime_override=%s",
-                moduleId,
-                effectiveEnabled,
-                configEnabled,
-                runtimeText
-        )).withStyle(ChatFormatting.GREEN), false);
+        MutableComponent header = Component.literal("╔════════════════════════════════════╗")
+                .withStyle(ChatFormatting.DARK_GRAY);
+        source.sendSuccess(() -> header, false);
+
+        MutableComponent title = Component.literal("║ ")
+                .withStyle(ChatFormatting.DARK_GRAY)
+                .append(Component.literal(module.getDisplayName()).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD))
+                .append(Component.literal(" ║").withStyle(ChatFormatting.DARK_GRAY));
+        source.sendSuccess(() -> title, false);
+
+        MutableComponent divider = Component.literal("╠════════════════════════════════════╣")
+                .withStyle(ChatFormatting.DARK_GRAY);
+        source.sendSuccess(() -> divider, false);
+
+        ChatFormatting effectiveColor = effectiveEnabled ? ChatFormatting.GREEN : ChatFormatting.RED;
+        MutableComponent statusLine = Component.literal("║ Status: ")
+                .withStyle(ChatFormatting.DARK_GRAY)
+                .append(Component.literal(effectiveEnabled ? "✓ ENABLED" : "✗ DISABLED")
+                        .withStyle(effectiveColor, ChatFormatting.BOLD))
+                .append(Component.literal(" ║").withStyle(ChatFormatting.DARK_GRAY));
+        source.sendSuccess(() -> statusLine, false);
+
+        MutableComponent configLine = Component.literal("║ Config: ")
+                .withStyle(ChatFormatting.DARK_GRAY)
+                .append(Component.literal(configEnabled ? "ON" : "OFF")
+                        .withStyle(configEnabled ? ChatFormatting.GREEN : ChatFormatting.RED))
+                .append(Component.literal(" ║").withStyle(ChatFormatting.DARK_GRAY));
+        source.sendSuccess(() -> configLine, false);
+
+        if (runtimeOverride != null) {
+            MutableComponent runtimeLine = Component.literal("║ Runtime: ")
+                    .withStyle(ChatFormatting.DARK_GRAY)
+                    .append(Component.literal(runtimeOverride ? "▲ ON" : "▼ OFF")
+                            .withStyle(runtimeOverride ? ChatFormatting.LIGHT_PURPLE : ChatFormatting.GRAY))
+                    .append(Component.literal(" ║").withStyle(ChatFormatting.DARK_GRAY));
+            source.sendSuccess(() -> runtimeLine, false);
+        }
+
+        MutableComponent footer = Component.literal("╚════════════════════════════════════╝")
+                .withStyle(ChatFormatting.DARK_GRAY);
+        source.sendSuccess(() -> footer, false);
+
         return 1;
     }
 

@@ -55,15 +55,22 @@ public abstract class ChunkStatusTasksMixin {
             }
 
             ChunkPos chunkPos = chunk.getPos();
-            VPA_LOGGER.error(
-                    "Suppressed IndexOutOfBoundsException in structure start generation at chunk {},{} "
-                            + "(enable only as temporary workaround while isolating conflicting worldgen mods).",
+            String message = String.format(
+                    "[Worldgen Crash Guard] Suppressed IndexOutOfBoundsException at chunk %d,%d",
                     chunkPos.x,
-                    chunkPos.z,
+                    chunkPos.z
+            );
+
+            VPA_LOGGER.error(
+                    "{} (temporary workaround while isolating conflicting worldgen mods)",
+                    message,
                     exception
             );
+
+            if (ModulesConfig.isGlobalDebugLoggingEnabled()) {
+                VPA_LOGGER.warn("{} - Debug enabled, investigate conflicting worldgen mods", message);
+            }
         }
     }
 }
-
 

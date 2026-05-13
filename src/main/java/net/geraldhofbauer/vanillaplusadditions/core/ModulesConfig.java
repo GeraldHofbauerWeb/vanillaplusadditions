@@ -165,7 +165,17 @@ public final class ModulesConfig {
      * @return true if IndexOutOfBoundsExceptions in structure-start generation should be suppressed
      */
     public static boolean isWorldgenCrashGuardEnabled() {
-        return worldgenCrashGuardEnabled != null && worldgenCrashGuardEnabled.get();
+        if (worldgenCrashGuardEnabled == null) {
+            // Fail-open for early worldgen phases before config values are wired.
+            return true;
+        }
+
+        try {
+            return worldgenCrashGuardEnabled.get();
+        } catch (Exception ignored) {
+            // Keep servers alive in emergency situations if config access fails unexpectedly.
+            return true;
+        }
     }
 
     /**
