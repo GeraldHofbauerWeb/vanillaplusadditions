@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-05-13
+### Changed
+- Worldgen Crash Guard: Verbessertes Debug-Logging mit globaler Debug-Flag-Unterstützung, um Administratoren beim Isolieren inkompatsibler Mods zu helfen.
+- Command `/vpa module status`: Neue dekorative Box-Formatierung mit Farben und Symbolen (✓/✗, ▲/▼) fuer bessere Lesbarkeit.
+- Command `/vpa module status <module_id>`: Detailliertes Format mit UI-Kaesten und Farb-Highlights fuer einzelne Module.
+
 ## [0.14.0] - 2026-05-13
 ### Added
 - Emergency-Worldgen-Crash-Guard als Mixin eingefuehrt: Faengt `IndexOutOfBoundsException` waehrend `structure_starts`-Generierung optional ab, um Serverabstuerze bei inkompatiblen Worldgen-Mod-Kombinationen zu vermeiden.
