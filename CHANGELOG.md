@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.4] - 2026-05-13
+### Added
+- Worldgen Guard: Extended exception handling to catch `IllegalStateException: Parent chunk missing` errors.
+  - These occur when chunks are generated outside the world border or in invalid states.
+  - Chunks are now silently skipped instead of crashing the server.
+  - Auto-cleanup of corrupted region files still applied.
+
+### Changed
+- Mixin exception filter now specifically checks for "Parent chunk missing" message instead of catching all IllegalStateException.
+
 ## [0.14.3] - 2026-05-13
 ### Added
 - Worldgen Diagnostics Tool: Automatically detects incompatible mod combinations (lithostitched, sable, yungsapi, mr_dungeons_andtaverns) and provides remediation guidance when worldgen crashes occur.

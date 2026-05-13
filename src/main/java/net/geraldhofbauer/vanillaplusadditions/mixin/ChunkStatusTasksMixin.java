@@ -19,9 +19,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 /**
  * Emergency crash guard for worldgen collision issues.
  *
- * <p>This catches IndexOutOfBoundsException and other exceptions from structure start and surface
- * generation only when enabled in config, so affected servers can keep running while root-cause
- * mods with conflicting worldgen transformations are isolated.
+ * <p>This catches IndexOutOfBoundsException and IllegalStateException from structure start generation
+ * when enabled in config, so affected servers can keep running while root-cause mods with conflicting
+ * worldgen transformations are isolated.
+ *
+ * <p>Specifically catches:
+ * - IndexOutOfBoundsException: Aquifer corruption from incompatible worldgen mods (lithostitched, sable)
+ * - IllegalStateException "Parent chunk missing": Chunks outside world border or in invalid state
  *
  * <p>Known conflicts: lithostitched, mowziesmobs, yungsapi, mr_dungeons_andtaverns cause
  * negative Aquifer indices when their structure generation interferes with Noise-based
@@ -64,9 +68,15 @@ public abstract class ChunkStatusTasksMixin {
 
     @Unique
     private static void handleWorldgenExceptionInner(Exception exception, ChunkAccess chunk, String phase) {
-        // Only catch IndexOutOfBoundsException or IllegalStateException in critical phases
-        if (!(exception instanceof IndexOutOfBoundsException)
-                && !(exception instanceof IllegalStateException)) {
+        // Only catch specific exceptions in critical phases
+        boolean isIndexException = exception instanceof IndexOutOfBoundsException;
+        boolean isParentMissing = exception instanceof IllegalStateException
+                && exception.getMessage() != null
+                && exception.getMessage().contains("Parent chunk missing");
+        boolean isOtherIllegalState = exception instanceof IllegalStateException && !isParentMissing;
+
+        // Re-throw if not one of our known exceptions
+        if (!isIndexException && !isParentMissing && !isOtherIllegalState) {
             throw new RuntimeException(exception);
         }
 
@@ -75,12 +85,16 @@ public abstract class ChunkStatusTasksMixin {
         }
 
         ChunkPos chunkPos = chunk.getPos();
+        String exceptionType = exception.getClass().getSimpleName();
+        String reason = isParentMissing ? " (Parent chunk missing - likely outside world border)" : "";
+
         String message = String.format(
-                "[Worldgen Crash Guard] Suppressed %s at chunk %d,%d during %s",
-                exception.getClass().getSimpleName(),
+                "[Worldgen Crash Guard] Suppressed %s at chunk %d,%d during %s%s",
+                exceptionType,
                 chunkPos.x,
                 chunkPos.z,
-                phase
+                phase,
+                reason
         );
 
         VPA_LOGGER.error(
