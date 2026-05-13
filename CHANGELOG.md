@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.2] - 2026-05-13
+### Added
+- Worldgen Crash Guard: Auto-Cleanup-Feature bei Fehlern — korrupte Region-Dateien (region/, poi/, entities/) werden automatisch gelöscht.
+- Worldgen Crash Guard Mixin: Nutzt `@Mixin(targets = "...")` für robuste Kompatibilität mit Minecraft-Versionen.
+
+### Changed
+- Worldgen Crash Guard: Fehlerbehandlung erweitert mit globalem `MessageBroadcaster`-Broadcast an alle Spieler.
+- WorldgenGuardService: Unterstützt automatische Pfadauflösung für Overworld und Custom-Dimensions.
+
 ## [0.14.1] - 2026-05-13
 ### Changed
 - Worldgen Crash Guard: Verbessertes Debug-Logging mit globaler Debug-Flag-Unterstützung, um Administratoren beim Isolieren inkompatsibler Mods zu helfen.
