@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.block_glow.compat;
+package net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.compat;
 
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.BlockGlowHighlight;
@@ -17,10 +17,15 @@ import java.util.function.Consumer;
 /**
  * Optional Sable/Create Aeronautics integration for BlockGlow.
  * Uses reflection so the mod still loads cleanly without Sable installed.
+ *
+ * This class is intentionally placed in the client.compat package because it
+ * references ClientLevel, a client-only class, and must never be loaded on
+ * a dedicated server.
  */
 public final class BlockGlowSableIntegration {
     private static final String SABLE_MODID = "sable";
     private static volatile SableReflectionApi reflectionApi;
+    private static volatile boolean reflectionInitialized;
     private static volatile boolean reflectionWarningLogged;
 
     private BlockGlowSableIntegration() {
@@ -47,11 +52,18 @@ public final class BlockGlowSableIntegration {
                 return;
             }
 
-            Object searchBoundingBox = api.boundingBoxFromAabb.newInstance(searchBox);
-            Iterable<?> subLevels = (Iterable<?>) api.queryIntersecting.invoke(container, searchBoundingBox);
+            // Create a fresh BoundingBox3d from the original AABB for the container query.
+            // NOTE: BoundingBox3d.transformInverse(Pose3dc) mutates the instance in-place
+            // (JOML-style mutable API), so we must create a fresh copy per sub-level
+            // iteration to avoid using an already-transformed box in subsequent iterations.
+            Object queryBox = api.boundingBoxFromAabb.newInstance(searchBox);
+            Iterable<?> subLevels = (Iterable<?>) api.queryIntersecting.invoke(container, queryBox);
             for (Object subLevel : subLevels) {
                 Object pose = api.logicalPose.invoke(subLevel);
-                Object localSearchBox = api.transformInverse.invoke(searchBoundingBox, pose);
+
+                // Fresh local search box for each sub-level to prevent mutation carry-over
+                Object localSearchBox = api.boundingBoxFromAabb.newInstance(searchBox);
+                api.transformInverse.invoke(localSearchBox, pose);
 
                 double minX = (double) api.minX.invoke(localSearchBox);
                 double minY = (double) api.minY.invoke(localSearchBox);
@@ -94,19 +106,19 @@ public final class BlockGlowSableIntegration {
     }
 
     private static SableReflectionApi getReflectionApi() {
-        SableReflectionApi cached = reflectionApi;
-        if (cached != null) {
-            return cached;
+        if (reflectionInitialized) {
+            return reflectionApi;
         }
 
         synchronized (BlockGlowSableIntegration.class) {
-            if (reflectionApi == null) {
+            if (!reflectionInitialized) {
                 try {
                     reflectionApi = new SableReflectionApi();
                 } catch (ReflectiveOperationException ex) {
                     warnOnce("Failed to initialize Sable BlockGlow integration", ex);
                     reflectionApi = null;
                 }
+                reflectionInitialized = true;
             }
             return reflectionApi;
         }
@@ -163,7 +175,4 @@ public final class BlockGlowSableIntegration {
         }
     }
 }
-
-
-
 

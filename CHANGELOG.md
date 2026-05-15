@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.3] - 2026-05-15
+### Fixed
+- BlockGlow/Sable-Integration client-seitig isoliert (in `client/compat` verschoben), damit Dedicated-Server keine Client-Klassen laden muessen.
+- BlockGlow-Sable-Highlight-Suche korrigiert: Bounding-Box-Transformationen verwenden jetzt pro Sub-Level eine frische Box, um fehlerhafte Treffer bei mehreren Sub-Levels zu vermeiden.
+
+### Changed
+- Test-Server-Startskript kopiert die Mod-JAR nicht mehr manuell; das uebernimmt weiterhin der Gradle-Task `copyJarToTestEnvironments` nach `build`.
+- Test-Client-Hinweistext nutzt jetzt den tatsaechlich vorhandenen JAR-Namen statt einer fest kodierten Versionsnummer.
+
 ## [0.16.2] - 2026-05-15
 ### Fixed
 - CI-Builds laden jetzt die lokalen Drittanbieter-JARs zur Build-Zeit nach (`sable` und `toughasnails`), damit GitHub Actions trotz nicht versionierter lokaler Abhängigkeiten erfolgreich bauen kann.
@@ -258,7 +267,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0] - 2025-11-05
 ### Added
-- Haunted House: Neues Modul für atmosphärische Effekte (Nebel) und verstärktes Witch-Spawning in bestimmten Strukturen.
+- Haunted House: Neues Modul für atmosphärische Effekte (Nebel) und verstärktes Witch-Spawning in bestimmten StruktureN.
 - Dokumentation: Umfassende Dokumentation für das Haunted House Modul hinzugefügt.
 
 ## [0.4.1] - 2025-11-02

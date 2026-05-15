@@ -13,7 +13,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule.BlockGlowState;
-import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.compat.BlockGlowSableIntegration;
+import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.compat.BlockGlowSableIntegration;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.Minecraft;

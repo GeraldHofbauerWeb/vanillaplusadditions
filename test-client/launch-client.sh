@@ -6,7 +6,13 @@
 CLIENT_DIR="/home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-client"
 MINECRAFT_DIR="/home/gerry/.minecraft"
 
-echo "=== VanillaPlusAdditions Test Client Setup ===" 
+# Find the latest mod jar dynamically
+MOD_JAR_NAME=$(ls -t "$CLIENT_DIR/mods"/vanillaplusadditions-*.jar 2>/dev/null | head -1 | xargs -r basename)
+if [ -z "$MOD_JAR_NAME" ]; then
+    MOD_JAR_NAME="vanillaplusadditions-<version>.jar"
+fi
+
+echo "=== VanillaPlusAdditions Test Client Setup ==="
 echo
 echo "Your test client environment has been set up successfully!"
 echo "Client Directory: $CLIENT_DIR"
@@ -19,7 +25,7 @@ echo "3. Select that profile and launch the game"
 echo "4. Create a new world or join your test server at localhost:25565"
 echo
 echo "Alternative: You can also copy your mod JAR to your regular .minecraft/mods folder:"
-echo "  cp '$CLIENT_DIR/mods/vanillaplusadditions-1.0.0.jar' '$MINECRAFT_DIR/mods/'"
+echo "  cp '$CLIENT_DIR/mods/$MOD_JAR_NAME' '$MINECRAFT_DIR/mods/'"
 echo
 echo "Your mod includes:"
 echo "  • HostileZombifiedPiglinsModule - Makes zombified piglins always hostile to players"

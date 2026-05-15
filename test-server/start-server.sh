@@ -3,17 +3,7 @@
 
 echo "=== VanillaPlusAdditions Test Server ==="
 echo "Starting Minecraft 1.21.1 NeoForge test server..."
-
-# Copy the latest mod build if it exists
-MOD_JAR="../build/libs/vanillaplusadditions-1.0.0.jar"
-if [ -f "$MOD_JAR" ]; then
-    echo "✓ Found mod jar, copying to mods folder..."
-    cp "$MOD_JAR" mods/
-    echo "✓ VanillaPlusAdditions mod loaded"
-else
-    echo "⚠ Warning: Mod jar not found at $MOD_JAR"
-    echo "  Run './gradlew build' in the main project directory first"
-fi
+echo "(Mod JAR is copied automatically by Gradle's copyJarToTestEnvironments task after each build)"
 
 echo "Starting server..."
 echo "==============================================="
