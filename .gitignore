@@ -63,4 +63,5 @@ repo
 
 # optional local dependency (not committed)
 libs/sable-neoforge-*.jar
+libs/ToughAsNails-neoforge-*.jar
 
