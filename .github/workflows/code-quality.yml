@@ -26,6 +26,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Download optional local mod jars
+        run: |
+          mkdir -p libs
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/sable-neoforge-1.21.1-1.2.2.jar \
+            https://mediafilez.forgecdn.net/files/8007/5/sable-neoforge-1.21.1-1.2.2.jar
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar \
+            https://mediafilez.forgecdn.net/files/5833/252/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar
+
       - name: Run Checkstyle
         run: ./gradlew checkstyleMain checkstyleTest --no-daemon
 
@@ -43,6 +53,16 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Download optional local mod jars
+        run: |
+          mkdir -p libs
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/sable-neoforge-1.21.1-1.2.2.jar \
+            https://mediafilez.forgecdn.net/files/8007/5/sable-neoforge-1.21.1-1.2.2.jar
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar \
+            https://mediafilez.forgecdn.net/files/5833/252/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar
 
       - name: Run SpotBugs
         run: ./gradlew spotbugsMain spotbugsTest --no-daemon
