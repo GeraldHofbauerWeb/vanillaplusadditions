@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1] - 2026-05-15
+### Fixed
+- Flying Fish Boots: Prevented incompatible enchantments (Depth Strider, Frost Walker) from being applied to Flying Fish Boots via anvil.
+  - Added tooltip to inform players about this incompatibility.
+  - Updated all language files (DE, EN, ES, FR).
+
 ## [0.15.0] - 2026-05-13
 ### Added
 - Neues **Flying Fish**-Modul mit eigenem Wasser-Ambient-Mob, Spawn-Egg, Bucket und speziellen Flying-Fish-Boots.
