@@ -10,6 +10,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModulesConfig;
 import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
@@ -111,6 +112,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
         moduleManager.registerModule(new WitherSkeletonModule());
         moduleManager.registerModule(new MobGlowModule());
+        moduleManager.registerModule(new BlockGlowModule());
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
         moduleManager.registerModule(new EndOxygenModule());

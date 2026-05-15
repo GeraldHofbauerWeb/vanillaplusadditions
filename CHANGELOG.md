@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-05-15
+### Added
+- BlockGlow: Neues Modul mit `/blockglow`, das passende Blöcke als X-Ray-ähnliche Umrisse hervorhebt, auch durch andere Blöcke hindurch.
+  - Selektionsmodus konfigurierbar (`nearest` oder `scan_order`).
+  - Highlight-Reichweite, Dauer und Outline-Farbe über die Modul-Config steuerbar.
+
+### Changed
+- BlockGlow: Renderlogik so angepasst, dass die Umrisse radial um den Spieler ausgewählt und ohne Depth-Test gezeichnet werden.
+
 ## [0.15.1] - 2026-05-15
 ### Fixed
 - Flying Fish Boots: Prevented incompatible enchantments (Depth Strider, Frost Walker) from being applied to Flying Fish Boots via anvil.
