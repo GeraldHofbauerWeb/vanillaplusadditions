@@ -60,3 +60,7 @@ test-client/neoforge-installer.jar
 test-client/neoforge-installer.jar.log
 
 repo
+
+# optional local dependency (not committed)
+libs/sable-neoforge-*.jar
+

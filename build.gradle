@@ -121,10 +121,13 @@ dependencies {
     implementation files("libs/create-1.21.1-6.0.9.jar")
 
     // Optional Sable / Create Aeronautics dependency for sub-level support
-    def sableJar = file("libs/sable-neoforge-1.21.1-1.2.2.jar")
-    if (sableJar.exists()) {
-        compileOnly files(sableJar)
-        localRuntime files(sableJar)
+    // The jar is intentionally local-only due third-party licensing constraints.
+    def sableJars = fileTree("libs") {
+        include "sable-neoforge-*.jar"
+    }
+    if (!sableJars.isEmpty()) {
+        compileOnly sableJars
+        localRuntime sableJars
     }
 
     // Tough As Nails dependency
