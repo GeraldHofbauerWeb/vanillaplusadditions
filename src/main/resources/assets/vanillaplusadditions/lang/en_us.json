@@ -27,5 +27,6 @@
   "item.vanillaplusadditions.flying_fish_boots": "Flying Fish Boots",
   "item.vanillaplusadditions.flying_fish_spawn_egg": "Flying Fish Spawn Egg",
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Skim faster across the water surface",
-  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Gain short leaps and gentle glide while sprinting on water"
+  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Gain short leaps and gentle glide while sprinting on water",
+  "item.vanillaplusadditions.flying_fish_boots.desc_3": "Not compatible with Depth Strider/Frost Walker"
 }

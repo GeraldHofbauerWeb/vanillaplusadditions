@@ -27,5 +27,6 @@
   "item.vanillaplusadditions.flying_fish_boots": "Fliegender-Fisch-Stiefel",
   "item.vanillaplusadditions.flying_fish_spawn_egg": "Fliegender-Fisch-Spawn-Ei",
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Lass dich schneller ueber die Wasseroberflaeche treiben",
-  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Beim Sprinten auf Wasser springst du kurz auf und gleitest sanft"
+  "item.vanillaplusadditions.flying_fish_boots.desc_2": "Beim Sprinten auf Wasser springst du kurz auf und gleitest sanft",
+  "item.vanillaplusadditions.flying_fish_boots.desc_3": "Nicht kompatibel mit Depth Strider/Frost Walker"
 }
