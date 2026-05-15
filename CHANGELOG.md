@@ -4,6 +4,14 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1] - 2026-05-15
+### Fixed
+- BlockGlow: Unterstützung für Sable/Create-Aeronautics-Sub-Levels ergänzt, damit Block-Highlights auch auf bewegten Sub-Levels erscheinen.
+
+### Changed
+- Sable-Integration als lokale optionale Abhängigkeit robust gemacht (`libs/sable-neoforge-*.jar`), damit Builds auch ohne lokale Sable-JAR erfolgreich laufen.
+- Lokale Sable-JARs werden jetzt per `.gitignore` ausgeschlossen, um unbeabsichtigtes Einchecken von Drittanbieter-Binärdateien zu verhindern.
+
 ## [0.16.0] - 2026-05-15
 ### Added
 - BlockGlow: Neues Modul mit `/blockglow`, das passende Blöcke als X-Ray-ähnliche Umrisse hervorhebt, auch durch andere Blöcke hindurch.
