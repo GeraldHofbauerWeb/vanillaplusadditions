@@ -4,6 +4,14 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.2] - 2026-05-15
+### Fixed
+- CI-Builds laden jetzt die lokalen Drittanbieter-JARs zur Build-Zeit nach (`sable` und `toughasnails`), damit GitHub Actions trotz nicht versionierter lokaler Abhängigkeiten erfolgreich bauen kann.
+
+### Changed
+- `libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` aus dem Repository entfernt.
+- Lokale ToughAsNails-JARs werden jetzt per `.gitignore` ausgeschlossen.
+
 ## [0.16.1] - 2026-05-15
 ### Fixed
 - BlockGlow: Unterstützung für Sable/Create-Aeronautics-Sub-Levels ergänzt, damit Block-Highlights auch auf bewegten Sub-Levels erscheinen.
