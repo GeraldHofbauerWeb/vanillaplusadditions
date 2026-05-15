@@ -4,26 +4,27 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule.BlockGlowState;
+import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.compat.BlockGlowSableIntegration;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.BlockPos.MutableBlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -137,104 +138,104 @@ public final class BlockGlowClientEvents {
 
         int radius = Math.min(state.radius(), module.getConfig().getMaxRadius());
         int maxHighlights = module.getConfig().getMaxHighlightsPerFrame();
+        Vec3 playerPos = minecraft.player.position();
+        AABB searchBox = new AABB(
+                playerPos.x - radius,
+                playerPos.y - radius,
+                playerPos.z - radius,
+                playerPos.x + radius,
+                playerPos.y + radius,
+                playerPos.z + radius
+        );
+
+        List<BlockGlowHighlight> candidates = new ArrayList<>();
+        collectMainWorldHighlights(minecraft.level, targetBlock, minecraft.player.blockPosition(), playerPos, radius,
+                candidates);
+        if (BlockGlowSableIntegration.isLoaded()) {
+            BlockGlowSableIntegration.collectHighlights(minecraft.level, targetBlock, searchBox, playerPos,
+                    candidates::add);
+        }
 
         PoseStack poseStack = event.getPoseStack();
         Vec3 cameraPos = event.getCamera().getPosition();
         VertexConsumer consumer = minecraft.renderBuffers().bufferSource().getBuffer(XRAY_LINES);
 
-        BlockPos center = minecraft.player.blockPosition();
-        MutableBlockPos cursor = new MutableBlockPos();
         String selectionMode = module.getConfig().getSelectionMode();
         if ("scan_order".equals(selectionMode)) {
-            renderScanOrderHighlights(minecraft, module, targetBlock, center, cursor, radius, maxHighlights,
-                    poseStack, cameraPos, consumer);
+            renderScanOrderHighlights(candidates, maxHighlights, poseStack, cameraPos, consumer, module);
         } else {
-            renderNearestHighlights(minecraft, module, targetBlock, center, cursor, radius, maxHighlights,
-                    poseStack, cameraPos, consumer);
+            renderNearestHighlights(candidates, maxHighlights, poseStack, cameraPos, consumer, module);
         }
 
         minecraft.renderBuffers().bufferSource().endBatch(XRAY_LINES);
     }
 
-    private static void renderNearestHighlights(Minecraft minecraft, BlockGlowModule module, Block targetBlock,
-            BlockPos center, MutableBlockPos cursor, int radius, int maxHighlights, PoseStack poseStack,
-            Vec3 cameraPos, VertexConsumer consumer) {
-        PriorityQueue<HighlightCandidate> nearestCandidates = new PriorityQueue<>(
-                Comparator.comparingDouble(HighlightCandidate::distanceSquared).reversed()
-        );
-
-        scanForCandidates(minecraft, targetBlock, center, cursor, radius, pos -> {
-            double distanceSquared = pos.distSqr(center);
-            if (nearestCandidates.size() < maxHighlights) {
-                nearestCandidates.offer(new HighlightCandidate(pos.immutable(), distanceSquared));
-            } else {
-                HighlightCandidate farthest = nearestCandidates.peek();
-                if (farthest != null && distanceSquared < farthest.distanceSquared()) {
-                    nearestCandidates.poll();
-                    nearestCandidates.offer(new HighlightCandidate(pos.immutable(), distanceSquared));
-                }
-            }
-        });
-
-        List<HighlightCandidate> sortedCandidates = new ArrayList<>(nearestCandidates);
-        sortedCandidates.sort(Comparator.comparingDouble(HighlightCandidate::distanceSquared));
-        renderCandidates(module, poseStack, cameraPos, consumer, sortedCandidates);
-    }
-
-    private static void renderScanOrderHighlights(Minecraft minecraft, BlockGlowModule module, Block targetBlock,
-            BlockPos center, MutableBlockPos cursor, int radius, int maxHighlights, PoseStack poseStack,
-            Vec3 cameraPos, VertexConsumer consumer) {
-        List<HighlightCandidate> candidates = new ArrayList<>(maxHighlights);
-
-        scanForCandidates(minecraft, targetBlock, center, cursor, radius, pos -> {
-            if (candidates.size() >= maxHighlights) {
-                return;
-            }
-
-            candidates.add(new HighlightCandidate(pos.immutable(), pos.distSqr(center)));
-        });
-
-        renderCandidates(module, poseStack, cameraPos, consumer, candidates);
-    }
-
-    private interface BlockCandidateConsumer {
-        void accept(MutableBlockPos pos);
-    }
-
-    private static void scanForCandidates(Minecraft minecraft, Block targetBlock, BlockPos center,
-            MutableBlockPos cursor, int radius, BlockCandidateConsumer consumer) {
+    private static void collectMainWorldHighlights(ClientLevel level, Block targetBlock, BlockPos center,
+            Vec3 playerPos, int radius, List<BlockGlowHighlight> candidates) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int x = center.getX() - radius; x <= center.getX() + radius; x++) {
             for (int y = center.getY() - radius; y <= center.getY() + radius; y++) {
                 for (int z = center.getZ() - radius; z <= center.getZ() + radius; z++) {
                     cursor.set(x, y, z);
-                    if (minecraft.level != null && minecraft.level.getBlockState(cursor).is(targetBlock)) {
-                        consumer.accept(cursor);
+                    if (!level.getBlockState(cursor).is(targetBlock)) {
+                        continue;
                     }
+
+                    AABB worldAabb = new AABB(cursor);
+                    candidates.add(new BlockGlowHighlight(worldAabb, worldAabb.getCenter().distanceToSqr(playerPos)));
                 }
             }
         }
     }
 
-    private static void renderCandidates(BlockGlowModule module, PoseStack poseStack, Vec3 cameraPos,
-            VertexConsumer consumer, List<HighlightCandidate> candidates) {
-        for (HighlightCandidate candidate : candidates) {
-            BlockPos pos = candidate.pos();
-            poseStack.pushPose();
-            poseStack.translate(pos.getX() - cameraPos.x, pos.getY() - cameraPos.y, pos.getZ() - cameraPos.z);
+    private static void renderNearestHighlights(List<BlockGlowHighlight> candidates, int maxHighlights,
+            PoseStack poseStack, Vec3 cameraPos, VertexConsumer consumer, BlockGlowModule module) {
+        PriorityQueue<BlockGlowHighlight> nearestCandidates = new PriorityQueue<>(
+                Comparator.comparingDouble(BlockGlowHighlight::distanceSquared).reversed()
+        );
+
+        for (BlockGlowHighlight candidate : candidates) {
+            if (nearestCandidates.size() < maxHighlights) {
+                nearestCandidates.offer(candidate);
+                continue;
+            }
+
+            BlockGlowHighlight farthest = nearestCandidates.peek();
+            if (farthest != null && candidate.distanceSquared() < farthest.distanceSquared()) {
+                nearestCandidates.poll();
+                nearestCandidates.offer(candidate);
+            }
+        }
+
+        List<BlockGlowHighlight> sortedCandidates = new ArrayList<>(nearestCandidates);
+        sortedCandidates.sort(Comparator.comparingDouble(BlockGlowHighlight::distanceSquared));
+        renderCandidates(sortedCandidates, poseStack, cameraPos, consumer, module);
+    }
+
+    private static void renderScanOrderHighlights(List<BlockGlowHighlight> candidates, int maxHighlights,
+            PoseStack poseStack, Vec3 cameraPos, VertexConsumer consumer, BlockGlowModule module) {
+        int limit = Math.min(maxHighlights, candidates.size());
+        renderCandidates(candidates.subList(0, limit), poseStack, cameraPos, consumer, module);
+    }
+
+    private static void renderCandidates(List<BlockGlowHighlight> candidates, PoseStack poseStack, Vec3 cameraPos,
+            VertexConsumer consumer, BlockGlowModule module) {
+        poseStack.pushPose();
+        poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+
+        for (BlockGlowHighlight candidate : candidates) {
             LevelRenderer.renderLineBox(
                     poseStack,
                     consumer,
-                    AABB.unitCubeFromLowerCorner(Vec3.ZERO),
+                    candidate.worldAabb(),
                     module.getConfig().getOutlineRed(),
                     module.getConfig().getOutlineGreen(),
                     module.getConfig().getOutlineBlue(),
                     module.getConfig().getOutlineAlpha()
             );
-            poseStack.popPose();
         }
-    }
 
-    private record HighlightCandidate(BlockPos pos, double distanceSquared) {
+        poseStack.popPose();
     }
 
     private static int executeEnable(CommandContext<CommandSourceStack> context, int radius,

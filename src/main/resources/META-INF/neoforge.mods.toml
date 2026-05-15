@@ -85,6 +85,14 @@ config="${mod_id}.mixins.json"
     ordering="NONE"
     side="BOTH"
 
+# Sable / Create Aeronautics optional client-side dependency
+[[dependencies.${mod_id}]]
+    modId="sable"
+    type="optional"
+    versionRange="[1.2.2,)"
+    ordering="NONE"
+    side="CLIENT"
+
 # Here's another dependency
 [[dependencies.${mod_id}]]
     modId="minecraft"
