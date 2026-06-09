@@ -21,6 +21,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.geraldhofbauer.vanillaplusadditions.util.WorldgenDiagnostics;
 import net.minecraft.client.Minecraft;
@@ -122,6 +123,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new FoodEffectsModule());
         moduleManager.registerModule(new OverpackedSlowdownModule());
         moduleManager.registerModule(new CustomCraftingRecipesModule());
+        moduleManager.registerModule(new ArmTargetOverlayModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
