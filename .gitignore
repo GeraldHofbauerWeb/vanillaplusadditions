@@ -65,3 +65,6 @@ repo
 libs/sable-neoforge-*.jar
 libs/ToughAsNails-neoforge-*.jar
 
+
+# Claude Code session files (worktrees, memory, plans)
+.claude/
