@@ -16,6 +16,11 @@ public class TextureKillConfig extends AbstractModuleConfig<TextureKillModule, T
         super(module);
     }
 
+    private static final List<String> DEFAULT_KILLED_TEXTURES = List.of(
+        "create:textures/entity/train_hat.png",
+        "create:textures/entity/logistics_hat.png"
+    );
+
     @Override
     protected void buildModuleSpecificConfig(ModConfigSpec.Builder builder) {
         killedTextures = builder
@@ -23,12 +28,12 @@ public class TextureKillConfig extends AbstractModuleConfig<TextureKillModule, T
                 "List of texture ResourceLocations to replace with a fully transparent 1x1 PNG.",
                 "Format: namespace:textures/category/name.png",
                 "Examples:",
-                "  create:textures/entity/contraption_hat.png",
+                "  create:textures/entity/train_hat.png",
                 "  minecraft:textures/block/stone.png"
             )
             .defineList(
                 "killed_textures",
-                List.of(),
+                DEFAULT_KILLED_TEXTURES,
                 () -> "create:textures/entity/example.png",
                 o -> o instanceof String s && s.contains(":")
             );
