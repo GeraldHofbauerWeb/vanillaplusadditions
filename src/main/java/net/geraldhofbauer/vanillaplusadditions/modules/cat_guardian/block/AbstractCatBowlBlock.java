@@ -8,6 +8,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -21,8 +24,16 @@ import java.util.UUID;
 public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.block.Block
         implements net.minecraft.world.level.block.EntityBlock {
 
+    public static final BooleanProperty FILLED = BooleanProperty.create("filled");
+
     protected AbstractCatBowlBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(FILLED, false));
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
+        builder.add(FILLED);
     }
 
     /**
@@ -30,8 +41,12 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
      * Returns the number of cats associated.
      */
     protected int associateCatsWithBowl(Level level, BlockPos bowlPos, Player player) {
-        if (level.isClientSide()) return 0;
-        if (!(level.getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) return 0;
+        if (level.isClientSide()) {
+            return 0;
+        }
+        if (!(level.getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) {
+            return 0;
+        }
 
         double radius = CatGuardianModule.getAssociationRadius();
         AABB searchBox = new AABB(bowlPos).inflate(radius);
@@ -72,7 +87,9 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
      */
     public static void clearAssociationsOnBreak(Level level, BlockPos pos,
                                                 AbstractCatBowlBlockEntity bowl) {
-        if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) return;
+        if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
         List<UUID> cats = new ArrayList<>(bowl.getAssociatedCats());
         for (UUID catUUID : cats) {
             var entity = serverLevel.getEntity(catUUID);

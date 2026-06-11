@@ -21,6 +21,7 @@ public class CatBowlBlockEntity extends AbstractCatBowlBlockEntity {
         protected void onContentsChanged(int slot) {
             setChanged();
             syncToClient();
+            updateFilledState();
         }
     };
 
@@ -40,7 +41,9 @@ public class CatBowlBlockEntity extends AbstractCatBowlBlockEntity {
 
     @Override
     public boolean insertFish(ItemStack stack, boolean simulate) {
-        if (!stack.is(ItemTags.FISHES)) return false;
+        if (!stack.is(ItemTags.FISHES)) {
+            return false;
+        }
         ItemStack remainder = fishSlot.insertItem(0, stack.copy(), simulate);
         return remainder.getCount() < stack.getCount();
     }

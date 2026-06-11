@@ -9,17 +9,27 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.CatFee
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatFeedingStationBlockEntity;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatInventoryData;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -30,7 +40,11 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -39,7 +53,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuardianConfig> {
@@ -57,6 +73,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, VanillaPlusAdditions.MODID);
+
+    private static final DeferredRegister<MenuType<?>> MENUS =
+            DeferredRegister.create(Registries.MENU, VanillaPlusAdditions.MODID);
 
     // ---- Blocks ----
 
@@ -87,6 +106,24 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             ITEMS.register("cat_feeding_station",
                     () -> new BlockItem(CAT_FEEDING_STATION.get(), new Item.Properties()));
 
+    // ---- Cat armor items ----
+
+    public static final DeferredItem<CatArmorItem> CAT_ARMOR_IRON =
+            ITEMS.register("cat_armor_iron",
+                    () -> new CatArmorItem(CatArmorItem.Tier.IRON, new Item.Properties()));
+
+    public static final DeferredItem<CatArmorItem> CAT_ARMOR_GOLD =
+            ITEMS.register("cat_armor_gold",
+                    () -> new CatArmorItem(CatArmorItem.Tier.GOLD, new Item.Properties()));
+
+    public static final DeferredItem<CatArmorItem> CAT_ARMOR_DIAMOND =
+            ITEMS.register("cat_armor_diamond",
+                    () -> new CatArmorItem(CatArmorItem.Tier.DIAMOND, new Item.Properties()));
+
+    public static final DeferredItem<CatArmorItem> CAT_ARMOR_NETHERITE =
+            ITEMS.register("cat_armor_netherite",
+                    () -> new CatArmorItem(CatArmorItem.Tier.NETHERITE, new Item.Properties().fireResistant()));
+
     // ---- Block entity types ----
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CatBowlBlockEntity>> CAT_BOWL_BE =
@@ -98,34 +135,43 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     () -> BlockEntityType.Builder.of(CatFeedingStationBlockEntity::new,
                             CAT_FEEDING_STATION.get()).build(null));
 
+    // ---- Menu types ----
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CatFeedingStationMenu>> CAT_FEEDING_STATION_MENU =
+            MENUS.register("cat_feeding_station",
+                    () -> IMenuTypeExtension.create(CatFeedingStationMenu::new));
+
     // ---- Entity attachment types (persisted in entity NBT) ----
 
-    /**
-     * Stores the associated bowl/station block position as a long (BlockPos.asLong()).
-     * Long.MIN_VALUE means "no bowl".
-     */
     public static final Supplier<AttachmentType<Long>> CAT_BOWL_POS =
             ATTACHMENT_TYPES.register("cat_bowl_pos", () ->
                     AttachmentType.<Long>builder(() -> Long.MIN_VALUE)
                             .serialize(Codec.LONG)
                             .build());
 
-    /**
-     * Countdown in ticks while the cat is in the fed/guarding state.
-     * 0 means hungry — cat will pathfind to its bowl.
-     */
     public static final Supplier<AttachmentType<Integer>> CAT_FED_TICKS =
             ATTACHMENT_TYPES.register("cat_fed_ticks", () ->
                     AttachmentType.<Integer>builder(() -> 0)
                             .serialize(Codec.INT)
                             .build());
 
+    public static final Supplier<AttachmentType<CatInventoryData>> CAT_INVENTORY =
+            ATTACHMENT_TYPES.register("cat_inventory", () ->
+                    AttachmentType.<CatInventoryData>builder(CatInventoryData::new)
+                            .serialize(CatInventoryData.CODEC)
+                            .build());
+
+    // ---- Armor attribute modifier ID ----
+
+    private static final ResourceLocation ARMOR_MODIFIER_ID =
+            ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "cat_armor_bonus");
+
     // ---- Singleton reference for config access from static context ----
 
-    private static CatGuardianModule INSTANCE;
+    private static CatGuardianModule instance;
 
     public static double getAssociationRadius() {
-        return INSTANCE != null ? INSTANCE.getConfig().getAssociationRadius() : 64.0D;
+        return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
     }
 
     // ---- Constructor ----
@@ -137,7 +183,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 "Adds cat food bowls and feeding stations. Fed cats actively guard your base against hostile mobs.",
                 CatGuardianConfig::new
         );
-        INSTANCE = this;
+        instance = this;
     }
 
     // ---- Module lifecycle ----
@@ -148,10 +194,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         ITEMS.register(getModEventBus());
         BLOCK_ENTITY_TYPES.register(getModEventBus());
         ATTACHMENT_TYPES.register(getModEventBus());
+        MENUS.register(getModEventBus());
 
         getModEventBus().addListener(this::onRegisterCapabilities);
 
-        VanillaPlusCreativeTabs.addAllToMainTab(CAT_BOWL_ITEM, CAT_FEEDING_STATION_ITEM);
+        VanillaPlusCreativeTabs.addAllToMainTab(
+                CAT_BOWL_ITEM, CAT_FEEDING_STATION_ITEM,
+                CAT_ARMOR_IRON, CAT_ARMOR_GOLD, CAT_ARMOR_DIAMOND, CAT_ARMOR_NETHERITE);
 
         NeoForge.EVENT_BUS.register(this);
 
@@ -159,27 +208,38 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     private void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-        // Expose IItemHandler on feeding station so hoppers, droppers and Create contraptions
-        // can fill it without any extra wiring.
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 CAT_FEEDING_STATION_BE.get(),
-                (be, side) -> be.getInventory()
+                (be, side) -> side == Direction.DOWN ? be.getLootInventory() : be.getInventory()
         );
     }
 
-    // ---- Cat join level — inject guard target goal ----
+    // ---- Cat join level — inject guard target goal + restore armor attribute ----
 
     @SubscribeEvent
     public void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (!isModuleEnabled()) return;
-        if (event.getLevel().isClientSide()) return;
-        if (!(event.getEntity() instanceof Cat cat)) return;
-        // Guard against duplicates when entity changes dimension
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Cat cat)) {
+            return;
+        }
+
         boolean alreadyAdded = cat.targetSelector.getAvailableGoals().stream()
                 .anyMatch(w -> w.getGoal() instanceof CatGuardTargetGoal);
         if (!alreadyAdded) {
             cat.targetSelector.addGoal(1, new CatGuardTargetGoal(cat));
+        }
+
+        // Restore armor attack bonus after chunk load / dimension change
+        CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
+        ItemStack armor = invData.getArmor();
+        if (!armor.isEmpty()) {
+            applyArmorAttribute(cat, armor);
         }
     }
 
@@ -187,12 +247,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     @SubscribeEvent
     public void onEntityTick(EntityTickEvent.Post event) {
-        if (!isModuleEnabled()) return;
-        if (!(event.getEntity() instanceof Cat cat)) return;
-        if (cat.level().isClientSide()) return;
-        if (!cat.isTame() || cat.getOwnerUUID() == null) return;
-        // Run every 10 ticks to reduce overhead
-        if (cat.tickCount % 10 != 0) return;
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Cat cat)) {
+            return;
+        }
+        if (cat.level().isClientSide()) {
+            return;
+        }
+        if (!cat.isTame() || cat.getOwnerUUID() == null) {
+            return;
+        }
+        if (cat.tickCount % 10 != 0) {
+            return;
+        }
 
         tickCat(cat);
     }
@@ -206,12 +275,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         int fedTicks = cat.getData(CAT_FED_TICKS.get());
 
         if (fedTicks > 0) {
-            // Decrement fed timer — CatGuardTargetGoal handles target selection each tick
             cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedTicks - 10));
             return;
         }
 
-        // Hungry: try to get to bowl and eat
         if (!hasBowl) {
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
@@ -219,9 +286,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
         AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
-        if (bowl == null) return; // clears stale CAT_BOWL_POS inside getBowlEntity
+        if (bowl == null) {
+            return;
+        }
 
-        if (!bowl.hasFish()) return;
+        if (!bowl.hasFish()) {
+            return;
+        }
 
         double distSq = cat.distanceToSqr(
                 bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
@@ -236,26 +307,42 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (!fish.isEmpty()) {
                 cat.setData(CAT_FED_TICKS.get(), config.getFedDurationTicks());
                 cat.playSound(SoundEvents.GENERIC_EAT, 0.5F, cat.getVoicePitch());
+
+                if (bowl instanceof CatFeedingStationBlockEntity station) {
+                    transferLootToStation(cat, station);
+                }
             }
         }
     }
 
-    /**
-     * Returns the bowl block entity at bowlPos, or null.
-     * Clears the cat's CAT_BOWL_POS if the block entity is missing (bowl was destroyed).
-     */
+    private void transferLootToStation(Cat cat, CatFeedingStationBlockEntity station) {
+        CatInventoryData catInv = cat.getData(CAT_INVENTORY.get());
+        var catLoot = catInv.getInventory();
+        var stationLoot = station.getLootInventory();
+        for (int slot = CatInventoryData.LOOT_START; slot < CatInventoryData.TOTAL_SLOTS; slot++) {
+            ItemStack stack = catLoot.getStackInSlot(slot);
+            if (stack.isEmpty()) {
+                continue;
+            }
+            for (int ss = 0; ss < stationLoot.getSlots(); ss++) {
+                stack = stationLoot.insertItem(ss, stack, false);
+                if (stack.isEmpty()) {
+                    break;
+                }
+            }
+            catLoot.setStackInSlot(slot, stack);
+        }
+    }
+
     private AbstractCatBowlBlockEntity getBowlEntity(Cat cat, BlockPos bowlPos) {
         var be = cat.level().getBlockEntity(bowlPos);
-        if (be instanceof AbstractCatBowlBlockEntity bowl) return bowl;
-        // Bowl gone — clear stale attachment
+        if (be instanceof AbstractCatBowlBlockEntity bowl) {
+            return bowl;
+        }
         cat.setData(CAT_BOWL_POS.get(), Long.MIN_VALUE);
         return null;
     }
 
-    /**
-     * If the cat is unassigned and wanders within autoRadius of any cat bowl/feeding station
-     * belonging to its owner, automatically associate it with that bowl.
-     */
     private void tryAutoAssociate(Cat cat, double autoRadius) {
         BlockPos catPos = cat.blockPosition();
         int r = (int) Math.ceil(autoRadius);
@@ -276,13 +363,134 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
     }
 
+    // ---- Cat armor equip / unequip ----
+
+    @SubscribeEvent
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getTarget() instanceof Cat cat)) {
+            return;
+        }
+        if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), event.getEntity().getUUID())) {
+            return;
+        }
+
+        Player player = event.getEntity();
+        ItemStack heldItem = event.getItemStack();
+        CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
+        ItemStack currentArmor = invData.getArmor();
+
+        if (heldItem.getItem() instanceof CatArmorItem) {
+            if (!event.getLevel().isClientSide()) {
+                if (!currentArmor.isEmpty() && !player.getInventory().add(currentArmor)) {
+                    player.drop(currentArmor, false);
+                }
+                ItemStack newArmor = heldItem.copyWithCount(1);
+                invData.setArmor(newArmor);
+                applyArmorAttribute(cat, newArmor);
+                if (!player.isCreative()) {
+                    heldItem.shrink(1);
+                }
+            }
+            event.setCanceled(true);
+        } else if (heldItem.isEmpty() && player.isShiftKeyDown() && !currentArmor.isEmpty()) {
+            if (!event.getLevel().isClientSide()) {
+                if (!player.getInventory().add(currentArmor)) {
+                    player.drop(currentArmor, false);
+                }
+                invData.setArmor(ItemStack.EMPTY);
+                removeArmorAttribute(cat);
+            }
+            event.setCanceled(true);
+        }
+    }
+
+    // ---- Cat armor damage reduction ----
+
+    @SubscribeEvent
+    public void onCatHurt(LivingDamageEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Cat cat)) {
+            return;
+        }
+        CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
+        ItemStack armor = invData.getArmor();
+        if (!(armor.getItem() instanceof CatArmorItem catArmor)) {
+            return;
+        }
+
+        event.setNewDamage(event.getNewDamage() * (1f - catArmor.getTier().getDamageReduction()));
+
+        armor.hurtAndBreak(1, cat, net.minecraft.world.entity.EquipmentSlot.CHEST);
+        if (armor.isEmpty()) {
+            invData.setArmor(ItemStack.EMPTY);
+            removeArmorAttribute(cat);
+        }
+    }
+
+    // ---- Cat loot collection ----
+
+    @SubscribeEvent
+    public void onLivingDrops(LivingDropsEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getSource().getDirectEntity() instanceof Cat cat)) {
+            return;
+        }
+        if (!cat.isTame() || cat.getData(CAT_BOWL_POS.get()) == Long.MIN_VALUE) {
+            return;
+        }
+
+        CatInventoryData catInv = cat.getData(CAT_INVENTORY.get());
+        var lootHandler = catInv.getInventory();
+
+        Iterator<net.minecraft.world.entity.item.ItemEntity> iter = event.getDrops().iterator();
+        while (iter.hasNext()) {
+            net.minecraft.world.entity.item.ItemEntity itemEntity = iter.next();
+            ItemStack drop = itemEntity.getItem().copy();
+            for (int slot = CatInventoryData.LOOT_START; slot < CatInventoryData.TOTAL_SLOTS; slot++) {
+                drop = lootHandler.insertItem(slot, drop, false);
+                if (drop.isEmpty()) {
+                    break;
+                }
+            }
+            if (drop.isEmpty()) {
+                iter.remove();
+            } else {
+                itemEntity.setItem(drop);
+            }
+        }
+    }
+
+    // ---- Armor attribute helpers ----
+
+    private void applyArmorAttribute(Cat cat, ItemStack armor) {
+        var attrInstance = cat.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attrInstance == null) {
+            return;
+        }
+        attrInstance.removeModifier(ARMOR_MODIFIER_ID);
+        if (armor.getItem() instanceof CatArmorItem catArmor) {
+            attrInstance.addPermanentModifier(new AttributeModifier(
+                    ARMOR_MODIFIER_ID, catArmor.getTier().getAttackBonus(),
+                    AttributeModifier.Operation.ADD_VALUE));
+        }
+    }
+
+    private void removeArmorAttribute(Cat cat) {
+        var attrInstance = cat.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attrInstance != null) {
+            attrInstance.removeModifier(ARMOR_MODIFIER_ID);
+        }
+    }
+
     // ---- CatGuardTargetGoal — proper AI target goal for guarding ----
 
-    /**
-     * Added to every Cat's targetSelector on join. When the cat is fed and has a bowl,
-     * it selects the nearest Monster within guardRadius of the bowl as its attack target.
-     * OcelotAttackGoal (vanilla priority 9 in goalSelector) then handles pathfinding + damage.
-     */
     private static final class CatGuardTargetGoal extends TargetGoal {
 
         private final Cat cat;
@@ -295,25 +503,32 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         @Override
         public boolean canUse() {
-            if (!cat.isTame() || cat.getOwnerUUID() == null) return false;
+            if (!cat.isTame() || cat.getOwnerUUID() == null) {
+                return false;
+            }
             int fedTicks = cat.getData(CAT_FED_TICKS.get());
-            if (fedTicks <= 0) return false;
+            if (fedTicks <= 0) {
+                return false;
+            }
             long bowlLong = cat.getData(CAT_BOWL_POS.get());
-            if (bowlLong == Long.MIN_VALUE) return false;
+            if (bowlLong == Long.MIN_VALUE) {
+                return false;
+            }
             return findAndSetTarget(BlockPos.of(bowlLong));
         }
 
         @Override
         public boolean canContinueToUse() {
             int fedTicks = cat.getData(CAT_FED_TICKS.get());
-            if (fedTicks <= 0) return false;
+            if (fedTicks <= 0) {
+                return false;
+            }
             LivingEntity target = cat.getTarget();
             return target != null && target.isAlive();
         }
 
         @Override
         public void start() {
-            // Stand up so OcelotAttackGoal can run (SitWhenOrderedToGoal blocks it at priority 2)
             cat.setOrderedToSit(false);
             super.start();
         }
@@ -325,11 +540,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
 
         private boolean findAndSetTarget(BlockPos bowlPos) {
-            double radius = INSTANCE != null ? INSTANCE.getConfig().getGuardRadius() : 64.0;
+            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
             AABB searchBox = new AABB(bowlPos).inflate(radius);
             List<Monster> hostiles = cat.level().getEntitiesOfClass(
                     Monster.class, searchBox, m -> !m.isDeadOrDying());
-            if (hostiles.isEmpty()) return false;
+            if (hostiles.isEmpty()) {
+                return false;
+            }
 
             LivingEntity nearest = null;
             double nearestDistSq = Double.MAX_VALUE;
@@ -340,7 +557,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     nearest = m;
                 }
             }
-            if (nearest == null) return false;
+            if (nearest == null) {
+                return false;
+            }
             this.targetMob = nearest;
             cat.setTarget(nearest);
             return true;

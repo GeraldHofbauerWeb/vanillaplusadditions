@@ -1,5 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity;
 
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.AbstractCatBowlBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -19,7 +20,7 @@ import java.util.UUID;
 
 public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
 
-    protected final List<UUID> associatedCats = new ArrayList<>();
+    private final List<UUID> associatedCats = new ArrayList<>();
 
     protected AbstractCatBowlBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -65,6 +66,21 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
     protected void syncToClient() {
         if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_ALL);
+        }
+    }
+
+    protected void updateFilledState() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlockState state = level.getBlockState(worldPosition);
+        if (!state.hasProperty(AbstractCatBowlBlock.FILLED)) {
+            return;
+        }
+        boolean filled = hasFish();
+        if (state.getValue(AbstractCatBowlBlock.FILLED) != filled) {
+            level.setBlock(worldPosition, state.setValue(AbstractCatBowlBlock.FILLED, filled),
+                    Block.UPDATE_CLIENTS);
         }
     }
 

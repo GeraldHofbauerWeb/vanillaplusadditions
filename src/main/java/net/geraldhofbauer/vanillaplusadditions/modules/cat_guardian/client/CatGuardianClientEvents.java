@@ -48,25 +48,37 @@ public final class CatGuardianClientEvents {
                     .createCompositeState(false)
     );
 
-    private CatGuardianClientEvents() {}
+    private CatGuardianClientEvents() { }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            return;
+        }
 
         CatGuardianModule module = getModule();
-        if (module == null || !module.isModuleEnabled()) return;
+        if (module == null || !module.isModuleEnabled()) {
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) return;
+        if (mc.level == null || mc.player == null) {
+            return;
+        }
 
         // Only render when the player is looking at a cat bowl or feeding station
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) return;
+        if (!(mc.hitResult instanceof BlockHitResult blockHit)) {
+            return;
+        }
         BlockPos hitPos = blockHit.getBlockPos();
-        if (!(mc.level.getBlockEntity(hitPos) instanceof AbstractCatBowlBlockEntity bowl)) return;
+        if (!(mc.level.getBlockEntity(hitPos) instanceof AbstractCatBowlBlockEntity bowl)) {
+            return;
+        }
 
         List<UUID> catUUIDs = bowl.getAssociatedCats();
-        if (catUUIDs.isEmpty()) return;
+        if (catUUIDs.isEmpty()) {
+            return;
+        }
 
         CatGuardianConfig config = module.getConfig();
         float r = config.getOutlineRed();

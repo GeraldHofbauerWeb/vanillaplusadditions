@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "vanillaplusadditions:block/cat_bowl" }
+    "filled=false": { "model": "vanillaplusadditions:block/cat_bowl" },
+    "filled=true":  { "model": "vanillaplusadditions:block/cat_bowl_filled" }
   }
 }

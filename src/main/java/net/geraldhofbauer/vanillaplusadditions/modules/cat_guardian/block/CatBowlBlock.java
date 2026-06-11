@@ -41,7 +41,9 @@ public class CatBowlBlock extends AbstractCatBowlBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               BlockHitResult hit) {
-        if (!stack.is(ItemTags.FISHES)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (!stack.is(ItemTags.FISHES)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
         if (!(level.getBlockEntity(pos) instanceof CatBowlBlockEntity bowl)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
@@ -59,7 +61,9 @@ public class CatBowlBlock extends AbstractCatBowlBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
-        if (!(level.getBlockEntity(pos) instanceof CatBowlBlockEntity bowl)) return InteractionResult.PASS;
+        if (!(level.getBlockEntity(pos) instanceof CatBowlBlockEntity bowl)) {
+            return InteractionResult.PASS;
+        }
 
         if (player.isShiftKeyDown()) {
             associateCatsWithBowl(level, pos, player);

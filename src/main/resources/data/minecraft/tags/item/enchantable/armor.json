@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "vanillaplusadditions:cat_armor_iron",
+    "vanillaplusadditions:cat_armor_gold",
+    "vanillaplusadditions:cat_armor_diamond",
+    "vanillaplusadditions:cat_armor_netherite"
+  ]
+}

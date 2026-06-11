@@ -3,6 +3,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatFeedingStationBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -30,17 +31,20 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               BlockHitResult hit) {
-        if (!stack.is(ItemTags.FISHES)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (!stack.is(ItemTags.FISHES)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
         if (!(level.getBlockEntity(pos) instanceof CatFeedingStationBlockEntity station)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
 
         if (!level.isClientSide()) {
-            int inserted = 0;
             while (!stack.isEmpty() && station.insertFish(stack.copyWithCount(1), false)) {
-                if (!player.isCreative()) stack.shrink(1);
-                else break; // creative: just insert one to avoid infinite loop
-                inserted++;
+                if (!player.isCreative()) {
+                    stack.shrink(1);
+                } else {
+                    break; // creative: just insert one to avoid infinite loop
+                }
             }
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide());
@@ -49,7 +53,7 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hit) {
-        if (!(level.getBlockEntity(pos) instanceof CatFeedingStationBlockEntity)) {
+        if (!(level.getBlockEntity(pos) instanceof CatFeedingStationBlockEntity station)) {
             return InteractionResult.PASS;
         }
 
@@ -58,7 +62,11 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
-        return InteractionResult.PASS;
+        // Non-sneaking → open inventory GUI
+        if (!level.isClientSide() && player instanceof ServerPlayer sp) {
+            sp.openMenu(station, buf -> buf.writeBlockPos(pos));
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     @Override

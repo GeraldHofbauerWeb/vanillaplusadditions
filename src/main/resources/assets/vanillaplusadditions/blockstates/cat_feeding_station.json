@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "vanillaplusadditions:block/cat_feeding_station" }
+    "filled=false": { "model": "vanillaplusadditions:block/cat_feeding_station" },
+    "filled=true":  { "model": "vanillaplusadditions:block/cat_feeding_station_filled" }
   }
 }

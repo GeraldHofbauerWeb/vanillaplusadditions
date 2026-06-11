@@ -31,6 +31,11 @@
   "item.vanillaplusadditions.flying_fish_boots.desc_3": "Not compatible with Depth Strider/Frost Walker",
   "block.vanillaplusadditions.cat_bowl": "Cat Bowl",
   "block.vanillaplusadditions.cat_feeding_station": "Cat Feeding Station",
+  "item.vanillaplusadditions.cat_armor_iron": "Iron Cat Armor",
+  "item.vanillaplusadditions.cat_armor_gold": "Golden Cat Armor",
+  "item.vanillaplusadditions.cat_armor_diamond": "Diamond Cat Armor",
+  "item.vanillaplusadditions.cat_armor_netherite": "Netherite Cat Armor",
+  "container.vanillaplusadditions.cat_feeding_station": "Cat Feeding Station",
   "message.vanillaplusadditions.cat_guardian.associated": "Associated %s cat(s) with this bowl.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "No tamed cats owned by you found nearby."
 }
