@@ -36,6 +36,7 @@
   "item.vanillaplusadditions.cat_armor_diamond": "Armadura de diamante para gato",
   "item.vanillaplusadditions.cat_armor_netherite": "Armadura de netherita para gato",
   "container.vanillaplusadditions.cat_feeding_station": "Estación de alimentación para gatos",
+  "container.vanillaplusadditions.cat_inventory": "Inventario del gato",
   "message.vanillaplusadditions.cat_guardian.associated": "%s gato(s) asociado(s) con este bol.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "No se encontraron gatos domesticados tuyos cerca."
 }

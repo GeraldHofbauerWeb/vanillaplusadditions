@@ -10,7 +10,9 @@ import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -23,6 +25,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 import java.util.OptionalDouble;
@@ -49,6 +53,32 @@ public final class CatGuardianClientEvents {
     );
 
     private CatGuardianClientEvents() { }
+
+    @SubscribeEvent
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (!event.getLevel().isClientSide()) {
+            return;
+        }
+        if (!(event.getTarget() instanceof Cat cat)) {
+            return;
+        }
+        if (!Screen.hasControlDown()) {
+            return;
+        }
+        if (!cat.isTame()) {
+            return;
+        }
+        CatGuardianModule module = getModule();
+        if (module == null || !module.isModuleEnabled()) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !mc.player.getUUID().equals(cat.getOwnerUUID())) {
+            return;
+        }
+        event.setCanceled(true);
+        PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
+    }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {

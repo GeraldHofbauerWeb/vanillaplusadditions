@@ -32,5 +32,6 @@ public final class CatGuardianClientSetup {
     @SubscribeEvent
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(CatGuardianModule.CAT_FEEDING_STATION_MENU.get(), CatFeedingStationScreen::new);
+        event.register(CatGuardianModule.CAT_INVENTORY_MENU.get(), CatInventoryScreen::new);
     }
 }

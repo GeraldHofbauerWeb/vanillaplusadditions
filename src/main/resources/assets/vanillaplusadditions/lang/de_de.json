@@ -36,6 +36,7 @@
   "item.vanillaplusadditions.cat_armor_diamond": "Diamant-Katzenrüstung",
   "item.vanillaplusadditions.cat_armor_netherite": "Netherit-Katzenrüstung",
   "container.vanillaplusadditions.cat_feeding_station": "Katzen-Futterstation",
+  "container.vanillaplusadditions.cat_inventory": "Katzeninventar",
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden."
 }

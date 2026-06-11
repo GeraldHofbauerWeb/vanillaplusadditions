@@ -13,7 +13,12 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatInventoryMenu;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -21,6 +26,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
@@ -42,6 +48,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -141,6 +148,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             MENUS.register("cat_feeding_station",
                     () -> IMenuTypeExtension.create(CatFeedingStationMenu::new));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<CatInventoryMenu>> CAT_INVENTORY_MENU =
+            MENUS.register("cat_inventory",
+                    () -> IMenuTypeExtension.create(CatInventoryMenu::new));
+
     // ---- Entity attachment types (persisted in entity NBT) ----
 
     public static final Supplier<AttachmentType<Long>> CAT_BOWL_POS =
@@ -174,6 +185,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
     }
 
+    public static int getFedDurationTicks() {
+        return instance != null ? instance.getConfig().getFedDurationTicks() : 6000;
+    }
+
     // ---- Constructor ----
 
     public CatGuardianModule() {
@@ -197,6 +212,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         MENUS.register(getModEventBus());
 
         getModEventBus().addListener(this::onRegisterCapabilities);
+        getModEventBus().addListener(this::onRegisterPayloadHandlers);
 
         VanillaPlusCreativeTabs.addAllToMainTab(
                 CAT_BOWL_ITEM, CAT_FEEDING_STATION_ITEM,
@@ -212,6 +228,31 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 Capabilities.ItemHandler.BLOCK,
                 CAT_FEEDING_STATION_BE.get(),
                 (be, side) -> side == Direction.DOWN ? be.getLootInventory() : be.getInventory()
+        );
+    }
+
+    private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        event.registrar("1").playToServer(OpenCatInventoryPacket.TYPE, OpenCatInventoryPacket.STREAM_CODEC,
+            (packet, ctx) -> ctx.enqueueWork(() -> {
+                if (!isModuleEnabled()) {
+                    return;
+                }
+                ServerPlayer player = (ServerPlayer) ctx.player();
+                Entity entity = player.level().getEntity(packet.entityId());
+                if (!(entity instanceof Cat cat)) {
+                    return;
+                }
+                if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), player.getUUID())) {
+                    return;
+                }
+                player.openMenu(
+                    new SimpleMenuProvider(
+                        (id, inv, p) -> new CatInventoryMenu(id, inv, cat),
+                        cat.getName()
+                    ),
+                    buf -> buf.writeInt(cat.getId())
+                );
+            })
         );
     }
 
@@ -240,6 +281,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         ItemStack armor = invData.getArmor();
         if (!armor.isEmpty()) {
             applyArmorAttribute(cat, armor);
+        }
+
+        // Bowl-assigned cats should not teleport to their owner
+        if (cat.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
+            suppressFollowOwner(cat);
         }
     }
 
@@ -283,6 +329,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
         }
+
+        suppressFollowOwner(cat);
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
         AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
@@ -487,6 +535,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (attrInstance != null) {
             attrInstance.removeModifier(ARMOR_MODIFIER_ID);
         }
+    }
+
+    private static void suppressFollowOwner(Cat cat) {
+        cat.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof FollowOwnerGoal)
+                .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                .toList()
+                .forEach(cat.goalSelector::removeGoal);
     }
 
     // ---- CatGuardTargetGoal — proper AI target goal for guarding ----

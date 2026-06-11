@@ -36,6 +36,7 @@
   "item.vanillaplusadditions.cat_armor_diamond": "Armure de chat en diamant",
   "item.vanillaplusadditions.cat_armor_netherite": "Armure de chat en netherite",
   "container.vanillaplusadditions.cat_feeding_station": "Station d'alimentation pour chat",
+  "container.vanillaplusadditions.cat_inventory": "Inventaire du chat",
   "message.vanillaplusadditions.cat_guardian.associated": "%s chat(s) associé(s) à cette gamelle.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "Aucun chat apprivoisé vous appartenant trouvé à proximité."
 }
