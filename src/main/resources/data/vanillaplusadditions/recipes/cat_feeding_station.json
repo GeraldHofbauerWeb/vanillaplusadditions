@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " A ",
+    "HDA",
+    " S "
+  ],
+  "key": {
+    "A": { "item": "minecraft:amethyst_shard" },
+    "H": { "item": "minecraft:hopper" },
+    "D": { "item": "minecraft:dispenser" },
+    "S": { "item": "minecraft:stone_slab" }
+  },
+  "result": {
+    "id": "vanillaplusadditions:cat_feeding_station",
+    "count": 1
+  }
+}

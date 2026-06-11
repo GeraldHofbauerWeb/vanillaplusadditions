@@ -28,5 +28,9 @@
   "item.vanillaplusadditions.flying_fish_spawn_egg": "Oeuf d'apparition de poisson volant",
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Glissez plus vite sur la surface de l'eau",
   "item.vanillaplusadditions.flying_fish_boots.desc_2": "En sprintant sur l'eau, vous bondissez et planez un court instant",
-  "item.vanillaplusadditions.flying_fish_boots.desc_3": "Incompatible avec Depth Strider/Frost Walker"
+  "item.vanillaplusadditions.flying_fish_boots.desc_3": "Incompatible avec Depth Strider/Frost Walker",
+  "block.vanillaplusadditions.cat_bowl": "Gamelle pour chat",
+  "block.vanillaplusadditions.cat_feeding_station": "Station d'alimentation pour chat",
+  "message.vanillaplusadditions.cat_guardian.associated": "%s chat(s) associé(s) à cette gamelle.",
+  "message.vanillaplusadditions.cat_guardian.no_cats": "Aucun chat apprivoisé vous appartenant trouvé à proximité."
 }

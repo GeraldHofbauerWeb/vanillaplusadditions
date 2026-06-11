@@ -28,5 +28,9 @@
   "item.vanillaplusadditions.flying_fish_spawn_egg": "Huevo generador de pez volador",
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Deslizate mas rapido sobre la superficie del agua",
   "item.vanillaplusadditions.flying_fish_boots.desc_2": "Al esprintar sobre el agua, das pequenos saltos y planeas brevemente",
-  "item.vanillaplusadditions.flying_fish_boots.desc_3": "No compatible con Depth Strider/Frost Walker"
+  "item.vanillaplusadditions.flying_fish_boots.desc_3": "No compatible con Depth Strider/Frost Walker",
+  "block.vanillaplusadditions.cat_bowl": "Bol para gatos",
+  "block.vanillaplusadditions.cat_feeding_station": "Estación de alimentación para gatos",
+  "message.vanillaplusadditions.cat_guardian.associated": "%s gato(s) asociado(s) con este bol.",
+  "message.vanillaplusadditions.cat_guardian.no_cats": "No se encontraron gatos domesticados tuyos cerca."
 }

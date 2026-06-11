@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "S S",
+    "SSS"
+  ],
+  "key": {
+    "S": { "item": "minecraft:stone_slab" }
+  },
+  "result": {
+    "id": "vanillaplusadditions:cat_bowl",
+    "count": 1
+  }
+}
