@@ -75,12 +75,12 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
         if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) return;
         List<UUID> cats = new ArrayList<>(bowl.getAssociatedCats());
         for (UUID catUUID : cats) {
-            // Search in the same dimension as the bowl (cats move between dimensions rarely,
-            // but this is still correct behaviour)
-            var entity = serverLevel.getEntities().get(catUUID);
+            var entity = serverLevel.getEntity(catUUID);
             if (entity instanceof Cat cat) {
                 cat.setData(CatGuardianModule.CAT_BOWL_POS.get(), Long.MIN_VALUE);
             }
         }
+        // Unloaded cats self-heal: getBowlEntity() in the tick handler clears CAT_BOWL_POS
+        // the next time the cat's chunk loads and the bowl is gone.
     }
 }

@@ -14,6 +14,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.BlockItem;
@@ -28,6 +30,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -35,6 +38,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -164,6 +168,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         );
     }
 
+    // ---- Cat join level — inject guard target goal ----
+
+    @SubscribeEvent
+    public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!isModuleEnabled()) return;
+        if (event.getLevel().isClientSide()) return;
+        if (!(event.getEntity() instanceof Cat cat)) return;
+        // Guard against duplicates when entity changes dimension
+        boolean alreadyAdded = cat.targetSelector.getAvailableGoals().stream()
+                .anyMatch(w -> w.getGoal() instanceof CatGuardTargetGoal);
+        if (!alreadyAdded) {
+            cat.targetSelector.addGoal(1, new CatGuardTargetGoal(cat));
+        }
+    }
+
     // ---- Cat tick logic ----
 
     @SubscribeEvent
@@ -187,69 +206,37 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         int fedTicks = cat.getData(CAT_FED_TICKS.get());
 
         if (fedTicks > 0) {
+            // Decrement fed timer — CatGuardTargetGoal handles target selection each tick
             cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedTicks - 10));
-
-            if (hasBowl) {
-                // Guard: scan for hostile mobs within guardRadius of the BOWL (not the cat)
-                BlockPos bowlPos = BlockPos.of(bowlPosLong);
-                guardAroundBowl(cat, bowlPos, config.getGuardRadius());
-            }
-        } else {
-            // Hungry
-            if (!hasBowl) {
-                tryAutoAssociate(cat, config.getAutoAssociateRadius());
-                return;
-            }
-
-            BlockPos bowlPos = BlockPos.of(bowlPosLong);
-            AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
-            if (bowl == null) return; // cleared stale ref inside getBowlEntity
-
-            if (!bowl.hasFish()) return;
-
-            double distSq = cat.distanceToSqr(
-                    bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
-
-            if (distSq > 4.0 && !cat.isOrderedToSit()) {
-                if (cat.getNavigation().isDone()) {
-                    cat.getNavigation().moveTo(
-                            bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
-                }
-            } else if (distSq <= 4.0) {
-                var fish = bowl.takeFish();
-                if (!fish.isEmpty()) {
-                    cat.setData(CAT_FED_TICKS.get(), config.getFedDurationTicks());
-                    cat.playSound(SoundEvents.GENERIC_EAT, 0.5F, cat.getVoicePitch());
-                }
-            }
-        }
-    }
-
-    /**
-     * Scans for hostile mobs within {@code radius} blocks of {@code bowlPos} and commands the cat
-     * to attack the nearest one. Only engages if the cat doesn't already have a live target.
-     */
-    private void guardAroundBowl(Cat cat, BlockPos bowlPos, double radius) {
-        if (cat.getTarget() != null && cat.getTarget().isAlive()) return;
-
-        AABB searchBox = new AABB(bowlPos).inflate(radius);
-        List<Monster> hostiles = cat.level().getEntitiesOfClass(
-                Monster.class, searchBox, m -> !m.isDeadOrDying());
-
-        if (hostiles.isEmpty()) return;
-
-        LivingEntity nearest = null;
-        double nearestDist = Double.MAX_VALUE;
-        for (Monster m : hostiles) {
-            double d = cat.distanceToSqr(m);
-            if (d < nearestDist) {
-                nearestDist = d;
-                nearest = m;
-            }
+            return;
         }
 
-        if (nearest != null) {
-            cat.setTarget(nearest);
+        // Hungry: try to get to bowl and eat
+        if (!hasBowl) {
+            tryAutoAssociate(cat, config.getAutoAssociateRadius());
+            return;
+        }
+
+        BlockPos bowlPos = BlockPos.of(bowlPosLong);
+        AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
+        if (bowl == null) return; // clears stale CAT_BOWL_POS inside getBowlEntity
+
+        if (!bowl.hasFish()) return;
+
+        double distSq = cat.distanceToSqr(
+                bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+
+        if (distSq > 4.0 && !cat.isOrderedToSit()) {
+            if (cat.getNavigation().isDone()) {
+                cat.getNavigation().moveTo(
+                        bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
+            }
+        } else if (distSq <= 4.0) {
+            var fish = bowl.takeFish();
+            if (!fish.isEmpty()) {
+                cat.setData(CAT_FED_TICKS.get(), config.getFedDurationTicks());
+                cat.playSound(SoundEvents.GENERIC_EAT, 0.5F, cat.getVoicePitch());
+            }
         }
     }
 
@@ -260,14 +247,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private AbstractCatBowlBlockEntity getBowlEntity(Cat cat, BlockPos bowlPos) {
         var be = cat.level().getBlockEntity(bowlPos);
         if (be instanceof AbstractCatBowlBlockEntity bowl) return bowl;
-        // Bowl gone — clear stale data
+        // Bowl gone — clear stale attachment
         cat.setData(CAT_BOWL_POS.get(), Long.MIN_VALUE);
         return null;
     }
 
     /**
-     * If the cat is unassigned and wanders within autoRadius of any cat bowl or feeding station,
-     * automatically associate it with that bowl.
+     * If the cat is unassigned and wanders within autoRadius of any cat bowl/feeding station
+     * belonging to its owner, automatically associate it with that bowl.
      */
     private void tryAutoAssociate(Cat cat, double autoRadius) {
         BlockPos catPos = cat.blockPosition();
@@ -284,11 +271,79 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (distSq <= radiusSq) {
                 cat.setData(CAT_BOWL_POS.get(), checkPos.asLong());
                 bowl.addCat(cat.getUUID());
-                if (getConfig().shouldDebugLog()) {
-                    getLogger().debug("Auto-associated cat {} with bowl at {}", cat.getUUID(), checkPos);
-                }
                 break;
             }
+        }
+    }
+
+    // ---- CatGuardTargetGoal — proper AI target goal for guarding ----
+
+    /**
+     * Added to every Cat's targetSelector on join. When the cat is fed and has a bowl,
+     * it selects the nearest Monster within guardRadius of the bowl as its attack target.
+     * OcelotAttackGoal (vanilla priority 9 in goalSelector) then handles pathfinding + damage.
+     */
+    private static final class CatGuardTargetGoal extends TargetGoal {
+
+        private final Cat cat;
+
+        CatGuardTargetGoal(Cat cat) {
+            super(cat, false, false);
+            this.cat = cat;
+            this.setFlags(EnumSet.of(Goal.Flag.TARGET));
+        }
+
+        @Override
+        public boolean canUse() {
+            if (!cat.isTame() || cat.getOwnerUUID() == null) return false;
+            int fedTicks = cat.getData(CAT_FED_TICKS.get());
+            if (fedTicks <= 0) return false;
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong == Long.MIN_VALUE) return false;
+            return findAndSetTarget(BlockPos.of(bowlLong));
+        }
+
+        @Override
+        public boolean canContinueToUse() {
+            int fedTicks = cat.getData(CAT_FED_TICKS.get());
+            if (fedTicks <= 0) return false;
+            LivingEntity target = cat.getTarget();
+            return target != null && target.isAlive();
+        }
+
+        @Override
+        public void start() {
+            // Stand up so OcelotAttackGoal can run (SitWhenOrderedToGoal blocks it at priority 2)
+            cat.setOrderedToSit(false);
+            super.start();
+        }
+
+        @Override
+        public void stop() {
+            cat.setTarget(null);
+            this.targetMob = null;
+        }
+
+        private boolean findAndSetTarget(BlockPos bowlPos) {
+            double radius = INSTANCE != null ? INSTANCE.getConfig().getGuardRadius() : 64.0;
+            AABB searchBox = new AABB(bowlPos).inflate(radius);
+            List<Monster> hostiles = cat.level().getEntitiesOfClass(
+                    Monster.class, searchBox, m -> !m.isDeadOrDying());
+            if (hostiles.isEmpty()) return false;
+
+            LivingEntity nearest = null;
+            double nearestDistSq = Double.MAX_VALUE;
+            for (Monster m : hostiles) {
+                double d = cat.distanceToSqr(m);
+                if (d < nearestDistSq) {
+                    nearestDistSq = d;
+                    nearest = m;
+                }
+            }
+            if (nearest == null) return false;
+            this.targetMob = nearest;
+            cat.setTarget(nearest);
+            return true;
         }
     }
 }
