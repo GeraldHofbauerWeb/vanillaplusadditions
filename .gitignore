@@ -66,5 +66,8 @@ libs/sable-neoforge-*.jar
 libs/ToughAsNails-neoforge-*.jar
 
 
-# Claude Code session files (worktrees, memory, plans)
-.claude/
+# Claude Code session files (worktrees, memory, plans — but not settings.json)
+.claude/worktrees/
+.claude/memory/
+.claude/plans/
+.claude/jobs/
