@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha] - 2026-06-12
+### Added
+- Neues Skript `scripts/apply_cat_armor_alpha_mask.py` zur automatischen Übertragung der Transparenzmaske vom Diamant-Katzenrüstungsmodell auf andere Materialien (Gold, Eisen, Netherit).
+
+### Changed
+- Alle ungenutzten Cat-Armor-Assets (Vorschauen, UV-Maps, alte Texturversionen) wurden in den Ordner `unused_assets/cat_armor/` verschoben, um die Projektstruktur zu bereinigen.
+- Die `.gitignore` wurde aktualisiert, um den neuen `unused_assets/` Ordner auszuschließen.
+- Die Mod-Version wurde auf `1.0.0-alpha` angehoben.
+
 ## [0.16.3] - 2026-05-15
 ### Fixed
 - BlockGlow/Sable-Integration client-seitig isoliert (in `client/compat` verschoben), damit Dedicated-Server keine Client-Klassen laden muessen.
