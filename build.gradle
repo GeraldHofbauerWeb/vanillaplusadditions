@@ -124,6 +124,7 @@ dependencies {
     // The jar is intentionally local-only due third-party licensing constraints.
     def sableJars = fileTree("libs") {
         include "sable-neoforge-*.jar"
+        include "sable-companion-*.jar"
     }
     if (!sableJars.isEmpty()) {
         compileOnly sableJars

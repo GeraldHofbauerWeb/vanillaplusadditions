@@ -10,10 +10,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     private ModConfigSpec.IntValue fedDurationTicks;
     private ModConfigSpec.DoubleValue guardRadius;
     private ModConfigSpec.DoubleValue autoAssociateRadius;
-    private ModConfigSpec.DoubleValue outlineRed;
-    private ModConfigSpec.DoubleValue outlineGreen;
-    private ModConfigSpec.DoubleValue outlineBlue;
-    private ModConfigSpec.DoubleValue outlineAlpha;
+    private ModConfigSpec.IntValue glowDurationSeconds;
 
     public CatGuardianConfig(CatGuardianModule module) {
         super(module);
@@ -33,17 +30,9 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
         autoAssociateRadius = builder
                 .comment("Radius (blocks) within which a cat without a bowl is automatically associated with a nearby bowl")
                 .defineInRange("auto_associate_radius", 1.5D, 0.5D, 4.0D);
-
-        builder.push("outline_color");
-        outlineRed = builder.comment("Red component of the associated-cat X-ray outline color")
-                .defineInRange("red", 1.0D, 0.0D, 1.0D);
-        outlineGreen = builder.comment("Green component of the associated-cat X-ray outline color")
-                .defineInRange("green", 0.65D, 0.0D, 1.0D);
-        outlineBlue = builder.comment("Blue component of the associated-cat X-ray outline color")
-                .defineInRange("blue", 0.1D, 0.0D, 1.0D);
-        outlineAlpha = builder.comment("Alpha component of the associated-cat X-ray outline color")
-                .defineInRange("alpha", 0.85D, 0.0D, 1.0D);
-        builder.pop();
+        glowDurationSeconds = builder
+                .comment("How many seconds the Glowing effect lasts on associated cats when looking at their bowl (1–300)")
+                .defineInRange("glow_duration_seconds", 30, 1, 300);
     }
 
     public double getAssociationRadius() {
@@ -62,19 +51,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
         return autoAssociateRadius != null ? autoAssociateRadius.get() : 1.5D;
     }
 
-    public float getOutlineRed() {
-        return outlineRed != null ? outlineRed.get().floatValue() : 1.0f;
-    }
-
-    public float getOutlineGreen() {
-        return outlineGreen != null ? outlineGreen.get().floatValue() : 0.65f;
-    }
-
-    public float getOutlineBlue() {
-        return outlineBlue != null ? outlineBlue.get().floatValue() : 0.1f;
-    }
-
-    public float getOutlineAlpha() {
-        return outlineAlpha != null ? outlineAlpha.get().floatValue() : 0.85f;
+    public int getGlowDurationTicks() {
+        return glowDurationSeconds != null ? glowDurationSeconds.get() * 20 : 600;
     }
 }

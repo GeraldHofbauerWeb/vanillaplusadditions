@@ -14,8 +14,12 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGu
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatInventoryMenu;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client.CatGuardianClientEvents;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatGlowPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatInventoryPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
@@ -26,8 +30,14 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.goal.CatLieOnBedGoal;
 import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.LeapAtTargetGoal;
+import net.minecraft.world.entity.ai.goal.OcelotAttackGoal;
+import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.monster.Monster;
@@ -49,10 +59,14 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -63,6 +77,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuardianConfig> {
@@ -87,22 +102,32 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     // ---- Blocks ----
 
     public static final DeferredBlock<CatBowlBlock> CAT_BOWL =
-            BLOCKS.register("cat_bowl", () -> new CatBowlBlock(
-                    BlockBehaviour.Properties.of()
-                            .mapColor(MapColor.STONE)
-                            .strength(1.5F, 6.0F)
-                            .sound(SoundType.STONE)
-                            .noOcclusion()
-            ));
+            BLOCKS.register("cat_bowl", () -> {
+                BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.STONE)
+                        .strength(1.5F, 6.0F)
+                        .sound(SoundType.STONE)
+                        .noOcclusion();
+                if (ModList.get().isLoaded("sable")) {
+                    return new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
+                            .SableCatBowlBlock(props);
+                }
+                return new CatBowlBlock(props);
+            });
 
     public static final DeferredBlock<CatFeedingStationBlock> CAT_FEEDING_STATION =
-            BLOCKS.register("cat_feeding_station", () -> new CatFeedingStationBlock(
-                    BlockBehaviour.Properties.of()
-                            .mapColor(MapColor.STONE)
-                            .strength(3.5F, 12.0F)
-                            .sound(SoundType.STONE)
-                            .requiresCorrectToolForDrops()
-            ));
+            BLOCKS.register("cat_feeding_station", () -> {
+                BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
+                        .mapColor(MapColor.STONE)
+                        .strength(3.5F, 12.0F)
+                        .sound(SoundType.STONE)
+                        .requiresCorrectToolForDrops();
+                if (ModList.get().isLoaded("sable")) {
+                    return new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
+                            .SableCatFeedingStationBlock(props);
+                }
+                return new CatFeedingStationBlock(props);
+            });
 
     // ---- Block items ----
 
@@ -170,6 +195,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             ATTACHMENT_TYPES.register("cat_inventory", () ->
                     AttachmentType.<CatInventoryData>builder(CatInventoryData::new)
                             .serialize(CatInventoryData.CODEC)
+                            .build());
+
+    public static final Supplier<AttachmentType<Boolean>> CAT_RETURNING =
+            ATTACHMENT_TYPES.register("cat_returning", () ->
+                    AttachmentType.<Boolean>builder(() -> false)
+                            .serialize(Codec.BOOL)
                             .build());
 
     // ---- Armor attribute modifier ID ----
@@ -254,6 +285,42 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 );
             })
         );
+
+        event.registrar("1").playToClient(SyncCatInventoryPacket.TYPE, SyncCatInventoryPacket.STREAM_CODEC,
+            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatInventory(packet))
+        );
+
+        event.registrar("1").playToServer(RequestCatGlowPacket.TYPE, RequestCatGlowPacket.STREAM_CODEC,
+            (packet, ctx) -> ctx.enqueueWork(() -> {
+                if (!isModuleEnabled()) {
+                    return;
+                }
+                ServerPlayer player = (ServerPlayer) ctx.player();
+                BlockPos bowlPos = packet.bowlPos();
+                if (player.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY() + 0.5, bowlPos.getZ() + 0.5) > 64.0 * 64.0) {
+                    return;
+                }
+                if (!(player.level().getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) {
+                    return;
+                }
+                ServerLevel serverLevel = (ServerLevel) player.level();
+                int durationTicks = getConfig().getGlowDurationTicks();
+                for (UUID catUUID : bowl.getAssociatedCats()) {
+                    Entity entity = serverLevel.getEntity(catUUID);
+                    if (entity instanceof Cat cat && cat.isAlive()) {
+                        MobEffectInstance existing = cat.getEffect(MobEffects.GLOWING);
+                        if (existing == null || existing.getDuration() < 200) {
+                            cat.addEffect(new MobEffectInstance(MobEffects.GLOWING, durationTicks, 0, false, false));
+                        }
+                    }
+                }
+            })
+        );
+    }
+
+    private static void broadcastArmorSync(Cat cat) {
+        ItemStack armor = cat.getData(CAT_INVENTORY.get()).getArmor();
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat, new SyncCatInventoryPacket(cat.getId(), armor));
     }
 
     // ---- Cat join level — inject guard target goal + restore armor attribute ----
@@ -274,6 +341,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .anyMatch(w -> w.getGoal() instanceof CatGuardTargetGoal);
         if (!alreadyAdded) {
             cat.targetSelector.addGoal(1, new CatGuardTargetGoal(cat));
+            boostAttackGoalPriority(cat);
         }
 
         // Restore armor attack bonus after chunk load / dimension change
@@ -281,12 +349,64 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         ItemStack armor = invData.getArmor();
         if (!armor.isEmpty()) {
             applyArmorAttribute(cat, armor);
+            broadcastArmorSync(cat);
         }
 
-        // Bowl-assigned cats should not teleport to their owner
+        // Bowl-assigned cats should not teleport to their owner or switch targets
         if (cat.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
-            suppressFollowOwner(cat);
+            suppressFollowingBehaviors(cat);
         }
+    }
+
+    @SubscribeEvent
+    public void onStartTracking(PlayerEvent.StartTracking event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getTarget() instanceof Cat cat)) {
+            return;
+        }
+        ItemStack armor = cat.getData(CAT_INVENTORY.get()).getArmor();
+        if (armor.isEmpty()) {
+            return;
+        }
+        PacketDistributor.sendToPlayer((ServerPlayer) event.getEntity(),
+                new SyncCatInventoryPacket(cat.getId(), armor));
+    }
+
+    @SubscribeEvent
+    public void onBabyEntitySpawn(BabyEntitySpawnEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getParentA() instanceof Cat parentA)) {
+            return;
+        }
+        if (!(event.getParentB() instanceof Cat parentB)) {
+            return;
+        }
+        if (!(event.getChild() instanceof Cat baby)) {
+            return;
+        }
+
+        UUID ownerA = parentA.isTame() ? parentA.getOwnerUUID() : null;
+        UUID ownerB = parentB.isTame() ? parentB.getOwnerUUID() : null;
+
+        UUID chosenOwner = null;
+        if (ownerA != null && ownerB != null) {
+            chosenOwner = baby.getRandom().nextBoolean() ? ownerA : ownerB;
+        } else if (ownerA != null) {
+            chosenOwner = ownerA;
+        } else if (ownerB != null) {
+            chosenOwner = ownerB;
+        }
+
+        if (chosenOwner == null) {
+            return;
+        }
+
+        baby.setTame(true, false);
+        baby.setOwnerUUID(chosenOwner);
     }
 
     // ---- Cat tick logic ----
@@ -318,44 +438,67 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         long bowlPosLong = cat.getData(CAT_BOWL_POS.get());
         boolean hasBowl = bowlPosLong != Long.MIN_VALUE;
 
-        int fedTicks = cat.getData(CAT_FED_TICKS.get());
-
-        if (fedTicks > 0) {
-            cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedTicks - 10));
-            return;
-        }
-
         if (!hasBowl) {
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
         }
 
-        suppressFollowOwner(cat);
+        suppressFollowingBehaviors(cat);
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
+        double guardRadius = config.getGuardRadius();
+
+        // Low-health retreat: disengage at <40% HP
+        float healthPct = cat.getHealth() / cat.getMaxHealth();
+        if (healthPct < 0.40f && cat.getTarget() != null) {
+            cat.setTarget(null);
+            cat.setData(CAT_RETURNING.get(), true);
+        }
+
+        // Navigate back to guard radius if returning
+        if (cat.getData(CAT_RETURNING.get())) {
+            if (cat.isOrderedToSit()) {
+                cat.setOrderedToSit(false);
+            }
+            if (cat.blockPosition().distSqr(bowlPos) <= guardRadius * guardRadius) {
+                cat.setData(CAT_RETURNING.get(), false);
+            } else {
+                cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
+            }
+        }
+
+        // Decrement fed ticks regardless of other state
+        int fedTicks = cat.getData(CAT_FED_TICKS.get());
+        if (fedTicks > 0) {
+            cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedTicks - 10));
+            // Idle: sit near bowl when not fighting and not returning
+            if (!cat.getData(CAT_RETURNING.get()) && cat.getTarget() == null && !cat.isOrderedToSit()) {
+                cat.setOrderedToSit(true);
+            }
+            return;
+        }
+
+        // Try to eat when unfed
         AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
         if (bowl == null) {
             return;
         }
-
         if (!bowl.hasFish()) {
             return;
         }
 
-        double distSq = cat.distanceToSqr(
-                bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+        double distSq = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
 
         if (distSq > 4.0 && !cat.isOrderedToSit()) {
             if (cat.getNavigation().isDone()) {
-                cat.getNavigation().moveTo(
-                        bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
+                cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
             }
         } else if (distSq <= 4.0) {
             var fish = bowl.takeFish();
             if (!fish.isEmpty()) {
                 cat.setData(CAT_FED_TICKS.get(), config.getFedDurationTicks());
                 cat.playSound(SoundEvents.GENERIC_EAT, 0.5F, cat.getVoicePitch());
-
+                cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 1));
                 if (bowl instanceof CatFeedingStationBlockEntity station) {
                     transferLootToStation(cat, station);
                 }
@@ -441,6 +584,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 if (!player.isCreative()) {
                     heldItem.shrink(1);
                 }
+                broadcastArmorSync(cat);
             }
             event.setCanceled(true);
         } else if (heldItem.isEmpty() && player.isShiftKeyDown() && !currentArmor.isEmpty()) {
@@ -450,6 +594,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 }
                 invData.setArmor(ItemStack.EMPTY);
                 removeArmorAttribute(cat);
+                broadcastArmorSync(cat);
             }
             event.setCanceled(true);
         }
@@ -467,13 +612,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
         ItemStack armor = invData.getArmor();
-        if (!(armor.getItem() instanceof CatArmorItem catArmor)) {
+        if (!(armor.getItem() instanceof CatArmorItem)) {
             return;
         }
 
-        event.setNewDamage(event.getNewDamage() * (1f - catArmor.getTier().getDamageReduction()));
+        // Armor absorbs 100% of damage; each damage point drains 1 durability
+        float absorbed = event.getNewDamage();
+        event.setNewDamage(0f);
 
-        armor.hurtAndBreak(1, cat, net.minecraft.world.entity.EquipmentSlot.CHEST);
+        armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), cat, net.minecraft.world.entity.EquipmentSlot.CHEST);
         if (armor.isEmpty()) {
             invData.setArmor(ItemStack.EMPTY);
             removeArmorAttribute(cat);
@@ -537,12 +684,38 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
     }
 
-    private static void suppressFollowOwner(Cat cat) {
+    /**
+     * Vanilla cats register LeapAtTargetGoal (prio 8) and OcelotAttackGoal (prio 9) BELOW
+     * CatLieOnBedGoal (prio 5), so bed-lying blocks combat. Re-register the attack goals
+     * at prio 3/4 so combat takes precedence while idle behaviour (bed, stroll) still works
+     * when no target is present.
+     */
+    private static void boostAttackGoalPriority(Cat cat) {
+        List<Goal> leapGoals = cat.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof LeapAtTargetGoal)
+                .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                .toList();
+        List<Goal> attackGoals = cat.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof OcelotAttackGoal)
+                .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                .toList();
+        leapGoals.forEach(cat.goalSelector::removeGoal);
+        attackGoals.forEach(cat.goalSelector::removeGoal);
+        leapGoals.forEach(g -> cat.goalSelector.addGoal(3, g));
+        attackGoals.forEach(g -> cat.goalSelector.addGoal(4, g));
+    }
+
+    private static void suppressFollowingBehaviors(Cat cat) {
         cat.goalSelector.getAvailableGoals().stream()
                 .filter(w -> w.getGoal() instanceof FollowOwnerGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList()
                 .forEach(cat.goalSelector::removeGoal);
+        cat.targetSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof HurtByTargetGoal)
+                .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                .toList()
+                .forEach(cat.targetSelector::removeGoal);
     }
 
     // ---- CatGuardTargetGoal — proper AI target goal for guarding ----
@@ -560,6 +733,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         @Override
         public boolean canUse() {
             if (!cat.isTame() || cat.getOwnerUUID() == null) {
+                return false;
+            }
+            if (cat.getData(CAT_RETURNING.get())) {
                 return false;
             }
             int fedTicks = cat.getData(CAT_FED_TICKS.get());
@@ -593,6 +769,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         public void stop() {
             cat.setTarget(null);
             this.targetMob = null;
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong == Long.MIN_VALUE) {
+                return;
+            }
+            BlockPos bowlPos = BlockPos.of(bowlLong);
+            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+            if (cat.blockPosition().distSqr(bowlPos) > radius * radius) {
+                cat.setData(CAT_RETURNING.get(), true);
+            }
         }
 
         private boolean findAndSetTarget(BlockPos bowlPos) {

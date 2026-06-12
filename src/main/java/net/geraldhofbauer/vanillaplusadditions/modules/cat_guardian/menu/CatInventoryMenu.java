@@ -89,13 +89,13 @@ public class CatInventoryMenu extends AbstractContainerMenu {
         // Player inventory (3 × 9)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 51 + row * 18));
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 53 + row * 18));
             }
         }
 
         // Hotbar (1 × 9)
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(playerInventory, col, 8 + col * 18, 109));
+            addSlot(new Slot(playerInventory, col, 8 + col * 18, 111));
         }
 
         addDataSlots(syncedData);

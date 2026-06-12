@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "vanillaplusadditions:flying_fish"
+    "vanillaplusadditions:flying_fish",
+    "vanillaplusadditions:cooked_flying_fish"
   ]
 }
