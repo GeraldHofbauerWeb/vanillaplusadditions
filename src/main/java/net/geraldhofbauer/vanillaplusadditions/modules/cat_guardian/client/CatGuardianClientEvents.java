@@ -67,6 +67,8 @@ public final class CatGuardianClientEvents {
             return;
         }
 
+        CatGuardianGogglesClientHandler.onClientTick(mc);
+
         // Check every second (20 ticks)
         long gameTime = mc.level.getGameTime();
         if (gameTime % 20 != 0) {

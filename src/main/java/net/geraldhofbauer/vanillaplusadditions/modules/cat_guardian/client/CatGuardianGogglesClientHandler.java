@@ -29,9 +29,11 @@ public class CatGuardianGogglesClientHandler {
     private static final TagKey<Item> ARM_GOGGLES_TAG = TagKey.create(
             Registries.ITEM, ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "arm_goggles"));
 
-    @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
-        Minecraft mc = Minecraft.getInstance();
+    private static List<Component> activeTooltip = null;
+
+    public static void onClientTick(Minecraft mc) {
+        activeTooltip = null;
+
         if (mc.player == null || mc.level == null || mc.screen != null) {
             return;
         }
@@ -44,23 +46,23 @@ public class CatGuardianGogglesClientHandler {
         if (hitResult instanceof BlockHitResult blockHitResult) {
             BlockEntity be = mc.level.getBlockEntity(blockHitResult.getBlockPos());
             if (be instanceof AbstractCatBowlBlockEntity bowl) {
-                renderGogglesTooltip(event, bowl);
+                int count = bowl.getAssociatedCats().size();
+                int max = CatGuardianModule.getMaxCatsPerStation();
+
+                List<Component> tooltip = new ArrayList<>();
+                tooltip.add(Component.translatable("gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
+                activeTooltip = tooltip;
             }
         }
     }
 
-    private static void renderGogglesTooltip(RenderGuiEvent.Post event, AbstractCatBowlBlockEntity bowl) {
-        int count = bowl.getAssociatedCats().size();
-        int max = CatGuardianModule.getMaxCatsPerStation();
-        
-        List<Component> tooltip = new ArrayList<>();
-        tooltip.add(Component.translatable("gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
-        
-        // Simple rendering on screen for now, similar to how Create does it if we don't use their API
-        int x = event.getGuiGraphics().guiWidth() / 2 + 10;
-        int y = event.getGuiGraphics().guiHeight() / 2 + 10;
-        
-        event.getGuiGraphics().renderComponentTooltip(Minecraft.getInstance().font, tooltip, x, y);
+    @SubscribeEvent
+    public static void onRenderGui(RenderGuiEvent.Post event) {
+        if (activeTooltip != null) {
+            int x = event.getGuiGraphics().guiWidth() / 2 + 10;
+            int y = event.getGuiGraphics().guiHeight() / 2 + 10;
+            event.getGuiGraphics().renderComponentTooltip(Minecraft.getInstance().font, activeTooltip, x, y);
+        }
     }
 
     private static boolean isWearingGoggles(Player player) {
