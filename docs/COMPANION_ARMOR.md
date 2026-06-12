@@ -33,4 +33,7 @@ The Cat Guardian module transforms tamed cats into station-based defenders.
 ### Loot Collection
 - **Automatic Looting**: When a guarding cat kills a mob, it automatically collects the loot.
 - **Feeding Station Integration**: If the cat is associated with a **Feeding Station** (not just a basic bowl), it will automatically transfer its collected loot into the station's inventory whenever it returns to eat.
-- **Automation (Hopper/Create)**: The loot inventory of a Feeding Station can be emptied automatically by placing a **Hopper** (or any extraction device like Create's Brass Funnel) **underneath** the station. Extraction from the sides or top will access the food inventory instead.
+- **Automation (Hopper/Create)**: The Feeding Station is designed for easy automation:
+    - **Loot Extraction**: Place a **Hopper** (or any extraction device) **underneath** the station to automatically pull out the loot collected by your cats.
+    - **Food Supply**: Place a **Hopper** (or any insertion device) on the **top or sides** of the station to automatically refill it with fish. Extraction from these sides is also possible but will pull from the food inventory.
+    - *Note: The bottom side is dedicated exclusively to the loot inventory, ensuring that your automation never accidentally pulls out the cat food.*
