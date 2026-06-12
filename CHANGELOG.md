@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0-alpha] - 2026-06-12
 ### Added
+- **Cat Guardian Modul**: Umfangreiches System für Hauskatzen.
+  - Neue Blöcke: **Katzennapf** und **Fütterungsstation** (inkl. Sable-Integration für bewegte Strukturen).
+  - **Katzen-Rüstungen**: Eisen, Gold, Diamant und Netherit (erhöhen Angriffsschaden und absorbieren Schaden).
+  - **Wächter-Logik**: Katzen können an Näpfe gekoppelt werden (Shift-Rechtsklick) und bewachen bei ausreichender Fütterung (Fisch) aktiv die Basis gegen Monster.
+  - **Loot-Sammlung**: Katzen sammeln Drops von besiegten Gegnern in einem internen Inventar, das an Fütterungsstationen automatisch entleert werden kann.
+  - **UI & Inventar**: Eigenes Katzen-Inventar-GUI (Shift-Rechtsklick) zum Ausrüsten und Verwalten von Items.
+  - Automatisches Koppeln von Katzen an nahegelegene Näpfe und Rückzug-Logik bei niedriger Gesundheit.
+- **Battle Dogs Modul**:
+  - **Wolfs-Rüstungen**: Eisen, Gold, Diamant und Netherit.
+  - Erhöhen den Angriffsschaden des Wolfs je nach Material.
+  - Einfaches Ausrüsten per Rechtsklick und Entfernen mittels Schere.
+- **Arm Target Overlay Modul**:
+  - Client-Feature für die Mod *Create*.
+  - Zeigt Input- und Output-Positionen von Mechanical Arms als Overlay in der Welt an, wenn Engineering Goggles getragen werden.
 - Neues Skript `scripts/apply_cat_armor_alpha_mask.py` zur automatischen Übertragung der Transparenzmaske vom Diamant-Katzenrüstungsmodell auf andere Materialien (Gold, Eisen, Netherit).
 
 ### Changed
