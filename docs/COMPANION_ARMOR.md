@@ -22,6 +22,7 @@ The Cat Guardian module transforms tamed cats into station-based defenders.
 ### Feeding & Guarding
 - **Cat Bowls / Feeding Stations**: Cats can be associated with a Cat Bowl or Feeding Station. They will automatically stay near it (within a guard radius).
 - **Feeding**: Cats need to be fed fish via the bowl. A fed cat will stay at its post and guard the area. 
+- **Capacity**: There is **no hard limit** on the number of cats that can be associated with a single bowl or station. However, since each cat consumes one "unit" of fish to stay fed, more cats will drain the station's food supply significantly faster.
 - **Guard Behavior**: Fed cats will prioritize attacking hostile mobs. If their health drops below 40%, they will temporarily retreat to the bowl to recover.
 - **Auto-Association**: Tamed cats near a bowl will automatically associate with it if they aren't already guarding another station.
 
