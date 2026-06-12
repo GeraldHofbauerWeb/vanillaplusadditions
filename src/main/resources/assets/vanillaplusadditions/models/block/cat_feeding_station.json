@@ -1,6 +1,112 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "render_type": "minecraft:translucent",
+  "parent": "minecraft:block/block",
   "textures": {
-    "all": "vanillaplusadditions:block/cat_feeding_station"
-  }
+    "particle": "vanillaplusadditions:block/cat_feeding_station",
+    "body":  "vanillaplusadditions:block/cat_feeding_station",
+    "glass": "vanillaplusadditions:block/cat_feeding_station_glass"
+  },
+  "elements": [
+    {
+      "comment": "floor — extended to full block (0..16) so no gaps at ground level",
+      "from": [0, 0, 0],
+      "to":   [16, 2, 16],
+      "faces": {
+        "down":  { "uv": [0, 0, 16, 16], "texture": "#body", "cullface": "down" },
+        "up":    { "uv": [0, 0, 16, 16], "texture": "#body" },
+        "north": { "uv": [0, 14, 16, 16], "texture": "#body", "cullface": "north" },
+        "south": { "uv": [0, 14, 16, 16], "texture": "#body", "cullface": "south" },
+        "west":  { "uv": [0, 14, 16, 16], "texture": "#body", "cullface": "west" },
+        "east":  { "uv": [0, 14, 16, 16], "texture": "#body", "cullface": "east" }
+      }
+    },
+    {
+      "comment": "glass front wall — north face of glass container",
+      "from": [2, 5, 0],
+      "to":   [14, 16, 2],
+      "faces": {
+        "north": { "uv": [2, 0, 14, 11], "texture": "#glass", "cullface": "north" },
+        "south": { "uv": [2, 0, 14, 11], "texture": "#glass" },
+        "up":    { "uv": [2, 0, 14, 2],  "texture": "#glass" },
+        "west":  { "uv": [0, 0, 2, 11],  "texture": "#glass" },
+        "east":  { "uv": [14, 0, 16, 11], "texture": "#glass" }
+      }
+    },
+    {
+      "comment": "glass left pane — west side, front half (z=0..9)",
+      "from": [0, 5, 0],
+      "to":   [2, 16, 9],
+      "faces": {
+        "west":  { "uv": [0, 0, 9, 11], "texture": "#glass", "cullface": "west" },
+        "east":  { "uv": [0, 0, 9, 11], "texture": "#glass" },
+        "north": { "uv": [0, 0, 2, 11], "texture": "#glass" },
+        "up":    { "uv": [0, 0, 2, 9],  "texture": "#glass" }
+      }
+    },
+    {
+      "comment": "glass right pane — east side, front half (z=0..9)",
+      "from": [14, 5, 0],
+      "to":   [16, 16, 9],
+      "faces": {
+        "west":  { "uv": [0, 0, 9, 11], "texture": "#glass" },
+        "east":  { "uv": [0, 0, 9, 11], "texture": "#glass", "cullface": "east" },
+        "north": { "uv": [14, 0, 16, 11], "texture": "#glass" },
+        "up":    { "uv": [14, 0, 16, 9], "texture": "#glass" }
+      }
+    },
+    {
+      "comment": "divider lower — bowl height (y=2..5), solid with side faces",
+      "from": [0, 2, 7],
+      "to":   [16, 5, 9],
+      "faces": {
+        "north": { "uv": [0, 11, 16, 14], "texture": "#body" },
+        "south": { "uv": [0, 11, 16, 14], "texture": "#body" },
+        "west":  { "uv": [7, 11, 9, 14],  "texture": "#body", "cullface": "west" },
+        "east":  { "uv": [7, 11, 9, 14],  "texture": "#body", "cullface": "east" },
+        "up":    { "uv": [0, 7, 16, 9],   "texture": "#body" }
+      }
+    },
+    {
+      "comment": "divider upper — glass height (y=5..16), no side faces (glass panes cover them)",
+      "from": [2, 5, 7],
+      "to":   [14, 16, 9],
+      "faces": {
+        "north": { "uv": [2, 0, 14, 11], "texture": "#body" },
+        "south": { "uv": [2, 0, 14, 11], "texture": "#body" },
+        "up":    { "uv": [2, 7, 14, 9],  "texture": "#body" }
+      }
+    },
+    {
+      "comment": "bowl left wall — west side, back half (z=9..14)",
+      "from": [0, 2, 9],
+      "to":   [2, 5, 14],
+      "faces": {
+        "west":  { "uv": [9, 11, 14, 14], "texture": "#body", "cullface": "west" },
+        "east":  { "uv": [9, 11, 14, 14], "texture": "#body" },
+        "up":    { "uv": [0, 9, 2, 14],   "texture": "#body" }
+      }
+    },
+    {
+      "comment": "bowl right wall — east side, back half (z=9..14)",
+      "from": [14, 2, 9],
+      "to":   [16, 5, 14],
+      "faces": {
+        "west":  { "uv": [9, 11, 14, 14], "texture": "#body" },
+        "east":  { "uv": [9, 11, 14, 14], "texture": "#body", "cullface": "east" },
+        "up":    { "uv": [14, 9, 16, 14], "texture": "#body" }
+      }
+    },
+    {
+      "comment": "bowl back wall — south face, extended to full width",
+      "from": [0, 2, 14],
+      "to":   [16, 5, 16],
+      "faces": {
+        "south": { "uv": [0, 11, 16, 14], "texture": "#body", "cullface": "south" },
+        "north": { "uv": [0, 11, 16, 14], "texture": "#body" },
+        "west":  { "uv": [0, 11, 2, 14],  "texture": "#body" },
+        "east":  { "uv": [14, 11, 16, 14],"texture": "#body" },
+        "up":    { "uv": [0, 14, 16, 16], "texture": "#body" }
+      }
+    }
+  ]
 }

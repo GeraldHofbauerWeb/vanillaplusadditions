@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "X X",
+    "X X"
+  ],
+  "key": {
+    "X": { "item": "minecraft:netherite_ingot" }
+  },
+  "result": { "id": "vanillaplusadditions:wolf_armor_netherite", "count": 1 }
+}

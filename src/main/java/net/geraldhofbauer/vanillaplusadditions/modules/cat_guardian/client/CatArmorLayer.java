@@ -28,7 +28,7 @@ public class CatArmorLayer extends RenderLayer<Cat, CatModel<Cat>> {
         for (CatArmorItem.Tier tier : CatArmorItem.Tier.values()) {
             TEXTURES.put(tier, ResourceLocation.fromNamespaceAndPath(
                     VanillaPlusAdditions.MODID,
-                    "textures/entity/cat/cat_armor_" + tier.name().toLowerCase() + "_v1.png"));
+                    "textures/entity/cat_final/cat_armor_" + tier.name().toLowerCase() + ".png"));
         }
     }
 

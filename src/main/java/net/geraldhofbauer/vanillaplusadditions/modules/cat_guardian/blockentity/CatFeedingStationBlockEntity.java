@@ -45,21 +45,8 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         super(CatGuardianModule.CAT_FEEDING_STATION_BE.get(), pos, state);
     }
 
-    /**
-     * A fish is valid if it belongs to #minecraft:fishes and matches the type already in the
-     * inventory (all slots must hold the same fish type to avoid mixing).
-     */
     private boolean isValidFishType(ItemStack stack) {
-        if (stack.isEmpty() || !stack.is(ItemTags.FISHES)) {
-            return false;
-        }
-        for (int i = 0; i < inventory.getSlots(); i++) {
-            ItemStack existing = inventory.getStackInSlot(i);
-            if (!existing.isEmpty() && !ItemStack.isSameItem(existing, stack)) {
-                return false;
-            }
-        }
-        return true;
+        return !stack.isEmpty() && stack.is(ItemTags.FISHES);
     }
 
     /** Returns the index of the first non-empty slot, or -1 if all slots are empty. */

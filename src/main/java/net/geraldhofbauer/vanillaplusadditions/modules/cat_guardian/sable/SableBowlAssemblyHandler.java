@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public final class SableBowlAssemblyHandler {
 
-    private SableBowlAssemblyHandler() {}
+    private SableBowlAssemblyHandler() { }
 
     /**
      * Called after a bowl/station block moves during a Sable contraption assembly or disassembly.

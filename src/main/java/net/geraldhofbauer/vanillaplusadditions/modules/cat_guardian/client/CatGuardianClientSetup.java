@@ -34,4 +34,12 @@ public final class CatGuardianClientSetup {
         event.register(CatGuardianModule.CAT_FEEDING_STATION_MENU.get(), CatFeedingStationScreen::new);
         event.register(CatGuardianModule.CAT_INVENTORY_MENU.get(), CatInventoryScreen::new);
     }
+
+    @SubscribeEvent
+    public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(
+                CatGuardianModule.CAT_FEEDING_STATION_BE.get(),
+                CatFeedingStationBER::new
+        );
+    }
 }
