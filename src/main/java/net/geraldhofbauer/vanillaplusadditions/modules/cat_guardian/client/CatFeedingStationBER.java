@@ -29,14 +29,16 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
 
         ItemStackHandler inv = be.getInventory();
 
-        // Collect stacks with count >= 2 (count==1 means it's already being served in the bowl)
+        // Active slot: its first fish is in the bowl, only show it in the tank if count >= 2.
+        // All other slots always show their fish in the tank.
+        int activeSlot = be.getActiveSlot();
         List<ItemStack> unique = new ArrayList<>();
         Set<Item> seen = new HashSet<>();
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack s = inv.getStackInSlot(i);
-            if (!s.isEmpty() && s.getCount() >= 2 && seen.add(s.getItem())) {
-                unique.add(s);
-            }
+            if (s.isEmpty()) continue;
+            if (i == activeSlot && s.getCount() < 2) continue;
+            if (seen.add(s.getItem())) unique.add(s);
         }
 
         // Rotate coordinate space to match block's facing direction.
@@ -67,7 +69,6 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
         }
 
         // --- Active fish lying flat in bowl (back half, z≈0.72 — interior of z=9..14) ---
-        int activeSlot = be.getActiveSlot();
         if (activeSlot >= 0) {
             ps.pushPose();
             ps.translate(0.5, 0.175, 0.72);

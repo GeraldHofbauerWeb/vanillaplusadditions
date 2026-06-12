@@ -21,8 +21,8 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
     public CatFeedingStationScreen(CatFeedingStationMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 238;
-        this.inventoryLabelY = this.imageHeight - 94;
+        this.imageHeight = 172;
+        this.inventoryLabelY = 80;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
             int count = be.getAssociatedCats().size();
             int max = CatGuardianModule.getMaxCatsPerStation();
             Component text = Component.translatable("gui.vanillaplusadditions.cat_guardian.associated_cats", count, max);
-            guiGraphics.drawString(this.font, text, 8, 76, 0x404040, false);
+            guiGraphics.drawString(this.font, text, 8, 70, 0x404040, false);
         }
     }
 

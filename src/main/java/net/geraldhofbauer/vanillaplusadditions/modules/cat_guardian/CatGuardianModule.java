@@ -297,6 +297,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         addCatShapedRecipe(mergedRecipes, "cat_armor_diamond", CAT_ARMOR_DIAMOND.get(), Items.DIAMOND);
         addCatShapedRecipe(mergedRecipes, "cat_armor_netherite", CAT_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
 
+        // Cat bowl: smooth_stone U-shape
+        addShapedRecipe(mergedRecipes, "cat_bowl",
+                Map.of('S', Ingredient.of(Items.SMOOTH_STONE)),
+                CraftingBookCategory.MISC, new ItemStack(CAT_BOWL_ITEM.get()),
+                "S S", "SSS");
+
+        // Cat feeding station: glass_pane top/sides, cauldron center, smooth_stone bottom
+        addShapedRecipe(mergedRecipes, "cat_feeding_station",
+                Map.of('G', Ingredient.of(Items.GLASS_PANE),
+                       'C', Ingredient.of(Items.CAULDRON),
+                       'S', Ingredient.of(Items.SMOOTH_STONE)),
+                CraftingBookCategory.MISC, new ItemStack(CAT_FEEDING_STATION_ITEM.get()),
+                "GGG", "GCG", "SSS");
+
         recipeManager.replaceRecipes(mergedRecipes.values());
     }
 
@@ -308,6 +322,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "X  ", "XXX", "S S");
         ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        recipes.put(id, new RecipeHolder<>(id, recipe));
+    }
+
+    private void addShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name,
+                                  Map<Character, Ingredient> key, CraftingBookCategory category,
+                                  ItemStack result, String... rows) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, rows);
+        ShapedRecipe recipe = new ShapedRecipe("", category, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }
 
