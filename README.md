@@ -180,6 +180,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Module System Overview](docs/MODULE_SYSTEM.md)
 - [Configuration System](docs/CONFIGURATION_SYSTEM_SUMMARY.md)
 - [Testing Guide](docs/TESTING.md)
+- [Companion Armor & Cat Guardian Systems](docs/COMPANION_ARMOR.md)
 - [Warp AI Development (WARP)](WARP.md)
 
 ## 🐛 Debug Logging
