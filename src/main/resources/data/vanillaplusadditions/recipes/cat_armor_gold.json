@@ -1,10 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "X X",
-    "X X"
+    "X  ",
+    "XXX",
+    "S S"
   ],
   "key": {
+    "S": { "item": "minecraft:armadillo_scute" },
     "X": { "item": "minecraft:gold_ingot" }
   },
   "result": { "id": "vanillaplusadditions:cat_armor_gold", "count": 1 }

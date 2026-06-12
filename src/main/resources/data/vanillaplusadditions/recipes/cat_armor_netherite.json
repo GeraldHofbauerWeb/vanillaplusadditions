@@ -1,7 +1,13 @@
 {
-  "type": "minecraft:smithing_transform",
-  "template": { "item": "minecraft:netherite_upgrade_smithing_template" },
-  "base": { "item": "vanillaplusadditions:cat_armor_diamond" },
-  "addition": { "item": "minecraft:netherite_ingot" },
-  "result": { "id": "vanillaplusadditions:cat_armor_netherite" }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "X  ",
+    "XXX",
+    "S S"
+  ],
+  "key": {
+    "S": { "item": "minecraft:armadillo_scute" },
+    "X": { "item": "minecraft:netherite_ingot" }
+  },
+  "result": { "id": "vanillaplusadditions:cat_armor_netherite", "count": 1 }
 }

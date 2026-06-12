@@ -1,10 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "X X",
+    "S  ",
+    "XXX",
     "X X"
   ],
   "key": {
+    "S": { "item": "minecraft:armadillo_scute" },
     "X": { "item": "minecraft:diamond" }
   },
   "result": { "id": "vanillaplusadditions:wolf_armor_diamond", "count": 1 }
