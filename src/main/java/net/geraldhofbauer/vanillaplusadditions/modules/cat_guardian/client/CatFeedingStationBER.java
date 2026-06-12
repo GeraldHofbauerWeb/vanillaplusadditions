@@ -36,9 +36,15 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
         Set<Item> seen = new HashSet<>();
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack s = inv.getStackInSlot(i);
-            if (s.isEmpty()) continue;
-            if (i == activeSlot && s.getCount() < 2) continue;
-            if (seen.add(s.getItem())) unique.add(s);
+            if (s.isEmpty()) {
+                continue;
+            }
+            if (i == activeSlot && s.getCount() < 2) {
+                continue;
+            }
+            if (seen.add(s.getItem())) {
+                unique.add(s);
+            }
         }
 
         // Rotate coordinate space to match block's facing direction.

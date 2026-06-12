@@ -1,6 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block;
 
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatBowlBlockEntity;
 import net.minecraft.world.Containers;
 import net.minecraft.core.BlockPos;

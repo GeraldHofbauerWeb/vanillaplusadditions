@@ -26,16 +26,22 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Unit;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LeapAtTargetGoal;
+import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.OcelotAttackGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
@@ -45,38 +51,6 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
-import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
-import net.minecraft.core.NonNullList;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.Unit;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -84,20 +58,44 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuardianConfig> {
@@ -228,9 +226,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final ResourceLocation ARMOR_MODIFIER_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "cat_armor_bonus");
 
+    // ---- Guard follow-range boost: doubles A* node budget (16→32 blocks) for indoor navigation ----
+    private static final ResourceLocation GUARDIAN_FOLLOW_RANGE_ID =
+            ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "guardian_follow_range");
+
     // ---- Singleton reference for config access from static context ----
 
     private static CatGuardianModule instance;
+
+    // ---- Stuck-detection state (transient, not persisted) ----
+    // Stores a position snapshot every tick; after 60 ticks checks net displacement.
+    // Using Vec3 (not BlockPos) catches oscillation between two adjacent block positions.
+    private final Map<UUID, net.minecraft.world.phys.Vec3> catNavRefPos = new HashMap<>();
+    private final Map<UUID, Integer> catNavRefAge = new HashMap<>();
 
     public static double getAssociationRadius() {
         return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
@@ -238,6 +246,18 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     public static int getFedDurationTicks() {
         return instance != null ? instance.getConfig().getFedDurationTicks() : 6000;
+    }
+
+    /** Returns true if this cat is registered as a guardian (has a bowl assignment). */
+    public static boolean isGuardianCat(Cat cat) {
+        if (instance == null || !instance.isModuleEnabled()) {
+            return false;
+        }
+        try {
+            return cat.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static int getMaxCatsPerStation() {
@@ -391,6 +411,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatInventory(packet))
         );
 
+        event.registrar("1").playToClient(net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.TYPE,
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.STREAM_CODEC,
+            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatTarget(packet))
+        );
+
         event.registrar("1").playToServer(RequestCatGlowPacket.TYPE, RequestCatGlowPacket.STREAM_CODEC,
             (packet, ctx) -> ctx.enqueueWork(() -> {
                 if (!isModuleEnabled()) {
@@ -443,6 +468,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!alreadyAdded) {
             cat.targetSelector.addGoal(1, new CatGuardTargetGoal(cat));
             boostAttackGoalPriority(cat);
+        }
+
+        // Boost follow-range for pathfinding in complex indoor environments (doubles A* node budget)
+        var followRangeAttr = cat.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.FOLLOW_RANGE);
+        if (followRangeAttr != null && !followRangeAttr.hasModifier(GUARDIAN_FOLLOW_RANGE_ID)) {
+            followRangeAttr.addPermanentModifier(new AttributeModifier(
+                    GUARDIAN_FOLLOW_RANGE_ID, 16.0, AttributeModifier.Operation.ADD_VALUE));
         }
 
         // Restore armor attack bonus after chunk load / dimension change
@@ -539,9 +571,36 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         long bowlPosLong = cat.getData(CAT_BOWL_POS.get());
         boolean hasBowl = bowlPosLong != Long.MIN_VALUE;
 
+        UUID uid = cat.getUUID();
         if (!hasBowl) {
+            catNavRefPos.remove(uid);
+            catNavRefAge.remove(uid);
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
+        }
+
+        // Stuck detection: every 60 ticks check net displacement while nav is active.
+        // Vec3-based check catches oscillation between two adjacent block positions
+        // (blockPosition() equality misses that case because the int pos alternates).
+        if (cat.getNavigation().isInProgress()) {
+            int age = catNavRefAge.merge(uid, 1, Integer::sum);
+            net.minecraft.world.phys.Vec3 refPos = catNavRefPos.get(uid);
+            net.minecraft.world.phys.Vec3 curPos = cat.position();
+            if (refPos == null) {
+                catNavRefPos.put(uid, curPos);
+                catNavRefAge.put(uid, 0);
+            } else if (age >= 60) {
+                if (curPos.distanceToSqr(refPos) < 1.0) {
+                    // Moved less than 1 block in 60 ticks — spinning or trapped
+                    cat.getNavigation().stop();
+                    cat.setTarget(null);
+                }
+                catNavRefPos.put(uid, curPos);
+                catNavRefAge.put(uid, 0);
+            }
+        } else {
+            catNavRefAge.remove(uid);
+            catNavRefPos.remove(uid);
         }
 
         suppressFollowingBehaviors(cat);
@@ -549,9 +608,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
         double guardRadius = config.getGuardRadius();
 
-        // Low-health retreat: disengage at <40% HP
+        // Low-health retreat: disengage at <20% HP
         float healthPct = cat.getHealth() / cat.getMaxHealth();
-        if (healthPct < 0.40f && cat.getTarget() != null) {
+        if (healthPct < 0.20f && cat.getTarget() != null) {
             cat.setTarget(null);
             cat.setData(CAT_RETURNING.get(), true);
         }
@@ -572,9 +631,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         int fedTicks = cat.getData(CAT_FED_TICKS.get());
         if (fedTicks > 0) {
             cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedTicks - 10));
-            // Idle: sit near bowl when not fighting and not returning
-            if (!cat.getData(CAT_RETURNING.get()) && cat.getTarget() == null && !cat.isOrderedToSit()) {
-                cat.setOrderedToSit(true);
+            // Idle: sit near bowl; if drifted away (e.g. stepped onto fence/wall), navigate back first
+            if (!cat.getData(CAT_RETURNING.get()) && cat.getTarget() == null) {
+                double idleDistSq = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+                if (idleDistSq > 4.0) {
+                    // Far from bowl — navigate home rather than sitting in place
+                    if (cat.isOrderedToSit()) {
+                        cat.setOrderedToSit(false);
+                    }
+                    if (cat.getNavigation().isDone()) {
+                        cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
+                    }
+                } else if (!cat.isOrderedToSit()) {
+                    cat.setOrderedToSit(true);
+                }
             }
             return;
         }
@@ -796,19 +866,39 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .filter(w -> w.getGoal() instanceof LeapAtTargetGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList();
-        List<Goal> attackGoals = cat.goalSelector.getAvailableGoals().stream()
-                .filter(w -> w.getGoal() instanceof OcelotAttackGoal)
+        // Remove vanilla attack goal; replace with wider-range guardian version
+        cat.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof OcelotAttackGoal
+                          || w.getGoal() instanceof GuardianCatAttackGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
-                .toList();
+                .toList()
+                .forEach(cat.goalSelector::removeGoal);
         leapGoals.forEach(cat.goalSelector::removeGoal);
-        attackGoals.forEach(cat.goalSelector::removeGoal);
         leapGoals.forEach(g -> cat.goalSelector.addGoal(3, g));
-        attackGoals.forEach(g -> cat.goalSelector.addGoal(4, g));
+        cat.goalSelector.addGoal(4, new GuardianCatAttackGoal(cat));
+    }
+
+    private static final class GuardianCatAttackGoal extends MeleeAttackGoal {
+        GuardianCatAttackGoal(Cat cat) {
+            super(cat, 1.0, true);
+        }
+
+        @Override
+        protected boolean canPerformAttack(LivingEntity entity) {
+            if (!isTimeToAttack() || !this.mob.getSensing().hasLineOfSight(entity)) {
+                return false;
+            }
+            // ~3.3-block reach vs zombies: wider than vanilla (~1.4 blocks)
+            double reach = this.mob.getBbWidth() * 2.0 + entity.getBbWidth() + 1.5;
+            return this.mob.distanceToSqr(entity.getX(), entity.getY(), entity.getZ()) <= reach * reach;
+        }
     }
 
     private static void suppressFollowingBehaviors(Cat cat) {
+        // Remove goals that would fight with guard-station behaviour or cause wandering
         cat.goalSelector.getAvailableGoals().stream()
-                .filter(w -> w.getGoal() instanceof FollowOwnerGoal)
+                .filter(w -> w.getGoal() instanceof FollowOwnerGoal
+                          || w.getGoal() instanceof WaterAvoidingRandomStrollGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList()
                 .forEach(cat.goalSelector::removeGoal);
@@ -824,6 +914,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final class CatGuardTargetGoal extends TargetGoal {
 
         private final Cat cat;
+        /** Counts 20-tick intervals where the target is alive but unreachable. */
+        private int unreachableChecks = 0;
 
         CatGuardTargetGoal(Cat cat) {
             super(cat, false, false);
@@ -857,17 +949,47 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 return false;
             }
             LivingEntity target = cat.getTarget();
-            return target != null && target.isAlive();
+            if (target == null || !target.isAlive()) {
+                return false;
+            }
+
+            // Every 20 ticks: if the cat is >4 blocks away and navigation is idle,
+            // the target is probably unreachable. Allow 15 consecutive checks (~15 s)
+            // so cats have time to navigate complex indoor paths (stairs, corridors).
+            if (cat.tickCount % 20 == 0) {
+                boolean tooFar = cat.distanceToSqr(target) > 16.0;
+                boolean navIdle = cat.getNavigation().isDone();
+                if (tooFar && navIdle) {
+                    if (++unreachableChecks >= 15) {
+                        unreachableChecks = 0;
+                        return false;
+                    }
+                } else {
+                    unreachableChecks = 0;
+                }
+            }
+            return true;
         }
 
         @Override
         public void start() {
+            unreachableChecks = 0;
             cat.setOrderedToSit(false);
             super.start();
+            LivingEntity t = cat.getTarget();
+            if (t != null) {
+                PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                        new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                                cat.getId(), t.getId()));
+            }
         }
 
         @Override
         public void stop() {
+            PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                    new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                            cat.getId(),
+                            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.NO_TARGET));
             cat.setTarget(null);
             this.targetMob = null;
             long bowlLong = cat.getData(CAT_BOWL_POS.get());

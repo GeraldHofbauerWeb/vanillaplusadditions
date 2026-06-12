@@ -1,5 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity;
 
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.AbstractCatBowlBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -54,7 +55,7 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
         if (associatedCats.contains(catUUID)) {
             return true;
         }
-        return associatedCats.size() < net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule.getMaxCatsPerStation();
+        return associatedCats.size() < CatGuardianModule.getMaxCatsPerStation();
     }
 
     public void removeCat(UUID catUUID) {

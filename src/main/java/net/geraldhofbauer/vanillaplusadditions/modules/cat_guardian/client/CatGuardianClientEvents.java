@@ -8,11 +8,14 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatGlowPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatInventoryPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.phys.BlockHitResult;
+import java.util.HashMap;
+import java.util.Map;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -26,6 +29,9 @@ public final class CatGuardianClientEvents {
     // Glow debounce state
     private static BlockPos lastGlowPos = null;
     private static long lastGlowSentTick = Long.MIN_VALUE;
+
+    // catEntityId → targetEntityId; cleared when level changes
+    static final Map<Integer, Integer> CAT_TARGET_MAP = new HashMap<>();
 
     private CatGuardianClientEvents() { }
 
@@ -105,6 +111,14 @@ public final class CatGuardianClientEvents {
             return;
         }
         cat.getData(CatGuardianModule.CAT_INVENTORY.get()).setArmor(packet.armorStack());
+    }
+
+    public static void handleSyncCatTarget(SyncCatTargetPacket packet) {
+        if (packet.targetEntityId() == SyncCatTargetPacket.NO_TARGET) {
+            CAT_TARGET_MAP.remove(packet.catEntityId());
+        } else {
+            CAT_TARGET_MAP.put(packet.catEntityId(), packet.targetEntityId());
+        }
     }
 
     private static CatGuardianModule getModule() {

@@ -4,6 +4,19 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta] - 2026-06-12
+### Added
+- **Cat Guardian Modul**:
+  - **Goggles-Integration**: Engineering Goggles (Create) zeigen jetzt die aktuelle Zielentität einer Wächterkatze mit einem roten Umriss an, wenn man die Katze ansieht.
+  - **Pathfinding-Verbesserung**: Wächterkatzen haben nun eine erhöhte Stufenhöhe (1.5 Blöcke), um besser über Hindernisse wie Zäune oder Mauern navigieren zu können (via Mixin).
+  - Synchronisierung der Angriffsziele vom Server zum Client für verbesserte Visualisierung.
+
+### Changed
+- **Cat Guardian Modul**:
+  - **Fütterungsstation**: Hitboxen und VoxelShapes wurden komplett überarbeitet, um exakt zum 3D-Modell zu passen und für alle Ausrichtungen korrekt zu rotieren.
+  - Modell-Anpassung der Fütterungsstation für eine stimmigere Darstellung der Glas-Elemente und der Basis.
+- Die Mod-Version wurde auf `1.0.0-beta` angehoben.
+
 ## [1.0.0-alpha] - 2026-06-12
 ### Added
 - **Cat Guardian Modul**: Umfangreiches System für Hauskatzen.
