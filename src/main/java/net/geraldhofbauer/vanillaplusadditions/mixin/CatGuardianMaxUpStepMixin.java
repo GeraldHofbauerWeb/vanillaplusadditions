@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class CatGuardianMaxUpStepMixin {
 
     @Inject(method = "maxUpStep", at = @At("HEAD"), cancellable = true)
-    private void vanillaplus_guardianMaxUpStep(CallbackInfoReturnable<Float> cir) {
+    private void vanillaplusGuardianMaxUpStep(CallbackInfoReturnable<Float> cir) {
         if (CatGuardianModule.isGuardianCat((Cat) (Object) this)) {
             cir.setReturnValue(1.5f);
         }
