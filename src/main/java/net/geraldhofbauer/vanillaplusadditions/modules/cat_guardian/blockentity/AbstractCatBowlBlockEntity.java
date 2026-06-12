@@ -50,6 +50,13 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
         }
     }
 
+    public boolean canAddCat(UUID catUUID) {
+        if (associatedCats.contains(catUUID)) {
+            return true;
+        }
+        return associatedCats.size() < net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule.getMaxCatsPerStation();
+    }
+
     public void removeCat(UUID catUUID) {
         if (associatedCats.remove(catUUID)) {
             setChanged();

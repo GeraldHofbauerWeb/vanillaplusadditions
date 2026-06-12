@@ -1,6 +1,8 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client;
 
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatFeedingStationBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -21,6 +23,19 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
         this.imageWidth = 176;
         this.imageHeight = 238;
         this.inventoryLabelY = this.imageHeight - 94;
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        super.renderLabels(guiGraphics, mouseX, mouseY);
+
+        CatFeedingStationBlockEntity be = menu.getBlockEntity();
+        if (be != null) {
+            int count = be.getAssociatedCats().size();
+            int max = CatGuardianModule.getMaxCatsPerStation();
+            Component text = Component.translatable("gui.vanillaplusadditions.cat_guardian.associated_cats", count, max);
+            guiGraphics.drawString(this.font, text, 8, 76, 0x404040, false);
+        }
     }
 
     @Override

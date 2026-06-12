@@ -41,6 +41,8 @@
   "item.vanillaplusadditions.wolf_armor_netherite": "Netherite Wolf Armor",
   "container.vanillaplusadditions.cat_feeding_station": "Cat Feeding Station",
   "container.vanillaplusadditions.cat_inventory": "Cat Inventory",
+  "gui.vanillaplusadditions.cat_guardian.associated_cats": "Associated Cats: %s/%s",
   "message.vanillaplusadditions.cat_guardian.associated": "Associated %s cat(s) with this bowl.",
+  "message.vanillaplusadditions.cat_guardian.station_full": "Could not associate %s cat(s) because the bowl is full.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "No tamed cats owned by you found nearby."
 }

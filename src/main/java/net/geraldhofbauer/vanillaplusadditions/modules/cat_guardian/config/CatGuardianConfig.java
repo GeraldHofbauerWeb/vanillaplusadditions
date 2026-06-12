@@ -11,6 +11,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     private ModConfigSpec.DoubleValue guardRadius;
     private ModConfigSpec.DoubleValue autoAssociateRadius;
     private ModConfigSpec.IntValue glowDurationSeconds;
+    private ModConfigSpec.IntValue maxCatsPerStation;
 
     public CatGuardianConfig(CatGuardianModule module) {
         super(module);
@@ -33,6 +34,9 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
         glowDurationSeconds = builder
                 .comment("How many seconds the Glowing effect lasts on associated cats when looking at their bowl (1–300)")
                 .defineInRange("glow_duration_seconds", 30, 1, 300);
+        maxCatsPerStation = builder
+                .comment("Maximum number of cats that can be associated with a single bowl or station")
+                .defineInRange("max_cats_per_station", 8, 1, 64);
     }
 
     public double getAssociationRadius() {
@@ -53,5 +57,9 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
 
     public int getGlowDurationTicks() {
         return glowDurationSeconds != null ? glowDurationSeconds.get() * 20 : 600;
+    }
+
+    public int getMaxCatsPerStation() {
+        return maxCatsPerStation != null ? maxCatsPerStation.get() : 8;
     }
 }

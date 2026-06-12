@@ -240,6 +240,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return instance != null ? instance.getConfig().getFedDurationTicks() : 6000;
     }
 
+    public static int getMaxCatsPerStation() {
+        return instance != null ? instance.getConfig().getMaxCatsPerStation() : 8;
+    }
+
     // ---- Constructor ----
 
     public CatGuardianModule() {
@@ -615,7 +619,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         for (BlockPos checkPos : BlockPos.betweenClosed(
                 catPos.offset(-r, -r, -r), catPos.offset(r, r, r))) {
-            if (!(cat.level().getBlockEntity(checkPos) instanceof AbstractCatBowlBlockEntity bowl)) {
+            if (!(cat.level().getBlockEntity(checkPos) instanceof AbstractCatBowlBlockEntity bowl) || !bowl.canAddCat(cat.getUUID())) {
                 continue;
             }
             double distSq = cat.distanceToSqr(

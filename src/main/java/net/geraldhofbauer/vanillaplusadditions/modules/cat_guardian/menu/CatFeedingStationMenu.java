@@ -75,6 +75,10 @@ public class CatFeedingStationMenu extends AbstractContainerMenu {
         throw new IllegalStateException("No CatFeedingStationBlockEntity at " + pos);
     }
 
+    public CatFeedingStationBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
     @Override
     public boolean stillValid(Player player) {
         return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()),

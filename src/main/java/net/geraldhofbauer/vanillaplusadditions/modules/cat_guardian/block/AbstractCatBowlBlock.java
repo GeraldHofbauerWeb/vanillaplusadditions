@@ -61,8 +61,14 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
         }
 
         long newBowlLong = bowlPos.asLong();
+        int added = 0;
+        int skipped = 0;
 
         for (Cat cat : cats) {
+            if (!bowl.canAddCat(cat.getUUID())) {
+                skipped++;
+                continue;
+            }
             // Detach cat from its previous bowl
             long oldBowlLong = cat.getData(CatGuardianModule.CAT_BOWL_POS.get());
             if (oldBowlLong != Long.MIN_VALUE) {
@@ -74,11 +80,19 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
             }
             cat.setData(CatGuardianModule.CAT_BOWL_POS.get(), newBowlLong);
             bowl.addCat(cat.getUUID());
+            added++;
         }
 
-        player.sendSystemMessage(Component.translatable(
-                "message.vanillaplusadditions.cat_guardian.associated", cats.size()));
-        return cats.size();
+        if (added > 0) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.vanillaplusadditions.cat_guardian.associated", added));
+        }
+        if (skipped > 0) {
+            player.sendSystemMessage(Component.translatable(
+                    "message.vanillaplusadditions.cat_guardian.station_full", skipped));
+        }
+
+        return added;
     }
 
     /**

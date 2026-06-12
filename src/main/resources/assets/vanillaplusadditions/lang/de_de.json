@@ -41,6 +41,8 @@
   "item.vanillaplusadditions.wolf_armor_netherite": "Netherit-Wolfsrüstung",
   "container.vanillaplusadditions.cat_feeding_station": "Katzen-Futterstation",
   "container.vanillaplusadditions.cat_inventory": "Katzeninventar",
+  "gui.vanillaplusadditions.cat_guardian.associated_cats": "Assoziierte Katzen: %s/%s",
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",
+  "message.vanillaplusadditions.cat_guardian.station_full": "%s Katze(n) konnten nicht assoziiert werden, da der Napf voll ist.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden."
 }
