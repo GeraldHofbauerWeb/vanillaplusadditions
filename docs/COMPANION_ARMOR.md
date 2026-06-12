@@ -15,6 +15,13 @@ Both Wolf and Cat armor share the same tier stats.
 
 *Note: Netherite armor is fire-resistant.*
 
+## Wolf Armor (Battle Dogs)
+
+The Battle Dogs module provides tiered armor for tamed wolves.
+
+- **Damage Absorption**: Similar to vanilla armadillo wolf armor, all tiered wolf armor in this mod absorbs **100%** of incoming damage to the wolf, losing 1 durability point for every point of damage absorbed. This makes wolves invincible until the armor breaks.
+- **Attack Bonus**: Equipping armor increases the wolf's attack damage based on the tier (see table above).
+
 ## Cat Guardian Systems
 
 The Cat Guardian module transforms tamed cats into station-based defenders.

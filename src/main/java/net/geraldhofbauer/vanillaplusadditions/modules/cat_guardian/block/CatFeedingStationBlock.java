@@ -12,7 +12,11 @@ import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.Containers;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.neoforged.neoforge.items.ItemStackHandler;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -21,11 +25,61 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public class CatFeedingStationBlock extends AbstractCatBowlBlock {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+
+    // Hitbox shapes matching the model geometry (glass at north face, solid bowl at south).
+    // EAST/SOUTH/WEST are 90°/180°/270° CW rotations of NORTH.
+    private static final VoxelShape SHAPE_N = Shapes.or(
+        Block.box( 0,  0,  0, 16,  2, 16),  // floor
+        Block.box( 2,  5,  0, 14, 16,  2),  // glass front wall
+        Block.box( 0,  5,  0,  2, 16,  9),  // glass left pane
+        Block.box(14,  5,  0, 16, 16,  9),  // glass right pane
+        Block.box( 0,  2,  7, 16,  5,  9),  // divider lower
+        Block.box( 2,  5,  7, 14, 16,  9),  // divider upper
+        Block.box( 0,  2,  9,  2,  5, 14),  // bowl left wall
+        Block.box(14,  2,  9, 16,  5, 14),  // bowl right wall
+        Block.box( 0,  2, 14, 16,  5, 16)   // bowl back wall
+    );
+    private static final VoxelShape SHAPE_E = Shapes.or(
+        Block.box( 0,  0,  0, 16,  2, 16),
+        Block.box(14,  5,  2, 16, 16, 14),  // glass front wall → east face
+        Block.box( 7,  5,  0, 16, 16,  2),  // glass left pane  → north portion
+        Block.box( 7,  5, 14, 16, 16, 16),  // glass right pane → south portion
+        Block.box( 7,  2,  0,  9,  5, 16),  // divider lower
+        Block.box( 7,  5,  2,  9, 16, 14),  // divider upper
+        Block.box( 9,  2,  0, 14,  5,  2),  // bowl left wall   → north portion
+        Block.box( 9,  2, 14, 14,  5, 16),  // bowl right wall  → south portion
+        Block.box( 0,  2,  0,  2,  5, 16)   // bowl back wall   → west face
+    );
+    private static final VoxelShape SHAPE_S = Shapes.or(
+        Block.box( 0,  0,  0, 16,  2, 16),
+        Block.box( 2,  5, 14, 14, 16, 16),  // glass front wall → south face
+        Block.box(14,  5,  7, 16, 16, 16),  // glass left pane  → east side
+        Block.box( 0,  5,  7,  2, 16, 16),  // glass right pane → west side
+        Block.box( 0,  2,  7, 16,  5,  9),  // divider lower    (symmetric)
+        Block.box( 2,  5,  7, 14, 16,  9),  // divider upper    (symmetric)
+        Block.box(14,  2,  2, 16,  5,  7),  // bowl left wall   → east side
+        Block.box( 0,  2,  2,  2,  5,  7),  // bowl right wall  → west side
+        Block.box( 0,  2,  0, 16,  5,  2)   // bowl back wall   → north face
+    );
+    private static final VoxelShape SHAPE_W = Shapes.or(
+        Block.box( 0,  0,  0, 16,  2, 16),
+        Block.box( 0,  5,  2,  2, 16, 14),  // glass front wall → west face
+        Block.box( 0,  5,  0,  9, 16,  2),  // glass left pane  → south portion
+        Block.box( 0,  5, 14,  9, 16, 16),  // glass right pane → north portion
+        Block.box( 7,  2,  0,  9,  5, 16),  // divider lower
+        Block.box( 7,  5,  2,  9, 16, 14),  // divider upper
+        Block.box( 2,  2, 14,  7,  5, 16),  // bowl left wall   → south portion
+        Block.box( 2,  2,  0,  7,  5,  2),  // bowl right wall  → north portion
+        Block.box(14,  2,  0, 16,  5, 16)   // bowl back wall   → east face
+    );
 
     public CatFeedingStationBlock(Properties properties) {
         super(properties);
@@ -43,7 +97,7 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return this.defaultBlockState()
-                .setValue(FACING, context.getHorizontalDirection().getOpposite());
+                .setValue(FACING, context.getHorizontalDirection());
     }
 
     @Override
@@ -54,6 +108,16 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     @Override
     public BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
+    }
+
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
+        return switch (state.getValue(FACING)) {
+            case EAST  -> SHAPE_E;
+            case SOUTH -> SHAPE_S;
+            case WEST  -> SHAPE_W;
+            default    -> SHAPE_N;
+        };
     }
 
     @Override
@@ -107,9 +171,20 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState,
                             boolean movedByPiston) {
         if (!state.is(newState.getBlock())
-                && level.getBlockEntity(pos) instanceof AbstractCatBowlBlockEntity bowl) {
-            clearAssociationsOnBreak(level, pos, bowl);
+                && level.getBlockEntity(pos) instanceof CatFeedingStationBlockEntity station) {
+            dropHandler(level, pos, station.getInventory());
+            dropHandler(level, pos, station.getLootInventory());
+            clearAssociationsOnBreak(level, pos, station);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    private static void dropHandler(Level level, BlockPos pos, ItemStackHandler handler) {
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack s = handler.getStackInSlot(i);
+            if (!s.isEmpty()) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), s);
+            }
+        }
     }
 }

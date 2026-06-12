@@ -21,41 +21,41 @@
       }
     },
     {
-      "comment": "bowl front wall — north face (solid, faces player)",
-      "from": [0, 2, 0],
-      "to":   [16, 5, 2],
+      "comment": "glass front wall — north face, full block width to avoid corner z-fighting",
+      "from": [0, 5, 0],
+      "to":   [16, 16, 2],
       "faces": {
-        "north": { "uv": [0, 11, 16, 14], "texture": "#body", "cullface": "north" },
-        "south": { "uv": [0, 11, 16, 14], "texture": "#body" },
-        "west":  { "uv": [0, 11, 2, 14],  "texture": "#body", "cullface": "west" },
-        "east":  { "uv": [14, 11, 16, 14], "texture": "#body", "cullface": "east" },
-        "up":    { "uv": [0, 0, 16, 2],   "texture": "#body" }
+        "north": { "uv": [0, 0, 16, 11], "texture": "#glass", "cullface": "north" },
+        "south": { "uv": [0, 0, 16, 11], "texture": "#glass" },
+        "west":  { "uv": [0, 0, 2, 11],  "texture": "#glass", "cullface": "west" },
+        "east":  { "uv": [0, 0, 2, 11],  "texture": "#glass", "cullface": "east" },
+        "up":    { "uv": [0, 0, 16, 2],  "texture": "#glass" }
       }
     },
     {
-      "comment": "bowl left wall — west side, front half z=2..7",
-      "from": [0, 2, 2],
-      "to":   [2, 5, 7],
+      "comment": "glass left pane — west side, z=2..9 (starts after front wall)",
+      "from": [0, 5, 2],
+      "to":   [2, 16, 9],
       "faces": {
-        "west":  { "uv": [2, 11, 7, 14], "texture": "#body", "cullface": "west" },
-        "east":  { "uv": [2, 11, 7, 14], "texture": "#body" },
-        "south": { "uv": [0, 11, 2, 14], "texture": "#body" },
-        "up":    { "uv": [0, 2, 2, 7],   "texture": "#body" }
+        "west":  { "uv": [2, 0, 9, 11], "texture": "#glass", "cullface": "west" },
+        "east":  { "uv": [2, 0, 9, 11], "texture": "#glass" },
+        "south": { "uv": [0, 0, 2, 11], "texture": "#glass" },
+        "up":    { "uv": [0, 2, 2, 9],  "texture": "#glass" }
       }
     },
     {
-      "comment": "bowl right wall — east side, front half z=2..7",
-      "from": [14, 2, 2],
-      "to":   [16, 5, 7],
+      "comment": "glass right pane — east side, z=2..9 (starts after front wall)",
+      "from": [14, 5, 2],
+      "to":   [16, 16, 9],
       "faces": {
-        "west":  { "uv": [2, 11, 7, 14], "texture": "#body" },
-        "east":  { "uv": [2, 11, 7, 14], "texture": "#body", "cullface": "east" },
-        "south": { "uv": [14, 11, 16, 14], "texture": "#body" },
-        "up":    { "uv": [14, 2, 16, 7],  "texture": "#body" }
+        "west":  { "uv": [2, 0, 9, 11], "texture": "#glass" },
+        "east":  { "uv": [2, 0, 9, 11], "texture": "#glass", "cullface": "east" },
+        "south": { "uv": [14, 0, 16, 11], "texture": "#glass" },
+        "up":    { "uv": [14, 2, 16, 9], "texture": "#glass" }
       }
     },
     {
-      "comment": "divider lower — bowl height z=7..9, glass (replaces old solid middle wall)",
+      "comment": "divider lower — bowl height z=7..9, glass (transparent middle wall)",
       "from": [0, 2, 7],
       "to":   [16, 5, 9],
       "faces": {
@@ -67,7 +67,7 @@
       }
     },
     {
-      "comment": "divider upper — glass height z=7..9, glass (replaces old solid middle wall)",
+      "comment": "divider upper — glass height z=7..9, glass (transparent middle wall)",
       "from": [2, 5, 7],
       "to":   [14, 16, 9],
       "faces": {
@@ -77,37 +77,37 @@
       }
     },
     {
-      "comment": "glass left pane — west side, back half z=7..16",
-      "from": [0, 5, 7],
-      "to":   [2, 16, 16],
+      "comment": "bowl left wall — west side, back half z=9..14",
+      "from": [0, 2, 9],
+      "to":   [2, 5, 14],
       "faces": {
-        "west":  { "uv": [7, 0, 16, 11], "texture": "#glass", "cullface": "west" },
-        "east":  { "uv": [7, 0, 16, 11], "texture": "#glass" },
-        "south": { "uv": [0, 0, 2, 11],  "texture": "#glass", "cullface": "south" },
-        "up":    { "uv": [0, 7, 2, 16],  "texture": "#glass" }
+        "west":  { "uv": [9, 11, 14, 14], "texture": "#body", "cullface": "west" },
+        "east":  { "uv": [9, 11, 14, 14], "texture": "#body" },
+        "south": { "uv": [0, 11, 2, 14],  "texture": "#body" },
+        "up":    { "uv": [0, 9, 2, 14],   "texture": "#body" }
       }
     },
     {
-      "comment": "glass right pane — east side, back half z=7..16",
-      "from": [14, 5, 7],
-      "to":   [16, 16, 16],
+      "comment": "bowl right wall — east side, back half z=9..14",
+      "from": [14, 2, 9],
+      "to":   [16, 5, 14],
       "faces": {
-        "west":  { "uv": [7, 0, 16, 11], "texture": "#glass" },
-        "east":  { "uv": [7, 0, 16, 11], "texture": "#glass", "cullface": "east" },
-        "south": { "uv": [14, 0, 16, 11], "texture": "#glass", "cullface": "south" },
-        "up":    { "uv": [14, 7, 16, 16], "texture": "#glass" }
+        "west":  { "uv": [9, 11, 14, 14], "texture": "#body" },
+        "east":  { "uv": [9, 11, 14, 14], "texture": "#body", "cullface": "east" },
+        "south": { "uv": [14, 11, 16, 14], "texture": "#body" },
+        "up":    { "uv": [14, 9, 16, 14], "texture": "#body" }
       }
     },
     {
-      "comment": "glass back wall — south face z=14..16",
-      "from": [2, 5, 14],
-      "to":   [14, 16, 16],
+      "comment": "bowl back wall — south face (away from player), extended to full width",
+      "from": [0, 2, 14],
+      "to":   [16, 5, 16],
       "faces": {
-        "south": { "uv": [2, 0, 14, 11], "texture": "#glass", "cullface": "south" },
-        "north": { "uv": [2, 0, 14, 11], "texture": "#glass" },
-        "west":  { "uv": [14, 0, 16, 11], "texture": "#glass" },
-        "east":  { "uv": [0, 0, 2, 11],  "texture": "#glass" },
-        "up":    { "uv": [2, 14, 14, 16], "texture": "#glass" }
+        "south": { "uv": [0, 11, 16, 14], "texture": "#body", "cullface": "south" },
+        "north": { "uv": [0, 11, 16, 14], "texture": "#body" },
+        "west":  { "uv": [0, 11, 2, 14],  "texture": "#body", "cullface": "west" },
+        "east":  { "uv": [14, 11, 16, 14], "texture": "#body", "cullface": "east" },
+        "up":    { "uv": [0, 14, 16, 16], "texture": "#body" }
       }
     }
   ]

@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -148,6 +149,27 @@ public class BattleDogsModule extends AbstractModule<
         }
 
         updateArmorAttribute(wolf, event.getTo());
+    }
+
+    @SubscribeEvent
+    public void onWolfHurt(LivingDamageEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Wolf wolf)) {
+            return;
+        }
+
+        ItemStack armor = wolf.getBodyArmorItem();
+        if (!(armor.getItem() instanceof WolfArmorItem)) {
+            return;
+        }
+
+        // Armor absorbs 100% of damage; each damage point drains 1 durability
+        float absorbed = event.getNewDamage();
+        event.setNewDamage(0f);
+
+        armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), wolf, EquipmentSlot.BODY);
     }
 
     @SubscribeEvent

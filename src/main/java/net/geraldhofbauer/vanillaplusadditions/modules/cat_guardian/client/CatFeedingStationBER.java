@@ -29,12 +29,12 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
 
         ItemStackHandler inv = be.getInventory();
 
-        // Collect one representative stack per unique fish type
+        // Collect stacks with count >= 2 (count==1 means it's already being served in the bowl)
         List<ItemStack> unique = new ArrayList<>();
         Set<Item> seen = new HashSet<>();
         for (int i = 0; i < inv.getSlots(); i++) {
             ItemStack s = inv.getStackInSlot(i);
-            if (!s.isEmpty() && seen.add(s.getItem())) {
+            if (!s.isEmpty() && s.getCount() >= 2 && seen.add(s.getItem())) {
                 unique.add(s);
             }
         }
@@ -52,14 +52,13 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
 
         var ir = Minecraft.getInstance().getItemRenderer();
 
-        // --- Fish in glass container (back half, z≈0.78 in model space) ---
-        // x=0.5 centred, y stacked from 0.52 upward
+        // --- Fish in glass container (front half, z≈0.28 — interior of z=2..7) ---
         float[] ySlots = {
             0.52f, 0.64f, 0.76f, 0.88f
         };
         for (int i = 0; i < Math.min(unique.size(), ySlots.length); i++) {
             ps.pushPose();
-            ps.translate(0.5, ySlots[i], 0.78);
+            ps.translate(0.5, ySlots[i], 0.28);
             ps.mulPose(Axis.YP.rotationDegrees(45));
             ps.scale(0.28f, 0.28f, 0.28f);
             ir.renderStatic(unique.get(i), ItemDisplayContext.FIXED,
@@ -67,11 +66,11 @@ public class CatFeedingStationBER implements BlockEntityRenderer<CatFeedingStati
             ps.popPose();
         }
 
-        // --- Active fish lying flat in bowl (front half, z≈0.34 in model space) ---
+        // --- Active fish lying flat in bowl (back half, z≈0.72 — interior of z=9..14) ---
         int activeSlot = be.getActiveSlot();
         if (activeSlot >= 0) {
             ps.pushPose();
-            ps.translate(0.5, 0.175, 0.34);
+            ps.translate(0.5, 0.175, 0.72);
             ps.mulPose(Axis.XP.rotationDegrees(90));
             ps.scale(0.32f, 0.32f, 0.32f);
             ir.renderStatic(inv.getStackInSlot(activeSlot), ItemDisplayContext.FIXED,

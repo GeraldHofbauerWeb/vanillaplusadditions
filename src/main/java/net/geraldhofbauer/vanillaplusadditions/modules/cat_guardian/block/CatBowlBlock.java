@@ -2,6 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatBowlBlockEntity;
+import net.minecraft.world.Containers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.InteractionHand;
@@ -84,7 +85,11 @@ public class CatBowlBlock extends AbstractCatBowlBlock {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState,
                             boolean movedByPiston) {
         if (!state.is(newState.getBlock())
-                && level.getBlockEntity(pos) instanceof AbstractCatBowlBlockEntity bowl) {
+                && level.getBlockEntity(pos) instanceof CatBowlBlockEntity bowl) {
+            ItemStack fish = bowl.getFishSlot().getStackInSlot(0);
+            if (!fish.isEmpty()) {
+                Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), fish);
+            }
             clearAssociationsOnBreak(level, pos, bowl);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
