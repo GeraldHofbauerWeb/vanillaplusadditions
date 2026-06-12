@@ -71,6 +71,27 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Unit;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -251,6 +272,60 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         NeoForge.EVENT_BUS.register(this);
 
         getLogger().info("Cat Guardian module initialized");
+    }
+
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        event.addListener(new CatGuardianRecipeReloadListener(event.getServerResources().getRecipeManager()));
+    }
+
+    private void applyCatGuardianRecipes(RecipeManager recipeManager) {
+        Map<ResourceLocation, RecipeHolder<?>> mergedRecipes = new LinkedHashMap<>();
+        for (RecipeHolder<?> recipeHolder : recipeManager.getRecipes()) {
+            mergedRecipes.put(recipeHolder.id(), recipeHolder);
+        }
+
+        addCatShapedRecipe(mergedRecipes, "cat_armor_iron", CAT_ARMOR_IRON.get(), Items.IRON_INGOT);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_gold", CAT_ARMOR_GOLD.get(), Items.GOLD_INGOT);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_diamond", CAT_ARMOR_DIAMOND.get(), Items.DIAMOND);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_netherite", CAT_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
+
+        recipeManager.replaceRecipes(mergedRecipes.values());
+    }
+
+    private void addCatShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem, Item material) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
+        Map<Character, Ingredient> key = Map.of(
+                'S', Ingredient.of(Items.ARMADILLO_SCUTE),
+                'X', Ingredient.of(material)
+        );
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "X  ", "XXX", "S S");
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        recipes.put(id, new RecipeHolder<>(id, recipe));
+    }
+
+    private final class CatGuardianRecipeReloadListener implements PreparableReloadListener {
+        private final RecipeManager recipeManager;
+
+        private CatGuardianRecipeReloadListener(RecipeManager recipeManager) {
+            this.recipeManager = recipeManager;
+        }
+
+        @Override
+        public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager,
+                                              ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
+                                              Executor backgroundExecutor, Executor gameExecutor) {
+            return preparationBarrier.wait(Unit.INSTANCE)
+                    .thenRunAsync(() -> applyCatGuardianRecipes(recipeManager), gameExecutor);
+        }
+
+        @Override
+        public String getName() {
+            return "vanillaplusadditions_cat_guardian_recipes";
+        }
     }
 
     private void onRegisterCapabilities(RegisterCapabilitiesEvent event) {

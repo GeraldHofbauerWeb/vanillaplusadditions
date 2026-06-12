@@ -22,6 +22,27 @@ import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Unit;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public class BattleDogsModule extends AbstractModule<
         BattleDogsModule,
@@ -127,6 +148,60 @@ public class BattleDogsModule extends AbstractModule<
         }
 
         updateArmorAttribute(wolf, event.getTo());
+    }
+
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        event.addListener(new BattleDogsRecipeReloadListener(event.getServerResources().getRecipeManager()));
+    }
+
+    private void applyBattleDogsRecipes(RecipeManager recipeManager) {
+        Map<ResourceLocation, RecipeHolder<?>> mergedRecipes = new LinkedHashMap<>();
+        for (RecipeHolder<?> recipeHolder : recipeManager.getRecipes()) {
+            mergedRecipes.put(recipeHolder.id(), recipeHolder);
+        }
+
+        addShapedRecipe(mergedRecipes, "wolf_armor_iron", WOLF_ARMOR_IRON.get(), Items.IRON_INGOT);
+        addShapedRecipe(mergedRecipes, "wolf_armor_gold", WOLF_ARMOR_GOLD.get(), Items.GOLD_INGOT);
+        addShapedRecipe(mergedRecipes, "wolf_armor_diamond", WOLF_ARMOR_DIAMOND.get(), Items.DIAMOND);
+        addShapedRecipe(mergedRecipes, "wolf_armor_netherite", WOLF_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
+
+        recipeManager.replaceRecipes(mergedRecipes.values());
+    }
+
+    private void addShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem, Item material) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
+        Map<Character, Ingredient> key = Map.of(
+                'S', Ingredient.of(Items.ARMADILLO_SCUTE),
+                'X', Ingredient.of(material)
+        );
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "S  ", "XXX", "X X");
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        recipes.put(id, new RecipeHolder<>(id, recipe));
+    }
+
+    private final class BattleDogsRecipeReloadListener implements PreparableReloadListener {
+        private final RecipeManager recipeManager;
+
+        private BattleDogsRecipeReloadListener(RecipeManager recipeManager) {
+            this.recipeManager = recipeManager;
+        }
+
+        @Override
+        public CompletableFuture<Void> reload(PreparationBarrier preparationBarrier, ResourceManager resourceManager,
+                                              ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
+                                              Executor backgroundExecutor, Executor gameExecutor) {
+            return preparationBarrier.wait(Unit.INSTANCE)
+                    .thenRunAsync(() -> applyBattleDogsRecipes(recipeManager), gameExecutor);
+        }
+
+        @Override
+        public String getName() {
+            return "vanillaplusadditions_battle_dogs_recipes";
+        }
     }
 
     private void updateArmorAttribute(Wolf wolf, ItemStack stack) {
