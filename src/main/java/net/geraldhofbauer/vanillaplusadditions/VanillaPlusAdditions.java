@@ -24,6 +24,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModu
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.geraldhofbauer.vanillaplusadditions.util.WorldgenDiagnostics;
@@ -130,6 +131,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new TextureKillModule());
         moduleManager.registerModule(new CatGuardianModule());
         moduleManager.registerModule(new BattleDogsModule());
+        moduleManager.registerModule(new ChunkResetModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

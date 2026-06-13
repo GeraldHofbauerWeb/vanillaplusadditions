@@ -26,11 +26,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 @EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class CatGuardianClientEvents {
 
-    // Glow debounce state
     private static BlockPos lastGlowPos = null;
     private static long lastGlowSentTick = Long.MIN_VALUE;
 
-    // catEntityId → targetEntityId; cleared when level changes
+    // catEntityId → targetEntityId; populated by SyncCatTargetPacket
     static final Map<Integer, Integer> CAT_TARGET_MAP = new HashMap<>();
 
     private CatGuardianClientEvents() { }
@@ -43,22 +42,25 @@ public final class CatGuardianClientEvents {
         if (!(event.getTarget() instanceof Cat cat)) {
             return;
         }
-        if (!Screen.hasControlDown()) {
-            return;
-        }
         if (!cat.isTame()) {
             return;
         }
+
         CatGuardianModule module = getModule();
         if (module == null || !module.isModuleEnabled()) {
             return;
         }
+
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || !mc.player.getUUID().equals(cat.getOwnerUUID())) {
+        if (mc.player == null) {
             return;
         }
-        event.setCanceled(true);
-        PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
+
+        // Ctrl+click → open cat inventory
+        if (Screen.hasControlDown() && mc.player.getUUID().equals(cat.getOwnerUUID())) {
+            event.setCanceled(true);
+            PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
+        }
     }
 
     @SubscribeEvent
@@ -75,7 +77,6 @@ public final class CatGuardianClientEvents {
 
         CatGuardianGogglesClientHandler.onClientTick(mc);
 
-        // Check every second (20 ticks)
         long gameTime = mc.level.getGameTime();
         if (gameTime % 20 != 0) {
             return;
@@ -89,9 +90,8 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        // Resend if the bowl changed or ~⅔ of glow duration has elapsed to keep it refreshed
         boolean bowlChanged = !hitPos.equals(lastGlowPos);
-        boolean timerElapsed = gameTime - lastGlowSentTick > 400; // 20 s
+        boolean timerElapsed = gameTime - lastGlowSentTick > 400;
         if (!bowlChanged && !timerElapsed) {
             return;
         }

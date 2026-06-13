@@ -19,6 +19,8 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
 
     private static final int SLOTS = 9;
 
+    private int storedXp = 0;
+
     private final ItemStackHandler inventory = new ItemStackHandler(SLOTS) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
@@ -93,6 +95,16 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         return lootInventory;
     }
 
+    public int getStoredXp() {
+        return storedXp;
+    }
+
+    public void addStoredXp(int delta) {
+        storedXp = Math.max(0, storedXp + delta);
+        setChanged();
+        syncToClient();
+    }
+
     // ---- MenuProvider ----
 
     @Override
@@ -112,6 +124,7 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.put("loot_inventory", lootInventory.serializeNBT(registries));
+        tag.putInt("stored_xp", storedXp);
         saveCats(tag);
     }
 
@@ -124,6 +137,7 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         if (tag.contains("loot_inventory")) {
             lootInventory.deserializeNBT(registries, tag.getCompound("loot_inventory"));
         }
+        storedXp = tag.getInt("stored_xp");
         loadCats(tag);
     }
 }

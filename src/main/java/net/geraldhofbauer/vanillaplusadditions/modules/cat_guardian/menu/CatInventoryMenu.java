@@ -22,7 +22,9 @@ public class CatInventoryMenu extends AbstractContainerMenu {
 
     public static final int DATA_FED_TICKS  = 0;
     public static final int DATA_MAX_TICKS  = 1;
-    public static final int DATA_COUNT      = 2;
+    public static final int DATA_CAT_XP     = 2;
+    public static final int DATA_CAT_XP_CAP = 3;
+    public static final int DATA_COUNT      = 4;
 
     private static final int ARMOR_END    = 1;  // slot 0
     private static final int LOOT_END     = 6;  // slots 1–5
@@ -32,6 +34,8 @@ public class CatInventoryMenu extends AbstractContainerMenu {
     private final Cat cat;
     private int fedTicks;
     private int maxFedTicks = 6000;
+    private int catXp;
+    private int catXpCap = 500;
 
     private final ContainerData syncedData = new ContainerData() {
         @Override
@@ -42,6 +46,12 @@ public class CatInventoryMenu extends AbstractContainerMenu {
             if (index == DATA_MAX_TICKS) {
                 return CatGuardianModule.getFedDurationTicks();
             }
+            if (index == DATA_CAT_XP) {
+                return cat != null ? cat.getData(CatGuardianModule.CAT_XP.get()) : 0;
+            }
+            if (index == DATA_CAT_XP_CAP) {
+                return CatGuardianModule.getCatXpCapacity();
+            }
             return 0;
         }
 
@@ -51,6 +61,10 @@ public class CatInventoryMenu extends AbstractContainerMenu {
                 fedTicks = value;
             } else if (index == DATA_MAX_TICKS) {
                 maxFedTicks = value;
+            } else if (index == DATA_CAT_XP) {
+                catXp = value;
+            } else if (index == DATA_CAT_XP_CAP) {
+                catXpCap = value;
             }
         }
 
@@ -116,6 +130,14 @@ public class CatInventoryMenu extends AbstractContainerMenu {
 
     public int getMaxFedTicks() {
         return maxFedTicks;
+    }
+
+    public int getCatXp() {
+        return catXp;
+    }
+
+    public int getCatXpCap() {
+        return catXpCap;
     }
 
     @Override

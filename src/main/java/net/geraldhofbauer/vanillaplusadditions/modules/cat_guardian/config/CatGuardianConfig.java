@@ -9,9 +9,13 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     private ModConfigSpec.DoubleValue associationRadius;
     private ModConfigSpec.IntValue fedDurationTicks;
     private ModConfigSpec.DoubleValue guardRadius;
+    private ModConfigSpec.DoubleValue guardRadiusY;
     private ModConfigSpec.DoubleValue autoAssociateRadius;
     private ModConfigSpec.IntValue glowDurationSeconds;
     private ModConfigSpec.IntValue maxCatsPerStation;
+    private ModConfigSpec.IntValue catXpCapacity;
+    private ModConfigSpec.IntValue stationXpCapacity;
+    private ModConfigSpec.IntValue xpPerBottle;
 
     public CatGuardianConfig(CatGuardianModule module) {
         super(module);
@@ -26,8 +30,11 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
                 .comment("How many ticks a single fish feeding keeps a cat in the 'fed' (guarding) state (20 ticks = 1 second)")
                 .defineInRange("fed_duration_ticks", 6000, 20, 144000);
         guardRadius = builder
-                .comment("Radius (blocks) around the associated bowl in which a fed cat scans for and attacks hostile mobs")
+                .comment("Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs")
                 .defineInRange("guard_radius", 64.0D, 2.0D, 128.0D);
+        guardRadiusY = builder
+                .comment("Vertical radius (blocks, Y) around the associated bowl — cats ignore mobs further away vertically")
+                .defineInRange("guard_radius_y", 16.0D, 2.0D, 128.0D);
         autoAssociateRadius = builder
                 .comment("Radius (blocks) within which a cat without a bowl is automatically associated with a nearby bowl")
                 .defineInRange("auto_associate_radius", 1.5D, 0.5D, 4.0D);
@@ -37,6 +44,15 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
         maxCatsPerStation = builder
                 .comment("Maximum number of cats that can be associated with a single bowl or station")
                 .defineInRange("max_cats_per_station", 8, 1, 64);
+        catXpCapacity = builder
+                .comment("Maximum XP points a single cat can hold before XP drops normally")
+                .defineInRange("cat_xp_capacity", 500, 0, 10000);
+        stationXpCapacity = builder
+                .comment("Maximum XP points a feeding station can hold before overflow stays on cats")
+                .defineInRange("station_xp_capacity", 5000, 0, 100000);
+        xpPerBottle = builder
+                .comment("XP points consumed per Bottle o' Enchanting produced at the station")
+                .defineInRange("xp_per_bottle", 8, 1, 64);
     }
 
     public double getAssociationRadius() {
@@ -48,7 +64,11 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     }
 
     public double getGuardRadius() {
-        return guardRadius != null ? guardRadius.get() : 16.0D;
+        return guardRadius != null ? guardRadius.get() : 64.0D;
+    }
+
+    public double getGuardRadiusY() {
+        return guardRadiusY != null ? guardRadiusY.get() : 16.0D;
     }
 
     public double getAutoAssociateRadius() {
@@ -61,5 +81,17 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
 
     public int getMaxCatsPerStation() {
         return maxCatsPerStation != null ? maxCatsPerStation.get() : 8;
+    }
+
+    public int getCatXpCapacity() {
+        return catXpCapacity != null ? catXpCapacity.get() : 500;
+    }
+
+    public int getStationXpCapacity() {
+        return stationXpCapacity != null ? stationXpCapacity.get() : 5000;
+    }
+
+    public int getXpPerBottle() {
+        return xpPerBottle != null ? xpPerBottle.get() : 8;
     }
 }

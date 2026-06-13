@@ -46,6 +46,7 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
@@ -74,7 +75,9 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -86,6 +89,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -221,6 +225,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                             .serialize(Codec.BOOL)
                             .build());
 
+    /** Low-health retreat flag: absolute, ignores all mobs and flees to base until healed. */
+    public static final Supplier<AttachmentType<Boolean>> CAT_FLEEING =
+            ATTACHMENT_TYPES.register("cat_fleeing", () ->
+                    AttachmentType.<Boolean>builder(() -> false)
+                            .serialize(Codec.BOOL)
+                            .build());
+
+    public static final Supplier<AttachmentType<Integer>> CAT_XP =
+            ATTACHMENT_TYPES.register("cat_xp", () ->
+                    AttachmentType.<Integer>builder(() -> 0)
+                            .serialize(Codec.INT)
+                            .build());
+
     // ---- Armor attribute modifier ID ----
 
     private static final ResourceLocation ARMOR_MODIFIER_ID =
@@ -239,6 +256,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     // Using Vec3 (not BlockPos) catches oscillation between two adjacent block positions.
     private final Map<UUID, net.minecraft.world.phys.Vec3> catNavRefPos = new HashMap<>();
     private final Map<UUID, Integer> catNavRefAge = new HashMap<>();
+    // Accumulated ticks a cat has spent in the ordinary (interruptible) returning state.
+    private final Map<UUID, Integer> catReturningAge = new HashMap<>();
+
+    // Maps dead entity ID → guardian cat entity ID; used to redirect XP to the cat.
+    // Populated in onLivingDrops, consumed in onExperienceDrop (same death tick).
+    private final Map<Integer, Integer> pendingXpCapture = new HashMap<>();
 
     public static double getAssociationRadius() {
         return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
@@ -262,6 +285,22 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     public static int getMaxCatsPerStation() {
         return instance != null ? instance.getConfig().getMaxCatsPerStation() : 8;
+    }
+
+    public static double getGuardRadius() {
+        return instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+    }
+
+    public static double getGuardRadiusY() {
+        return instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
+    }
+
+    public static int getStationXpCapacity() {
+        return instance != null ? instance.getConfig().getStationXpCapacity() : 5000;
+    }
+
+    public static int getCatXpCapacity() {
+        return instance != null ? instance.getConfig().getCatXpCapacity() : 500;
     }
 
     // ---- Constructor ----
@@ -463,6 +502,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
+        // Allow cats to navigate through water (costly but not impassable)
+        cat.setPathfindingMalus(PathType.WATER, 8.0f);
+        cat.setPathfindingMalus(PathType.WATER_BORDER, 4.0f);
+
         boolean alreadyAdded = cat.targetSelector.getAvailableGoals().stream()
                 .anyMatch(w -> w.getGoal() instanceof CatGuardTargetGoal);
         if (!alreadyAdded) {
@@ -499,12 +542,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getTarget() instanceof Cat cat)) {
             return;
         }
+        ServerPlayer player = (ServerPlayer) event.getEntity();
         ItemStack armor = cat.getData(CAT_INVENTORY.get()).getArmor();
-        if (armor.isEmpty()) {
-            return;
+        if (!armor.isEmpty()) {
+            PacketDistributor.sendToPlayer(player, new SyncCatInventoryPacket(cat.getId(), armor));
         }
-        PacketDistributor.sendToPlayer((ServerPlayer) event.getEntity(),
-                new SyncCatInventoryPacket(cat.getId(), armor));
+        // Resync current combat target so the goggles overlay shows immediately when a player
+        // approaches a cat that is already fighting.
+        LivingEntity target = cat.getTarget();
+        if (target != null && target.isAlive() && isGuardianCat(cat)) {
+            PacketDistributor.sendToPlayer(player,
+                    new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                            cat.getId(), target.getId()));
+        }
     }
 
     @SubscribeEvent
@@ -558,11 +608,38 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!cat.isTame() || cat.getOwnerUUID() == null) {
             return;
         }
+
+        // Per-tick dive steering: ground navigation can't path underwater, so manually
+        // steer the cat in 3D toward an aquatic target. Runs every tick (not just %10)
+        // for smooth descent and pursuit.
+        steerTowardAquaticTarget(cat);
+
         if (cat.tickCount % 10 != 0) {
             return;
         }
 
         tickCat(cat);
+    }
+
+    /** Manually drives a guardian cat toward an underwater target, including downward descent. */
+    private void steerTowardAquaticTarget(Cat cat) {
+        LivingEntity target = cat.getTarget();
+        if (target == null || !cat.isInWater()) {
+            return;
+        }
+        if (!target.isInWater() && !target.isUnderWater()) {
+            return;
+        }
+        cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 40, 0, false, false));
+        net.minecraft.world.phys.Vec3 dir = target.getEyePosition().subtract(cat.position()).normalize();
+        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
+        // Blend current velocity toward the target in all three axes; the Y term allows
+        // the cat to dive down, overriding the surface buoyancy applied in tickCat.
+        cat.setDeltaMovement(
+                v.x * 0.6 + dir.x * 0.06,
+                v.y * 0.6 + dir.y * 0.08,
+                v.z * 0.6 + dir.z * 0.06);
+        cat.getNavigation().stop(); // ground nav is useless underwater; take manual control
     }
 
     private void tickCat(Cat cat) {
@@ -593,7 +670,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 if (curPos.distanceToSqr(refPos) < 1.0) {
                     // Moved less than 1 block in 60 ticks — spinning or trapped
                     cat.getNavigation().stop();
-                    cat.setTarget(null);
+                    LivingEntity stuckTarget = cat.getTarget();
+                    boolean aquatic = stuckTarget != null
+                            && (stuckTarget.isInWater() || stuckTarget.isUnderWater());
+                    // Aquatic targets are pursued by manual dive steering, not navigation —
+                    // keep the target. Only abandon genuinely-stuck land targets.
+                    if (!aquatic) {
+                        cat.setTarget(null);
+                    }
                 }
                 catNavRefPos.put(uid, curPos);
                 catNavRefAge.put(uid, 0);
@@ -605,26 +689,80 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         suppressFollowingBehaviors(cat);
 
-        BlockPos bowlPos = BlockPos.of(bowlPosLong);
-        double guardRadius = config.getGuardRadius();
-
-        // Low-health retreat: disengage at <20% HP
-        float healthPct = cat.getHealth() / cat.getMaxHealth();
-        if (healthPct < 0.20f && cat.getTarget() != null) {
-            cat.setTarget(null);
-            cat.setData(CAT_RETURNING.get(), true);
+        // Water breathing while pursuing an aquatic target
+        LivingEntity currentTarget = cat.getTarget();
+        boolean targetUnderwater = currentTarget != null && (currentTarget.isInWater() || currentTarget.isUnderWater());
+        if (targetUnderwater) {
+            cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
         }
 
-        // Navigate back to guard radius if returning
+        // When in water without an active aquatic target, push the cat upward so it can
+        // exit the water. RandomSwimmingGoal was removed because it fights directed navigation
+        // (priority 0 vs GuardianCatAttackGoal priority 4); FloatGoal (vanilla) handles
+        // idle floating; directed nav handles pursuit paths through water.
+        if (cat.isInWater() && !targetUnderwater) {
+            cat.setDeltaMovement(
+                    cat.getDeltaMovement().x,
+                    Math.max(cat.getDeltaMovement().y, 0.12),
+                    cat.getDeltaMovement().z);
+        }
+
+        BlockPos bowlPos = BlockPos.of(bowlPosLong);
+
+        // Low-health flee: at <20% HP the cat enters an ABSOLUTE retreat — it ignores all
+        // mobs and runs home, heals at base, and only resumes guarding once it has recovered
+        // above 40% HP (hysteresis prevents yo-yoing in and out of combat at the edge).
+        float healthPct = cat.getHealth() / cat.getMaxHealth();
+        boolean fleeing = cat.getData(CAT_FLEEING.get());
+        if (!fleeing && healthPct < 0.20f) {
+            fleeing = true;
+            cat.setData(CAT_FLEEING.get(), true);
+        }
+        if (fleeing) {
+            cat.setTarget(null); // ignore all mobs while fleeing
+            cat.setData(CAT_RETURNING.get(), false);
+            catReturningAge.remove(uid);
+            double distSqToBowl = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+            boolean atBase = distSqToBowl <= 16.0;
+            if (atBase) {
+                // Heal at base; resume duty once safely recovered
+                cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                if (healthPct > 0.40f) {
+                    cat.setData(CAT_FLEEING.get(), false);
+                } else if (!cat.isOrderedToSit()) {
+                    cat.setOrderedToSit(true);
+                }
+            } else {
+                if (cat.isOrderedToSit()) {
+                    cat.setOrderedToSit(false);
+                }
+                cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
+            }
+            // Keep fed-state ticking down while fleeing, then skip all normal duty logic
+            int fedWhileFleeing = cat.getData(CAT_FED_TICKS.get());
+            if (fedWhileFleeing > 0) {
+                cat.setData(CAT_FED_TICKS.get(), Math.max(0, fedWhileFleeing - 10));
+            }
+            return;
+        }
+
+        // Ordinary post-combat return: navigate back to the bowl. Interruptible — the target
+        // goal re-engages nearby threats (see CatGuardTargetGoal.canUse). Clears when within
+        // ~4 blocks of the bowl, or after a time cap so a failed path never strands the cat.
         if (cat.getData(CAT_RETURNING.get())) {
             if (cat.isOrderedToSit()) {
                 cat.setOrderedToSit(false);
             }
-            if (cat.blockPosition().distSqr(bowlPos) <= guardRadius * guardRadius) {
+            int returningAge = catReturningAge.merge(uid, 10, Integer::sum); // tickCat runs every 10 ticks
+            double distSqToBowl = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+            if (distSqToBowl <= 16.0 || returningAge >= 200) {
                 cat.setData(CAT_RETURNING.get(), false);
+                catReturningAge.remove(uid);
             } else {
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
             }
+        } else {
+            catReturningAge.remove(uid);
         }
 
         // Decrement fed ticks regardless of other state
@@ -693,6 +831,36 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 }
             }
             catLoot.setStackInSlot(slot, stack);
+        }
+
+        // XP: cat buffer → station counter
+        int catXp = cat.getData(CAT_XP.get());
+        if (catXp > 0) {
+            int stationCap = getConfig().getStationXpCapacity();
+            int canStore = stationCap - station.getStoredXp();
+            int toTransfer = Math.min(catXp, canStore);
+            if (toTransfer > 0) {
+                station.addStoredXp(toTransfer);
+                cat.setData(CAT_XP.get(), catXp - toTransfer);
+            }
+        }
+
+        // Convert station XP into XP Bottles in the loot inventory
+        int xpPerBottle = getConfig().getXpPerBottle();
+        while (station.getStoredXp() >= xpPerBottle) {
+            ItemStack bottle = new ItemStack(Items.EXPERIENCE_BOTTLE);
+            boolean inserted = false;
+            for (int s = 0; s < stationLoot.getSlots(); s++) {
+                ItemStack rem = stationLoot.insertItem(s, bottle, false);
+                if (rem.isEmpty()) {
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted) {
+                break; // loot inventory full
+            }
+            station.addStoredXp(-xpPerBottle);
         }
     }
 
@@ -768,6 +936,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 broadcastArmorSync(cat);
             }
             event.setCanceled(true);
+        } else if (isGuardianCat(cat)) {
+            // Prevent vanilla sit/stand toggle on guardian cats; client uses alt-click to toggle overlays.
+            // Server can't detect the Alt key, so we cancel all non-armor interact on guardian cats.
+            // Cancelling server-side (not client) avoids the custom_payload EncoderException
+            // that occurs when the integrated server tries to sync state after the interact.
+            event.setCanceled(true);
         }
     }
 
@@ -796,6 +970,25 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             invData.setArmor(ItemStack.EMPTY);
             removeArmorAttribute(cat);
         }
+
+        // Retaliation: if hit by a hostile mob, immediately switch target to attacker
+        if (!cat.level().isClientSide() && isGuardianCat(cat)) {
+            Entity direct = event.getSource().getDirectEntity();
+            Entity indirect = event.getSource().getEntity();
+            LivingEntity attacker = direct instanceof Monster m ? m
+                    : indirect instanceof Monster m2 ? m2 : null;
+            if (attacker != null && !attacker.isDeadOrDying()) {
+                cat.setTarget(attacker);
+                cat.targetSelector.getAvailableGoals().stream()
+                        .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                        .filter(g -> g instanceof CatGuardTargetGoal)
+                        .findFirst()
+                        .ifPresent(g -> ((CatGuardTargetGoal) g).retaliateAgainst(attacker));
+                PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                        new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                                cat.getId(), attacker.getId()));
+            }
+        }
     }
 
     // ---- Cat loot collection ----
@@ -805,12 +998,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getSource().getDirectEntity() instanceof Cat cat)) {
+        Entity direct = event.getSource().getDirectEntity();
+        Entity indirect = event.getSource().getEntity();
+        Cat cat = null;
+        if (direct instanceof Cat c && c.isTame() && c.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
+            cat = c;
+        } else if (indirect instanceof Cat c && c.isTame() && c.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
+            cat = c;
+        }
+        if (cat == null) {
             return;
         }
-        if (!cat.isTame() || cat.getData(CAT_BOWL_POS.get()) == Long.MIN_VALUE) {
-            return;
-        }
+
+        // Record for XP redirection (consumed by onExperienceDrop in the same tick)
+        pendingXpCapture.put(event.getEntity().getId(), cat.getId());
 
         CatInventoryData catInv = cat.getData(CAT_INVENTORY.get());
         var lootHandler = catInv.getInventory();
@@ -831,6 +1032,58 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 itemEntity.setItem(drop);
             }
         }
+    }
+
+    @SubscribeEvent
+    public void onExperienceDrop(LivingExperienceDropEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        Integer catEntityId = pendingXpCapture.remove(event.getEntity().getId());
+        if (catEntityId == null) {
+            return;
+        }
+        if (!(event.getEntity().level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        if (!(serverLevel.getEntity(catEntityId) instanceof Cat cat)) {
+            return;
+        }
+        int xp = event.getDroppedExperience();
+        int capacity = getConfig().getCatXpCapacity();
+        int current = cat.getData(CAT_XP.get());
+        int canAbsorb = capacity - current;
+        if (canAbsorb <= 0) {
+            return;
+        }
+        int absorbed = Math.min(xp, canAbsorb);
+        cat.setData(CAT_XP.get(), current + absorbed);
+        event.setDroppedExperience(xp - absorbed);
+    }
+
+    @SubscribeEvent
+    public void onCatDeath(LivingDeathEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Cat cat)) {
+            return;
+        }
+        if (!cat.isTame()) {
+            return;
+        }
+        if (!(cat.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        long bowlLong = cat.getData(CAT_BOWL_POS.get());
+        if (bowlLong == Long.MIN_VALUE) {
+            return;
+        }
+        BlockPos bowlPos = BlockPos.of(bowlLong);
+        if (serverLevel.getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl) {
+            bowl.removeCat(cat.getUUID());
+        }
+        cat.setData(CAT_BOWL_POS.get(), Long.MIN_VALUE);
     }
 
     // ---- Armor attribute helpers ----
@@ -885,7 +1138,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         @Override
         protected boolean canPerformAttack(LivingEntity entity) {
-            if (!isTimeToAttack() || !this.mob.getSensing().hasLineOfSight(entity)) {
+            if (!isTimeToAttack()) {
+                return false;
+            }
+            // Skip LOS for underwater targets — water always blocks rays, but the cat can reach them
+            if (!entity.isInWater() && !entity.isUnderWater()
+                    && !this.mob.getSensing().hasLineOfSight(entity)) {
                 return false;
             }
             // ~3.3-block reach vs zombies: wider than vanilla (~1.4 blocks)
@@ -916,6 +1174,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         private final Cat cat;
         /** Counts 20-tick intervals where the target is alive but unreachable. */
         private int unreachableChecks = 0;
+        /** Mob entity IDs that are temporarily blacklisted (value = game time when blacklist expires). */
+        private final Map<Integer, Long> blockedTargets = new HashMap<>();
+        private static final long BLACKLIST_TICKS = 1200L; // 60 seconds
 
         CatGuardTargetGoal(Cat cat) {
             super(cat, false, false);
@@ -928,8 +1189,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (!cat.isTame() || cat.getOwnerUUID() == null) {
                 return false;
             }
-            if (cat.getData(CAT_RETURNING.get())) {
-                return false;
+            if (cat.getData(CAT_FLEEING.get())) {
+                return false; // low health: ignore all mobs, flee to base
             }
             int fedTicks = cat.getData(CAT_FED_TICKS.get());
             if (fedTicks <= 0) {
@@ -939,7 +1200,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (bowlLong == Long.MIN_VALUE) {
                 return false;
             }
-            return findAndSetTarget(BlockPos.of(bowlLong));
+            boolean found = findAndSetTarget(BlockPos.of(bowlLong));
+            if (found) {
+                cat.setData(CAT_RETURNING.get(), false); // interrupt ordinary return to engage
+            }
+            return found;
         }
 
         @Override
@@ -956,12 +1221,26 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             // Every 20 ticks: if the cat is >4 blocks away and navigation is idle,
             // the target is probably unreachable. Allow 15 consecutive checks (~15 s)
             // so cats have time to navigate complex indoor paths (stairs, corridors).
+            // Aquatic targets: skip the navIdle check since swimming nav is slower.
             if (cat.tickCount % 20 == 0) {
                 boolean tooFar = cat.distanceToSqr(target) > 16.0;
                 boolean navIdle = cat.getNavigation().isDone();
-                if (tooFar && navIdle) {
+                boolean targetInWater = target.isInWater();
+                if (tooFar && navIdle && !targetInWater) {
                     if (++unreachableChecks >= 15) {
                         unreachableChecks = 0;
+                        blacklist(target); // prevent immediately re-selecting this mob
+                        long bowlLong = cat.getData(CAT_BOWL_POS.get());
+                        LivingEntity alt = bowlLong != Long.MIN_VALUE
+                                ? findAlternative(BlockPos.of(bowlLong), target) : null;
+                        if (alt != null) {
+                            this.targetMob = alt;
+                            cat.setTarget(alt);
+                            PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                                    new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                                            cat.getId(), alt.getId()));
+                            return true;
+                        }
                         return false;
                     }
                 } else {
@@ -969,6 +1248,39 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 }
             }
             return true;
+        }
+
+        void retaliateAgainst(LivingEntity attacker) {
+            this.targetMob = attacker;
+            this.unreachableChecks = 0;
+            blockedTargets.remove(attacker.getId()); // retaliating overrides any blacklist
+        }
+
+        private boolean isBlocked(Monster m) {
+            Long until = blockedTargets.get(m.getId());
+            if (until == null) {
+                return false;
+            }
+            if (cat.level().getGameTime() >= until) {
+                blockedTargets.remove(m.getId());
+                return false;
+            }
+            return true;
+        }
+
+        private void blacklist(LivingEntity target) {
+            blockedTargets.put(target.getId(), cat.level().getGameTime() + BLACKLIST_TICKS);
+        }
+
+        private LivingEntity findAlternative(BlockPos bowlPos, LivingEntity excluded) {
+            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+            double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
+            AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
+            List<Monster> hostiles = cat.level().getEntitiesOfClass(
+                    Monster.class, searchBox, m -> !m.isDeadOrDying() && m != excluded && !isBlocked(m));
+            return hostiles.stream()
+                    .min(Comparator.comparingDouble(cat::distanceToSqr))
+                    .orElse(null);
         }
 
         @Override
@@ -992,22 +1304,18 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                             net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.NO_TARGET));
             cat.setTarget(null);
             this.targetMob = null;
-            long bowlLong = cat.getData(CAT_BOWL_POS.get());
-            if (bowlLong == Long.MIN_VALUE) {
-                return;
-            }
-            BlockPos bowlPos = BlockPos.of(bowlLong);
-            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
-            if (cat.blockPosition().distSqr(bowlPos) > radius * radius) {
+            // Always path back to bowl after losing a target (blacklist, mob death, low HP, etc.)
+            if (cat.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
                 cat.setData(CAT_RETURNING.get(), true);
             }
         }
 
         private boolean findAndSetTarget(BlockPos bowlPos) {
             double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
-            AABB searchBox = new AABB(bowlPos).inflate(radius);
+            double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
+            AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
             List<Monster> hostiles = cat.level().getEntitiesOfClass(
-                    Monster.class, searchBox, m -> !m.isDeadOrDying());
+                    Monster.class, searchBox, m -> !m.isDeadOrDying() && !isBlocked(m));
             if (hostiles.isEmpty()) {
                 return false;
             }
