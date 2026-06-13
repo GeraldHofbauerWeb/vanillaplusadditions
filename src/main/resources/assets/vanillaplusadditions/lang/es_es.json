@@ -42,5 +42,16 @@
   "container.vanillaplusadditions.cat_feeding_station": "Estación de alimentación para gatos",
   "container.vanillaplusadditions.cat_inventory": "Inventario del gato",
   "message.vanillaplusadditions.cat_guardian.associated": "%s gato(s) asociado(s) con este bol.",
-  "message.vanillaplusadditions.cat_guardian.no_cats": "No se encontraron gatos domesticados tuyos cerca."
+  "message.vanillaplusadditions.cat_guardian.no_cats": "No se encontraron gatos domesticados tuyos cerca.",
+  "gui.vanillaplusadditions.cat_guardian.associated_cats": "Gatos asociados: %s/%s",
+  "gui.vanillaplusadditions.cat_guardian.cats_short": "Gatos: %s/%s",
+  "gui.vanillaplusadditions.cat_guardian.xp": "XP: %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.food": "Alimentado: %s%%",
+  "gui.vanillaplusadditions.cat_guardian.armor": "Durabilidad de la armadura: %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.stored_xp": "XP almacenada: %s / %s",
+  "key.categories.vanillaplusadditions": "Vanilla+ Additions",
+  "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Alternar superposiciones del Gato Guardián",
+  "message.vanillaplusadditions.cat_guardian.overlay_on": "Superposiciones del Gato Guardián: ACTIVADO",
+  "message.vanillaplusadditions.cat_guardian.overlay_off": "Superposiciones del Gato Guardián: DESACTIVADO",
+  "message.vanillaplusadditions.cat_guardian.station_full": "No se pudieron asociar %s gato(s) porque el cuenco está lleno."
 }

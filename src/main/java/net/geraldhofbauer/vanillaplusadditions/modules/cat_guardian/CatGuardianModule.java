@@ -247,6 +247,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final ResourceLocation GUARDIAN_FOLLOW_RANGE_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "guardian_follow_range");
 
+    // ---- Step-height boost: lets cats climb 1.5-block ledges, matching the pathfinder's calc ----
+    private static final ResourceLocation GUARDIAN_STEP_HEIGHT_ID =
+            ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "guardian_step_height");
+
     // ---- Singleton reference for config access from static context ----
 
     private static CatGuardianModule instance;
@@ -520,6 +524,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     GUARDIAN_FOLLOW_RANGE_ID, 16.0, AttributeModifier.Operation.ADD_VALUE));
         }
 
+        // Raise step height to 1.5 so cats actually climb the 1.5-block ledges the pathfinder
+        // considers walkable (the maxUpStep mixin is best-effort; the attribute is authoritative
+        // and is read by both the WalkNodeEvaluator and the movement code). Vanilla cats are 0.6.
+        var stepHeightAttr = cat.getAttribute(Attributes.STEP_HEIGHT);
+        if (stepHeightAttr != null && !stepHeightAttr.hasModifier(GUARDIAN_STEP_HEIGHT_ID)) {
+            stepHeightAttr.addPermanentModifier(new AttributeModifier(
+                    GUARDIAN_STEP_HEIGHT_ID, 0.9, AttributeModifier.Operation.ADD_VALUE));
+        }
+
         // Restore armor attack bonus after chunk load / dimension change
         CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
         ItemStack armor = invData.getArmor();
@@ -595,6 +608,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     // ---- Cat tick logic ----
 
     @SubscribeEvent
+    public void onEntityTickPre(EntityTickEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Cat cat) || cat.level().isClientSide()) {
+            return;
+        }
+        // Strip FollowOwnerGoal BEFORE the goal selector runs this tick, so an associated cat
+        // can never teleport to a far-away owner (doing this in Post left a one-tick window in
+        // which the goal could still fire — e.g. while a cat was returning to its station).
+        suppressOwnerFollow(cat);
+    }
+
+    @SubscribeEvent
     public void onEntityTick(EntityTickEvent.Post event) {
         if (!isModuleEnabled()) {
             return;
@@ -614,11 +641,109 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         // for smooth descent and pursuit.
         steerTowardAquaticTarget(cat);
 
+        // When the ground pathfinder gives up before a climbable ledge, nudge the cat toward
+        // its goal so it walks into the ledge — then the jump assist below lifts it over.
+        driveTowardGoalWhenStuck(cat);
+
+        // Per-tick ledge-jump assist so cats reliably clear ~1.5-block steps.
+        assistLedgeJump(cat);
+
         if (cat.tickCount % 10 != 0) {
             return;
         }
 
         tickCat(cat);
+    }
+
+    /**
+     * Drives a guardian cat horizontally toward its goal (current target, else its bowl) when the
+     * ground navigation has given up — typically because the only way to the goal is up a ledge the
+     * pathfinder won't plan. This walks the cat into the ledge so {@link #assistLedgeJump} can lift
+     * it over. Does nothing while navigation is actively running, or when the cat is already near
+     * the goal, or when the goal is directly above (no horizontal direction to push).
+     */
+    private void driveTowardGoalWhenStuck(Cat cat) {
+        if (!isGuardianCat(cat) || !cat.onGround() || cat.isInWater()) {
+            return;
+        }
+        if (!cat.getNavigation().isDone()) {
+            return; // navigation is handling movement
+        }
+        net.minecraft.world.phys.Vec3 goal = null;
+        LivingEntity target = cat.getTarget();
+        if (target != null) {
+            goal = target.position();
+        } else {
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong != Long.MIN_VALUE) {
+                BlockPos b = BlockPos.of(bowlLong);
+                goal = new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY(), b.getZ() + 0.5);
+            }
+        }
+        if (goal == null) {
+            return;
+        }
+        double dx = goal.x - cat.getX();
+        double dz = goal.z - cat.getZ();
+        double dy = goal.y - cat.getY();
+        if (dx * dx + dy * dy + dz * dz < 4.0) {
+            return; // close enough — let normal idle/attack logic take over
+        }
+        double horiz = Math.sqrt(dx * dx + dz * dz);
+        if (horiz < 0.6) {
+            return; // goal is essentially straight up/down — a nudge can't help
+        }
+        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
+        cat.setDeltaMovement(dx / horiz * 0.13, v.y, dz / horiz * 0.13);
+        cat.getLookControl().setLookAt(goal.x, goal.y, goal.z);
+        cat.hasImpulse = true;
+    }
+
+    /**
+     * Makes a guardian cat hop when it is actively moving and bumps into a ledge. Auto-step
+     * (step height) and the ground pathfinder only reliably handle ~1-block rises, so without
+     * this cats only get over 1.5-block steps by accident (e.g. when shoved). The hop reaches
+     * ~1.5 blocks AND carries a forward impulse toward the path/target, so each attempt actually
+     * lands the cat on the ledge instead of bouncing in place — failed hops simply retry on the
+     * next ground tick until it gets up.
+     */
+    private void assistLedgeJump(Cat cat) {
+        if (!isGuardianCat(cat)) {
+            return;
+        }
+        if (!cat.onGround() || !cat.horizontalCollision || cat.isInWater()) {
+            return;
+        }
+        boolean wantsToMove = cat.getTarget() != null
+                || cat.getData(CAT_RETURNING.get())
+                || cat.getData(CAT_FLEEING.get())
+                || !cat.getNavigation().isDone();
+        if (!wantsToMove) {
+            return;
+        }
+
+        // Direction toward the next path node (preferred) or the current target — the wall has
+        // killed the cat's horizontal velocity, so re-supply forward momentum for the hop.
+        net.minecraft.world.phys.Vec3 dir = null;
+        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
+        if (path != null && !path.isDone()) {
+            dir = path.getNextEntityPos(cat).subtract(cat.position());
+        } else if (cat.getTarget() != null) {
+            dir = cat.getTarget().position().subtract(cat.position());
+        }
+
+        double vx = cat.getDeltaMovement().x;
+        double vz = cat.getDeltaMovement().z;
+        if (dir != null) {
+            net.minecraft.world.phys.Vec3 flat = new net.minecraft.world.phys.Vec3(dir.x, 0, dir.z);
+            if (flat.lengthSqr() > 1.0E-3) {
+                flat = flat.normalize().scale(0.28);
+                vx = flat.x;
+                vz = flat.z;
+            }
+        }
+        cat.setDeltaMovement(vx, 0.5, vz); // peak ≈ 1.5 blocks, with forward carry onto the ledge
+        cat.hasImpulse = true;
     }
 
     /** Manually drives a guardian cat toward an underwater target, including downward descent. */
@@ -977,7 +1102,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             Entity indirect = event.getSource().getEntity();
             LivingEntity attacker = direct instanceof Monster m ? m
                     : indirect instanceof Monster m2 ? m2 : null;
-            if (attacker != null && !attacker.isDeadOrDying()) {
+            if (attacker != null && !attacker.isDeadOrDying()
+                    && isWithinGuardZone(cat, attacker.getX(), attacker.getY(), attacker.getZ(),
+                            TARGET_ZONE_BUFFER)) {
                 cat.setTarget(attacker);
                 cat.targetSelector.getAvailableGoals().stream()
                         .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
@@ -989,6 +1116,37 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                                 cat.getId(), attacker.getId()));
             }
         }
+    }
+
+    /**
+     * Credits the cat's owner as the attacker on any mob a guardian cat damages.
+     *
+     * <p>Vanilla only drops experience (and player-conditioned loot) when the victim was recently
+     * hurt by a player ({@code lastHurtByPlayerTime > 0}). A mob killed purely by a cat therefore
+     * drops no XP and {@link #onExperienceDrop} never fires. Marking the owner as the last player
+     * attacker makes vanilla drop XP normally, which is then redirected into the cat's buffer.
+     */
+    @SubscribeEvent
+    public void onMobDamagedByCat(LivingDamageEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        LivingEntity victim = event.getEntity();
+        if (victim instanceof Cat) {
+            return; // cat-as-victim is handled by onCatHurt
+        }
+        Entity direct = event.getSource().getDirectEntity();
+        Entity indirect = event.getSource().getEntity();
+        Cat cat = direct instanceof Cat c ? c
+                : indirect instanceof Cat c2 ? c2 : null;
+        if (cat == null || !cat.isTame() || !isGuardianCat(cat)) {
+            return;
+        }
+        if (cat.getOwner() instanceof Player owner) {
+            victim.setLastHurtByPlayer(owner);
+        }
+        // Pre-record XP redirection so it is set before death regardless of event ordering.
+        pendingXpCapture.put(victim.getId(), cat.getId());
     }
 
     // ---- Cat loot collection ----
@@ -1152,6 +1310,23 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
     }
 
+    /**
+     * Removes {@link FollowOwnerGoal} from an associated (guardian) cat. Runs every tick so a
+     * guardian cat never teleports to a distant owner — the broader {@link #suppressFollowingBehaviors}
+     * only runs every 10 ticks, which left a window for the teleport to fire. Non-associated pet
+     * cats keep their normal follow/teleport behaviour.
+     */
+    private void suppressOwnerFollow(Cat cat) {
+        if (!isGuardianCat(cat)) {
+            return;
+        }
+        cat.goalSelector.getAvailableGoals().stream()
+                .filter(w -> w.getGoal() instanceof FollowOwnerGoal)
+                .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                .toList()
+                .forEach(cat.goalSelector::removeGoal);
+    }
+
     private static void suppressFollowingBehaviors(Cat cat) {
         // Remove goals that would fight with guard-station behaviour or cause wandering
         cat.goalSelector.getAvailableGoals().stream()
@@ -1165,6 +1340,31 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList()
                 .forEach(cat.targetSelector::removeGoal);
+    }
+
+    /** Buffer (blocks) for target eligibility — avoids flicker at the boundary. */
+    private static final double TARGET_ZONE_BUFFER = 4.0;
+    /** Larger buffer for the cat's own travel — allows edge melee + brief boundary stepping. */
+    private static final double CAT_ZONE_BUFFER = 10.0;
+
+    /**
+     * True if the given position is inside the cat's guard zone (bowl-centred, asymmetric
+     * XZ/Y radius) plus the given hysteresis buffer. Used to bound both target eligibility and
+     * how far the cat itself may travel while pursuing, so cats never wander out of their
+     * assigned area (e.g. chasing a mob whose only path leads through a cave mouth outside the
+     * radius). Returns false if the cat has no bowl.
+     */
+    private static boolean isWithinGuardZone(Cat cat, double x, double y, double z, double buffer) {
+        long bowlLong = cat.getData(CAT_BOWL_POS.get());
+        if (bowlLong == Long.MIN_VALUE) {
+            return false;
+        }
+        BlockPos bowl = BlockPos.of(bowlLong);
+        double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+        double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
+        return Math.abs(x - (bowl.getX() + 0.5)) <= radius + buffer
+                && Math.abs(z - (bowl.getZ() + 0.5)) <= radius + buffer
+                && Math.abs(y - (bowl.getY() + 0.5)) <= radiusY + buffer;
     }
 
     // ---- CatGuardTargetGoal — proper AI target goal for guarding ----
@@ -1200,6 +1400,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (bowlLong == Long.MIN_VALUE) {
                 return false;
             }
+            // If the cat has strayed outside its zone, commit to returning home before
+            // acquiring new targets — prevents oscillating at a cave mouth / boundary where a
+            // mob keeps pulling it back out. (The return path itself is unconstrained.)
+            if (!isWithinGuardZone(cat, cat.getX(), cat.getY(), cat.getZ(), CAT_ZONE_BUFFER)) {
+                return false;
+            }
             boolean found = findAndSetTarget(BlockPos.of(bowlLong));
             if (found) {
                 cat.setData(CAT_RETURNING.get(), false); // interrupt ordinary return to engage
@@ -1217,17 +1423,30 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (target == null || !target.isAlive()) {
                 return false;
             }
+            // Drop the target the moment it leaves the guard zone (e.g. wanders off or falls
+            // into a ravine) so the cat returns to base instead of chasing it indefinitely.
+            if (!isWithinGuardZone(cat, target.getX(), target.getY(), target.getZ(), TARGET_ZONE_BUFFER)) {
+                return false;
+            }
+            // Bound the cat's OWN travel: if pursuit drags it too far from base (e.g. the only
+            // path to an in-zone mob leads out through a cave mouth outside the radius),
+            // blacklist that mob and head home rather than wandering off.
+            if (!isWithinGuardZone(cat, cat.getX(), cat.getY(), cat.getZ(), CAT_ZONE_BUFFER)) {
+                blacklist(target);
+                return false;
+            }
 
             // Every 20 ticks: if the cat is >4 blocks away and navigation is idle,
-            // the target is probably unreachable. Allow 15 consecutive checks (~15 s)
-            // so cats have time to navigate complex indoor paths (stairs, corridors).
+            // the target is probably unreachable. Allow 8 consecutive checks (~8 s)
+            // so cats have time to navigate complex indoor paths (stairs, corridors)
+            // without hanging on a truly unreachable mob for too long.
             // Aquatic targets: skip the navIdle check since swimming nav is slower.
             if (cat.tickCount % 20 == 0) {
                 boolean tooFar = cat.distanceToSqr(target) > 16.0;
                 boolean navIdle = cat.getNavigation().isDone();
                 boolean targetInWater = target.isInWater();
                 if (tooFar && navIdle && !targetInWater) {
-                    if (++unreachableChecks >= 15) {
+                    if (++unreachableChecks >= 8) {
                         unreachableChecks = 0;
                         blacklist(target); // prevent immediately re-selecting this mob
                         long bowlLong = cat.getData(CAT_BOWL_POS.get());

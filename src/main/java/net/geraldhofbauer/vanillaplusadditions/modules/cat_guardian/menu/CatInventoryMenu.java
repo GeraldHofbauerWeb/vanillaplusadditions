@@ -90,9 +90,10 @@ public class CatInventoryMenu extends AbstractContainerMenu {
             }
         });
 
-        // Loot slots — output-only (cat fills them)
+        // Loot slots — output-only (cat fills them). Right-aligned so the 5th loot slot lines up
+        // with the 9th player-inventory column (x=152), mirroring the feeding-station layout.
         for (int i = 0; i < CatInventoryData.LOOT_SLOTS; i++) {
-            addSlot(new SlotItemHandler(handler, CatInventoryData.LOOT_START + i, 35 + i * 18, 17) {
+            addSlot(new SlotItemHandler(handler, CatInventoryData.LOOT_START + i, 80 + i * 18, 17) {
                 @Override
                 public boolean mayPlace(ItemStack stack) {
                     return false;

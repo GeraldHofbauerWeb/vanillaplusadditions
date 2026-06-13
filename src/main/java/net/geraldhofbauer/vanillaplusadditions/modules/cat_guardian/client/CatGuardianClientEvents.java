@@ -12,6 +12,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.Sync
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.phys.BlockHitResult;
 import java.util.HashMap;
@@ -73,6 +74,14 @@ public final class CatGuardianClientEvents {
         CatGuardianModule module = getModule();
         if (module == null || !module.isModuleEnabled()) {
             return;
+        }
+
+        // Overlay toggle keybind (rebindable in Controls; default numpad +)
+        while (CatGuardianClientSetup.TOGGLE_OVERLAY.consumeClick()) {
+            boolean enabled = CatGuardianGogglesClientHandler.toggleOverlays();
+            mc.player.displayClientMessage(Component.translatable(enabled
+                    ? "message.vanillaplusadditions.cat_guardian.overlay_on"
+                    : "message.vanillaplusadditions.cat_guardian.overlay_off"), true);
         }
 
         CatGuardianGogglesClientHandler.onClientTick(mc);

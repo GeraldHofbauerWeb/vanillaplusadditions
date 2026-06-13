@@ -7,6 +7,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -17,17 +18,19 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
             VanillaPlusAdditions.MODID, "textures/gui/cat_inventory.png");
 
     // Bar colors (ARGB)
-    private static final int BAR_BG      = 0xFF333333;
-    private static final int BAR_GREEN   = 0xFF00AA00;
-    private static final int BAR_YELLOW  = 0xFFDDAA00;
-    private static final int BAR_RED     = 0xFFAA2222;
-    private static final int BAR_XP      = 0xFF70D000;
+    private static final int BAR_BORDER  = 0xFF000000;
+    private static final int BAR_BG      = 0xFF2B2B2B;
+    private static final int BAR_GREEN   = 0xFF3FC23F;
+    private static final int BAR_YELLOW  = 0xFFE6C00A;
+    private static final int BAR_RED     = 0xFFC23B3B;
+    private static final int BAR_XP      = 0xFF7BE018;
 
-    // Food bar position
-    private static final int BAR_X       = 35;
+    // Food + XP bar geometry. They sit above/below the right-aligned 5-slot loot grid
+    // (x=80, width 90 = 5×18), so their right edge is flush with the player inventory.
+    private static final int BAR_X       = 80;
     private static final int BAR_Y       = 36;
-    private static final int BAR_WIDTH   = 90;  // spans the 5 loot slots (5×18)
-    private static final int BAR_HEIGHT  = 4;
+    private static final int BAR_WIDTH   = 90; // spans the 5 loot slots (5×18)
+    private static final int BAR_HEIGHT  = 5;
 
     // Armor durability bar — sits below the armor slot (slot at gui x=8)
     private static final int ARMOR_BAR_X      = 9;
@@ -35,11 +38,11 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
     private static final int ARMOR_BAR_WIDTH  = 16;
     private static final int ARMOR_BAR_HEIGHT = 4;
 
-    // XP bar — header area between title (ends ~y=13) and first slot row (y=17)
+    // XP bar — top header, to the right of the "Cat" title (clear of the slot row)
     private static final int XP_BAR_X      = BAR_X;
-    private static final int XP_BAR_Y      = 13;
+    private static final int XP_BAR_Y      = 7;
     private static final int XP_BAR_WIDTH  = BAR_WIDTH;
-    private static final int XP_BAR_HEIGHT = 3;
+    private static final int XP_BAR_HEIGHT = 5;
 
     public CatInventoryScreen(CatInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -53,67 +56,47 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
         this.inventoryLabelY = 43;
     }
 
+    /** Draws a bar with a 1px black frame, a dark track, and a coloured fill for the given ratio. */
+    private static void drawBar(GuiGraphics g, int x, int y, int w, int h, float ratio, int fill) {
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, BAR_BORDER);
+        g.fill(x, y, x + w, y + h, BAR_BG);
+        int filled = Math.max(0, Math.min(w, Math.round(ratio * w)));
+        if (filled > 0) {
+            g.fill(x, y, x + filled, y + h, fill);
+        }
+    }
+
+    private static int ratioColor(float ratio) {
+        return ratio > 0.5f ? BAR_GREEN : ratio > 0.25f ? BAR_YELLOW : BAR_RED;
+    }
+
+    private static boolean isHover(int mouseX, int mouseY, int x, int y, int w, int h) {
+        return mouseX >= x - 1 && mouseX <= x + w + 1 && mouseY >= y - 1 && mouseY <= y + h + 1;
+    }
+
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
-        renderXpBar(guiGraphics);
-        renderFoodBar(guiGraphics);
-        renderArmorDurabilityBar(guiGraphics);
-    }
 
-    private void renderXpBar(GuiGraphics guiGraphics) {
+        // XP bar
         int cap = menu.getCatXpCap();
         int cur = menu.getCatXp();
-        int bx = leftPos + XP_BAR_X;
-        int by = topPos  + XP_BAR_Y;
-        guiGraphics.fill(bx, by, bx + XP_BAR_WIDTH, by + XP_BAR_HEIGHT, BAR_BG);
-        if (cap <= 0 || cur <= 0) {
-            return;
-        }
-        int filled = (int) ((float) cur / cap * XP_BAR_WIDTH);
-        if (filled <= 0) {
-            return;
-        }
-        guiGraphics.fill(bx, by, bx + filled, by + XP_BAR_HEIGHT, BAR_XP);
-    }
+        float xpRatio = cap > 0 ? (float) cur / cap : 0f;
+        drawBar(guiGraphics, leftPos + XP_BAR_X, topPos + XP_BAR_Y, XP_BAR_WIDTH, XP_BAR_HEIGHT, xpRatio, BAR_XP);
 
-    private void renderFoodBar(GuiGraphics guiGraphics) {
+        // Food (fed) bar
         int maxTicks = menu.getMaxFedTicks();
         int curTicks = menu.getFedTicks();
-        int bx = leftPos + BAR_X;
-        int by = topPos  + BAR_Y;
+        float foodRatio = maxTicks > 0 ? (float) curTicks / maxTicks : 0f;
+        drawBar(guiGraphics, leftPos + BAR_X, topPos + BAR_Y, BAR_WIDTH, BAR_HEIGHT, foodRatio, ratioColor(foodRatio));
 
-        guiGraphics.fill(bx, by, bx + BAR_WIDTH, by + BAR_HEIGHT, BAR_BG);
-
-        if (maxTicks <= 0) {
-            return;
+        // Armor durability bar (only when armor present)
+        ItemStack armor = menu.getSlot(0).getItem();
+        if (!armor.isEmpty() && armor.isDamaged()) {
+            float armorRatio = 1f - (float) armor.getDamageValue() / armor.getMaxDamage();
+            drawBar(guiGraphics, leftPos + ARMOR_BAR_X, topPos + ARMOR_BAR_Y,
+                    ARMOR_BAR_WIDTH, ARMOR_BAR_HEIGHT, armorRatio, ratioColor(armorRatio));
         }
-        int filled = (int) ((float) curTicks / maxTicks * BAR_WIDTH);
-        if (filled <= 0) {
-            return;
-        }
-        float ratio = (float) curTicks / maxTicks;
-        int barColor = ratio > 0.5f ? BAR_GREEN : ratio > 0.25f ? BAR_YELLOW : BAR_RED;
-        guiGraphics.fill(bx, by, bx + filled, by + BAR_HEIGHT, barColor);
-    }
-
-    private void renderArmorDurabilityBar(GuiGraphics guiGraphics) {
-        net.minecraft.world.item.ItemStack armor = menu.getSlot(0).getItem();
-        if (armor.isEmpty() || !armor.isDamaged()) {
-            return;
-        }
-        int bx = leftPos + ARMOR_BAR_X;
-        int by = topPos  + ARMOR_BAR_Y;
-
-        guiGraphics.fill(bx, by, bx + ARMOR_BAR_WIDTH, by + ARMOR_BAR_HEIGHT, BAR_BG);
-
-        float ratio = 1f - (float) armor.getDamageValue() / armor.getMaxDamage();
-        int filled = (int) (ratio * ARMOR_BAR_WIDTH);
-        if (filled <= 0) {
-            return;
-        }
-        int barColor = ratio > 0.5f ? BAR_GREEN : ratio > 0.25f ? BAR_YELLOW : BAR_RED;
-        guiGraphics.fill(bx, by, bx + filled, by + ARMOR_BAR_HEIGHT, barColor);
     }
 
     @Override
@@ -122,13 +105,27 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
         renderTooltip(guiGraphics, mouseX, mouseY);
 
         // XP bar tooltip
-        int bx = leftPos + XP_BAR_X;
-        int by = topPos  + XP_BAR_Y;
-        if (mouseX >= bx && mouseX <= bx + XP_BAR_WIDTH
-                && mouseY >= by && mouseY <= by + XP_BAR_HEIGHT) {
-            guiGraphics.renderTooltip(this.font,
-                    Component.literal(menu.getCatXp() + " / " + menu.getCatXpCap() + " XP"),
-                    mouseX, mouseY);
+        if (isHover(mouseX, mouseY, leftPos + XP_BAR_X, topPos + XP_BAR_Y, XP_BAR_WIDTH, XP_BAR_HEIGHT)) {
+            guiGraphics.renderTooltip(this.font, Component.translatable(
+                    "gui.vanillaplusadditions.cat_guardian.xp", menu.getCatXp(), menu.getCatXpCap()), mouseX, mouseY);
+        }
+
+        // Food bar tooltip
+        if (isHover(mouseX, mouseY, leftPos + BAR_X, topPos + BAR_Y, BAR_WIDTH, BAR_HEIGHT)) {
+            int maxTicks = menu.getMaxFedTicks();
+            int pct = maxTicks > 0 ? Math.round((float) menu.getFedTicks() / maxTicks * 100f) : 0;
+            guiGraphics.renderTooltip(this.font, Component.translatable(
+                    "gui.vanillaplusadditions.cat_guardian.food", pct), mouseX, mouseY);
+        }
+
+        // Armor bar tooltip
+        ItemStack armor = menu.getSlot(0).getItem();
+        if (!armor.isEmpty() && armor.isDamaged()
+                && isHover(mouseX, mouseY, leftPos + ARMOR_BAR_X, topPos + ARMOR_BAR_Y,
+                        ARMOR_BAR_WIDTH, ARMOR_BAR_HEIGHT)) {
+            int left = armor.getMaxDamage() - armor.getDamageValue();
+            guiGraphics.renderTooltip(this.font, Component.translatable(
+                    "gui.vanillaplusadditions.cat_guardian.armor", left, armor.getMaxDamage()), mouseX, mouseY);
         }
     }
 }

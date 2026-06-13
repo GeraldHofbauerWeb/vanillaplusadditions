@@ -42,5 +42,16 @@
   "container.vanillaplusadditions.cat_feeding_station": "Station d'alimentation pour chat",
   "container.vanillaplusadditions.cat_inventory": "Inventaire du chat",
   "message.vanillaplusadditions.cat_guardian.associated": "%s chat(s) associé(s) à cette gamelle.",
-  "message.vanillaplusadditions.cat_guardian.no_cats": "Aucun chat apprivoisé vous appartenant trouvé à proximité."
+  "message.vanillaplusadditions.cat_guardian.no_cats": "Aucun chat apprivoisé vous appartenant trouvé à proximité.",
+  "gui.vanillaplusadditions.cat_guardian.associated_cats": "Chats associés : %s/%s",
+  "gui.vanillaplusadditions.cat_guardian.cats_short": "Chats : %s/%s",
+  "gui.vanillaplusadditions.cat_guardian.xp": "XP : %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.food": "Nourri : %s%%",
+  "gui.vanillaplusadditions.cat_guardian.armor": "Durabilité de l'armure : %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.stored_xp": "XP stockée : %s / %s",
+  "key.categories.vanillaplusadditions": "Vanilla+ Additions",
+  "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Afficher/masquer les surcouches Chat Gardien",
+  "message.vanillaplusadditions.cat_guardian.overlay_on": "Surcouches Chat Gardien : ACTIVÉ",
+  "message.vanillaplusadditions.cat_guardian.overlay_off": "Surcouches Chat Gardien : DÉSACTIVÉ",
+  "message.vanillaplusadditions.cat_guardian.station_full": "Impossible d'associer %s chat(s) car le bol est plein."
 }

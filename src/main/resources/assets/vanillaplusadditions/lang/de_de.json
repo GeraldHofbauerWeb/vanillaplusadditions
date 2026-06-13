@@ -42,7 +42,16 @@
   "container.vanillaplusadditions.cat_feeding_station": "Katzen-Futterstation",
   "container.vanillaplusadditions.cat_inventory": "Katzeninventar",
   "gui.vanillaplusadditions.cat_guardian.associated_cats": "Assoziierte Katzen: %s/%s",
+  "gui.vanillaplusadditions.cat_guardian.xp": "XP: %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.food": "Gefüttert: %s%%",
+  "gui.vanillaplusadditions.cat_guardian.armor": "Rüstungshaltbarkeit: %s / %s",
+  "gui.vanillaplusadditions.cat_guardian.stored_xp": "Gespeicherte XP: %s / %s",
+  "key.categories.vanillaplusadditions": "Vanilla+ Additions",
+  "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Katzen-Overlays umschalten",
+  "message.vanillaplusadditions.cat_guardian.overlay_on": "Katzen-Overlays: AN",
+  "message.vanillaplusadditions.cat_guardian.overlay_off": "Katzen-Overlays: AUS",
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",
   "message.vanillaplusadditions.cat_guardian.station_full": "%s Katze(n) konnten nicht assoziiert werden, da der Napf voll ist.",
-  "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden."
+  "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden.",
+  "gui.vanillaplusadditions.cat_guardian.cats_short": "Katzen: %s/%s"
 }

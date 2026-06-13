@@ -69,7 +69,23 @@ public final class CatGuardianGogglesClientHandler {
     private static final List<Cat> PENDING_CAT_OUTLINES = new ArrayList<>();
     private static final List<BlockPos> PENDING_RADIUS_POSITIONS = new ArrayList<>();
 
+    /**
+     * Master toggle for all goggle overlays (cats, targets, station radius + tooltip).
+     * Off by default — this is a debug/inspection view, enabled on demand via the keybind.
+     */
+    private static boolean overlaysEnabled = false;
+
     private CatGuardianGogglesClientHandler() { }
+
+    /** Flips the overlay master toggle and returns the new state. */
+    public static boolean toggleOverlays() {
+        overlaysEnabled = !overlaysEnabled;
+        return overlaysEnabled;
+    }
+
+    public static boolean isOverlaysEnabled() {
+        return overlaysEnabled;
+    }
 
     public static void onClientTick(Minecraft mc) {
         activeTooltip = null;
@@ -86,7 +102,8 @@ public final class CatGuardianGogglesClientHandler {
 
         long gameTime = mc.level.getGameTime();
 
-        // Block hit: bowl tooltip + refresh radius expiry
+        // Block hit: bowl/station "Associated Cats" tooltip — ALWAYS shown while wearing goggles
+        // (expected, non-intrusive info). The radius box below is part of the debug overlay.
         HitResult hitResult = mc.hitResult;
         if (hitResult instanceof BlockHitResult blockHitResult) {
             BlockEntity be = mc.level.getBlockEntity(blockHitResult.getBlockPos());
@@ -97,8 +114,15 @@ public final class CatGuardianGogglesClientHandler {
                 tooltip.add(Component.translatable(
                         "gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
                 activeTooltip = tooltip;
-                STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
+                if (overlaysEnabled) {
+                    STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
+                }
             }
+        }
+
+        // Everything below (cat outlines, target boxes, station radius) is the debug overlay.
+        if (!overlaysEnabled) {
+            return;
         }
 
         // Cone search for guardian cats (up to 20 blocks, ~14° cone)
@@ -109,7 +133,7 @@ public final class CatGuardianGogglesClientHandler {
         double bestDot = 0.93; // ~21° cone — small low cats are hard to look at precisely
         for (Cat cat : mc.level.getEntitiesOfClass(Cat.class,
                 mc.player.getBoundingBox().inflate(maxRange),
-                c -> CatGuardianModule.isGuardianCat(c))) {
+                c -> isOverlayCandidate(c, mc.player))) {
             Vec3 toCenter = cat.position().add(0, cat.getBbHeight() / 2.0, 0).subtract(eyePos);
             double dist = toCenter.length();
             if (dist < 0.5 || dist > maxRange) {
@@ -134,7 +158,7 @@ public final class CatGuardianGogglesClientHandler {
                 continue;
             }
             if (mc.level.getEntity(entry.getKey()) instanceof Cat cat
-                    && CatGuardianModule.isGuardianCat(cat)) {
+                    && isOverlayCandidate(cat, mc.player)) {
                 // Always outline the looked-at cat itself — confirmation it is recognised,
                 // even when it currently has no target.
                 if (!PENDING_CAT_OUTLINES.contains(cat)) {
@@ -165,6 +189,17 @@ public final class CatGuardianGogglesClientHandler {
 
     public static boolean isWearingGoggles(Player player) {
         return GogglesItem.isWearingGoggles(player);
+    }
+
+    /**
+     * Client-side overlay eligibility. The server-only CAT_BOWL_POS attachment is not synced to
+     * the client, so {@link CatGuardianModule#isGuardianCat} always returns false here. Instead we
+     * match the local player's own tame cats (owner UUID IS synced), which in practice are the
+     * guardian cats around the player's base. Non-guardian pets simply show an outline with no
+     * target box, which is harmless.
+     */
+    private static boolean isOverlayCandidate(Cat cat, Player player) {
+        return cat.isTame() && player.getUUID().equals(cat.getOwnerUUID());
     }
 
     @SubscribeEvent

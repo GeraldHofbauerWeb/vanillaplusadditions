@@ -33,30 +33,31 @@ public class CatFeedingStationMenu extends AbstractContainerMenu {
         super(CatGuardianModule.CAT_FEEDING_STATION_MENU.get(), id);
         this.blockEntity = be;
 
-        // Unified 9-wide grid: fish (cols 0-2) | gap (col 3) | loot (cols 4-8), 3 rows
+        // Unified 9-wide grid: fish (cols 0-2) | gap (col 3) | loot (cols 4-8), 3 rows.
+        // Slot rows start at y=34 to leave a 16px header strip for the stored-XP bar.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
                 addSlot(new SlotItemHandler(be.getInventory(), row * 3 + col,
-                        8 + col * 18, 18 + row * 18));
+                        8 + col * 18, 34 + row * 18));
             }
         }
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 5; col++) {
                 addSlot(new SlotItemHandler(be.getLootInventory(), row * 5 + col,
-                        80 + col * 18, 18 + row * 18));
+                        80 + col * 18, 34 + row * 18));
             }
         }
 
         // Player inventory (3 × 9)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 90 + row * 18));
+                addSlot(new Slot(playerInventory, col + row * 9 + 9, 8 + col * 18, 106 + row * 18));
             }
         }
 
         // Hotbar (1 × 9)
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(playerInventory, col, 8 + col * 18, 148));
+            addSlot(new Slot(playerInventory, col, 8 + col * 18, 164));
         }
     }
 

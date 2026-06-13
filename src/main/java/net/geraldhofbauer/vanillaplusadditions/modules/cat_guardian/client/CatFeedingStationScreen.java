@@ -18,19 +18,21 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             VanillaPlusAdditions.MODID, "textures/gui/cat_feeding_station.png");
 
-    // XP bar — header area between title (ends ~y=13) and first slot row (y=18)
+    // XP bar — dedicated 16px header strip between the title and the first slot row (y=34)
     private static final int XP_BAR_X      = 8;
-    private static final int XP_BAR_Y      = 14;
+    private static final int XP_BAR_Y      = 20;
     private static final int XP_BAR_WIDTH  = 160;
-    private static final int XP_BAR_HEIGHT = 4;
-    private static final int XP_BAR_BG     = 0xFF333333;
-    private static final int XP_BAR_COLOR  = 0xFF70D000;
+    private static final int XP_BAR_HEIGHT = 6;
+    private static final int BAR_BORDER    = 0xFF000000;
+    private static final int BAR_BG        = 0xFF2B2B2B;
+    private static final int BAR_XP        = 0xFF7BE018;
+    private static final int LABEL_COLOR   = 0x404040;
 
     public CatFeedingStationScreen(CatFeedingStationMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 172;
-        this.inventoryLabelY = 80;
+        this.imageHeight = 188;
+        this.inventoryLabelY = 96;
     }
 
     @Override
@@ -41,35 +43,34 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
         if (be != null) {
             int count = be.getAssociatedCats().size();
             int max = CatGuardianModule.getMaxCatsPerStation();
-            Component text = Component.translatable("gui.vanillaplusadditions.cat_guardian.associated_cats", count, max);
-            guiGraphics.drawString(this.font, text, 8, 70, 0x404040, false);
+            Component cats = Component.translatable(
+                    "gui.vanillaplusadditions.cat_guardian.cats_short", count, max);
+            // Place the count compactly to the right of the title (e.g. "Cat Feeding Station  Cats: 2/8")
+            int x = this.titleLabelX + this.font.width(this.title) + 8;
+            guiGraphics.drawString(this.font, cats, x, this.titleLabelY, LABEL_COLOR, false);
         }
     }
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
-        renderXpBar(guiGraphics);
-    }
 
-    private void renderXpBar(GuiGraphics guiGraphics) {
         CatFeedingStationBlockEntity be = menu.getBlockEntity();
         if (be == null) {
             return;
         }
         int cap = CatGuardianModule.getStationXpCapacity();
         int cur = be.getStoredXp();
-        int bx = leftPos + XP_BAR_X;
-        int by = topPos  + XP_BAR_Y;
-        guiGraphics.fill(bx, by, bx + XP_BAR_WIDTH, by + XP_BAR_HEIGHT, XP_BAR_BG);
-        if (cap <= 0 || cur <= 0) {
-            return;
+        float ratio = cap > 0 ? (float) cur / cap : 0f;
+
+        int x = leftPos + XP_BAR_X;
+        int y = topPos + XP_BAR_Y;
+        guiGraphics.fill(x - 1, y - 1, x + XP_BAR_WIDTH + 1, y + XP_BAR_HEIGHT + 1, BAR_BORDER);
+        guiGraphics.fill(x, y, x + XP_BAR_WIDTH, y + XP_BAR_HEIGHT, BAR_BG);
+        int filled = Math.max(0, Math.min(XP_BAR_WIDTH, Math.round(ratio * XP_BAR_WIDTH)));
+        if (filled > 0) {
+            guiGraphics.fill(x, y, x + filled, y + XP_BAR_HEIGHT, BAR_XP);
         }
-        int filled = (int) ((float) cur / cap * XP_BAR_WIDTH);
-        if (filled <= 0) {
-            return;
-        }
-        guiGraphics.fill(bx, by, bx + filled, by + XP_BAR_HEIGHT, XP_BAR_COLOR);
     }
 
     @Override
@@ -78,16 +79,15 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
         renderTooltip(guiGraphics, mouseX, mouseY);
 
         // XP bar tooltip
-        int bx = leftPos + XP_BAR_X;
-        int by = topPos  + XP_BAR_Y;
-        if (mouseX >= bx && mouseX <= bx + XP_BAR_WIDTH
-                && mouseY >= by && mouseY <= by + XP_BAR_HEIGHT) {
+        int x = leftPos + XP_BAR_X;
+        int y = topPos + XP_BAR_Y;
+        if (mouseX >= x - 1 && mouseX <= x + XP_BAR_WIDTH + 1
+                && mouseY >= y - 1 && mouseY <= y + XP_BAR_HEIGHT + 1) {
             CatFeedingStationBlockEntity be = menu.getBlockEntity();
             if (be != null) {
-                int cap = CatGuardianModule.getStationXpCapacity();
-                guiGraphics.renderTooltip(this.font,
-                        Component.literal(be.getStoredXp() + " / " + cap + " XP"),
-                        mouseX, mouseY);
+                guiGraphics.renderTooltip(this.font, Component.translatable(
+                        "gui.vanillaplusadditions.cat_guardian.stored_xp",
+                        be.getStoredXp(), CatGuardianModule.getStationXpCapacity()), mouseX, mouseY);
             }
         }
     }

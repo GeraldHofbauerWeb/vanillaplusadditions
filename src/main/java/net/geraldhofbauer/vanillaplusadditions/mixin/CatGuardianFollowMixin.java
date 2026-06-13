@@ -4,6 +4,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianM
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.world.entity.animal.Cat;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class CatGuardianFollowMixin {
 
     @Shadow
+    @Final
     private TamableAnimal tamable;
 
     @Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
