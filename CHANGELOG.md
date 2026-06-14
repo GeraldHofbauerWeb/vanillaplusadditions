@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.6] - 2026-06-14
+### Fixed
+- **Arm Target Overlay**: Falschen Namespace im `arm_goggles`-Item-Tag korrigiert (`create_aeronautics:aviators_goggles` → `aeronautics:aviators_goggles`). Die Aviator's Goggles aus *Create: Aeronautics* zählen damit wieder für das Arm Target Overlay, und der `TagLoader`-ERROR beim Server-Start ist behoben. Beide Tag-Einträge sind nun als `required: false` markiert (saubere Cross-Mod-Tags).
+
 ## [1.0.0-beta.5] - 2026-06-14
 ### Removed
 - **Cat Guardian Modul**: Redundanten `CatGuardianMaxUpStepMixin` entfernt. Der Mixin schlug beim Start ohnehin fehl (`maxUpStep` ist in `Cat` nur geerbt, nicht deklariert) und wurde durch das `STEP_HEIGHT`-Attribut (1.5) vollständig ersetzt. Beseitigt die Mixin-Warnung im Log; keine Verhaltensänderung beim Klettern.

@@ -1,6 +1,6 @@
 {
   "values": [
-    "create:goggles",
-    "create_aeronautics:aviators_goggles"
+    { "id": "create:goggles", "required": false },
+    { "id": "aeronautics:aviators_goggles", "required": false }
   ]
 }
