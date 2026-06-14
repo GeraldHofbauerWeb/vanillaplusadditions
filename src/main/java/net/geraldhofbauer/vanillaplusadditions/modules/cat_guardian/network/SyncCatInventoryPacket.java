@@ -16,7 +16,7 @@ public record SyncCatInventoryPacket(int entityId, ItemStack armorStack) impleme
     public static final StreamCodec<RegistryFriendlyByteBuf, SyncCatInventoryPacket> STREAM_CODEC =
             StreamCodec.composite(
                     ByteBufCodecs.INT, SyncCatInventoryPacket::entityId,
-                    ItemStack.STREAM_CODEC, SyncCatInventoryPacket::armorStack,
+                    ItemStack.OPTIONAL_STREAM_CODEC, SyncCatInventoryPacket::armorStack,
                     SyncCatInventoryPacket::new
             );
 

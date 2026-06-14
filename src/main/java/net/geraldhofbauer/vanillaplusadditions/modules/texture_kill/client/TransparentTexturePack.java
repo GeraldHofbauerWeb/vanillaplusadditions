@@ -19,8 +19,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class TransparentTexturePack extends AbstractPackResources {
     // MC 1.21.1 client resource pack format
@@ -53,8 +54,15 @@ public final class TransparentTexturePack extends AbstractPackResources {
     @Nullable
     @Override
     public IoSupplier<InputStream> getResource(PackType type, ResourceLocation location) {
-        if (type == PackType.CLIENT_RESOURCES && config.getKilledTextures().contains(location)) {
+        if (type != PackType.CLIENT_RESOURCES) {
+            return null;
+        }
+        if (config.getKilledTextures().contains(location)) {
             return () -> new ByteArrayInputStream(TRANSPARENT_PNG);
+        }
+        byte[] regionErased = TextureRegionEraser.CACHE.get(location);
+        if (regionErased != null) {
+            return () -> new ByteArrayInputStream(regionErased);
         }
         return null;
     }
@@ -69,6 +77,13 @@ public final class TransparentTexturePack extends AbstractPackResources {
                 output.accept(loc, () -> new ByteArrayInputStream(TRANSPARENT_PNG));
             }
         }
+        for (Map.Entry<ResourceLocation, byte[]> entry : TextureRegionEraser.CACHE.entrySet()) {
+            ResourceLocation loc = entry.getKey();
+            if (loc.getNamespace().equals(namespace) && loc.getPath().startsWith(path)) {
+                byte[] bytes = entry.getValue();
+                output.accept(loc, () -> new ByteArrayInputStream(bytes));
+            }
+        }
     }
 
     @Override
@@ -76,9 +91,10 @@ public final class TransparentTexturePack extends AbstractPackResources {
         if (type != PackType.CLIENT_RESOURCES) {
             return Set.of();
         }
-        return config.getKilledTextures().stream()
-            .map(ResourceLocation::getNamespace)
-            .collect(Collectors.toSet());
+        Set<String> namespaces = new HashSet<>();
+        config.getKilledTextures().forEach(loc -> namespaces.add(loc.getNamespace()));
+        TextureRegionEraser.CACHE.keySet().forEach(loc -> namespaces.add(loc.getNamespace()));
+        return namespaces;
     }
 
     @Override

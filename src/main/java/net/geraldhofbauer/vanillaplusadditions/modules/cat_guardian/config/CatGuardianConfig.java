@@ -94,4 +94,5 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     public int getXpPerBottle() {
         return xpPerBottle != null ? xpPerBottle.get() : 8;
     }
+
 }

@@ -141,6 +141,10 @@ public class CatInventoryMenu extends AbstractContainerMenu {
         return catXpCap;
     }
 
+    public Cat getCat() {
+        return cat;
+    }
+
     @Override
     public boolean stillValid(Player player) {
         if (cat == null || !cat.isAlive()) {
@@ -154,41 +158,6 @@ public class CatInventoryMenu extends AbstractContainerMenu {
 
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack result = ItemStack.EMPTY;
-        Slot slot = this.slots.get(index);
-        if (slot == null || !slot.hasItem()) {
-            return result;
-        }
-
-        ItemStack stack = slot.getItem();
-        result = stack.copy();
-
-        if (index < LOOT_END) {
-            // Armor or loot → move to player inventory
-            if (!moveItemStackTo(stack, PLAYER_START, HOTBAR_END, true)) {
-                return ItemStack.EMPTY;
-            }
-        } else {
-            // Player/hotbar → try armor slot if CatArmorItem, otherwise no valid target
-            if (stack.getItem() instanceof CatArmorItem) {
-                if (!moveItemStackTo(stack, 0, ARMOR_END, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else {
-                return ItemStack.EMPTY;
-            }
-        }
-
-        if (stack.isEmpty()) {
-            slot.set(ItemStack.EMPTY);
-        } else {
-            slot.setChanged();
-        }
-
-        if (stack.getCount() == result.getCount()) {
-            return ItemStack.EMPTY;
-        }
-        slot.onTake(player, stack);
-        return result;
+        return ItemStack.EMPTY;
     }
 }

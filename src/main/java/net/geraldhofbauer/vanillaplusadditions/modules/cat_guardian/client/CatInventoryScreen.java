@@ -6,6 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -96,6 +97,20 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
             float armorRatio = 1f - (float) armor.getDamageValue() / armor.getMaxDamage();
             drawBar(guiGraphics, leftPos + ARMOR_BAR_X, topPos + ARMOR_BAR_Y,
                     ARMOR_BAR_WIDTH, ARMOR_BAR_HEIGHT, armorRatio, ratioColor(armorRatio));
+        }
+
+        // Health text — centered in the horizontal gap between armor bar (ends X=25) and food bar (starts X=80)
+        Cat cat = menu.getCat();
+        if (cat != null) {
+            int hp = Math.round(cat.getHealth());
+            int maxHp = Math.round(cat.getMaxHealth());
+            String healthText = hp + "/" + maxHp + " ♥";
+            int tw = this.font.width(healthText);
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(leftPos + 52f, topPos + 36f, 0f);
+            guiGraphics.pose().scale(0.75f, 0.75f, 1f);
+            guiGraphics.drawString(this.font, healthText, -(int) (tw * 0.5f), 0, 0xFFFF4444, true);
+            guiGraphics.pose().popPose();
         }
     }
 

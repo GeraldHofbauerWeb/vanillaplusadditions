@@ -5,24 +5,22 @@ import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatGlowPacket;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatInventoryPacket;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.phys.BlockHitResult;
-import java.util.HashMap;
-import java.util.Map;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class CatGuardianClientEvents {
@@ -32,6 +30,9 @@ public final class CatGuardianClientEvents {
 
     // catEntityId → targetEntityId; populated by SyncCatTargetPacket
     static final Map<Integer, Integer> CAT_TARGET_MAP = new HashMap<>();
+
+    // catEntityId → [xp, xpCap]; populated by SyncCatStatsPacket
+    static final Map<Integer, int[]> CAT_XP_MAP = new HashMap<>();
 
     private CatGuardianClientEvents() { }
 
@@ -57,8 +58,8 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        // Ctrl+click → open cat inventory
-        if (Screen.hasControlDown() && mc.player.getUUID().equals(cat.getOwnerUUID())) {
+        // right-click (no Shift) → open cat inventory; Shift+right-click is left to Carry On
+        if (!Screen.hasShiftDown() && mc.player.getUUID().equals(cat.getOwnerUUID())) {
             event.setCanceled(true);
             PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
         }
@@ -120,6 +121,10 @@ public final class CatGuardianClientEvents {
             return;
         }
         cat.getData(CatGuardianModule.CAT_INVENTORY.get()).setArmor(packet.armorStack());
+    }
+
+    public static void handleSyncCatStats(SyncCatStatsPacket packet) {
+        CAT_XP_MAP.put(packet.catId(), new int[]{packet.xp(), packet.xpCap()});
     }
 
     public static void handleSyncCatTarget(SyncCatTargetPacket packet) {

@@ -10,59 +10,48 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatFeedingStationBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatInventoryData;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client.CatGuardianClientEvents;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatInventoryMenu;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client.CatGuardianClientEvents;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.OpenCatInventoryPacket;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatGlowPacket;
-import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatInventoryPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Unit;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.FollowOwnerGoal;
-import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.LeapAtTargetGoal;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
-import net.minecraft.world.entity.ai.goal.OcelotAttackGoal;
-import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.*;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.CraftingBookCategory;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.ShapedRecipe;
-import net.minecraft.world.item.crafting.ShapedRecipePattern;
+import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -73,31 +62,15 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
-import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
+import net.neoforged.neoforge.event.entity.living.*;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredHolder;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.registries.*;
 
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -457,9 +430,32 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatInventory(packet))
         );
 
+        event.registrar("1").playToClient(SyncCatStatsPacket.TYPE, SyncCatStatsPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatStats(packet))
+        );
+
         event.registrar("1").playToClient(net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.TYPE,
             net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.STREAM_CODEC,
             (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatTarget(packet))
+        );
+
+        event.registrar("1").playToServer(RequestCatStatsPacket.TYPE, RequestCatStatsPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> {
+                    if (!isModuleEnabled()) {
+                        return;
+                    }
+                    ServerPlayer player = (ServerPlayer) ctx.player();
+                    if (!(player.level().getEntity(packet.catId()) instanceof Cat cat)) {
+                        return;
+                    }
+                    if (player.distanceToSqr(cat) > 64.0 * 64.0) {
+                        return;
+                    }
+                    PacketDistributor.sendToPlayer(player, new SyncCatInventoryPacket(cat.getId(),
+                            cat.getData(CAT_INVENTORY.get()).getArmor()));
+                    PacketDistributor.sendToPlayer(player, new SyncCatStatsPacket(cat.getId(),
+                            cat.getData(CAT_XP.get()), getCatXpCapacity()));
+                })
         );
 
         event.registrar("1").playToServer(RequestCatGlowPacket.TYPE, RequestCatGlowPacket.STREAM_CODEC,
@@ -493,6 +489,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static void broadcastArmorSync(Cat cat) {
         ItemStack armor = cat.getData(CAT_INVENTORY.get()).getArmor();
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat, new SyncCatInventoryPacket(cat.getId(), armor));
+    }
+
+    static void broadcastStatsSync(Cat cat) {
+        int xp = cat.getData(CAT_XP.get());
+        int cap = getCatXpCapacity();
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat, new SyncCatStatsPacket(cat.getId(), xp, cap));
     }
 
     // ---- Cat join level — inject guard target goal + restore armor attribute ----
@@ -563,6 +565,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!armor.isEmpty()) {
             PacketDistributor.sendToPlayer(player, new SyncCatInventoryPacket(cat.getId(), armor));
         }
+        PacketDistributor.sendToPlayer(player,
+                new SyncCatStatsPacket(cat.getId(), cat.getData(CAT_XP.get()), getCatXpCapacity()));
         // Resync current combat target so the goggles overlay shows immediately when a player
         // approaches a cat that is already fighting.
         LivingEntity target = cat.getTarget();
@@ -815,6 +819,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         double vx = cat.getDeltaMovement().x;
         double vz = cat.getDeltaMovement().z;
         if (dir != null) {
+            // Don't jump unless there's a solid block to clear in the jump direction.
+            // If the block below the forward step is water, the "wall" is just a shallow bank —
+            // require ONE BLOCK HIGHER to be solid so the cat doesn't leap over water-edge banks
+            // it can simply walk out of. On dry land, the feet-level check is sufficient (fences,
+            // 1-block steps, etc.).
+            net.minecraft.core.Direction facing = net.minecraft.core.Direction.getNearest(dir.x, 0, dir.z);
+            BlockPos aheadFeet = cat.blockPosition().relative(facing);
+            boolean nearWaterEdge =
+                    cat.level().getFluidState(aheadFeet).is(net.minecraft.tags.FluidTags.WATER)
+                            || cat.level().getFluidState(aheadFeet.below()).is(net.minecraft.tags.FluidTags.WATER);
+            BlockPos checkPos = nearWaterEdge ? aheadFeet.above() : aheadFeet;
+            if (!cat.level().getBlockState(checkPos).isSolid()) {
+                return;
+            }
             vx = dir.x * 0.28;
             vz = dir.z * 0.28;
         }
@@ -832,6 +850,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isGuardianCat(cat) || !cat.isInWater()) {
             return;
         }
+        boolean submerged = cat.isUnderWater();
         LivingEntity target = cat.getTarget();
         net.minecraft.world.phys.Vec3 goalPos = null;
         boolean diveTarget = false;
@@ -848,6 +867,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
         }
         if (goalPos == null) {
+            // No goal — push upward so the cat can exit the water regardless of depth.
+            net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
+            cat.setDeltaMovement(v.x, Math.max(v.y, 0.42), v.z);
             return;
         }
         cat.getNavigation().stop(); // ground nav can't help in water; take manual control
@@ -862,14 +884,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     v.y * 0.6 + dir.y * 0.08,
                     v.z * 0.6 + dir.z * 0.06);
         } else {
-            // Swim at/near the surface toward the goal, strongly enough to overcome the current
-            // (water flow pushes ~0.014/tick; 0.11 dominates it).
+            // Swim toward the goal. Always apply strong upward force (0.42 = 1-block jump) so the
+            // cat exits water even from the floor. Apply horizontal steering separately so the Y
+            // force fires even when the goal is directly above (flat direction near-zero).
             net.minecraft.world.phys.Vec3 flat =
                     new net.minecraft.world.phys.Vec3(goalPos.x - cat.getX(), 0, goalPos.z - cat.getZ());
+            double hx = 0, hz = 0;
             if (flat.lengthSqr() > 1.0E-3) {
                 flat = flat.normalize();
-                cat.setDeltaMovement(flat.x * 0.11, Math.max(v.y, 0.04), flat.z * 0.11);
+                // When submerged prioritise surfacing (gentle horizontal so upward wins);
+                // when at the surface push harder horizontally to clear the bank.
+                double hSpeed = submerged ? 0.07 : 0.11;
+                hx = flat.x * hSpeed;
+                hz = flat.z * hSpeed;
             }
+            cat.setDeltaMovement(hx, Math.max(v.y, 0.42), hz);
         }
     }
 
@@ -904,16 +933,23 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (refPos == null) {
                 catNavRefPos.put(uid, curPos);
                 catNavRefAge.put(uid, 0);
-            } else if (age >= 60) {
+            } else if (age >= 3) {
                 if (curPos.distanceToSqr(refPos) < 1.0) {
-                    // Moved less than 1 block in 60 ticks — spinning or trapped
+                    // Moved less than 1 block in 30 ticks — spinning or trapped
                     cat.getNavigation().stop();
                     LivingEntity stuckTarget = cat.getTarget();
                     boolean aquatic = stuckTarget != null
                             && (stuckTarget.isInWater() || stuckTarget.isUnderWater());
                     // Aquatic targets are pursued by manual dive steering, not navigation —
                     // keep the target. Only abandon genuinely-stuck land targets.
-                    if (!aquatic) {
+                    if (!aquatic && stuckTarget != null) {
+                        // Blacklist so the goal doesn't immediately re-select the same mob
+                        cat.targetSelector.getAvailableGoals().stream()
+                                .map(pg -> pg.getGoal())
+                                .filter(g -> g instanceof CatGuardTargetGoal)
+                                .map(g -> (CatGuardTargetGoal) g)
+                                .findFirst()
+                                .ifPresent(g -> g.blockTarget(stuckTarget));
                         cat.setTarget(null);
                     }
                 }
@@ -934,15 +970,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
         }
 
-        // When in water without an active aquatic target, push the cat upward so it can
-        // exit the water. RandomSwimmingGoal was removed because it fights directed navigation
-        // (priority 0 vs GuardianCatAttackGoal priority 4); FloatGoal (vanilla) handles
-        // idle floating; directed nav handles pursuit paths through water.
-        if (cat.isInWater() && !targetUnderwater) {
-            cat.setDeltaMovement(
-                    cat.getDeltaMovement().x,
-                    Math.max(cat.getDeltaMovement().y, 0.12),
-                    cat.getDeltaMovement().z);
+        // Extra water-exit impulse every 10 ticks (steerThroughWater handles the per-tick push,
+        // this adds a second push on the same tick to help the cat clear the bank faster).
+        if (cat.isInWater() && !targetUnderwater && cat.isUnderWater()) {
+            // Dampen horizontal so the cat rises rather than hugging the floor sideways.
+            net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
+            cat.setDeltaMovement(vm.x * 0.6, Math.max(vm.y, 0.42), vm.z * 0.6);
         }
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
@@ -965,6 +998,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (atBase) {
                 // Heal at base; resume duty once safely recovered
                 cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                AbstractCatBowlBlockEntity fleeingBowl = getBowlEntity(cat, bowlPos);
+                if (fleeingBowl instanceof CatFeedingStationBlockEntity fleeingStation) {
+                    transferLootToStation(cat, fleeingStation);
+                }
                 if (healthPct > 0.40f) {
                     cat.setData(CAT_FLEEING.get(), false);
                 } else if (!cat.isOrderedToSit()) {
@@ -996,6 +1033,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (distSqToBowl <= 16.0 || returningAge >= 200) {
                 cat.setData(CAT_RETURNING.get(), false);
                 catReturningAge.remove(uid);
+                if (distSqToBowl <= 16.0) {
+                    AbstractCatBowlBlockEntity returnBowl = getBowlEntity(cat, bowlPos);
+                    if (returnBowl instanceof CatFeedingStationBlockEntity returnStation) {
+                        transferLootToStation(cat, returnStation);
+                    }
+                }
             } else {
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
             }
@@ -1018,8 +1061,16 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     if (cat.getNavigation().isDone()) {
                         cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
                     }
-                } else if (!cat.isOrderedToSit()) {
-                    cat.setOrderedToSit(true);
+                } else {
+                    // At the station — deposit loot while idling (no fetch trigger here;
+                    // fetch is only triggered from the natural return/eat/flee events)
+                    AbstractCatBowlBlockEntity idleBowl = getBowlEntity(cat, bowlPos);
+                    if (idleBowl instanceof CatFeedingStationBlockEntity idleStation) {
+                        transferLootToStation(cat, idleStation);
+                    }
+                    if (!cat.isOrderedToSit()) {
+                        cat.setOrderedToSit(true);
+                    }
                 }
             }
             return;
@@ -1080,6 +1131,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (toTransfer > 0) {
                 station.addStoredXp(toTransfer);
                 cat.setData(CAT_XP.get(), catXp - toTransfer);
+                broadcastStatsSync(cat);
             }
         }
 
@@ -1208,6 +1260,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             invData.setArmor(ItemStack.EMPTY);
             removeArmorAttribute(cat);
         }
+        broadcastArmorSync(cat);
 
         // Retaliation: if hit by a hostile mob, immediately switch target to attacker
         if (!cat.level().isClientSide() && isGuardianCat(cat)) {
@@ -1293,9 +1346,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         CatInventoryData catInv = cat.getData(CAT_INVENTORY.get());
         var lootHandler = catInv.getInventory();
 
-        Iterator<net.minecraft.world.entity.item.ItemEntity> iter = event.getDrops().iterator();
+        Iterator<ItemEntity> iter = event.getDrops().iterator();
         while (iter.hasNext()) {
-            net.minecraft.world.entity.item.ItemEntity itemEntity = iter.next();
+            ItemEntity itemEntity = iter.next();
             ItemStack drop = itemEntity.getItem().copy();
             for (int slot = CatInventoryData.LOOT_START; slot < CatInventoryData.TOTAL_SLOTS; slot++) {
                 drop = lootHandler.insertItem(slot, drop, false);
@@ -1335,6 +1388,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         int absorbed = Math.min(xp, canAbsorb);
         cat.setData(CAT_XP.get(), current + absorbed);
+        broadcastStatsSync(cat);
         event.setDroppedExperience(xp - absorbed);
     }
 
@@ -1563,17 +1617,16 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 return false;
             }
 
-            // Every 20 ticks: if the cat is >4 blocks away and navigation is idle,
-            // the target is probably unreachable. Allow 8 consecutive checks (~8 s)
-            // so cats have time to navigate complex indoor paths (stairs, corridors)
-            // without hanging on a truly unreachable mob for too long.
-            // Aquatic targets: skip the navIdle check since swimming nav is slower.
+            // Every 20 ticks: if the cat is still >4 blocks from the target (whether nav is
+            // idle OR actively running but not closing the gap), count it as potentially
+            // unreachable. After 6 consecutive checks (~6 s total) without getting close,
+            // blacklist the target and switch to an alternative or abort.
+            // Aquatic targets are exempt — swimming nav is slower and the cat dives for them.
             if (cat.tickCount % 20 == 0) {
                 boolean tooFar = cat.distanceToSqr(target) > 16.0;
-                boolean navIdle = cat.getNavigation().isDone();
                 boolean targetInWater = target.isInWater();
-                if (tooFar && navIdle && !targetInWater) {
-                    if (++unreachableChecks >= 8) {
+                if (tooFar && !targetInWater) {
+                    if (++unreachableChecks >= 6) {
                         unreachableChecks = 0;
                         blacklist(target); // prevent immediately re-selecting this mob
                         long bowlLong = cat.getData(CAT_BOWL_POS.get());
@@ -1594,6 +1647,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 }
             }
             return true;
+        }
+
+        void blockTarget(LivingEntity target) {
+            blacklist(target);
+            unreachableChecks = 0;
         }
 
         void retaliateAgainst(LivingEntity attacker) {

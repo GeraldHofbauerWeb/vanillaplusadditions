@@ -13,6 +13,7 @@ import net.minecraft.server.packs.repository.PackSource;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 import java.util.Optional;
@@ -47,5 +48,14 @@ public final class TextureKillClientEvents {
         if (pack != null) {
             event.addRepositorySource(consumer -> consumer.accept(pack));
         }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
+        Module mod = ModuleManager.getInstance().getModule("texture_kill");
+        if (!(mod instanceof TextureKillModule module) || !module.isModuleEnabled()) {
+            return;
+        }
+        event.registerReloadListener(new TextureRegionEraser(module.getConfig()));
     }
 }
