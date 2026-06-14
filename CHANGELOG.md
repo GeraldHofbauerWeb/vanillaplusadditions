@@ -4,6 +4,41 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.4] - 2026-06-14
+### Fixed
+- **Cat Guardian Modul**:
+  - **Teleport-Bug endgültig behoben**: Wächterkatzen teleportieren sich nicht mehr zum Besitzer. Neben dem `FollowOwnerGoal` wird nun auch der Panik-Teleport (`TamableAnimalPanicGoal`, Priorität 1) unterbunden, der bisher im Kampf – besonders auf Dedicated Servern, wenn der Besitzer weit weg war – auslöste. Zusätzlicher Mixin auf `TamableAnimal.shouldTryTeleportToOwner()` blockiert beide Quellen an der Wurzel.
+  - **Schwimmen gegen die Strömung**: Katzen schwimmen jetzt aktiv Richtung Ziel bzw. zurück zum Napf, statt von fließendem Wasser abgetrieben zu werden.
+  - **Pathfinding**: Sprung- und Antriebsrichtung folgen dem nächsten Pfad-Knoten statt der Luftlinie zum Ziel (Pfad und Ziel weichen oft ab). Katzen werden nicht mehr in Richtung unerreichbarer Ziele gezogen (Endknoten-Distanz-Gate).
+  - **Zäune**: Wächterkatzen können jetzt über Zäune navigieren (`canWalkOverFences` + 1.5 Stufenhöhe), wodurch kürzere Routen durch die Basis gefunden werden.
+### Added
+- **Cat Guardian Modul**: Wächterkatzen töten Creeper sofort (lore-konform – Creeper fürchten Katzen; keine Explosion). Der Instakill greift jedoch nur auf unter 1 Block Reichweite, also kein „Fernkill".
+### Changed
+- **Cat Guardian Modul**: Standard-`guard_radius` von 64 auf 32 gesenkt (Maximum bleibt 128).
+
+## [1.0.0-beta.3] - 2026-06-14
+### Fixed
+- **Cat Guardian Modul**:
+  - **Goggles-Overlay** zeigt Ziel und Katze jetzt zuverlässig an – die client-seitige Wächter-Erkennung hängt nicht mehr am nicht-synchronisierten `CAT_BOWL_POS`-Attachment.
+  - **XP-Sammeln** funktioniert: von Katzen getötete Mobs droppen XP (Gutschrift an den Besitzer via `setLastHurtByPlayer`), die in den Katzen-Puffer und an der Station in XP-Flaschen umgewandelt wird.
+  - **Targeting** ist auf die Guard-Zone begrenzt (Ziel- und Reisedistanz, schnelleres Aufgeben unerreichbarer Mobs, radiusbegrenzte Vergeltung); sauberes Heimkehren von außerhalb ohne Oszillation.
+  - **Klettern & Tauchen**: Katzen überwinden zuverlässig ~1,5-Block-Stufen (Step-Height-Attribut + Sprung-Assist) und tauchen Unterwasser-Zielen nach (3D-Steering + Wasseratmung).
+### Added
+- **Cat Guardian Modul**: Umschaltbares Debug-Overlay per rebindbarem Keybind (Standard: Numpad +; Overlays standardmäßig aus). XP-Leisten in Station- und Katzen-UI, „Associated Cats"-Tooltip beim Anschauen einer Station.
+- **Übersetzungen**: Neue Sprachen **de_AT** (österreichischer Dialekt) und **cs_CZ** (Tschechisch); **es_ES** und **fr_FR** vervollständigt. Alle Locales decken jetzt alle Keys ab.
+### Changed
+- **Cat Guardian Modul**: GUIs an den Station-Stil angeglichen – rechtsbündiges 5-Slot-Loot-Grid (bündig mit dem Spielerinventar), umrandete Bars mit Tooltips, eigener Header-Streifen für die XP-Leiste, durchlaufende Separator-Linien entfernt.
+
+## [1.0.0-beta.2] - 2026-06-13
+### Fixed
+- **Cat Guardian Modul**:
+  - **Wasser-Targeting**: Katzen greifen jetzt auch Mobs im Wasser an (z. B. Drowned) und bleiben dabei nicht mehr stecken.
+  - Katzen kehren nach dem Verlust aller Ziele zuverlässig zur Basis zurück.
+### Added
+- **Cat Guardian Modul**: XP-System mit Leisten in den UIs; asymmetrischer Wachradius (separater XZ- und Y-Radius).
+### Changed
+- **Cat Guardian Modul**: Goggles-Overlay wird über die Blickrichtung mit 15-Sekunden-Timeout aktiviert (statt Klick-Toggle); Standard-Wachradius angepasst.
+
 ## [1.0.0-beta] - 2026-06-12
 ### Added
 - **Cat Guardian Modul**:

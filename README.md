@@ -46,6 +46,34 @@ Enhances food items with additional potion effects and thirst restoration.
 - Different settings based on Y-Levels or Nether/End dimensions
 - TODO - Better levels configuration (for twilight forest, etc.)
 
+### 🐱 Cat Guardian
+
+Turns tamed cats into active base defenders, with food bowls and an automatable feeding station.
+
+- **Cat Bowls & Feeding Station**: Associate tamed cats with a bowl (shift-right-click). Fed cats (fish) actively guard the area and attack hostile mobs within the guard radius (default 32 blocks XZ / 16 Y, configurable).
+- **Cat Armor**: Iron, Gold, Diamond and Netherite — increase attack damage and absorb incoming damage.
+- **Loot & XP Collection**: Cats gather drops from kills into an internal inventory; XP from their kills is buffered and, at a feeding station, converted into Bottles o' Enchanting (hopper/Create-automatable).
+- **Smart Guard AI**:
+  - Returns to base after combat and re-engages nearby threats; low-health cats flee home to heal (and ignore mobs until safe).
+  - Dives after underwater mobs (e.g. Drowned) with water breathing, and swims against currents toward its goal.
+  - Climbs ~1.5-block ledges and walks over fences to reach targets / get home.
+  - **Creepers are one-shot** at point-blank range (they fear cats, lore-friendly) — no explosion.
+  - Never teleports to its owner while on guard duty.
+- **Engineering Goggles overlay** (Create): looking at a guardian cat outlines the cat and its current target; looking at a bowl/station shows the associated-cat count (and, when enabled, the guard radius). Toggle the boxes with a rebindable keybind (default Numpad +).
+- **Cat Inventory GUI** (ctrl-click): equip armor, view food/XP/armor bars.
+- Fully localized (EN, DE, DE-AT dialect, ES, FR, CS).
+
+### 🐺 Battle Dogs
+
+- **Wolf Armor**: Iron, Gold, Diamond and Netherite, rendered by the vanilla wolf armor layer.
+- Increases the wolf's attack damage by material tier.
+- Equip by right-click, remove with shears.
+
+### 🐟 Flying Fish
+
+- A new aquatic mob with spawn egg, bucket, and cooked food variant.
+- **Flying Fish Boots**: skim faster across the water surface and gain short leaps while sprinting on water.
+
 ### 🪦 Death Coords Logger
 
 - Logs player death coordinates to
