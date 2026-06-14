@@ -31,7 +31,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
                 .defineInRange("fed_duration_ticks", 6000, 20, 144000);
         guardRadius = builder
                 .comment("Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs")
-                .defineInRange("guard_radius", 64.0D, 2.0D, 128.0D);
+                .defineInRange("guard_radius", 32.0D, 2.0D, 128.0D);
         guardRadiusY = builder
                 .comment("Vertical radius (blocks, Y) around the associated bowl — cats ignore mobs further away vertically")
                 .defineInRange("guard_radius_y", 16.0D, 2.0D, 128.0D);
@@ -64,7 +64,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     }
 
     public double getGuardRadius() {
-        return guardRadius != null ? guardRadius.get() : 64.0D;
+        return guardRadius != null ? guardRadius.get() : 32.0D;
     }
 
     public double getGuardRadiusY() {

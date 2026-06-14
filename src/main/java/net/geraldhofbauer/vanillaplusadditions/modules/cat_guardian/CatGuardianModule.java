@@ -262,6 +262,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private final Map<UUID, Integer> catNavRefAge = new HashMap<>();
     // Accumulated ticks a cat has spent in the ordinary (interruptible) returning state.
     private final Map<UUID, Integer> catReturningAge = new HashMap<>();
+    // Throttled cache of a cat's computed path toward its goal (for stuck-drive direction + reach).
+    private final Map<UUID, net.minecraft.world.level.pathfinder.Path> catGoalPath = new HashMap<>();
+    private final Map<UUID, Integer> catGoalPathTick = new HashMap<>();
 
     // Maps dead entity ID → guardian cat entity ID; used to redirect XP to the cat.
     // Populated in onLivingDrops, consumed in onExperienceDrop (same death tick).
@@ -292,7 +295,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     public static double getGuardRadius() {
-        return instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+        return instance != null ? instance.getConfig().getGuardRadius() : 32.0;
     }
 
     public static double getGuardRadiusY() {
@@ -636,10 +639,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
-        // Per-tick dive steering: ground navigation can't path underwater, so manually
-        // steer the cat in 3D toward an aquatic target. Runs every tick (not just %10)
-        // for smooth descent and pursuit.
-        steerTowardAquaticTarget(cat);
+        // Per-tick water steering: ground navigation can't path through water and the current
+        // sweeps the cat away, so manually swim toward the goal (dive for underwater targets).
+        steerThroughWater(cat);
 
         // When the ground pathfinder gives up before a climbable ledge, nudge the cat toward
         // its goal so it walks into the ledge — then the jump assist below lifts it over.
@@ -669,17 +671,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!cat.getNavigation().isDone()) {
             return; // navigation is handling movement
         }
-        net.minecraft.world.phys.Vec3 goal = null;
-        LivingEntity target = cat.getTarget();
-        if (target != null) {
-            goal = target.position();
-        } else {
-            long bowlLong = cat.getData(CAT_BOWL_POS.get());
-            if (bowlLong != Long.MIN_VALUE) {
-                BlockPos b = BlockPos.of(bowlLong);
-                goal = new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY(), b.getZ() + 0.5);
-            }
-        }
+        net.minecraft.world.phys.Vec3 goal = currentGoalPos(cat);
         if (goal == null) {
             return;
         }
@@ -689,14 +681,108 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (dx * dx + dy * dy + dz * dz < 4.0) {
             return; // close enough — let normal idle/attack logic take over
         }
-        double horiz = Math.sqrt(dx * dx + dz * dz);
-        if (horiz < 0.6) {
-            return; // goal is essentially straight up/down — a nudge can't help
+
+        net.minecraft.world.level.pathfinder.Path path = goalPath(cat, goal.x, goal.y, goal.z);
+        // Only drive if the path's closest reachable point is within jump range of the goal (i.e. a
+        // climbable ledge). If it ends far from the goal — a truly unreachable target (mob on the
+        // ceiling) OR a bowl walled off from this side — don't bee-line the cat into the obstacle;
+        // let the blacklist switch the target / let navigation take the real route.
+        if (!endNodeNear(path, goal, 2.5)) {
+            return;
+        }
+
+        // Follow the PATH's next node, not the straight line to the goal — path and target often
+        // diverge (the route goes around obstacles, up a side ledge, etc.).
+        net.minecraft.world.phys.Vec3 dir = pathDir(cat, path);
+        if (dir == null) {
+            double horiz = Math.sqrt(dx * dx + dz * dz);
+            if (horiz < 0.6) {
+                return; // no path step and goal is straight up/down — a nudge can't help
+            }
+            dir = new net.minecraft.world.phys.Vec3(dx / horiz, 0, dz / horiz);
         }
         net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        cat.setDeltaMovement(dx / horiz * 0.13, v.y, dz / horiz * 0.13);
-        cat.getLookControl().setLookAt(goal.x, goal.y, goal.z);
+        cat.setDeltaMovement(dir.x * 0.13, v.y, dir.z * 0.13);
+        cat.getLookControl().setLookAt(cat.getX() + dir.x, cat.getEyeY(), cat.getZ() + dir.z);
         cat.hasImpulse = true;
+    }
+
+    /** The cat's current movement goal: its combat target if any, else its bowl. Null if neither. */
+    private net.minecraft.world.phys.Vec3 currentGoalPos(Cat cat) {
+        LivingEntity target = cat.getTarget();
+        if (target != null) {
+            return target.position();
+        }
+        long bowlLong = cat.getData(CAT_BOWL_POS.get());
+        if (bowlLong != Long.MIN_VALUE) {
+            BlockPos b = BlockPos.of(bowlLong);
+            return new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY(), b.getZ() + 0.5);
+        }
+        return null;
+    }
+
+    /** Throttled path toward a goal position (A* is costly), recomputed at most every 10 ticks. */
+    private net.minecraft.world.level.pathfinder.Path goalPath(Cat cat, double gx, double gy, double gz) {
+        UUID uid = cat.getUUID();
+        int now = cat.tickCount;
+        Integer last = catGoalPathTick.get(uid);
+        if (last == null || now - last >= 10) {
+            catGoalPath.put(uid, cat.getNavigation().createPath(gx, gy, gz, 0));
+            catGoalPathTick.put(uid, now);
+        }
+        return catGoalPath.get(uid);
+    }
+
+    /** True if the path's closest reachable end node is within {@code maxDist} of the goal. */
+    private boolean endNodeNear(net.minecraft.world.level.pathfinder.Path path,
+                                net.minecraft.world.phys.Vec3 goal, double maxDist) {
+        if (path == null) {
+            return false;
+        }
+        net.minecraft.world.level.pathfinder.Node end = path.getEndNode();
+        if (end == null) {
+            return false;
+        }
+        double dx = (end.x + 0.5) - goal.x;
+        double dy = end.y - goal.y;
+        double dz = (end.z + 0.5) - goal.z;
+        return dx * dx + dy * dy + dz * dz <= maxDist * maxDist;
+    }
+
+    /** Horizontal direction toward the first path node meaningfully ahead of the cat; null if none. */
+    private net.minecraft.world.phys.Vec3 pathDir(Cat cat, net.minecraft.world.level.pathfinder.Path path) {
+        if (path == null) {
+            return null;
+        }
+        for (int i = path.getNextNodeIndex(); i < path.getNodeCount(); i++) {
+            net.minecraft.world.level.pathfinder.Node n = path.getNode(i);
+            double dx = (n.x + 0.5) - cat.getX();
+            double dz = (n.z + 0.5) - cat.getZ();
+            if (dx * dx + dz * dz > 0.25) {
+                return new net.minecraft.world.phys.Vec3(dx, 0, dz).normalize();
+            }
+        }
+        return null;
+    }
+
+    /** Direction the cat should currently head toward its goal, preferring pathfinding over bee-line. */
+    private net.minecraft.world.phys.Vec3 goalDir(Cat cat) {
+        net.minecraft.world.phys.Vec3 d = pathDir(cat, cat.getNavigation().getPath());
+        if (d != null) {
+            return d;
+        }
+        net.minecraft.world.phys.Vec3 goal = currentGoalPos(cat);
+        if (goal == null) {
+            return null;
+        }
+        d = pathDir(cat, goalPath(cat, goal.x, goal.y, goal.z));
+        if (d != null) {
+            return d;
+        }
+        double dx = goal.x - cat.getX();
+        double dz = goal.z - cat.getZ();
+        double horiz = Math.sqrt(dx * dx + dz * dz);
+        return horiz > 0.6 ? new net.minecraft.world.phys.Vec3(dx / horiz, 0, dz / horiz) : null;
     }
 
     /**
@@ -722,49 +808,69 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
-        // Direction toward the next path node (preferred) or the current target — the wall has
-        // killed the cat's horizontal velocity, so re-supply forward momentum for the hop.
-        net.minecraft.world.phys.Vec3 dir = null;
-        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
-        if (path != null && !path.isDone()) {
-            dir = path.getNextEntityPos(cat).subtract(cat.position());
-        } else if (cat.getTarget() != null) {
-            dir = cat.getTarget().position().subtract(cat.position());
-        }
-
+        // Hop along the PATHFINDING direction (next path node), not the bee-line to the target —
+        // the wall has killed the cat's horizontal velocity, so re-supply forward momentum that
+        // follows the actual route (which often diverges from the straight line to the target).
+        net.minecraft.world.phys.Vec3 dir = goalDir(cat);
         double vx = cat.getDeltaMovement().x;
         double vz = cat.getDeltaMovement().z;
         if (dir != null) {
-            net.minecraft.world.phys.Vec3 flat = new net.minecraft.world.phys.Vec3(dir.x, 0, dir.z);
-            if (flat.lengthSqr() > 1.0E-3) {
-                flat = flat.normalize().scale(0.28);
-                vx = flat.x;
-                vz = flat.z;
-            }
+            vx = dir.x * 0.28;
+            vz = dir.z * 0.28;
         }
         cat.setDeltaMovement(vx, 0.5, vz); // peak ≈ 1.5 blocks, with forward carry onto the ledge
         cat.hasImpulse = true;
     }
 
-    /** Manually drives a guardian cat toward an underwater target, including downward descent. */
-    private void steerTowardAquaticTarget(Cat cat) {
+    /**
+     * Manually steers a guardian cat through water toward its goal — ground navigation is useless
+     * in water, and flowing water otherwise sweeps the cat away. Dives toward an underwater target,
+     * otherwise swims at/near the surface toward the target or back to its bowl, with enough force
+     * to beat the current.
+     */
+    private void steerThroughWater(Cat cat) {
+        if (!isGuardianCat(cat) || !cat.isInWater()) {
+            return;
+        }
         LivingEntity target = cat.getTarget();
-        if (target == null || !cat.isInWater()) {
+        net.minecraft.world.phys.Vec3 goalPos = null;
+        boolean diveTarget = false;
+        if (target != null) {
+            goalPos = target.getEyePosition();
+            diveTarget = target.isInWater() || target.isUnderWater();
+        } else {
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong != Long.MIN_VALUE) {
+                BlockPos b = BlockPos.of(bowlLong);
+                if (cat.distanceToSqr(b.getX() + 0.5, b.getY(), b.getZ() + 0.5) > 4.0) {
+                    goalPos = new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY() + 0.5, b.getZ() + 0.5);
+                }
+            }
+        }
+        if (goalPos == null) {
             return;
         }
-        if (!target.isInWater() && !target.isUnderWater()) {
-            return;
-        }
-        cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 40, 0, false, false));
-        net.minecraft.world.phys.Vec3 dir = target.getEyePosition().subtract(cat.position()).normalize();
+        cat.getNavigation().stop(); // ground nav can't help in water; take manual control
+
         net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        // Blend current velocity toward the target in all three axes; the Y term allows
-        // the cat to dive down, overriding the surface buoyancy applied in tickCat.
-        cat.setDeltaMovement(
-                v.x * 0.6 + dir.x * 0.06,
-                v.y * 0.6 + dir.y * 0.08,
-                v.z * 0.6 + dir.z * 0.06);
-        cat.getNavigation().stop(); // ground nav is useless underwater; take manual control
+        if (diveTarget) {
+            // Dive in 3D toward the submerged target (Y descent overrides the surface buoyancy).
+            cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 40, 0, false, false));
+            net.minecraft.world.phys.Vec3 dir = goalPos.subtract(cat.position()).normalize();
+            cat.setDeltaMovement(
+                    v.x * 0.6 + dir.x * 0.06,
+                    v.y * 0.6 + dir.y * 0.08,
+                    v.z * 0.6 + dir.z * 0.06);
+        } else {
+            // Swim at/near the surface toward the goal, strongly enough to overcome the current
+            // (water flow pushes ~0.014/tick; 0.11 dominates it).
+            net.minecraft.world.phys.Vec3 flat =
+                    new net.minecraft.world.phys.Vec3(goalPos.x - cat.getX(), 0, goalPos.z - cat.getZ());
+            if (flat.lengthSqr() > 1.0E-3) {
+                flat = flat.normalize();
+                cat.setDeltaMovement(flat.x * 0.11, Math.max(v.y, 0.04), flat.z * 0.11);
+            }
+        }
     }
 
     private void tickCat(Cat cat) {
@@ -779,6 +885,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             catNavRefAge.remove(uid);
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
+        }
+
+        // Let guardian cats path over fences (1.5 high) — their raised step height + jump assist
+        // climb them physically, and otherwise the pathfinder rejects fence nodes outright, hiding
+        // shorter routes through the base. Guardian-only so penned pet cats stay contained.
+        if (cat.getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation gpn) {
+            gpn.setCanWalkOverFences(true);
         }
 
         // Stuck detection: every 60 ticks check net displacement while nav is active.
@@ -1147,6 +1260,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         // Pre-record XP redirection so it is set before death regardless of event ordering.
         pendingXpCapture.put(victim.getId(), cat.getId());
+
+        // Creepers fear cats — give that a real consequence: a guardian cat one-shots a creeper,
+        // killing it before its fuse can ignite (no explosion). Loot/XP still drop (owner credited).
+        if (victim instanceof net.minecraft.world.entity.monster.Creeper) {
+            event.setNewDamage(Math.max(event.getNewDamage(), victim.getHealth() + 1000.0f));
+        }
     }
 
     // ---- Cat loot collection ----
@@ -1304,8 +1423,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     && !this.mob.getSensing().hasLineOfSight(entity)) {
                 return false;
             }
-            // ~3.3-block reach vs zombies: wider than vanilla (~1.4 blocks)
-            double reach = this.mob.getBbWidth() * 2.0 + entity.getBbWidth() + 1.5;
+            // Creepers are one-shot on hit, so keep that strictly point-blank (<1 block) — no
+            // cheaty ranged kill; the cat must actually get right next to the creeper. Other mobs
+            // keep the wider ~3.3-block reach (vs zombies etc.).
+            double reach = entity instanceof net.minecraft.world.entity.monster.Creeper
+                    ? 1.0
+                    : this.mob.getBbWidth() * 2.0 + entity.getBbWidth() + 1.5;
             return this.mob.distanceToSqr(entity.getX(), entity.getY(), entity.getZ()) <= reach * reach;
         }
     }
@@ -1320,8 +1443,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isGuardianCat(cat)) {
             return;
         }
+        // Remove BOTH owner-teleport sources: FollowOwnerGoal (priority 6) and the panic goal
+        // (TamableAnimal.TamableAnimalPanicGoal, priority 1) — the latter teleports a hurt cat to
+        // a far-away owner mid-combat. Our own CAT_FLEEING logic replaces vanilla panic.
         cat.goalSelector.getAvailableGoals().stream()
-                .filter(w -> w.getGoal() instanceof FollowOwnerGoal)
+                .filter(w -> w.getGoal() instanceof FollowOwnerGoal
+                          || w.getGoal() instanceof net.minecraft.world.entity.ai.goal.PanicGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList()
                 .forEach(cat.goalSelector::removeGoal);
@@ -1360,7 +1487,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return false;
         }
         BlockPos bowl = BlockPos.of(bowlLong);
-        double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+        double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
         double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
         return Math.abs(x - (bowl.getX() + 0.5)) <= radius + buffer
                 && Math.abs(z - (bowl.getZ() + 0.5)) <= radius + buffer
@@ -1492,7 +1619,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
 
         private LivingEntity findAlternative(BlockPos bowlPos, LivingEntity excluded) {
-            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+            double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
             double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
             AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
             List<Monster> hostiles = cat.level().getEntitiesOfClass(
@@ -1530,7 +1657,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
 
         private boolean findAndSetTarget(BlockPos bowlPos) {
-            double radius = instance != null ? instance.getConfig().getGuardRadius() : 64.0;
+            double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
             double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
             AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
             List<Monster> hostiles = cat.level().getEntitiesOfClass(
