@@ -528,8 +528,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
 
         // Raise step height to 1.5 so cats actually climb the 1.5-block ledges the pathfinder
-        // considers walkable (the maxUpStep mixin is best-effort; the attribute is authoritative
-        // and is read by both the WalkNodeEvaluator and the movement code). Vanilla cats are 0.6.
+        // considers walkable. The STEP_HEIGHT attribute is the authoritative source — read by both
+        // the WalkNodeEvaluator and the movement code — so no maxUpStep mixin is needed. Cats=0.6.
         var stepHeightAttr = cat.getAttribute(Attributes.STEP_HEIGHT);
         if (stepHeightAttr != null && !stepHeightAttr.hasModifier(GUARDIAN_STEP_HEIGHT_ID)) {
             stepHeightAttr.addPermanentModifier(new AttributeModifier(
