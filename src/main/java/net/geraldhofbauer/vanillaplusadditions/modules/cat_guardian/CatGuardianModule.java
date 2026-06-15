@@ -649,9 +649,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
-        // Per-tick water steering: ground navigation can't path through water and the current
-        // sweeps the cat away, so manually swim toward the goal (dive for underwater targets).
-        steerThroughWater(cat);
+        // Provide swim force toward the next path node when in water so cats can
+        // follow paths that go through or under water, including dives.
+        boostWaterNavigation(cat);
 
         // When the ground pathfinder gives up before a climbable ledge, nudge the cat toward
         // its goal so it walks into the ledge — then the jump assist below lifts it over.
@@ -852,85 +852,28 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
      * otherwise swims at/near the surface toward the target or back to its bowl, with enough force
      * to beat the current.
      */
-    private void steerThroughWater(Cat cat) {
+    private void boostWaterNavigation(Cat cat) {
         if (!isGuardianCat(cat) || !cat.isInWater()) {
             return;
         }
-        boolean submerged = cat.isUnderWater();
-        LivingEntity target = cat.getTarget();
-        net.minecraft.world.phys.Vec3 goalPos = null;
-        boolean diveTarget = false;
-        if (target != null) {
-            goalPos = target.getEyePosition();
-            diveTarget = target.isInWater() || target.isUnderWater();
-        } else {
-            long bowlLong = cat.getData(CAT_BOWL_POS.get());
-            if (bowlLong != Long.MIN_VALUE) {
-                BlockPos b = BlockPos.of(bowlLong);
-                if (cat.distanceToSqr(b.getX() + 0.5, b.getY(), b.getZ() + 0.5) > 4.0) {
-                    goalPos = new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY() + 0.5, b.getZ() + 0.5);
-                }
-            }
-        }
-        if (goalPos == null) {
-            // No goal — push upward so the cat can exit the water regardless of depth.
-            net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-            cat.setDeltaMovement(v.x, Math.max(v.y, 0.42), v.z);
+        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
+        if (path == null || path.isDone()) {
             return;
         }
-
-        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        if (diveTarget) {
-            // Dive in 3D toward the submerged target (Y descent overrides the surface buoyancy).
-            // Stop ground nav — it can't path down into water.
-            cat.getNavigation().stop();
-            cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 40, 0, false, false));
-            net.minecraft.world.phys.Vec3 dir = goalPos.subtract(cat.position()).normalize();
-            cat.setDeltaMovement(
-                    v.x * 0.6 + dir.x * 0.06,
-                    v.y * 0.6 + dir.y * 0.08,
-                    v.z * 0.6 + dir.z * 0.06);
-        } else {
-            // Ground navigation computes the correct water-exit route, but MoveControl doesn't
-            // generate enough physical force for a cat to actually swim against water drag.
-            // Strategy: let navigation keep computing/updating the path, but manually supply
-            // physical velocity toward the next path node (so the cat follows the turns of the
-            // path rather than bee-lining to the goal and hitting walls).
-            net.minecraft.world.level.pathfinder.Path activePath = cat.getNavigation().getPath();
-            if (activePath == null || activePath.isDone()) {
-                // No path yet — request one and push upward to surface while waiting.
-                cat.getNavigation().moveTo(goalPos.x, goalPos.y, goalPos.z, 1.0);
-                if (v.y < 0.42) {
-                    cat.setDeltaMovement(v.x, 0.42, v.z);
-                }
-            } else {
-                int ni = Math.min(activePath.getNextNodeIndex(), activePath.getNodeCount() - 1);
-                net.minecraft.world.level.pathfinder.Node nextNode = activePath.getNode(ni);
-
-                double hx = nextNode.x + 0.5 - cat.getX();
-                double hz = nextNode.z + 0.5 - cat.getZ();
-                double horiz = Math.sqrt(hx * hx + hz * hz);
-                if (horiz > 0.1) {
-                    hx = hx / horiz * 0.15;
-                    hz = hz / horiz * 0.15;
-                } else {
-                    hx = 0;
-                    hz = 0;
-                }
-
-                boolean nextAbove = nextNode.y > cat.getBlockY();
-                if (nextAbove) {
-                    // Climbing out: apply horizontal toward node + strong upward boost.
-                    cat.setDeltaMovement(hx, Math.max(v.y, 0.42), hz);
-                } else if (submerged) {
-                    // Horizontal tunnel swim: steer toward next node, no upward push (avoids ceiling).
-                    cat.setDeltaMovement(hx, v.y, hz);
-                } else {
-                    // At water surface moving horizontally: gentle buoyancy to step onto bank.
-                    cat.setDeltaMovement(hx, Math.max(v.y, 0.22), hz);
-                }
-            }
+        int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
+        net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
+        double dx = node.x + 0.5 - cat.getX();
+        double dy = node.y + 0.5 - cat.getY();
+        double dz = node.z + 0.5 - cat.getZ();
+        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (len < 0.01) {
+            return;
         }
+        dx /= len;
+        dy /= len;
+        dz /= len;
+        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
+        cat.setDeltaMovement(v.x * 0.4 + dx * 0.12, v.y * 0.4 + dy * 0.12, v.z * 0.4 + dz * 0.12);
     }
 
     private void tickCat(Cat cat) {
@@ -954,9 +897,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             gpn.setCanWalkOverFences(true);
         }
 
-        // Stuck detection: every 60 ticks check net displacement while nav is active.
+        // Stuck detection: check net displacement while nav is active.
         // Vec3-based check catches oscillation between two adjacent block positions
         // (blockPosition() equality misses that case because the int pos alternates).
+        // Window is 9 checks × 10 ticks = 90 ticks (4.5 s) — long enough for water navigation.
         if (cat.getNavigation().isInProgress()) {
             int age = catNavRefAge.merge(uid, 1, Integer::sum);
             net.minecraft.world.phys.Vec3 refPos = catNavRefPos.get(uid);
@@ -964,16 +908,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (refPos == null) {
                 catNavRefPos.put(uid, curPos);
                 catNavRefAge.put(uid, 0);
-            } else if (age >= 3) {
+            } else if (age >= 9) {
                 if (curPos.distanceToSqr(refPos) < 1.0) {
-                    // Moved less than 1 block in 30 ticks — spinning or trapped
+                    // Moved less than 1 block in 90 ticks — spinning or trapped
                     cat.getNavigation().stop();
                     LivingEntity stuckTarget = cat.getTarget();
-                    boolean aquatic = stuckTarget != null
-                            && (stuckTarget.isInWater() || stuckTarget.isUnderWater());
-                    // Aquatic targets are pursued by manual dive steering, not navigation —
-                    // keep the target. Only abandon genuinely-stuck land targets.
-                    if (!aquatic && stuckTarget != null) {
+                    if (stuckTarget != null) {
                         // Blacklist so the goal doesn't immediately re-select the same mob
                         cat.targetSelector.getAvailableGoals().stream()
                                 .map(pg -> pg.getGoal())
@@ -1005,30 +945,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             syncPathToClients(cat);
         }
 
-        // Water breathing while pursuing an aquatic target
+        // Water breathing while pursuing a target in water
         LivingEntity currentTarget = cat.getTarget();
-        boolean targetUnderwater = currentTarget != null && (currentTarget.isInWater() || currentTarget.isUnderWater());
-        if (targetUnderwater) {
+        if (currentTarget != null && (currentTarget.isInWater() || currentTarget.isUnderWater())) {
             cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
-        }
-
-        // Extra water-exit impulse every 10 ticks — only when the next path node is above the cat
-        // (same condition as steerThroughWater) so we don't fight horizontal tunnel navigation.
-        if (cat.isInWater() && !targetUnderwater && cat.isUnderWater()) {
-            net.minecraft.world.level.pathfinder.Path wp = cat.getNavigation().getPath();
-            boolean nodeAbove = false;
-            if (wp != null && !wp.isDone()) {
-                int ni = wp.getNextNodeIndex();
-                if (ni < wp.getNodeCount()) {
-                    nodeAbove = wp.getNode(ni).y > cat.getBlockY();
-                }
-            } else {
-                nodeAbove = true; // no path → help surface
-            }
-            if (nodeAbove) {
-                net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
-                cat.setDeltaMovement(vm.x, Math.max(vm.y, 0.42), vm.z);
-            }
         }
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
@@ -1745,7 +1665,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 boolean tooFar = cat.distanceToSqr(target) > 16.0;
                 boolean targetInWater = target.isInWater();
                 if (tooFar && !targetInWater) {
-                    if (++unreachableChecks >= 6) {
+                    if (++unreachableChecks >= 10) {
                         unreachableChecks = 0;
                         blacklist(target); // prevent immediately re-selecting this mob
                         long bowlLong = cat.getData(CAT_BOWL_POS.get());
@@ -1857,6 +1777,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
             this.targetMob = nearest;
             cat.setTarget(nearest);
+            cat.setOrderedToSit(false); // stand up immediately so MeleeAttackGoal isn't blocked
             return true;
         }
     }
