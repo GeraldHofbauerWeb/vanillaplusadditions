@@ -909,10 +909,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 catNavRefPos.put(uid, curPos);
                 catNavRefAge.put(uid, 0);
             } else if (age >= 9) {
-                if (curPos.distanceToSqr(refPos) < 1.0) {
+                LivingEntity stuckTarget = cat.getTarget();
+                // At melee range the cat oscillates while fighting — that's expected, not stuck.
+                boolean inMeleeRange = stuckTarget != null && cat.distanceToSqr(stuckTarget) < 9.0;
+                if (!inMeleeRange && curPos.distanceToSqr(refPos) < 1.0) {
                     // Moved less than 1 block in 90 ticks — spinning or trapped
                     cat.getNavigation().stop();
-                    LivingEntity stuckTarget = cat.getTarget();
                     if (stuckTarget != null) {
                         // Blacklist so the goal doesn't immediately re-select the same mob
                         cat.targetSelector.getAvailableGoals().stream()
