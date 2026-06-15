@@ -858,12 +858,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             syncPathToClients(cat);
         }
 
-        // Water breathing while pursuing a target in water
-        LivingEntity currentTarget = cat.getTarget();
-        if (currentTarget != null && (currentTarget.isInWater() || currentTarget.isUnderWater())) {
-            cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
-        }
-
         // Drowning escape: if air runs critically low, abandon the current target and return
         // home immediately. Triggered before the health-flee check so it takes priority even
         // when the cat is healthy. canUse() also blocks new target acquisition while drowning.
