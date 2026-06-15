@@ -864,6 +864,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
         }
 
+        // Drowning escape: if air runs critically low, abandon the current target and return
+        // home immediately. Triggered before the health-flee check so it takes priority even
+        // when the cat is healthy. canUse() also blocks new target acquisition while drowning.
+        if (cat.isInWater() && cat.getAirSupply() < 60 && !cat.getData(CAT_FLEEING.get())) {
+            cat.setTarget(null);
+            cat.setData(CAT_RETURNING.get(), true);
+        }
+
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
 
         // Low-health flee: at <20% HP the cat enters an ABSOLUTE retreat — it ignores all
@@ -1505,6 +1513,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
             if (cat.getData(CAT_FLEEING.get())) {
                 return false; // low health: ignore all mobs, flee to base
+            }
+            if (cat.isInWater() && cat.getAirSupply() < 60) {
+                return false; // drowning: surface first, don't acquire new targets
             }
             int fedTicks = cat.getData(CAT_FED_TICKS.get());
             if (fedTicks <= 0) {
