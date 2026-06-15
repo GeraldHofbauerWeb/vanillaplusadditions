@@ -812,26 +812,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isGuardianCat(cat) || !cat.isInWater()) {
             return;
         }
-        double dx, dy, dz;
-        // If the target is submerged, steer directly toward it — the A* path ends at the water
-        // surface and path-following would keep the cat there instead of diving.
-        LivingEntity target = cat.getTarget();
-        if (target != null && (target.isInWater() || target.isUnderWater())) {
-            dx = target.getX() - cat.getX();
-            dy = target.getY() - cat.getY();
-            dz = target.getZ() - cat.getZ();
-        } else {
-            // No submerged target: follow the path (home or surface mob).
-            net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
-            if (path == null || path.isDone()) {
-                return;
-            }
-            int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
-            net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
-            dx = node.x + 0.5 - cat.getX();
-            dy = node.y + 0.5 - cat.getY();
-            dz = node.z + 0.5 - cat.getZ();
+        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
+        if (path == null || path.isDone()) {
+            return;
         }
+        int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
+        net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
+        double dx = node.x + 0.5 - cat.getX();
+        double dy = node.y + 0.5 - cat.getY();
+        double dz = node.z + 0.5 - cat.getZ();
         double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (len < 0.01) {
             return;
@@ -1585,18 +1574,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
             // Every 20 ticks: evict expired blacklist entries and check that the live
             // navigation path (recalculated by MeleeAttackGoal as the monster moves) still
-            // stays inside the guard zone. If the monster has drifted so that the only route
-            // to it now exits the zone, blacklist it and abort pursuit immediately.
-            // Water targets are navigated manually (boostWaterNavigation) — the A* path only
-            // reaches the surface, so skip the zone-path check for them.
+            // stays inside the guard zone. AmphibiousPathNavigation produces full 3D paths
+            // including underwater nodes, so this check works uniformly for all targets.
             if (cat.tickCount % 20 == 0) {
                 blockedTargets.entrySet().removeIf(e -> cat.level().getGameTime() >= e.getValue());
-                if (!target.isInWater() && !target.isUnderWater()) {
-                    net.minecraft.world.level.pathfinder.Path livePath = cat.getNavigation().getPath();
-                    if (livePath != null && !isPathWithinZone(livePath, cat)) {
-                        blacklist(target);
-                        return false;
-                    }
+                net.minecraft.world.level.pathfinder.Path livePath = cat.getNavigation().getPath();
+                if (livePath != null && !isPathWithinZone(livePath, cat)) {
+                    blacklist(target);
+                    return false;
                 }
             }
             return true;
@@ -1667,9 +1652,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         /**
          * Selects the best target from {@code candidates} using A* path length.
-         * Pre-sorts by Euclidean distance and evaluates the top 8 via actual path computation,
-         * accepting only mobs whose path (a) ends within 2.5 blocks of the mob in 3D and
-         * (b) has all nodes within the guard zone. Returns null if no valid candidate exists.
+         * Pre-sorts by Euclidean distance and evaluates the top 8 via actual path computation.
+         * AmphibiousPathNavigation produces underwater nodes, so endNodeNear and isPathWithinZone
+         * work uniformly for both land and submerged targets.
          */
         private Monster selectTargetByPathLength(List<Monster> candidates) {
             candidates.sort(Comparator.comparingDouble(cat::distanceToSqr));
@@ -1678,50 +1663,22 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             double bestLength = Double.MAX_VALUE;
             for (int i = 0; i < limit; i++) {
                 Monster mob = candidates.get(i);
-                boolean mobInWater = mob.isInWater() || mob.isUnderWater();
-
-                double length;
                 net.minecraft.world.level.pathfinder.Path path =
                         cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
-
-                if (!mobInWater) {
-                    // Dry-land target: full 3D reachability check required.
-                    if (!instance.endNodeNear(path,
-                            new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.5)) {
-                        continue; // not reachable in 3D
-                    }
+                if (!instance.endNodeNear(path,
+                        new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.5)) {
+                    continue; // not reachable
                 }
-                // Zone constraint always applies: the path to the mob (or to the water surface
-                // for submerged targets) must not exit the guard zone.
                 if (!isPathWithinZone(path, cat)) {
-                    continue;
+                    continue; // route exits guard zone
                 }
-
-                // Path length: sum of 3D node distances. For water mobs the path ends at the
-                // surface; add straight-line distance to the submerged mob as the dive portion.
-                length = 0.0;
-                if (path != null) {
-                    for (int j = 1; j < path.getNodeCount(); j++) {
-                        net.minecraft.world.level.pathfinder.Node a = path.getNode(j - 1);
-                        net.minecraft.world.level.pathfinder.Node b = path.getNode(j);
-                        double dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
-                        length += Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    }
-                    if (mobInWater) {
-                        net.minecraft.world.level.pathfinder.Node end = path.getEndNode();
-                        if (end != null) {
-                            double dx = mob.getX() - (end.x + 0.5);
-                            double dy = mob.getY() - end.y;
-                            double dz = mob.getZ() - (end.z + 0.5);
-                            length += Math.sqrt(dx * dx + dy * dy + dz * dz);
-                        }
-                    }
-                } else if (mobInWater) {
-                    length = Math.sqrt(cat.distanceToSqr(mob)); // cat already in water, no land path
-                } else {
-                    continue; // null path for dry target → unreachable
+                double length = 0.0;
+                for (int j = 1; j < path.getNodeCount(); j++) {
+                    net.minecraft.world.level.pathfinder.Node a = path.getNode(j - 1);
+                    net.minecraft.world.level.pathfinder.Node b = path.getNode(j);
+                    double dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+                    length += Math.sqrt(dx * dx + dy * dy + dz * dz);
                 }
-
                 if (length < bestLength) {
                     bestLength = length;
                     best = mob;
