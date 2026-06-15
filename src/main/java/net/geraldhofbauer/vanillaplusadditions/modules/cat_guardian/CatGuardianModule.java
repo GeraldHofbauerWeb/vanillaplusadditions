@@ -812,15 +812,26 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isGuardianCat(cat) || !cat.isInWater()) {
             return;
         }
-        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
-        if (path == null || path.isDone()) {
-            return;
+        double dx, dy, dz;
+        // If the target is submerged, steer directly toward it — the A* path ends at the water
+        // surface and path-following would keep the cat there instead of diving.
+        LivingEntity target = cat.getTarget();
+        if (target != null && (target.isInWater() || target.isUnderWater())) {
+            dx = target.getX() - cat.getX();
+            dy = target.getY() - cat.getY();
+            dz = target.getZ() - cat.getZ();
+        } else {
+            // No submerged target: follow the path (home or surface mob).
+            net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
+            if (path == null || path.isDone()) {
+                return;
+            }
+            int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
+            net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
+            dx = node.x + 0.5 - cat.getX();
+            dy = node.y + 0.5 - cat.getY();
+            dz = node.z + 0.5 - cat.getZ();
         }
-        int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
-        net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
-        double dx = node.x + 0.5 - cat.getX();
-        double dy = node.y + 0.5 - cat.getY();
-        double dz = node.z + 0.5 - cat.getZ();
         double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (len < 0.01) {
             return;
