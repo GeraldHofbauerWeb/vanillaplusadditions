@@ -34,6 +34,11 @@ public final class CatGuardianClientEvents {
     // catEntityId → [xp, xpCap]; populated by SyncCatStatsPacket
     static final Map<Integer, int[]> CAT_XP_MAP = new HashMap<>();
 
+    // catEntityId → path packet; populated by SyncCatPathPacket; empty arrays = no path
+    static final Map<Integer,
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket>
+            CAT_PATH_MAP = new HashMap<>();
+
     private CatGuardianClientEvents() { }
 
     @SubscribeEvent
@@ -132,6 +137,15 @@ public final class CatGuardianClientEvents {
             CAT_TARGET_MAP.remove(packet.catEntityId());
         } else {
             CAT_TARGET_MAP.put(packet.catEntityId(), packet.targetEntityId());
+        }
+    }
+
+    public static void handleSyncCatPath(
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket packet) {
+        if (packet.nodeX().length == 0) {
+            CAT_PATH_MAP.remove(packet.catEntityId());
+        } else {
+            CAT_PATH_MAP.put(packet.catEntityId(), packet);
         }
     }
 

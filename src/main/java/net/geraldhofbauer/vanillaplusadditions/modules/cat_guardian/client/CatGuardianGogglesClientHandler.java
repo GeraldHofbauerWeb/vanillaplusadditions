@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import org.joml.Matrix4f;
 import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
@@ -68,6 +69,9 @@ public final class CatGuardianGogglesClientHandler {
     private static final List<LivingEntity> PENDING_TARGET_OUTLINES = new ArrayList<>();
     private static final List<Cat> PENDING_CAT_OUTLINES = new ArrayList<>();
     private static final List<BlockPos> PENDING_RADIUS_POSITIONS = new ArrayList<>();
+    private static final Map<Integer,
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket>
+            PENDING_CAT_PATHS = new HashMap<>();
 
     /**
      * Master toggle for all goggle overlays (cats, targets, station radius + tooltip).
@@ -93,6 +97,7 @@ public final class CatGuardianGogglesClientHandler {
         PENDING_TARGET_OUTLINES.clear();
         PENDING_CAT_OUTLINES.clear();
         PENDING_RADIUS_POSITIONS.clear();
+        PENDING_CAT_PATHS.clear();
 
         if (mc.player == null || mc.level == null || mc.screen != null) {
             return;
@@ -188,6 +193,15 @@ public final class CatGuardianGogglesClientHandler {
             }
             PENDING_RADIUS_POSITIONS.add(entry.getKey());
         }
+
+        // Populate navigation paths for cats the player has looked at recently.
+        for (Integer catId : CAT_OVERLAY_EXPIRY.keySet()) {
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket pathPkt =
+                    CatGuardianClientEvents.CAT_PATH_MAP.get(catId);
+            if (pathPkt != null && pathPkt.nodeX().length > 0) {
+                PENDING_CAT_PATHS.put(catId, pathPkt);
+            }
+        }
     }
 
     public static boolean isWearingGoggles(Player player) {
@@ -247,29 +261,29 @@ public final class CatGuardianGogglesClientHandler {
         int textOff = (rowH - font.lineHeight) / 2; // vertical centering of text in row
 
         int armorGap = hasArmor ? iconGap : 0;
-        int contentW = Math.max(iconGap + font.width(healthStr),
+        int panelW = Math.max(iconGap + font.width(healthStr),
                 Math.max(armorGap + font.width(armorStr),
                         iconGap + font.width(xpStr)));
         int contentH = rowH * 3;
         int pad = 4;
 
-        // Position: anchored to the right edge of the screen, centred on crosshair
-        int x = g.guiWidth() - contentW - pad * 2 - 10;
-        int y = g.guiHeight() / 2 - contentH / 2;
+        // Position: centred on the crosshair horizontally, above the cat
+        int x = g.guiWidth() / 2 - panelW / 2;
+        int y = g.guiHeight() / 2 - contentH - 30;
 
         // Background (Minecraft tooltip style)
-        g.fillGradient(x - pad - 1, y - pad - 1, x + contentW + pad + 1, y + contentH + pad + 1, 0xF0100010, 0xF0100010);
-        g.fillGradient(x - pad - 1, y - pad - 1, x + contentW + pad + 1, y - pad, 0xFF5000FF, 0xFF5000FF);
-        g.fillGradient(x - pad - 1, y + contentH + pad, x + contentW + pad + 1, y + contentH + pad + 1, 0xFF28007F, 0xFF28007F);
+        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y + contentH + pad + 1, 0xF0100010, 0xF0100010);
+        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y - pad, 0xFF5000FF, 0xFF5000FF);
+        g.fillGradient(x - pad - 1, y + contentH + pad, x + panelW + pad + 1, y + contentH + pad + 1, 0xFF28007F, 0xFF28007F);
         g.fillGradient(x - pad - 1, y - pad, x - pad, y + contentH + pad, 0xFF5000FF, 0xFF28007F);
-        g.fillGradient(x + contentW + pad, y - pad, x + contentW + pad + 1, y + contentH + pad, 0xFF5000FF, 0xFF28007F);
+        g.fillGradient(x + panelW + pad, y - pad, x + panelW + pad + 1, y + contentH + pad, 0xFF5000FF, 0xFF28007F);
 
-        // Row 0: heart sprite + HP
+        // Row 0: heart sprite (left) + HP value (right-aligned)
         g.blitSprite(net.minecraft.resources.ResourceLocation.parse("minecraft:hud/heart/full"),
                 x, y, iconSize, iconSize);
-        g.drawString(font, healthStr, x + iconGap, y + textOff, 0xFFCC2222, false);
+        g.drawString(font, healthStr, x + panelW - font.width(healthStr), y + textOff, 0xFFCC2222, false);
 
-        // Row 1: armor item icon (scaled to iconSize) + durability
+        // Row 1: armor item icon (left) + durability (right-aligned)
         int row1Y = y + rowH;
         if (hasArmor) {
             g.pose().pushPose();
@@ -277,12 +291,11 @@ public final class CatGuardianGogglesClientHandler {
             g.pose().scale(itemScale, itemScale, 1f);
             g.renderItem(armor, 0, 0);
             g.pose().popPose();
-            g.drawString(font, armorStr, x + iconGap, row1Y + textOff, 0xFFFFFFFF, false);
-        } else {
-            g.drawString(font, armorStr, x, row1Y + textOff, 0xFFAAAAAA, false);
         }
+        int armorColor = hasArmor ? 0xFFFFFFFF : 0xFFAAAAAA;
+        g.drawString(font, armorStr, x + panelW - font.width(armorStr), row1Y + textOff, armorColor, false);
 
-        // Row 2: XP bottle icon (scaled to iconSize) + XP value
+        // Row 2: XP bottle icon (left) + XP value (right-aligned)
         int row2Y = y + rowH * 2;
         ItemStack xpBottle = new ItemStack(net.minecraft.world.item.Items.EXPERIENCE_BOTTLE);
         g.pose().pushPose();
@@ -290,7 +303,7 @@ public final class CatGuardianGogglesClientHandler {
         g.pose().scale(itemScale, itemScale, 1f);
         g.renderItem(xpBottle, 0, 0);
         g.pose().popPose();
-        g.drawString(font, xpStr, x + iconGap, row2Y + textOff, 0xFF7BE018, false);
+        g.drawString(font, xpStr, x + panelW - font.width(xpStr), row2Y + textOff, 0xFF7BE018, false);
     }
 
     @SubscribeEvent
@@ -299,7 +312,7 @@ public final class CatGuardianGogglesClientHandler {
             return;
         }
         if (PENDING_TARGET_OUTLINES.isEmpty() && PENDING_CAT_OUTLINES.isEmpty()
-                && PENDING_RADIUS_POSITIONS.isEmpty()) {
+                && PENDING_RADIUS_POSITIONS.isEmpty() && PENDING_CAT_PATHS.isEmpty()) {
             return;
         }
 
@@ -350,6 +363,49 @@ public final class CatGuardianGogglesClientHandler {
         for (BlockPos radiusPos : PENDING_RADIUS_POSITIONS) {
             AABB guardBox = new AABB(radiusPos).inflate(guardRadius, guardRadiusY, guardRadius);
             LevelRenderer.renderLineBox(ps, consumer, guardBox, 0.2f, 0.6f, 1.0f, 0.6f);
+        }
+
+        // Navigation path: node boxes (gold-yellow) + line segments between nodes.
+        // All nodes rendered at block-center (x+0.5, z+0.5). PoseStack is already translated
+        // by -camPos so world coordinates can be used directly.
+        if (!PENDING_CAT_PATHS.isEmpty()) {
+            Matrix4f mat = ps.last().pose();
+            PoseStack.Pose pose = ps.last();
+            for (net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket pathPkt
+                    : PENDING_CAT_PATHS.values()) {
+                int n = pathPkt.nodeX().length;
+                int nextIdx = pathPkt.nextNodeIndex();
+                // Node boxes
+                for (int i = 0; i < n; i++) {
+                    double wx = pathPkt.nodeX()[i] + 0.5;
+                    double wy = pathPkt.nodeY()[i];
+                    double wz = pathPkt.nodeZ()[i] + 0.5;
+                    boolean isNext = (i == nextIdx);
+                    double infl = isNext ? 0.18 : 0.12;
+                    float g = isNext ? 0.5f : 0.85f;
+                    float a = isNext ? 1.0f : 0.75f;
+                    LevelRenderer.renderLineBox(ps, consumer,
+                            wx - infl, wy + 0.05, wz - infl,
+                            wx + infl, wy + 0.05 + infl * 2, wz + infl,
+                            1.0f, g, 0.0f, a);
+                }
+                // Line segments between consecutive nodes
+                for (int i = 0; i < n - 1; i++) {
+                    float ax = (float) (pathPkt.nodeX()[i]     + 0.5);
+                    float ay = (float) (pathPkt.nodeY()[i]     + 0.22);
+                    float az = (float) (pathPkt.nodeZ()[i]     + 0.5);
+                    float bx = (float) (pathPkt.nodeX()[i + 1] + 0.5);
+                    float by = (float) (pathPkt.nodeY()[i + 1] + 0.22);
+                    float bz = (float) (pathPkt.nodeZ()[i + 1] + 0.5);
+                    float dx = bx - ax, dy = by - ay, dz = bz - az;
+                    float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (len > 0.0f) {
+                        dx /= len; dy /= len; dz /= len;
+                    }
+                    consumer.addVertex(mat, ax, ay, az).setColor(1.0f, 0.85f, 0.0f, 0.5f).setNormal(pose, dx, dy, dz);
+                    consumer.addVertex(mat, bx, by, bz).setColor(1.0f, 0.85f, 0.0f, 0.5f).setNormal(pose, dx, dy, dz);
+                }
+            }
         }
 
         ps.popPose();

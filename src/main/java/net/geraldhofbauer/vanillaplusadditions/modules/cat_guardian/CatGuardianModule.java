@@ -439,6 +439,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatTarget(packet))
         );
 
+        event.registrar("1").playToClient(
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.TYPE,
+            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.STREAM_CODEC,
+            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatPath(packet))
+        );
+
         event.registrar("1").playToServer(RequestCatStatsPacket.TYPE, RequestCatStatsPacket.STREAM_CODEC,
                 (packet, ctx) -> ctx.enqueueWork(() -> {
                     if (!isModuleEnabled()) {
@@ -872,11 +878,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             cat.setDeltaMovement(v.x, Math.max(v.y, 0.42), v.z);
             return;
         }
-        cat.getNavigation().stop(); // ground nav can't help in water; take manual control
 
         net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
         if (diveTarget) {
             // Dive in 3D toward the submerged target (Y descent overrides the surface buoyancy).
+            // Stop ground nav — it can't path down into water.
+            cat.getNavigation().stop();
             cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 40, 0, false, false));
             net.minecraft.world.phys.Vec3 dir = goalPos.subtract(cat.position()).normalize();
             cat.setDeltaMovement(
@@ -884,21 +891,45 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     v.y * 0.6 + dir.y * 0.08,
                     v.z * 0.6 + dir.z * 0.06);
         } else {
-            // Swim toward the goal. Always apply strong upward force (0.42 = 1-block jump) so the
-            // cat exits water even from the floor. Apply horizontal steering separately so the Y
-            // force fires even when the goal is directly above (flat direction near-zero).
-            net.minecraft.world.phys.Vec3 flat =
-                    new net.minecraft.world.phys.Vec3(goalPos.x - cat.getX(), 0, goalPos.z - cat.getZ());
-            double hx = 0, hz = 0;
-            if (flat.lengthSqr() > 1.0E-3) {
-                flat = flat.normalize();
-                // When submerged prioritise surfacing (gentle horizontal so upward wins);
-                // when at the surface push harder horizontally to clear the bank.
-                double hSpeed = submerged ? 0.07 : 0.11;
-                hx = flat.x * hSpeed;
-                hz = flat.z * hSpeed;
+            // Ground navigation computes the correct water-exit route, but MoveControl doesn't
+            // generate enough physical force for a cat to actually swim against water drag.
+            // Strategy: let navigation keep computing/updating the path, but manually supply
+            // physical velocity toward the next path node (so the cat follows the turns of the
+            // path rather than bee-lining to the goal and hitting walls).
+            net.minecraft.world.level.pathfinder.Path activePath = cat.getNavigation().getPath();
+            if (activePath == null || activePath.isDone()) {
+                // No path yet — request one and push upward to surface while waiting.
+                cat.getNavigation().moveTo(goalPos.x, goalPos.y, goalPos.z, 1.0);
+                if (v.y < 0.42) {
+                    cat.setDeltaMovement(v.x, 0.42, v.z);
+                }
+            } else {
+                int ni = Math.min(activePath.getNextNodeIndex(), activePath.getNodeCount() - 1);
+                net.minecraft.world.level.pathfinder.Node nextNode = activePath.getNode(ni);
+
+                double hx = nextNode.x + 0.5 - cat.getX();
+                double hz = nextNode.z + 0.5 - cat.getZ();
+                double horiz = Math.sqrt(hx * hx + hz * hz);
+                if (horiz > 0.1) {
+                    hx = hx / horiz * 0.15;
+                    hz = hz / horiz * 0.15;
+                } else {
+                    hx = 0;
+                    hz = 0;
+                }
+
+                boolean nextAbove = nextNode.y > cat.getBlockY();
+                if (nextAbove) {
+                    // Climbing out: apply horizontal toward node + strong upward boost.
+                    cat.setDeltaMovement(hx, Math.max(v.y, 0.42), hz);
+                } else if (submerged) {
+                    // Horizontal tunnel swim: steer toward next node, no upward push (avoids ceiling).
+                    cat.setDeltaMovement(hx, v.y, hz);
+                } else {
+                    // At water surface moving horizontally: gentle buoyancy to step onto bank.
+                    cat.setDeltaMovement(hx, Math.max(v.y, 0.22), hz);
+                }
             }
-            cat.setDeltaMovement(hx, Math.max(v.y, 0.42), hz);
         }
     }
 
@@ -952,9 +983,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                                 .ifPresent(g -> g.blockTarget(stuckTarget));
                         cat.setTarget(null);
                     }
+                    // Clear refs so the next nav session starts a fresh 30-tick window from the
+                    // new starting position rather than being penalised for the previous stuck spot.
+                    catNavRefPos.remove(uid);
+                    catNavRefAge.remove(uid);
+                } else {
+                    // Cat moved enough — start next window from current position
+                    catNavRefPos.put(uid, curPos);
+                    catNavRefAge.put(uid, 0);
                 }
-                catNavRefPos.put(uid, curPos);
-                catNavRefAge.put(uid, 0);
             }
         } else {
             catNavRefAge.remove(uid);
@@ -963,6 +1000,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         suppressFollowingBehaviors(cat);
 
+        // Sync navigation path to clients every 20 ticks for the debug overlay.
+        if (cat.tickCount % 20 == 0) {
+            syncPathToClients(cat);
+        }
+
         // Water breathing while pursuing an aquatic target
         LivingEntity currentTarget = cat.getTarget();
         boolean targetUnderwater = currentTarget != null && (currentTarget.isInWater() || currentTarget.isUnderWater());
@@ -970,12 +1012,23 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             cat.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 100, 0, false, false));
         }
 
-        // Extra water-exit impulse every 10 ticks (steerThroughWater handles the per-tick push,
-        // this adds a second push on the same tick to help the cat clear the bank faster).
+        // Extra water-exit impulse every 10 ticks — only when the next path node is above the cat
+        // (same condition as steerThroughWater) so we don't fight horizontal tunnel navigation.
         if (cat.isInWater() && !targetUnderwater && cat.isUnderWater()) {
-            // Dampen horizontal so the cat rises rather than hugging the floor sideways.
-            net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
-            cat.setDeltaMovement(vm.x * 0.6, Math.max(vm.y, 0.42), vm.z * 0.6);
+            net.minecraft.world.level.pathfinder.Path wp = cat.getNavigation().getPath();
+            boolean nodeAbove = false;
+            if (wp != null && !wp.isDone()) {
+                int ni = wp.getNextNodeIndex();
+                if (ni < wp.getNodeCount()) {
+                    nodeAbove = wp.getNode(ni).y > cat.getBlockY();
+                }
+            } else {
+                nodeAbove = true; // no path → help surface
+            }
+            if (nodeAbove) {
+                net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
+                cat.setDeltaMovement(vm.x, Math.max(vm.y, 0.42), vm.z);
+            }
         }
 
         BlockPos bowlPos = BlockPos.of(bowlPosLong);
@@ -1030,7 +1083,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
             int returningAge = catReturningAge.merge(uid, 10, Integer::sum); // tickCat runs every 10 ticks
             double distSqToBowl = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
-            if (distSqToBowl <= 16.0 || returningAge >= 200) {
+            if (distSqToBowl <= 16.0 || returningAge >= 1200) {
                 cat.setData(CAT_RETURNING.get(), false);
                 catReturningAge.remove(uid);
                 if (distSqToBowl <= 16.0) {
@@ -1041,6 +1094,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 }
             } else {
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
+                // If pathfinder can't find a route (nav stays done), nudge the cat
+                // directly toward the bowl so it can escape narrow spaces.
+                if (!cat.isInWater() && cat.getNavigation().isDone()) {
+                    net.minecraft.world.phys.Vec3 towardBowl = new net.minecraft.world.phys.Vec3(
+                            bowlPos.getX() + 0.5 - cat.getX(), 0,
+                            bowlPos.getZ() + 0.5 - cat.getZ()).normalize().scale(0.18);
+                    net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
+                    cat.setDeltaMovement(towardBowl.x, vm.y, towardBowl.z);
+                }
             }
         } else {
             catReturningAge.remove(uid);
@@ -1168,6 +1230,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         int r = (int) Math.ceil(autoRadius);
         double radiusSq = autoRadius * autoRadius;
 
+        // Collect all valid bowls in range, then pick the nearest one. BlockPos.betweenClosed
+        // iterates in YXZ order so first-found is not necessarily closest.
+        BlockPos nearestPos = null;
+        AbstractCatBowlBlockEntity nearestBowl = null;
+        double nearestDistSq = Double.MAX_VALUE;
+
         for (BlockPos checkPos : BlockPos.betweenClosed(
                 catPos.offset(-r, -r, -r), catPos.offset(r, r, r))) {
             if (!(cat.level().getBlockEntity(checkPos) instanceof AbstractCatBowlBlockEntity bowl) || !bowl.canAddCat(cat.getUUID())) {
@@ -1175,12 +1243,46 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
             double distSq = cat.distanceToSqr(
                     checkPos.getX() + 0.5, checkPos.getY() + 0.5, checkPos.getZ() + 0.5);
-            if (distSq <= radiusSq) {
-                cat.setData(CAT_BOWL_POS.get(), checkPos.asLong());
-                bowl.addCat(cat.getUUID());
-                break;
+            if (distSq <= radiusSq && distSq < nearestDistSq) {
+                nearestPos = checkPos.immutable();
+                nearestBowl = bowl;
+                nearestDistSq = distSq;
             }
         }
+
+        if (nearestPos != null) {
+            cat.setData(CAT_BOWL_POS.get(), nearestPos.asLong());
+            nearestBowl.addCat(cat.getUUID());
+        }
+    }
+
+    // ---- Path sync for debug overlay ----
+
+    private void syncPathToClients(Cat cat) {
+        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
+        if (path == null || path.isDone()) {
+            // During combat, MeleeAttackGoal resets the path every tick — the 20-tick sync window
+            // may catch a momentary isDone() gap. Keep the last path on the client while the cat
+            // has a target so the approach path stays visible. Only clear when truly idle.
+            if (cat.getTarget() != null) {
+                return;
+            }
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                    new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket(
+                            cat.getId(), new int[0], new int[0], new int[0], 0));
+            return;
+        }
+        int n = path.getNodeCount();
+        int[] xs = new int[n], ys = new int[n], zs = new int[n];
+        for (int i = 0; i < n; i++) {
+            net.minecraft.world.level.pathfinder.Node node = path.getNode(i);
+            xs[i] = node.x;
+            ys[i] = node.y;
+            zs[i] = node.z;
+        }
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket(
+                        cat.getId(), xs, ys, zs, path.getNextNodeIndex()));
     }
 
     // ---- Cat armor equip / unequip ----
@@ -1588,8 +1690,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 return false;
             }
             boolean found = findAndSetTarget(BlockPos.of(bowlLong));
-            if (found) {
-                cat.setData(CAT_RETURNING.get(), false); // interrupt ordinary return to engage
+            if (found && cat.getData(CAT_RETURNING.get())) {
+                // Don't interrupt a return trip if all loot slots are full — the cat must deposit
+                // before it can pick up more loot anyway; let it finish the trip.
+                var catInv = cat.getData(CAT_INVENTORY.get()).getInventory();
+                boolean lootFull = true;
+                for (int s = CatInventoryData.LOOT_START; s < CatInventoryData.TOTAL_SLOTS; s++) {
+                    if (catInv.getStackInSlot(s).isEmpty()) {
+                        lootFull = false;
+                        break;
+                    }
+                }
+                if (lootFull) {
+                    return false;
+                }
+                cat.setData(CAT_RETURNING.get(), false); // interrupt return to engage
             }
             return found;
         }
@@ -1623,6 +1738,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             // blacklist the target and switch to an alternative or abort.
             // Aquatic targets are exempt — swimming nav is slower and the cat dives for them.
             if (cat.tickCount % 20 == 0) {
+                // Proactively evict expired blacklist entries so the map doesn't grow unboundedly
+                // when many mobs are blacklisted and then despawn.
+                blockedTargets.entrySet().removeIf(e -> cat.level().getGameTime() >= e.getValue());
+
                 boolean tooFar = cat.distanceToSqr(target) > 16.0;
                 boolean targetInWater = target.isInWater();
                 if (tooFar && !targetInWater) {
