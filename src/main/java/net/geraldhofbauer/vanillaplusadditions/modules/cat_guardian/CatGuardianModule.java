@@ -228,11 +228,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     private static CatGuardianModule instance;
 
-    // ---- Stuck-detection state (transient, not persisted) ----
-    // Stores a position snapshot every tick; after 60 ticks checks net displacement.
-    // Using Vec3 (not BlockPos) catches oscillation between two adjacent block positions.
-    private final Map<UUID, net.minecraft.world.phys.Vec3> catNavRefPos = new HashMap<>();
-    private final Map<UUID, Integer> catNavRefAge = new HashMap<>();
     // Accumulated ticks a cat has spent in the ordinary (interruptible) returning state.
     private final Map<UUID, Integer> catReturningAge = new HashMap<>();
     // Throttled cache of a cat's computed path toward its goal (for stuck-drive direction + reach).
@@ -653,10 +648,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         // follow paths that go through or under water, including dives.
         boostWaterNavigation(cat);
 
-        // When the ground pathfinder gives up before a climbable ledge, nudge the cat toward
-        // its goal so it walks into the ledge — then the jump assist below lifts it over.
-        driveTowardGoalWhenStuck(cat);
-
         // Per-tick ledge-jump assist so cats reliably clear ~1.5-block steps.
         assistLedgeJump(cat);
 
@@ -665,56 +656,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
 
         tickCat(cat);
-    }
-
-    /**
-     * Drives a guardian cat horizontally toward its goal (current target, else its bowl) when the
-     * ground navigation has given up — typically because the only way to the goal is up a ledge the
-     * pathfinder won't plan. This walks the cat into the ledge so {@link #assistLedgeJump} can lift
-     * it over. Does nothing while navigation is actively running, or when the cat is already near
-     * the goal, or when the goal is directly above (no horizontal direction to push).
-     */
-    private void driveTowardGoalWhenStuck(Cat cat) {
-        if (!isGuardianCat(cat) || !cat.onGround() || cat.isInWater()) {
-            return;
-        }
-        if (!cat.getNavigation().isDone()) {
-            return; // navigation is handling movement
-        }
-        net.minecraft.world.phys.Vec3 goal = currentGoalPos(cat);
-        if (goal == null) {
-            return;
-        }
-        double dx = goal.x - cat.getX();
-        double dz = goal.z - cat.getZ();
-        double dy = goal.y - cat.getY();
-        if (dx * dx + dy * dy + dz * dz < 4.0) {
-            return; // close enough — let normal idle/attack logic take over
-        }
-
-        net.minecraft.world.level.pathfinder.Path path = goalPath(cat, goal.x, goal.y, goal.z);
-        // Only drive if the path's closest reachable point is within jump range of the goal (i.e. a
-        // climbable ledge). If it ends far from the goal — a truly unreachable target (mob on the
-        // ceiling) OR a bowl walled off from this side — don't bee-line the cat into the obstacle;
-        // let the blacklist switch the target / let navigation take the real route.
-        if (!endNodeNear(path, goal, 2.5)) {
-            return;
-        }
-
-        // Follow the PATH's next node, not the straight line to the goal — path and target often
-        // diverge (the route goes around obstacles, up a side ledge, etc.).
-        net.minecraft.world.phys.Vec3 dir = pathDir(cat, path);
-        if (dir == null) {
-            double horiz = Math.sqrt(dx * dx + dz * dz);
-            if (horiz < 0.6) {
-                return; // no path step and goal is straight up/down — a nudge can't help
-            }
-            dir = new net.minecraft.world.phys.Vec3(dx / horiz, 0, dz / horiz);
-        }
-        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        cat.setDeltaMovement(dir.x * 0.13, v.y, dir.z * 0.13);
-        cat.getLookControl().setLookAt(cat.getX() + dir.x, cat.getEyeY(), cat.getZ() + dir.z);
-        cat.hasImpulse = true;
     }
 
     /** The cat's current movement goal: its combat target if any, else its bowl. Null if neither. */
@@ -729,6 +670,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return new net.minecraft.world.phys.Vec3(b.getX() + 0.5, b.getY(), b.getZ() + 0.5);
         }
         return null;
+    }
+
+    /** True if every node of {@code path} lies within the cat's guard zone (zero buffer). */
+    private static boolean isPathWithinZone(
+            net.minecraft.world.level.pathfinder.Path path, Cat cat) {
+        if (path == null) {
+            return false;
+        }
+        for (int i = 0; i < path.getNodeCount(); i++) {
+            net.minecraft.world.level.pathfinder.Node n = path.getNode(i);
+            if (!isWithinGuardZone(cat, n.x + 0.5, n.y, n.z + 0.5, 0.0)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Throttled path toward a goal position (A* is costly), recomputed at most every 10 ticks. */
@@ -884,8 +840,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         UUID uid = cat.getUUID();
         if (!hasBowl) {
-            catNavRefPos.remove(uid);
-            catNavRefAge.remove(uid);
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
         }
@@ -895,49 +849,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         // shorter routes through the base. Guardian-only so penned pet cats stay contained.
         if (cat.getNavigation() instanceof net.minecraft.world.entity.ai.navigation.GroundPathNavigation gpn) {
             gpn.setCanWalkOverFences(true);
-        }
-
-        // Stuck detection: check net displacement while nav is active.
-        // Vec3-based check catches oscillation between two adjacent block positions
-        // (blockPosition() equality misses that case because the int pos alternates).
-        // Window is 9 checks × 10 ticks = 90 ticks (4.5 s) — long enough for water navigation.
-        if (cat.getNavigation().isInProgress()) {
-            int age = catNavRefAge.merge(uid, 1, Integer::sum);
-            net.minecraft.world.phys.Vec3 refPos = catNavRefPos.get(uid);
-            net.minecraft.world.phys.Vec3 curPos = cat.position();
-            if (refPos == null) {
-                catNavRefPos.put(uid, curPos);
-                catNavRefAge.put(uid, 0);
-            } else if (age >= 9) {
-                LivingEntity stuckTarget = cat.getTarget();
-                // At melee range the cat oscillates while fighting — that's expected, not stuck.
-                boolean inMeleeRange = stuckTarget != null && cat.distanceToSqr(stuckTarget) < 9.0;
-                if (!inMeleeRange && curPos.distanceToSqr(refPos) < 1.0) {
-                    // Moved less than 1 block in 90 ticks — spinning or trapped
-                    cat.getNavigation().stop();
-                    if (stuckTarget != null) {
-                        // Blacklist so the goal doesn't immediately re-select the same mob
-                        cat.targetSelector.getAvailableGoals().stream()
-                                .map(pg -> pg.getGoal())
-                                .filter(g -> g instanceof CatGuardTargetGoal)
-                                .map(g -> (CatGuardTargetGoal) g)
-                                .findFirst()
-                                .ifPresent(g -> g.blockTarget(stuckTarget));
-                        cat.setTarget(null);
-                    }
-                    // Clear refs so the next nav session starts a fresh 30-tick window from the
-                    // new starting position rather than being penalised for the previous stuck spot.
-                    catNavRefPos.remove(uid);
-                    catNavRefAge.remove(uid);
-                } else {
-                    // Cat moved enough — start next window from current position
-                    catNavRefPos.put(uid, curPos);
-                    catNavRefAge.put(uid, 0);
-                }
-            }
-        } else {
-            catNavRefAge.remove(uid);
-            catNavRefPos.remove(uid);
         }
 
         suppressFollowingBehaviors(cat);
@@ -1286,8 +1197,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         broadcastArmorSync(cat);
 
-        // Retaliation: if hit by a hostile mob, immediately switch target to attacker
-        if (!cat.level().isClientSide() && isGuardianCat(cat)) {
+        // Retaliation: if hit by a Monster in zone, re-run full path-length target selection.
+        // CAT_FLEEING cats ignore this — they're already running home.
+        if (!cat.level().isClientSide() && isGuardianCat(cat)
+                && !cat.getData(CAT_FLEEING.get())) {
             Entity direct = event.getSource().getDirectEntity();
             Entity indirect = event.getSource().getEntity();
             LivingEntity attacker = direct instanceof Monster m ? m
@@ -1295,15 +1208,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (attacker != null && !attacker.isDeadOrDying()
                     && isWithinGuardZone(cat, attacker.getX(), attacker.getY(), attacker.getZ(),
                             TARGET_ZONE_BUFFER)) {
-                cat.setTarget(attacker);
                 cat.targetSelector.getAvailableGoals().stream()
                         .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                         .filter(g -> g instanceof CatGuardTargetGoal)
                         .findFirst()
-                        .ifPresent(g -> ((CatGuardTargetGoal) g).retaliateAgainst(attacker));
-                PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
-                        new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
-                                cat.getId(), attacker.getId()));
+                        .ifPresent(g -> ((CatGuardTargetGoal) g).triggerRetarget());
             }
         }
     }
@@ -1577,8 +1486,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final class CatGuardTargetGoal extends TargetGoal {
 
         private final Cat cat;
-        /** Counts 20-tick intervals where the target is alive but unreachable. */
-        private int unreachableChecks = 0;
+        /** Throttle: skip A* target searches when recently found no valid target. */
+        private int targetSearchCooldown = 0;
         /** Mob entity IDs that are temporarily blacklisted (value = game time when blacklist expires). */
         private final Map<Integer, Long> blockedTargets = new HashMap<>();
         private static final long BLACKLIST_TICKS = 1200L; // 60 seconds
@@ -1611,7 +1520,16 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (!isWithinGuardZone(cat, cat.getX(), cat.getY(), cat.getZ(), CAT_ZONE_BUFFER)) {
                 return false;
             }
+            // Throttle: A* path computation per candidate is expensive; skip the search
+            // for a few ticks after a failed search rather than running it every tick.
+            if (targetSearchCooldown > 0) {
+                targetSearchCooldown--;
+                return false;
+            }
             boolean found = findAndSetTarget(BlockPos.of(bowlLong));
+            if (!found) {
+                targetSearchCooldown = 20;
+            }
             if (found && cat.getData(CAT_RETURNING.get())) {
                 // Don't interrupt a return trip if all loot slots are full — the cat must deposit
                 // before it can pick up more loot anyway; let it finish the trip.
@@ -1654,37 +1572,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 return false;
             }
 
-            // Every 20 ticks: if the cat is still >4 blocks from the target (whether nav is
-            // idle OR actively running but not closing the gap), count it as potentially
-            // unreachable. After 6 consecutive checks (~6 s total) without getting close,
-            // blacklist the target and switch to an alternative or abort.
-            // Aquatic targets are exempt — swimming nav is slower and the cat dives for them.
+            // Every 20 ticks: evict expired blacklist entries and check that the live
+            // navigation path (recalculated by MeleeAttackGoal as the monster moves) still
+            // stays inside the guard zone. If the monster has drifted so that the only route
+            // to it now exits the zone, blacklist it and abort pursuit immediately.
+            // Water targets are navigated manually (boostWaterNavigation) — the A* path only
+            // reaches the surface, so skip the zone-path check for them.
             if (cat.tickCount % 20 == 0) {
-                // Proactively evict expired blacklist entries so the map doesn't grow unboundedly
-                // when many mobs are blacklisted and then despawn.
                 blockedTargets.entrySet().removeIf(e -> cat.level().getGameTime() >= e.getValue());
-
-                boolean tooFar = cat.distanceToSqr(target) > 16.0;
-                boolean targetInWater = target.isInWater();
-                if (tooFar && !targetInWater) {
-                    if (++unreachableChecks >= 10) {
-                        unreachableChecks = 0;
-                        blacklist(target); // prevent immediately re-selecting this mob
-                        long bowlLong = cat.getData(CAT_BOWL_POS.get());
-                        LivingEntity alt = bowlLong != Long.MIN_VALUE
-                                ? findAlternative(BlockPos.of(bowlLong), target) : null;
-                        if (alt != null) {
-                            this.targetMob = alt;
-                            cat.setTarget(alt);
-                            PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
-                                    new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
-                                            cat.getId(), alt.getId()));
-                            return true;
-                        }
+                if (!target.isInWater() && !target.isUnderWater()) {
+                    net.minecraft.world.level.pathfinder.Path livePath = cat.getNavigation().getPath();
+                    if (livePath != null && !isPathWithinZone(livePath, cat)) {
+                        blacklist(target);
                         return false;
                     }
-                } else {
-                    unreachableChecks = 0;
                 }
             }
             return true;
@@ -1692,13 +1593,23 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         void blockTarget(LivingEntity target) {
             blacklist(target);
-            unreachableChecks = 0;
         }
 
-        void retaliateAgainst(LivingEntity attacker) {
-            this.targetMob = attacker;
-            this.unreachableChecks = 0;
-            blockedTargets.remove(attacker.getId()); // retaliating overrides any blacklist
+        void triggerRetarget() {
+            cat.setTarget(null);
+            this.targetMob = null;
+            targetSearchCooldown = 0; // allow immediate re-search
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong == Long.MIN_VALUE) {
+                return;
+            }
+            findAndSetTarget(BlockPos.of(bowlLong));
+            LivingEntity t = cat.getTarget();
+            if (t != null) {
+                PacketDistributor.sendToPlayersTrackingEntityAndSelf(cat,
+                        new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket(
+                                cat.getId(), t.getId()));
+            }
         }
 
         private boolean isBlocked(Monster m) {
@@ -1717,20 +1628,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             blockedTargets.put(target.getId(), cat.level().getGameTime() + BLACKLIST_TICKS);
         }
 
-        private LivingEntity findAlternative(BlockPos bowlPos, LivingEntity excluded) {
-            double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
-            double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
-            AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
-            List<Monster> hostiles = cat.level().getEntitiesOfClass(
-                    Monster.class, searchBox, m -> !m.isDeadOrDying() && m != excluded && !isBlocked(m));
-            return hostiles.stream()
-                    .min(Comparator.comparingDouble(cat::distanceToSqr))
-                    .orElse(null);
-        }
-
         @Override
         public void start() {
-            unreachableChecks = 0;
             cat.setOrderedToSit(false);
             super.start();
             LivingEntity t = cat.getTarget();
@@ -1755,6 +1654,54 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
         }
 
+        /**
+         * Selects the best target from {@code candidates} using A* path length.
+         * Pre-sorts by Euclidean distance and evaluates the top 8 via actual path computation,
+         * accepting only mobs whose path (a) ends within 2.5 blocks of the mob in 3D and
+         * (b) has all nodes within the guard zone. Returns null if no valid candidate exists.
+         */
+        private Monster selectTargetByPathLength(List<Monster> candidates) {
+            candidates.sort(Comparator.comparingDouble(cat::distanceToSqr));
+            int limit = Math.min(8, candidates.size());
+            Monster best = null;
+            double bestLength = Double.MAX_VALUE;
+            for (int i = 0; i < limit; i++) {
+                Monster mob = candidates.get(i);
+                boolean mobInWater = mob.isInWater() || mob.isUnderWater();
+
+                double length;
+                if (mobInWater) {
+                    // Water targets are reached via boostWaterNavigation (manual swim steering),
+                    // not A* — the ground pathfinder only reaches the water surface. Accept them
+                    // directly and rank by straight-line distance as a proxy for path length.
+                    length = Math.sqrt(cat.distanceToSqr(mob));
+                } else {
+                    net.minecraft.world.level.pathfinder.Path path =
+                            cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
+                    if (!instance.endNodeNear(path,
+                            new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.5)) {
+                        continue; // not reachable in 3D
+                    }
+                    if (!isPathWithinZone(path, cat)) {
+                        continue; // route exits guard zone
+                    }
+                    length = 0.0;
+                    for (int j = 1; j < path.getNodeCount(); j++) {
+                        net.minecraft.world.level.pathfinder.Node a = path.getNode(j - 1);
+                        net.minecraft.world.level.pathfinder.Node b = path.getNode(j);
+                        double dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
+                        length += Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    }
+                }
+
+                if (length < bestLength) {
+                    bestLength = length;
+                    best = mob;
+                }
+            }
+            return best;
+        }
+
         private boolean findAndSetTarget(BlockPos bowlPos) {
             double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
             double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
@@ -1764,21 +1711,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (hostiles.isEmpty()) {
                 return false;
             }
-
-            LivingEntity nearest = null;
-            double nearestDistSq = Double.MAX_VALUE;
-            for (Monster m : hostiles) {
-                double d = cat.distanceToSqr(m);
-                if (d < nearestDistSq) {
-                    nearestDistSq = d;
-                    nearest = m;
-                }
-            }
-            if (nearest == null) {
+            Monster best = selectTargetByPathLength(hostiles);
+            if (best == null) {
+                cat.setData(CAT_RETURNING.get(), true); // no reachable in-zone mob → go home
                 return false;
             }
-            this.targetMob = nearest;
-            cat.setTarget(nearest);
+            this.targetMob = best;
+            cat.setTarget(best);
             cat.setOrderedToSit(false); // stand up immediately so MeleeAttackGoal isn't blocked
             return true;
         }
