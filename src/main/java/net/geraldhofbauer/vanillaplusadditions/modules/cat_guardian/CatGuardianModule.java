@@ -1670,28 +1670,45 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 boolean mobInWater = mob.isInWater() || mob.isUnderWater();
 
                 double length;
-                if (mobInWater) {
-                    // Water targets are reached via boostWaterNavigation (manual swim steering),
-                    // not A* — the ground pathfinder only reaches the water surface. Accept them
-                    // directly and rank by straight-line distance as a proxy for path length.
-                    length = Math.sqrt(cat.distanceToSqr(mob));
-                } else {
-                    net.minecraft.world.level.pathfinder.Path path =
-                            cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
+                net.minecraft.world.level.pathfinder.Path path =
+                        cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
+
+                if (!mobInWater) {
+                    // Dry-land target: full 3D reachability check required.
                     if (!instance.endNodeNear(path,
                             new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.5)) {
                         continue; // not reachable in 3D
                     }
-                    if (!isPathWithinZone(path, cat)) {
-                        continue; // route exits guard zone
-                    }
-                    length = 0.0;
+                }
+                // Zone constraint always applies: the path to the mob (or to the water surface
+                // for submerged targets) must not exit the guard zone.
+                if (!isPathWithinZone(path, cat)) {
+                    continue;
+                }
+
+                // Path length: sum of 3D node distances. For water mobs the path ends at the
+                // surface; add straight-line distance to the submerged mob as the dive portion.
+                length = 0.0;
+                if (path != null) {
                     for (int j = 1; j < path.getNodeCount(); j++) {
                         net.minecraft.world.level.pathfinder.Node a = path.getNode(j - 1);
                         net.minecraft.world.level.pathfinder.Node b = path.getNode(j);
                         double dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z;
                         length += Math.sqrt(dx * dx + dy * dy + dz * dz);
                     }
+                    if (mobInWater) {
+                        net.minecraft.world.level.pathfinder.Node end = path.getEndNode();
+                        if (end != null) {
+                            double dx = mob.getX() - (end.x + 0.5);
+                            double dy = mob.getY() - end.y;
+                            double dz = mob.getZ() - (end.z + 0.5);
+                            length += Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        }
+                    }
+                } else if (mobInWater) {
+                    length = Math.sqrt(cat.distanceToSqr(mob)); // cat already in water, no land path
+                } else {
+                    continue; // null path for dry target → unreachable
                 }
 
                 if (length < bestLength) {
