@@ -4,6 +4,18 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.11] - 2026-06-16
+### Added
+- **Cat Guardian Modul**: Katzen streicheln statt schlagen — leerer Hand-Linksklick auf jede Katze (auch nicht-zahme) cancelt den Angriff komplett und spielt stattdessen Schnurr-Sound + Herzpartikel ab.
+- **Cat Guardian Modul**: Katzen mit Fisch füttern — Rechtsklick auf eine zahme Katze mit Fisch in der Hand (vanilla `#minecraft:fishes` sowie unsere Flying Fish, roh/gekocht) verbraucht 1 Fisch, heilt die Katze voll und füllt bei Wächterkatzen den Sättigungstimer (`fed_duration_ticks`) auf das Maximum auf.
+- **Cat Guardian Modul**: Feeding Station gibt jetzt ein Redstone-Comparator-Signal proportional zur Anzahl assoziierter Katzen aus (`floor(katzen * 15 / max_cats_per_station)`, voll = Signalstärke 15).
+- Dokumentation für 8 bisher undokumentierte Module ergänzt: Arm Target Overlay, Block Glow, Chunk Reset, Custom Crafting Recipes, End Oxygen, Mob Drops, Overpacked Slowdown Override, Texture Kill (`docs/`).
+### Fixed
+- **Cat Guardian Modul**: Wächterkatzen tauchen jetzt zuverlässig zu Unterwasser-Zielen ab. Der `createNavigation`-Mixin zielte fälschlich auf `Cat` statt `Mob` (Cat überschreibt die Methode nicht, daher griff der Mixin nie); neue `CatAmphibiousNavigation` erlaubt korrektes Unterwasser-Pathfinding bei weiterhin gültigem `GroundPathNavigation`-Typ für `FollowOwnerGoal`. `FloatGoal` wird während aktiver Navigation unterdrückt, damit Katzen nicht ständig an die Oberfläche gedrückt werden.
+- **Cat Guardian Modul**: Oberflächen-Katapult beim Auftauchen behoben (Schwimmstatus wird jetzt im `EntityTickEvent.Pre` vor `travel()` zurückgesetzt) und Tauchgeschwindigkeit von 0.18 auf 0.08 reduziert.
+### Changed
+- **Cat Guardian Modul**: Katzen-Statistik-Overlay (Goggles) ist jetzt halbtransparent (Alpha 0xF0 → 0x80) und erscheint rechts neben dem Fadenkreuz statt zentriert über der Katze, analog zum Station-Tooltip.
+
 ## [1.0.0-beta.6] - 2026-06-14
 ### Fixed
 - **Arm Target Overlay**: Falschen Namespace im `arm_goggles`-Item-Tag korrigiert (`create_aeronautics:aviators_goggles` → `aeronautics:aviators_goggles`). Die Aviator's Goggles aus *Create: Aeronautics* zählen damit wieder für das Arm Target Overlay, und der `TagLoader`-ERROR beim Server-Start ist behoben. Beide Tag-Einträge sind nun als `required: false` markiert (saubere Cross-Mod-Tags).

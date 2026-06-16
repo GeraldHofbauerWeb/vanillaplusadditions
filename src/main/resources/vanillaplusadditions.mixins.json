@@ -4,6 +4,7 @@
   "package": "net.geraldhofbauer.vanillaplusadditions.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "CatGuardianFloatMixin",
     "CatGuardianFollowMixin",
     "CatGuardianNavMixin",
     "CatGuardianTeleportMixin",

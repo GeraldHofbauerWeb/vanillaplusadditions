@@ -63,8 +63,11 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.*;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.core.particles.ParticleTypes;
+import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -623,6 +626,15 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getEntity() instanceof Cat cat) || cat.level().isClientSide()) {
             return;
         }
+        // Suppress swimming BEFORE travel() runs so the vanilla surface-jump (+0.3 Y that fires
+        // when isSwimming && fluidHeight <= 0.4) cannot catapult the cat when it exits water.
+        // boostWaterNavigation (Post) re-enables it deeper underwater as needed.
+        if (isGuardianCat(cat) && cat.isSwimming() && cat.isInWater()) {
+            double fluidHeight = cat.getFluidHeight(net.minecraft.tags.FluidTags.WATER);
+            if (fluidHeight <= 0.5) {
+                cat.setSwimming(false);
+            }
+        }
         // Strip FollowOwnerGoal BEFORE the goal selector runs this tick, so an associated cat
         // can never teleport to a far-away owner (doing this in Post left a one-tick window in
         // which the goal could still fire — e.g. while a cat was returning to its station).
@@ -814,10 +826,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
         if (path == null || path.isDone()) {
+            cat.setSwimming(false);
             return;
         }
         int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
         net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
+        // Enable swimming mode only when the next node is inside a fluid block. This gives 3D
+        // travel physics (look-direction controls Y) while diving, but disables it as soon as the
+        // next node is on land — preventing the vanilla surface-jump (+0.3 Y) that fires when
+        // isSwimming() is true and fluid height <= fluidJumpThreshold.
+        boolean nextNodeInWater = !cat.level()
+                .getFluidState(new net.minecraft.core.BlockPos(node.x, node.y, node.z))
+                .isEmpty();
+        cat.setSwimming(nextNodeInWater);
         double dx = node.x + 0.5 - cat.getX();
         double dy = node.y + 0.5 - cat.getY();
         double dz = node.z + 0.5 - cat.getZ();
@@ -829,7 +850,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         dy /= len;
         dz /= len;
         net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        cat.setDeltaMovement(v.x * 0.4 + dx * 0.12, v.y * 0.4 + dy * 0.12, v.z * 0.4 + dz * 0.12);
+        cat.setDeltaMovement(v.x * 0.4 + dx * 0.08, v.y * 0.4 + dy * 0.08, v.z * 0.4 + dz * 0.08);
+    }
+
+    private static boolean isFishItem(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        if (stack.is(net.minecraft.tags.ItemTags.FISHES)) {
+            return true;
+        }
+        Item item = stack.getItem();
+        return item == FlyingFishModule.RAW_FLYING_FISH.get()
+                || item == FlyingFishModule.COOKED_FLYING_FISH.get();
     }
 
     private void tickCat(Cat cat) {
@@ -1130,6 +1163,29 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getTarget() instanceof Cat cat)) {
             return;
         }
+
+        // Fish feeding — any player can feed any tamed cat (no ownership required)
+        if (cat.isTame() && isFishItem(event.getItemStack())) {
+            if (!event.getLevel().isClientSide()) {
+                Player feeder = event.getEntity();
+                if (!feeder.isCreative()) {
+                    event.getItemStack().shrink(1);
+                }
+                if (isGuardianCat(cat)) {
+                    cat.setData(CAT_FED_TICKS.get(), getFedDurationTicks());
+                }
+                cat.setHealth(cat.getMaxHealth());
+                cat.level().playSound(null, cat.getX(), cat.getY(), cat.getZ(),
+                        SoundEvents.CAT_PURREOW, cat.getSoundSource(), 1.0f, 1.0f);
+                if (cat.level() instanceof ServerLevel sl) {
+                    sl.sendParticles(ParticleTypes.HEART,
+                            cat.getX(), cat.getEyeY(), cat.getZ(), 7, 0.3, 0.3, 0.3, 0);
+                }
+            }
+            event.setCanceled(true);
+            return;
+        }
+
         if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), event.getEntity().getUUID())) {
             return;
         }
@@ -1169,6 +1225,28 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             // Cancelling server-side (not client) avoids the custom_payload EncoderException
             // that occurs when the integrated server tries to sync state after the interact.
             event.setCanceled(true);
+        }
+    }
+
+    // ---- Cat petting (empty-hand left-click) ----
+
+    @SubscribeEvent
+    public void onAttackCat(AttackEntityEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (!(event.getTarget() instanceof Cat cat)) {
+            return;
+        }
+        if (!event.getEntity().getMainHandItem().isEmpty()) {
+            return;
+        }
+        event.setCanceled(true);
+        cat.level().playSound(null, cat.getX(), cat.getY(), cat.getZ(),
+                SoundEvents.CAT_PURR, cat.getSoundSource(), 1.0f, 1.0f);
+        if (cat.level() instanceof ServerLevel sl) {
+            sl.sendParticles(ParticleTypes.HEART,
+                    cat.getX(), cat.getEyeY(), cat.getZ(), 5, 0.3, 0.3, 0.3, 0);
         }
     }
 

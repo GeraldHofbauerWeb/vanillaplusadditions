@@ -267,16 +267,16 @@ public final class CatGuardianGogglesClientHandler {
         int contentH = rowH * 3;
         int pad = 4;
 
-        // Position: centred on the crosshair horizontally, above the cat
-        int x = g.guiWidth() / 2 - panelW / 2;
-        int y = g.guiHeight() / 2 - contentH - 30;
+        // Position: to the right of the crosshair, same as station tooltip
+        int x = g.guiWidth() / 2 + 10;
+        int y = g.guiHeight() / 2 + 10;
 
-        // Background (Minecraft tooltip style)
-        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y + contentH + pad + 1, 0xF0100010, 0xF0100010);
-        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y - pad, 0xFF5000FF, 0xFF5000FF);
-        g.fillGradient(x - pad - 1, y + contentH + pad, x + panelW + pad + 1, y + contentH + pad + 1, 0xFF28007F, 0xFF28007F);
-        g.fillGradient(x - pad - 1, y - pad, x - pad, y + contentH + pad, 0xFF5000FF, 0xFF28007F);
-        g.fillGradient(x + panelW + pad, y - pad, x + panelW + pad + 1, y + contentH + pad, 0xFF5000FF, 0xFF28007F);
+        // Background (semi-transparent tooltip style)
+        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y + contentH + pad + 1, 0x80100010, 0x80100010);
+        g.fillGradient(x - pad - 1, y - pad - 1, x + panelW + pad + 1, y - pad, 0xA05000FF, 0xA05000FF);
+        g.fillGradient(x - pad - 1, y + contentH + pad, x + panelW + pad + 1, y + contentH + pad + 1, 0xA028007F, 0xA028007F);
+        g.fillGradient(x - pad - 1, y - pad, x - pad, y + contentH + pad, 0xA05000FF, 0xA028007F);
+        g.fillGradient(x + panelW + pad, y - pad, x + panelW + pad + 1, y + contentH + pad, 0xA05000FF, 0xA028007F);
 
         // Row 0: heart sprite (left) + HP value (right-aligned)
         g.blitSprite(net.minecraft.resources.ResourceLocation.parse("minecraft:hud/heart/full"),

@@ -209,6 +209,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Configuration System](docs/CONFIGURATION_SYSTEM_SUMMARY.md)
 - [Testing Guide](docs/TESTING.md)
 - [Companion Armor & Cat Guardian Systems](docs/COMPANION_ARMOR.md)
+- [Cat Guardian](docs/cat_guardian.md)
+- [Arm Target Overlay](docs/arm_target_overlay.md)
+- [Block Glow](docs/block_glow.md)
+- [Chunk Reset Command](docs/chunk_reset.md)
+- [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
+- [End Oxygen](docs/end_oxygen.md)
+- [Mob Drops](docs/mob_drops.md)
+- [Overpacked Slowdown Override](docs/overpacked_slowdown.md)
+- [Texture Kill](docs/texture_kill.md)
 - [Warp AI Development (WARP)](WARP.md)
 
 ## 🐛 Debug Logging

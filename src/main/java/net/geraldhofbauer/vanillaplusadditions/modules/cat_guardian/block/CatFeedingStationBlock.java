@@ -1,5 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block;
 
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.CatFeedingStationBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -191,6 +192,24 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
             clearAssociationsOnBreak(level, pos, station);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof CatFeedingStationBlockEntity station)) {
+            return 0;
+        }
+        int catCount = station.getAssociatedCats().size();
+        int maxCats = CatGuardianModule.getMaxCatsPerStation();
+        if (maxCats <= 0) {
+            return 0;
+        }
+        return Math.floorDiv(catCount * 15, maxCats);
     }
 
     private static void dropHandler(Level level, BlockPos pos, ItemStackHandler handler) {
