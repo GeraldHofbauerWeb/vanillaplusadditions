@@ -4,6 +4,11 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.12] - 2026-06-17
+### Fixed
+- **Cat Guardian Modul**: Alle zahmen Katzen folgen dem Spieler nicht mehr, wenn das CatGuardianModule aktiv ist. Der `CatGuardianFollowMixin` blockiert jetzt `FollowOwnerGoal` für alle Katzen (nicht nur Wächterkatzen), um stabiles Züchten mit Katzen zu ermöglichen (standing spawn beim Breeding).
+- **Cat Guardian Modul**: Kisten können jetzt geöffnet werden, auch wenn eine Katze darauf sitzt. Der `ChestBlockCatMixin` wurde angepasst, um Katzen nicht länger zu blockieren.
+
 ## [1.0.0-beta.11] - 2026-06-16
 ### Added
 - **Cat Guardian Modul**: Katzen streicheln statt schlagen — leerer Hand-Linksklick auf jede Katze (auch nicht-zahme) cancelt den Angriff komplett und spielt stattdessen Schnurr-Sound + Herzpartikel ab.

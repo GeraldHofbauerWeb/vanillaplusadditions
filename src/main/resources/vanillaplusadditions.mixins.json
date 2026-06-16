@@ -8,6 +8,7 @@
     "CatGuardianFollowMixin",
     "CatGuardianNavMixin",
     "CatGuardianTeleportMixin",
+    "ChestBlockCatMixin",
     "ChunkStatusTasksMixin",
     "GenerationChunkHolderMixin"
   ],

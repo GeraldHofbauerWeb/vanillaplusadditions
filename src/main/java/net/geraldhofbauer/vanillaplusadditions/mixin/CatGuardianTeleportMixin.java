@@ -9,17 +9,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Blocks the vanilla owner-teleport for guardian cats at the source. Both teleport call sites
- * ({@code FollowOwnerGoal.tick} and {@code TamableAnimal.TamableAnimalPanicGoal.tick}) gate the
- * teleport on {@code shouldTryTeleportToOwner()}; returning false here prevents a bowl-assigned
- * cat from ever teleporting to a distant owner, regardless of goal timing.
+ * Blocks the vanilla owner-teleport for all tame cats when the cat_guardian module is active.
+ * The only legitimate cat-teleport mechanism is Sable Contraptions assembly
+ * ({@code SableBowlAssemblyHandler}), which bypasses this check entirely.
+ * Both vanilla call sites ({@code FollowOwnerGoal.tick} and
+ * {@code TamableAnimal.TamableAnimalPanicGoal.tick}) gate on {@code shouldTryTeleportToOwner()}.
  */
 @Mixin(TamableAnimal.class)
 public class CatGuardianTeleportMixin {
 
     @Inject(method = "shouldTryTeleportToOwner", at = @At("HEAD"), cancellable = true)
-    private void vpaNoGuardianTeleport(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof Cat cat && CatGuardianModule.isGuardianCat(cat)) {
+    private void vpaNoTeleportToPlayer(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof Cat cat && cat.isTame() && CatGuardianModule.isModuleActive()) {
             cir.setReturnValue(false);
         }
     }

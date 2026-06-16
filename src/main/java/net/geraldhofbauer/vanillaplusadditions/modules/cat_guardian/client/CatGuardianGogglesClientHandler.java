@@ -252,6 +252,8 @@ public final class CatGuardianGogglesClientHandler {
                 ? xpData[0] + "/" + xpData[1]
                 : "?/" + CatGuardianModule.getCatXpCapacity();
 
+        String ownerStr = resolveOwnerName(mc, cat.getOwnerUUID());
+
         // --- Layout: unified icon size for all three rows ---
         net.minecraft.client.gui.Font font = mc.font;
         int iconSize = 14;                        // all icons the same size
@@ -263,8 +265,8 @@ public final class CatGuardianGogglesClientHandler {
         int armorGap = hasArmor ? iconGap : 0;
         int panelW = Math.max(iconGap + font.width(healthStr),
                 Math.max(armorGap + font.width(armorStr),
-                        iconGap + font.width(xpStr)));
-        int contentH = rowH * 3;
+                        Math.max(iconGap + font.width(xpStr), iconGap + font.width(ownerStr))));
+        int contentH = rowH * 4;
         int pad = 4;
 
         // Position: to the right of the crosshair, same as station tooltip
@@ -304,6 +306,30 @@ public final class CatGuardianGogglesClientHandler {
         g.renderItem(xpBottle, 0, 0);
         g.pose().popPose();
         g.drawString(font, xpStr, x + panelW - font.width(xpStr), row2Y + textOff, 0xFF7BE018, false);
+
+        // Row 3: player head icon (left) + owner name (right-aligned)
+        int row3Y = y + rowH * 3;
+        ItemStack playerHead = new ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
+        g.pose().pushPose();
+        g.pose().translate(x, row3Y, 0);
+        g.pose().scale(itemScale, itemScale, 1f);
+        g.renderItem(playerHead, 0, 0);
+        g.pose().popPose();
+        g.drawString(font, ownerStr, x + panelW - font.width(ownerStr), row3Y + textOff, 0xFFAAAAFF, false);
+    }
+
+    /** Resolves an owner UUID to a display name via the client's tab-list player info. */
+    private static String resolveOwnerName(Minecraft mc, @Nullable java.util.UUID ownerId) {
+        if (ownerId == null) {
+            return "?";
+        }
+        if (mc.getConnection() != null) {
+            net.minecraft.client.multiplayer.PlayerInfo info = mc.getConnection().getPlayerInfo(ownerId);
+            if (info != null) {
+                return info.getProfile().getName();
+            }
+        }
+        return ownerId.toString().substring(0, 8);
     }
 
     @SubscribeEvent

@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Prevents guardian cats (bowl-assigned) from following or teleporting to their owner.
+ * Prevents all tamed cats from following their owner when CatGuardianModule is active.
  * Belt-and-suspenders alongside the goal-removal in suppressFollowingBehaviors().
  */
 @Mixin(FollowOwnerGoal.class)
@@ -23,15 +23,15 @@ public class CatGuardianFollowMixin {
     private TamableAnimal tamable;
 
     @Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
-    private void suppressGuardian(CallbackInfoReturnable<Boolean> cir) {
-        if (tamable instanceof Cat cat && CatGuardianModule.isGuardianCat(cat)) {
+    private void suppressCatFollowing(CallbackInfoReturnable<Boolean> cir) {
+        if (tamable instanceof Cat && CatGuardianModule.isModuleActive()) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "canContinueToUse", at = @At("HEAD"), cancellable = true)
-    private void suppressGuardianContinue(CallbackInfoReturnable<Boolean> cir) {
-        if (tamable instanceof Cat cat && CatGuardianModule.isGuardianCat(cat)) {
+    private void suppressCatFollowingContinue(CallbackInfoReturnable<Boolean> cir) {
+        if (tamable instanceof Cat && CatGuardianModule.isModuleActive()) {
             cir.setReturnValue(false);
         }
     }

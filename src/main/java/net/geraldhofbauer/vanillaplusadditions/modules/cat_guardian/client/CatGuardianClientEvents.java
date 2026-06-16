@@ -63,8 +63,14 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        // right-click (no Shift) → open cat inventory; Shift+right-click is left to Carry On
-        if (!Screen.hasShiftDown() && mc.player.getUUID().equals(cat.getOwnerUUID())) {
+        if (!mc.player.getUUID().equals(cat.getOwnerUUID())) {
+            return;
+        }
+
+        // Plain right-click → open cat inventory. Shift+right-click is left to Carry On.
+        // Ctrl+right-click is left uncancelled too, so vanilla sit/stand stays reachable
+        // (armor is removed by dragging it out of the inventory GUI, not via a click gesture).
+        if (!Screen.hasShiftDown() && !Screen.hasControlDown()) {
             event.setCanceled(true);
             PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
         }

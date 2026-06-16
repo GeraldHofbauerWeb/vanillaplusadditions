@@ -19,6 +19,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -201,7 +202,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                             .serialize(Codec.BOOL)
                             .build());
 
-    /** Low-health retreat flag: absolute, ignores all mobs and flees to base until healed. */
+    /**
+     * Low-health retreat flag: absolute, ignores all mobs and flees to base until healed.
+     */
     public static final Supplier<AttachmentType<Boolean>> CAT_FLEEING =
             ATTACHMENT_TYPES.register("cat_fleeing", () ->
                     AttachmentType.<Boolean>builder(() -> false)
@@ -249,7 +252,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return instance != null ? instance.getConfig().getFedDurationTicks() : 6000;
     }
 
-    /** Returns true if this cat is registered as a guardian (has a bowl assignment). */
+    /**
+     * Returns true if this cat is registered as a guardian (has a bowl assignment).
+     */
     public static boolean isGuardianCat(Cat cat) {
         if (instance == null || !instance.isModuleEnabled()) {
             return false;
@@ -259,6 +264,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static boolean isModuleActive() {
+        return instance != null && instance.isModuleEnabled();
     }
 
     public static int getMaxCatsPerStation() {
@@ -343,8 +352,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         // Cat feeding station: glass_pane top/sides, cauldron center, smooth_stone bottom
         addShapedRecipe(mergedRecipes, "cat_feeding_station",
                 Map.of('G', Ingredient.of(Items.GLASS_PANE),
-                       'C', Ingredient.of(Items.CAULDRON),
-                       'S', Ingredient.of(Items.SMOOTH_STONE)),
+                        'C', Ingredient.of(Items.CAULDRON),
+                        'S', Ingredient.of(Items.SMOOTH_STONE)),
                 CraftingBookCategory.MISC, new ItemStack(CAT_FEEDING_STATION_ITEM.get()),
                 "GGG", "GCG", "SSS");
 
@@ -363,8 +372,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     private void addShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name,
-                                  Map<Character, Ingredient> key, CraftingBookCategory category,
-                                  ItemStack result, String... rows) {
+                                 Map<Character, Ingredient> key, CraftingBookCategory category,
+                                 ItemStack result, String... rows) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, rows);
         ShapedRecipe recipe = new ShapedRecipe("", category, pattern, result);
@@ -402,30 +411,32 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
         event.registrar("1").playToServer(OpenCatInventoryPacket.TYPE, OpenCatInventoryPacket.STREAM_CODEC,
-            (packet, ctx) -> ctx.enqueueWork(() -> {
-                if (!isModuleEnabled()) {
-                    return;
-                }
-                ServerPlayer player = (ServerPlayer) ctx.player();
-                Entity entity = player.level().getEntity(packet.entityId());
-                if (!(entity instanceof Cat cat)) {
-                    return;
-                }
-                if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), player.getUUID())) {
-                    return;
-                }
-                player.openMenu(
-                    new SimpleMenuProvider(
-                        (id, inv, p) -> new CatInventoryMenu(id, inv, cat),
-                        cat.getName()
-                    ),
-                    buf -> buf.writeInt(cat.getId())
-                );
-            })
+                (packet, ctx) -> ctx.enqueueWork(() -> {
+                    if (!isModuleEnabled()) {
+                        return;
+                    }
+                    ServerPlayer player = (ServerPlayer) ctx.player();
+                    Entity entity = player.level().getEntity(packet.entityId());
+                    if (!(entity instanceof Cat cat)) {
+                        return;
+                    }
+                    if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), player.getUUID())) {
+                        return;
+                    }
+                    Component title = cat.getName().copy()
+                            .append(Component.literal(" (" + player.getGameProfile().getName() + ")"));
+                    player.openMenu(
+                            new SimpleMenuProvider(
+                                    (id, inv, p) -> new CatInventoryMenu(id, inv, cat),
+                                    title
+                            ),
+                            buf -> buf.writeInt(cat.getId())
+                    );
+                })
         );
 
         event.registrar("1").playToClient(SyncCatInventoryPacket.TYPE, SyncCatInventoryPacket.STREAM_CODEC,
-            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatInventory(packet))
+                (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatInventory(packet))
         );
 
         event.registrar("1").playToClient(SyncCatStatsPacket.TYPE, SyncCatStatsPacket.STREAM_CODEC,
@@ -433,14 +444,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         );
 
         event.registrar("1").playToClient(net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.TYPE,
-            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.STREAM_CODEC,
-            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatTarget(packet))
+                net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatTargetPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatTarget(packet))
         );
 
         event.registrar("1").playToClient(
-            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.TYPE,
-            net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.STREAM_CODEC,
-            (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatPath(packet))
+                net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.TYPE,
+                net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> CatGuardianClientEvents.handleSyncCatPath(packet))
         );
 
         event.registrar("1").playToServer(RequestCatStatsPacket.TYPE, RequestCatStatsPacket.STREAM_CODEC,
@@ -463,30 +474,30 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         );
 
         event.registrar("1").playToServer(RequestCatGlowPacket.TYPE, RequestCatGlowPacket.STREAM_CODEC,
-            (packet, ctx) -> ctx.enqueueWork(() -> {
-                if (!isModuleEnabled()) {
-                    return;
-                }
-                ServerPlayer player = (ServerPlayer) ctx.player();
-                BlockPos bowlPos = packet.bowlPos();
-                if (player.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY() + 0.5, bowlPos.getZ() + 0.5) > 64.0 * 64.0) {
-                    return;
-                }
-                if (!(player.level().getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) {
-                    return;
-                }
-                ServerLevel serverLevel = (ServerLevel) player.level();
-                int durationTicks = getConfig().getGlowDurationTicks();
-                for (UUID catUUID : bowl.getAssociatedCats()) {
-                    Entity entity = serverLevel.getEntity(catUUID);
-                    if (entity instanceof Cat cat && cat.isAlive()) {
-                        MobEffectInstance existing = cat.getEffect(MobEffects.GLOWING);
-                        if (existing == null || existing.getDuration() < 200) {
-                            cat.addEffect(new MobEffectInstance(MobEffects.GLOWING, durationTicks, 0, false, false));
+                (packet, ctx) -> ctx.enqueueWork(() -> {
+                    if (!isModuleEnabled()) {
+                        return;
+                    }
+                    ServerPlayer player = (ServerPlayer) ctx.player();
+                    BlockPos bowlPos = packet.bowlPos();
+                    if (player.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY() + 0.5, bowlPos.getZ() + 0.5) > 64.0 * 64.0) {
+                        return;
+                    }
+                    if (!(player.level().getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) {
+                        return;
+                    }
+                    ServerLevel serverLevel = (ServerLevel) player.level();
+                    int durationTicks = getConfig().getGlowDurationTicks();
+                    for (UUID catUUID : bowl.getAssociatedCats()) {
+                        Entity entity = serverLevel.getEntity(catUUID);
+                        if (entity instanceof Cat cat && cat.isAlive()) {
+                            MobEffectInstance existing = cat.getEffect(MobEffects.GLOWING);
+                            if (existing == null || existing.getDuration() < 200) {
+                                cat.addEffect(new MobEffectInstance(MobEffects.GLOWING, durationTicks, 0, false, false));
+                            }
                         }
                     }
-                }
-            })
+                })
         );
     }
 
@@ -614,6 +625,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         baby.setTame(true, false);
         baby.setOwnerUUID(chosenOwner);
+        // Force-sit: without this, the kitten's FollowOwnerGoal/panic-teleport immediately
+        // yanks it across the map toward its (possibly far-away) new owner.
+        baby.setOrderedToSit(true);
     }
 
     // ---- Cat tick logic ----
@@ -670,7 +684,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         tickCat(cat);
     }
 
-    /** The cat's current movement goal: its combat target if any, else its bowl. Null if neither. */
+    /**
+     * The cat's current movement goal: its combat target if any, else its bowl. Null if neither.
+     */
     private net.minecraft.world.phys.Vec3 currentGoalPos(Cat cat) {
         LivingEntity target = cat.getTarget();
         if (target != null) {
@@ -684,7 +700,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return null;
     }
 
-    /** True if every node of {@code path} lies within the cat's guard zone (zero buffer). */
+    /**
+     * True if every node of {@code path} lies within the cat's guard zone (zero buffer).
+     */
     private static boolean isPathWithinZone(
             net.minecraft.world.level.pathfinder.Path path, Cat cat) {
         if (path == null) {
@@ -699,7 +717,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return true;
     }
 
-    /** Throttled path toward a goal position (A* is costly), recomputed at most every 10 ticks. */
+    /**
+     * Throttled path toward a goal position (A* is costly), recomputed at most every 10 ticks.
+     */
     private net.minecraft.world.level.pathfinder.Path goalPath(Cat cat, double gx, double gy, double gz) {
         UUID uid = cat.getUUID();
         int now = cat.tickCount;
@@ -711,7 +731,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return catGoalPath.get(uid);
     }
 
-    /** True if the path's closest reachable end node is within {@code maxDist} of the goal. */
+    /**
+     * True if the path's closest reachable end node is within {@code maxDist} of the goal.
+     */
     private boolean endNodeNear(net.minecraft.world.level.pathfinder.Path path,
                                 net.minecraft.world.phys.Vec3 goal, double maxDist) {
         if (path == null) {
@@ -727,7 +749,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return dx * dx + dy * dy + dz * dz <= maxDist * maxDist;
     }
 
-    /** Horizontal direction toward the first path node meaningfully ahead of the cat; null if none. */
+    /**
+     * Horizontal direction toward the first path node meaningfully ahead of the cat; null if none.
+     */
     private net.minecraft.world.phys.Vec3 pathDir(Cat cat, net.minecraft.world.level.pathfinder.Path path) {
         if (path == null) {
             return null;
@@ -743,7 +767,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return null;
     }
 
-    /** Direction the cat should currently head toward its goal, preferring pathfinding over bee-line. */
+    /**
+     * Direction the cat should currently head toward its goal, preferring pathfinding over bee-line.
+     */
     private net.minecraft.world.phys.Vec3 goalDir(Cat cat) {
         net.minecraft.world.phys.Vec3 d = pathDir(cat, cat.getNavigation().getPath());
         if (d != null) {
@@ -804,7 +830,20 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     cat.level().getFluidState(aheadFeet).is(net.minecraft.tags.FluidTags.WATER)
                             || cat.level().getFluidState(aheadFeet.below()).is(net.minecraft.tags.FluidTags.WATER);
             BlockPos checkPos = nearWaterEdge ? aheadFeet.above() : aheadFeet;
-            if (!cat.level().getBlockState(checkPos).isSolid()) {
+            // isSolid() is false for chests, slabs, fences etc. (it tracks render/AO behaviour,
+            // not collision), which made the cat stop dead in front of a chest instead of
+            // hopping it. Check the actual collision shape so any physical obstacle qualifies.
+            if (cat.level().getBlockState(checkPos).getCollisionShape(cat.level(), checkPos).isEmpty()) {
+                return;
+            }
+            // Headroom check: an overhanging block (e.g. a stair-stepped/jutting build) can sit
+            // directly above the jump arc. Without this, the cat repeatedly hops, bonks its head,
+            // and falls right back — an endless stuck loop. Require the column above both the
+            // takeoff and landing spots to be clear up to the ~1.5-block jump peak.
+            BlockPos takeoffHead = cat.blockPosition().above(2);
+            BlockPos landingHead = aheadFeet.above(2);
+            if (!cat.level().getBlockState(takeoffHead).getCollisionShape(cat.level(), takeoffHead).isEmpty()
+                    || !cat.level().getBlockState(landingHead).getCollisionShape(cat.level(), landingHead).isEmpty()) {
                 return;
             }
             vx = dir.x * 0.28;
@@ -1166,14 +1205,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         // Fish feeding — any player can feed any tamed cat (no ownership required)
         if (cat.isTame() && isFishItem(event.getItemStack())) {
+            if (!isGuardianCat(cat)) {
+                // We allow feeding non-guardian cats to be handled by vanilla (e.g. for breeding), but guardian cats
+                // don't get to f*ck, they have to fight — so we cancel the interaction for guardian cats only to prevent
+                // vanilla feeding logic from applying.
+//                event.setCanceled(false);
+                return;
+            }
             if (!event.getLevel().isClientSide()) {
                 Player feeder = event.getEntity();
                 if (!feeder.isCreative()) {
                     event.getItemStack().shrink(1);
                 }
-                if (isGuardianCat(cat)) {
-                    cat.setData(CAT_FED_TICKS.get(), getFedDurationTicks());
-                }
+                cat.setData(CAT_FED_TICKS.get(), getFedDurationTicks());
                 cat.setHealth(cat.getMaxHealth());
                 cat.level().playSound(null, cat.getX(), cat.getY(), cat.getZ(),
                         SoundEvents.CAT_PURREOW, cat.getSoundSource(), 1.0f, 1.0f);
@@ -1209,23 +1253,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 broadcastArmorSync(cat);
             }
             event.setCanceled(true);
-        } else if (heldItem.isEmpty() && player.isShiftKeyDown() && !currentArmor.isEmpty()) {
-            if (!event.getLevel().isClientSide()) {
-                if (!player.getInventory().add(currentArmor)) {
-                    player.drop(currentArmor, false);
-                }
-                invData.setArmor(ItemStack.EMPTY);
-                removeArmorAttribute(cat);
-                broadcastArmorSync(cat);
-            }
-            event.setCanceled(true);
-        } else if (isGuardianCat(cat)) {
-            // Prevent vanilla sit/stand toggle on guardian cats; client uses alt-click to toggle overlays.
-            // Server can't detect the Alt key, so we cancel all non-armor interact on guardian cats.
-            // Cancelling server-side (not client) avoids the custom_payload EncoderException
-            // that occurs when the integrated server tries to sync state after the interact.
-            event.setCanceled(true);
         }
+        // Armor is removed by dragging it out of the cat inventory GUI (no click gesture for it).
+        // Plain right-click is intercepted client-side to open that GUI (see
+        // CatGuardianClientEvents#onEntityInteract); Shift+right-click (Carry On) and
+        // Ctrl+right-click (vanilla sit/stand) are both left uncancelled.
     }
 
     // ---- Cat petting (empty-hand left-click) ----
@@ -1287,7 +1319,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     : indirect instanceof Monster m2 ? m2 : null;
             if (attacker != null && !attacker.isDeadOrDying()
                     && isWithinGuardZone(cat, attacker.getX(), attacker.getY(), attacker.getZ(),
-                            TARGET_ZONE_BUFFER)) {
+                    TARGET_ZONE_BUFFER)) {
                 cat.targetSelector.getAvailableGoals().stream()
                         .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                         .filter(g -> g instanceof CatGuardTargetGoal)
@@ -1466,7 +1498,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         // Remove vanilla attack goal; replace with wider-range guardian version
         cat.goalSelector.getAvailableGoals().stream()
                 .filter(w -> w.getGoal() instanceof OcelotAttackGoal
-                          || w.getGoal() instanceof GuardianCatAttackGoal)
+                        || w.getGoal() instanceof GuardianCatAttackGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
                 .toList()
                 .forEach(cat.goalSelector::removeGoal);
@@ -1507,13 +1539,24 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
      * cats keep their normal follow/teleport behaviour.
      */
     private void suppressOwnerFollow(Cat cat) {
-        if (!isGuardianCat(cat)) {
-            return;
-        }
-        // Remove BOTH owner-teleport sources: FollowOwnerGoal (priority 6) and the panic goal
-        // (TamableAnimal.TamableAnimalPanicGoal, priority 1) — the latter teleports a hurt cat to
-        // a far-away owner mid-combat. Our own CAT_FLEEING logic replaces vanilla panic.
+//        if (!isGuardianCat(cat)) {
+//            return;
+//        }
+        // Remove owner-teleport sources and other approach behaviors to ensure cats don't move
+        // towards their owner: FollowOwnerGoal (priority 6) and the panic goal (priority 1)
+        // also remove LookAtPlayerGoal and other player-interaction goals
         cat.goalSelector.getAvailableGoals().stream()
+//                .filter(w -> {
+//                    Goal goal = w.getGoal();
+//                    return goal instanceof FollowOwnerGoal
+//                            || goal instanceof net.minecraft.world.entity.ai.goal.PanicGoal
+//                            || goal instanceof LookAtPlayerGoal
+//                            || goal instanceof TemptGoal
+//                            || goal.getClass().getSimpleName().equals("CatSitOnBlockGoal")
+//                            || goal.getClass().getSimpleName().equals("CatLieOnBedGoal")
+//                            || goal.getClass().getSimpleName().equals("CatRelaxOnOwnerGoal")
+//                            || goal.getClass().getSimpleName().equals("SitWhenOrderedToGoal");
+//                })
                 .filter(w -> w.getGoal() instanceof FollowOwnerGoal
                           || w.getGoal() instanceof net.minecraft.world.entity.ai.goal.PanicGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
@@ -1522,8 +1565,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     private static void suppressFollowingBehaviors(Cat cat) {
-        // Remove goals that would fight with guard-station behaviour or cause wandering
+        // Remove goals that would fight with guard-station behaviour or cause wandering/approaching
         cat.goalSelector.getAvailableGoals().stream()
+//                .filter(w -> {
+//                    Goal goal = w.getGoal();
+//                    return goal instanceof FollowOwnerGoal
+//                            || goal instanceof WaterAvoidingRandomStrollGoal
+//                            || goal instanceof LookAtPlayerGoal
+//                            || goal instanceof TemptGoal
+//                            || goal.getClass().getSimpleName().equals("CatSitOnBlockGoal")
+//                            || goal.getClass().getSimpleName().equals("CatLieOnBedGoal")
+//                            || goal.getClass().getSimpleName().equals("CatRelaxOnOwnerGoal")
+//                            || goal.getClass().getSimpleName().equals("SitWhenOrderedToGoal");
+//                })
                 .filter(w -> w.getGoal() instanceof FollowOwnerGoal
                           || w.getGoal() instanceof WaterAvoidingRandomStrollGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
@@ -1536,9 +1590,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .forEach(cat.targetSelector::removeGoal);
     }
 
-    /** Buffer (blocks) for target eligibility — avoids flicker at the boundary. */
+    /**
+     * Buffer (blocks) for target eligibility — avoids flicker at the boundary.
+     */
     private static final double TARGET_ZONE_BUFFER = 4.0;
-    /** Larger buffer for the cat's own travel — allows edge melee + brief boundary stepping. */
+    /**
+     * Larger buffer for the cat's own travel — allows edge melee + brief boundary stepping.
+     */
     private static final double CAT_ZONE_BUFFER = 10.0;
 
     /**
@@ -1566,9 +1624,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final class CatGuardTargetGoal extends TargetGoal {
 
         private final Cat cat;
-        /** Throttle: skip A* target searches when recently found no valid target. */
+        /**
+         * Throttle: skip A* target searches when recently found no valid target.
+         */
         private int targetSearchCooldown = 0;
-        /** Mob entity IDs that are temporarily blacklisted (value = game time when blacklist expires). */
+        /**
+         * Mob entity IDs that are temporarily blacklisted (value = game time when blacklist expires).
+         */
         private final Map<Integer, Long> blockedTargets = new HashMap<>();
         private static final long BLACKLIST_TICKS = 1200L; // 60 seconds
 

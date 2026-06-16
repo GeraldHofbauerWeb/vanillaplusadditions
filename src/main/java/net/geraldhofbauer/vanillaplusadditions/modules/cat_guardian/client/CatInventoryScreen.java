@@ -45,6 +45,9 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
     private static final int XP_BAR_WIDTH  = BAR_WIDTH;
     private static final int XP_BAR_HEIGHT = 5;
 
+    private boolean titleTruncated = false;
+    private String titleShown = "";
+
     public CatInventoryScreen(CatInventoryMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
@@ -55,6 +58,23 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
     protected void init() {
         super.init();
         this.inventoryLabelY = 43;
+    }
+
+    /** Truncates the title (cat name + owner) so it never runs into the XP bar; full text on hover. */
+    @Override
+    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        String fullTitle = this.title.getString();
+        int maxWidth = XP_BAR_X - this.titleLabelX - 2;
+        if (this.font.width(fullTitle) > maxWidth) {
+            titleTruncated = true;
+            titleShown = this.font.plainSubstrByWidth(fullTitle, maxWidth - this.font.width("...")) + "...";
+        } else {
+            titleTruncated = false;
+            titleShown = fullTitle;
+        }
+        guiGraphics.drawString(this.font, titleShown, this.titleLabelX, this.titleLabelY, 4210752, false);
+        guiGraphics.drawString(this.font, this.playerInventoryTitle,
+                this.inventoryLabelX, this.inventoryLabelY, 4210752, false);
     }
 
     /** Draws a bar with a 1px black frame, a dark track, and a coloured fill for the given ratio. */
@@ -141,6 +161,14 @@ public class CatInventoryScreen extends AbstractContainerScreen<CatInventoryMenu
             int left = armor.getMaxDamage() - armor.getDamageValue();
             guiGraphics.renderTooltip(this.font, Component.translatable(
                     "gui.vanillaplusadditions.cat_guardian.armor", left, armor.getMaxDamage()), mouseX, mouseY);
+        }
+
+        // Title hover tooltip — shows full name when it was truncated
+        if (titleTruncated) {
+            int tw = this.font.width(titleShown);
+            if (isHover(mouseX, mouseY, leftPos + titleLabelX, topPos + titleLabelY, tw, this.font.lineHeight)) {
+                guiGraphics.renderTooltip(this.font, this.title, mouseX, mouseY);
+            }
         }
     }
 }
