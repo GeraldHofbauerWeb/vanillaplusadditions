@@ -20,6 +20,8 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -138,6 +140,17 @@ public class CatFeedingStationBlock extends AbstractCatBowlBlock {
     @Override
     public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new CatFeedingStationBlockEntity(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, BlockEntityType<T> blockEntityType) {
+        if (level.isClientSide() || blockEntityType != CatGuardianModule.CAT_FEEDING_STATION_BE.get()) {
+            return null;
+        }
+        return (lvl, pos, blockState, be) ->
+                CatFeedingStationBlockEntity.serverTick(
+                        lvl, pos, blockState, (CatFeedingStationBlockEntity) be);
     }
 
     @Override

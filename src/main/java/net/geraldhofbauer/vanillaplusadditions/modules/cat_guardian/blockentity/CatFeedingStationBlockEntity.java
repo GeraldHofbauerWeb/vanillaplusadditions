@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -45,6 +46,13 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
 
     public CatFeedingStationBlockEntity(BlockPos pos, BlockState state) {
         super(CatGuardianModule.CAT_FEEDING_STATION_BE.get(), pos, state);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, CatFeedingStationBlockEntity station) {
+        if (level.isClientSide() || level.getGameTime() % 200L != 0L) {
+            return;
+        }
+        station.pruneStaleAssociations();
     }
 
     private boolean isValidFishType(ItemStack stack) {

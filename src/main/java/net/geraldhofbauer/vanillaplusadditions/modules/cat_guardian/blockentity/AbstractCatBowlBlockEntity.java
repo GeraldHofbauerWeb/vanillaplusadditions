@@ -8,6 +8,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -16,6 +19,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,6 +73,32 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
         associatedCats.clear();
         setChanged();
         syncToClient();
+    }
+
+    /**
+     * Removes stale associations (missing/dead cats or cats bound to another bowl/station).
+     */
+    public void pruneStaleAssociations() {
+        if (!(level instanceof ServerLevel serverLevel) || associatedCats.isEmpty()) {
+            return;
+        }
+        long thisBowl = worldPosition.asLong();
+        boolean changed = false;
+        Iterator<UUID> iter = associatedCats.iterator();
+        while (iter.hasNext()) {
+            UUID catUUID = iter.next();
+            Entity entity = serverLevel.getEntity(catUUID);
+            if (!(entity instanceof Cat cat)
+                    || !cat.isAlive()
+                    || cat.getData(CatGuardianModule.CAT_BOWL_POS.get()) != thisBowl) {
+                iter.remove();
+                changed = true;
+            }
+        }
+        if (changed) {
+            setChanged();
+            syncToClient();
+        }
     }
 
     protected void syncToClient() {

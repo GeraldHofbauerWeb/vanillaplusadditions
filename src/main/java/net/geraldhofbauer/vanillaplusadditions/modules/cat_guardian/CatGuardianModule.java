@@ -912,6 +912,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         UUID uid = cat.getUUID();
         if (!hasBowl) {
+//            logCatHungerReturn(cat, null, "no_bowl_associated", null, null);
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
         }
@@ -1042,24 +1043,33 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     }
                 }
             }
+//            logCatHungerReturn(cat, bowlPos, "fed_ticks_active", null, fedTicks);
             return;
         }
 
         // Try to eat when unfed
         AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
         if (bowl == null) {
+//            logCatHungerReturn(cat, bowlPos, "bowl_missing", null, fedTicks);
             return;
         }
         if (!bowl.hasFish()) {
+//            logCatHungerReturn(cat, bowlPos, "bowl_empty", bowl, fedTicks);
             return;
         }
 
         double distSq = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+//        logCatHungerState(cat, bowlPos, bowl, "pre_eat_check", distSq, fedTicks);
 
-        if (distSq > 4.0 && !cat.isOrderedToSit()) {
+        if (cat.isOrderedToSit()) {
+            // A hungry cat must be able to get up again even if it was previously sitting at the station.
+            cat.setOrderedToSit(false);
+        }
+        if (distSq > 4.0) {
             if (cat.getNavigation().isDone()) {
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
             }
+//            logCatHungerReturn(cat, bowlPos, "moving_toward_station", bowl, fedTicks);
         } else if (distSq <= 4.0) {
             var fish = bowl.takeFish();
             if (!fish.isEmpty()) {
@@ -1069,8 +1079,36 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 if (bowl instanceof CatFeedingStationBlockEntity station) {
                     transferLootToStation(cat, station);
                 }
+//                logCatHungerState(cat, bowlPos, bowl, "ate_fish", distSq, fedTicks);
             }
         }
+    }
+
+    private void logCatHungerReturn(Cat cat, BlockPos bowlPos, String reason,
+                                    AbstractCatBowlBlockEntity bowl, Integer fedTicks) {
+        if (!getConfig().shouldDebugLog()) {
+            return;
+        }
+        String targetName = cat.getTarget() != null ? cat.getTarget().getType().toShortString() : "none";
+        getLogger().debug(
+                "[cat_guardian] hunger return reason={} cat={} bowl={} fedTicks={} orderedToSit={} returning={} hasFish={} target={}",
+                reason, cat.getUUID(), bowlPos, fedTicks, cat.isOrderedToSit(),
+                cat.getData(CAT_RETURNING.get()), bowl != null && bowl.hasFish(), targetName);
+    }
+
+    private void logCatHungerState(Cat cat, BlockPos bowlPos, AbstractCatBowlBlockEntity bowl,
+                                   String state, Double distSq, Integer fedTicks) {
+        if (!getConfig().shouldDebugLog()) {
+            return;
+        }
+        String distText = distSq == null ? "n/a" : String.format(Locale.ROOT, "%.3f", distSq);
+        String targetName = cat.getTarget() != null ? cat.getTarget().getType().toShortString() : "none";
+        getLogger().debug(
+                "[cat_guardian] hunger state={} cat={} bowl={} distSq={} fedTicks={} orderedToSit={} "
+                        + "returning={} hasFish={} target={} navDone={}",
+                state, cat.getUUID(), bowlPos, distText, fedTicks, cat.isOrderedToSit(),
+                cat.getData(CAT_RETURNING.get()), bowl != null && bowl.hasFish(),
+                targetName, cat.getNavigation().isDone());
     }
 
     private void transferLootToStation(Cat cat, CatFeedingStationBlockEntity station) {
