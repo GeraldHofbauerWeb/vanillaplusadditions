@@ -4,6 +4,13 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.14] - 2026-06-17
+### Added
+- **Item Vault Viewer Modul**: Neues Create-ItemVault-Viewer-Modul mit Read-only Grid-Ansicht, vollständiger Vault-Inhaltsanzeige (ein Stack pro Item-Typ, auch >64), Suche und Sortierung nach Stackgröße.
+### Changed
+- **Item Vault Viewer Modul**: UI-Polish für bessere Lesbarkeit (breiteres Interface, Footer-Controls, präzise Pagination-Anzeige, dynamische Count-Schriftgröße ab 100/1000).
+- **Item Vault Viewer Modul**: Interaktion verfeinert — Öffnen mit Goggles cancelt das Click-Event, Shift-Click öffnet den Viewer nie.
+
 ## [1.0.0-beta.12] - 2026-06-17
 ### Fixed
 - **Cat Guardian Modul**: Alle zahmen Katzen folgen dem Spieler nicht mehr, wenn das CatGuardianModule aktiv ist. Der `CatGuardianFollowMixin` blockiert jetzt `FollowOwnerGoal` für alle Katzen (nicht nur Wächterkatzen), um stabiles Züchten mit Katzen zu ermöglichen (standing spawn beim Breeding).
