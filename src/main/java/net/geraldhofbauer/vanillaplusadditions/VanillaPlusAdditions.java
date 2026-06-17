@@ -25,6 +25,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTar
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
 import net.geraldhofbauer.vanillaplusadditions.util.WorldgenDiagnostics;
@@ -130,6 +131,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new ArmTargetOverlayModule());
         moduleManager.registerModule(new TextureKillModule());
         moduleManager.registerModule(new CatGuardianModule());
+        moduleManager.registerModule(new ItemVaultViewerModule());
         moduleManager.registerModule(new BattleDogsModule());
         moduleManager.registerModule(new ChunkResetModule());
 
