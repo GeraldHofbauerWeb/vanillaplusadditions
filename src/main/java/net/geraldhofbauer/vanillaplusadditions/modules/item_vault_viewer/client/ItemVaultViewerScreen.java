@@ -20,11 +20,12 @@ import java.util.Locale;
 @OnlyIn(Dist.CLIENT)
 public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultViewerMenu> {
     private static final int SLOT_SIZE = 18;
+    private static final int SLOT_COLUMNS = 9;
     private static final int PANEL_TOP = 24;
     private static final int PANEL_LEFT = 8;
     private static final int PANEL_MARGIN_BOTTOM = 8;
     private static final int PANEL_MARGIN_TOP = 8;
-    private static final int SCROLL_BAR_X = 168;
+    private static final int SCROLL_BAR_WIDTH = 6;
     private static final int SORT_BUTTON_WIDTH = 32;
     private static final int SORT_BUTTON_HEIGHT = 14;
 
@@ -36,7 +37,7 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
 
     public ItemVaultViewerScreen(ItemVaultViewerMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 176;
+        this.imageWidth = PANEL_LEFT + SLOT_COLUMNS * SLOT_SIZE + 28;
         this.imageHeight = PANEL_TOP + menu.getVisibleRows() * SLOT_SIZE + PANEL_MARGIN_BOTTOM + PANEL_MARGIN_TOP;
     }
 
@@ -49,7 +50,7 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
 
         int footerY = this.topPos + this.imageHeight - 14;
         int searchX = this.leftPos + 8;
-        int searchWidth = 124;
+        int searchWidth = this.imageWidth - 16 - SORT_BUTTON_WIDTH - 8;
         this.searchBox = new EditBox(this.font, searchX, footerY, searchWidth, 12, Component.literal("Search"));
         this.searchBox.setMaxLength(64);
         this.searchBox.setHint(Component.literal("Search"));
@@ -117,7 +118,8 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
             guiGraphics.fill(slotX + 15, slotY, slotX + 16, slotY + 16, 0xFF2B2B2B);
             guiGraphics.fill(slotX, slotY + 15, slotX + 16, slotY + 16, 0xFF2B2B2B);
             guiGraphics.renderItem(stack, slotX + 1, slotY + 1);
-            guiGraphics.renderItemDecorations(this.font, stack, slotX + 1, slotY + 1, null);
+            guiGraphics.renderItemDecorations(this.font, stack, slotX + 1, slotY + 1, "");
+            renderScaledCount(guiGraphics, stack, slotX + 1, slotY + 1);
         }
 
         if (filteredIndices.isEmpty()) {
@@ -134,8 +136,9 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
             int thumbHeight = Math.max(10, (int) ((visibleRows / (float) totalRows) * trackHeight));
             int maxScroll = getMaxScroll();
             int thumbTop = trackTop + (int) (this.scrollRow / (float) maxScroll * (trackHeight - thumbHeight));
-            guiGraphics.fill(left + SCROLL_BAR_X, trackTop, left + SCROLL_BAR_X + 6, trackTop + trackHeight, 0xFF3A3A3A);
-            guiGraphics.fill(left + SCROLL_BAR_X + 1, thumbTop, left + SCROLL_BAR_X + 5, thumbTop + thumbHeight, 0xFFB0B0B0);
+            int scrollBarX = left + PANEL_LEFT + SLOT_COLUMNS * SLOT_SIZE + 4;
+            guiGraphics.fill(scrollBarX, trackTop, scrollBarX + SCROLL_BAR_WIDTH, trackTop + trackHeight, 0xFF3A3A3A);
+            guiGraphics.fill(scrollBarX + 1, thumbTop, scrollBarX + SCROLL_BAR_WIDTH - 1, thumbTop + thumbHeight, 0xFFB0B0B0);
         }
     }
 
@@ -165,7 +168,7 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
             int startRow = this.scrollRow + 1;
             int endRow = Math.min(totalRows, this.scrollRow + this.menu.getVisibleRows());
             Component rangeLabel = Component.literal(startRow + "-" + endRow + " / " + totalRows);
-            int rangeLabelX = 72 - this.font.width(rangeLabel);
+            int rangeLabelX = this.imageWidth - 8 - this.font.width(rangeLabel);
             guiGraphics.drawString(this.font, rangeLabel, rangeLabelX, this.titleLabelY, 0x909090, false);
         }
     }
@@ -232,5 +235,35 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
 
     private int getMaxScroll() {
         return Math.max(0, getDisplayedTotalRows() - this.menu.getVisibleRows());
+    }
+
+    private void renderScaledCount(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
+        if (stack.isEmpty() || stack.getCount() <= 1) {
+            return;
+        }
+
+        String text = Integer.toString(stack.getCount());
+        float scale = stack.getCount() >= 1000 ? 0.72f : stack.getCount() >= 100 ? 0.85f : 1.0f;
+        int color = 0xFFFFFF;
+        var pose = guiGraphics.pose();
+
+        if (scale == 1.0f) {
+            pose.pushPose();
+            pose.translate(0.0F, 0.0F, 200.0F);
+            int drawX = x + 17 - this.font.width(text);
+            int drawY = y + 9;
+            guiGraphics.drawString(this.font, text, drawX, drawY, color, true);
+            pose.popPose();
+            return;
+        }
+
+        pose.pushPose();
+        pose.translate(0.0F, 0.0F, 200.0F);
+        pose.scale(scale, scale, 1.0f);
+        float scaledWidth = this.font.width(text) * scale;
+        float drawX = (x + 17 - scaledWidth) / scale;
+        float drawY = (y + 9) / scale;
+        guiGraphics.drawString(this.font, text, (int) drawX, (int) drawY, color, true);
+        pose.popPose();
     }
 }
