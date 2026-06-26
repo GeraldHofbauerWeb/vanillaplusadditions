@@ -4,6 +4,12 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.15] - 2026-06-26
+### Added
+- **Custom Crafting Recipes Modul**: Faire Rail-Upgrade-Rezepte als Defaults — normale Rails lassen sich zu Powered/Detector/Activator Rails aufwerten (Vanilla-Layout, Rails ersetzen den Metallrahmen). Powered: 6 Rails + 1 Gold + 1 Redstone; Detector: 6 Rails + 1 Stone Pressure Plate + 1 Redstone; Activator: 6 Rails + 2 Sticks + 1 Redstone Torch (Ausbeute je 6).
+### Removed
+- **Flying Fish Modul**: Nicht ladende `cooked_flying_fish`-Smelting/Smoking/Campfire-JSONs entfernt. Sie lagen im Pre-1.21-Plural-Ordner `recipes/` (seit 1.21 = `recipe/`) und wurden in 1.21.1 nie geladen; Entfernung verhindert Duplicate-ID-Kollisionen bei späterer JSON-Migration. TODO zur Umstellung auf echte JSON-Datapacks in `docs/custom_crafting_recipes.md` vermerkt.
+
 ## [1.0.0-beta.14] - 2026-06-17
 ### Added
 - **Item Vault Viewer Modul**: Neues Create-ItemVault-Viewer-Modul mit Read-only Grid-Ansicht, vollständiger Vault-Inhaltsanzeige (ein Stack pro Item-Typ, auch >64), Suche und Sortierung nach Stackgröße.
