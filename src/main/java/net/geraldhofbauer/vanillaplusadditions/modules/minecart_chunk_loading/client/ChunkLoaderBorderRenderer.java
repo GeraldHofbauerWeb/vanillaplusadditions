@@ -85,11 +85,12 @@ public final class ChunkLoaderBorderRenderer implements DebugOverlayRenderer {
             double centerY = entry.getValue();
             boolean loaded = isLoaded(cp, radius);
             if (loaded) {
+                // Red (loaded) — noticeably more transparent than blue.
                 DebugRenderUtil.renderChunkBorder(pose, lines, quads, cp,
-                        centerY - span, centerY + span, 1.0f, 0.2f, 0.2f, 0.9f, 0.14f);
+                        centerY - span, centerY + span, 1.0f, 0.2f, 0.2f, 0.45f, 0.04f);
             } else {
                 DebugRenderUtil.renderChunkBorder(pose, lines, quads, cp,
-                        centerY - span, centerY + span, 0.25f, 0.55f, 1.0f, 0.85f, 0.10f);
+                        centerY - span, centerY + span, 0.25f, 0.55f, 1.0f, 0.6f, 0.06f);
             }
         }
     }
