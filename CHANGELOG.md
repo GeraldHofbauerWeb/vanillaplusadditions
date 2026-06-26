@@ -4,6 +4,13 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.18] - 2026-06-26
+### Changed
+- **Minecart Chunk Loading**: Chunk-Loader-Rail-**Rezept** (8 Powered Rails + 1 Enderperle → 8 Rails) und **Block-Drop** jetzt im **Modul-Code** statt als JSON-Datapack (JSON lädt in diesem Mod nicht zuverlässig). Das Rezept ist craftbar, solange das Modul aktiv ist.
+- **Konvention dokumentiert** (CLAUDE.md / docs): eigene Rezepte im jeweiligen Modul registrieren, Vanilla-/Fremdmod-Erweiterungen in `CustomCraftingRecipesConfig`-Defaults; Block-Drops via `getDrops`-Override; keine Recipe-/Loot-JSONs mehr.
+### Removed
+- `chunk_loader_rail` Recipe- und Loot-Table-JSONs (durch Code ersetzt).
+
 ## [1.0.0-beta.17] - 2026-06-26
 ### Changed
 - **Minecart Chunk Loading**: Chunk-Border-Debug-Overlay transparenter gemacht — vor allem das Rot der aktuell geladenen Chunks (Linien- und Füll-Alpha reduziert).

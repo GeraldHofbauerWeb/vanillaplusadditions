@@ -8,9 +8,21 @@ import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.co
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Unit;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -18,6 +30,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent;
 import net.neoforged.neoforge.common.world.chunk.TicketController;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -26,6 +39,11 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * Adds a "Chunk Loader Rail" that keeps chunks loaded around minecarts while they travel, so
@@ -134,6 +152,58 @@ public class MinecartChunkLoadingModule
     public void onLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ServerLevel level) {
             manager.forgetLevel(level);
+        }
+    }
+
+    // ---- Crafting recipe (registered in code, gated on the module being enabled) ----
+    // Our own block's recipe lives in this module so the rail is always craftable while the
+    // module is active. JSON datapack recipes don't load reliably in this mod (see CLAUDE.md).
+
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        event.addListener(new ChunkLoaderRecipeReloadListener(event.getServerResources().getRecipeManager()));
+    }
+
+    /** 8 powered rails ringed around 1 ender pearl → 8 chunk loader rails. */
+    private void applyChunkLoaderRailRecipe(RecipeManager recipeManager) {
+        Map<Character, Ingredient> key = new LinkedHashMap<>();
+        key.put('R', Ingredient.of(Items.POWERED_RAIL));
+        key.put('E', Ingredient.of(Items.ENDER_PEARL));
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, List.of("RRR", "RER", "RRR"));
+        ItemStack result = new ItemStack(CHUNK_LOADER_RAIL_ITEM.get(), 8);
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.MISC, pattern, result);
+        RecipeHolder<ShapedRecipe> holder = new RecipeHolder<>(
+                ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "chunk_loader_rail"), recipe);
+
+        Map<ResourceLocation, RecipeHolder<?>> merged = new LinkedHashMap<>();
+        for (RecipeHolder<?> existing : recipeManager.getRecipes()) {
+            merged.put(existing.id(), existing);
+        }
+        merged.put(holder.id(), holder);
+        recipeManager.replaceRecipes(merged.values());
+    }
+
+    private final class ChunkLoaderRecipeReloadListener implements PreparableReloadListener {
+        private final RecipeManager recipeManager;
+
+        private ChunkLoaderRecipeReloadListener(RecipeManager recipeManager) {
+            this.recipeManager = recipeManager;
+        }
+
+        @Override
+        public CompletableFuture<Void> reload(PreparationBarrier barrier, ResourceManager resourceManager,
+                                              ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
+                                              Executor backgroundExecutor, Executor gameExecutor) {
+            return barrier.wait(Unit.INSTANCE)
+                    .thenRunAsync(() -> applyChunkLoaderRailRecipe(recipeManager), gameExecutor);
+        }
+
+        @Override
+        public String getName() {
+            return "vanillaplusadditions_chunk_loader_rail_recipe";
         }
     }
 
