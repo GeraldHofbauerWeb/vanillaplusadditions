@@ -5,8 +5,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import org.joml.Matrix4f;
-import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.client.DebugOverlayState;
+import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.client.GogglesUtil;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.minecraft.client.Minecraft;
@@ -73,23 +74,7 @@ public final class CatGuardianGogglesClientHandler {
             net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.SyncCatPathPacket>
             PENDING_CAT_PATHS = new HashMap<>();
 
-    /**
-     * Master toggle for all goggle overlays (cats, targets, station radius + tooltip).
-     * Off by default — this is a debug/inspection view, enabled on demand via the keybind.
-     */
-    private static boolean overlaysEnabled = false;
-
     private CatGuardianGogglesClientHandler() { }
-
-    /** Flips the overlay master toggle and returns the new state. */
-    public static boolean toggleOverlays() {
-        overlaysEnabled = !overlaysEnabled;
-        return overlaysEnabled;
-    }
-
-    public static boolean isOverlaysEnabled() {
-        return overlaysEnabled;
-    }
 
     public static void onClientTick(Minecraft mc) {
         activeTooltip = null;
@@ -120,7 +105,7 @@ public final class CatGuardianGogglesClientHandler {
                 tooltip.add(Component.translatable(
                         "gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
                 activeTooltip = tooltip;
-                if (overlaysEnabled) {
+                if (DebugOverlayState.isEnabled()) {
                     STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
                 }
             }
@@ -153,7 +138,7 @@ public final class CatGuardianGogglesClientHandler {
         }
 
         // Everything below (cat outlines, target boxes, station radius) is the debug overlay.
-        if (!overlaysEnabled) {
+        if (!DebugOverlayState.isEnabled()) {
             return;
         }
 
@@ -205,7 +190,7 @@ public final class CatGuardianGogglesClientHandler {
     }
 
     public static boolean isWearingGoggles(Player player) {
-        return GogglesItem.isWearingGoggles(player);
+        return GogglesUtil.isWearingGoggles(player);
     }
 
     /**

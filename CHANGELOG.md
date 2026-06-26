@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.16] - 2026-06-26
+### Added
+- **✨ Minecart Chunk Loading Modul (neu)**: Neue craftbare **Chunk Loader Rail** (Detector-Rail-Optik, rot→blau eingefärbt, 3D-Modell passt sich VanillaTweaks an). Fährt ein Minecart darüber, werden die umliegenden Chunks force-geladen (NeoForge `TicketController`, ticking), sodass Carts nicht mehr an Chunk-Grenzen stehenbleiben. Release nach Timeout, nichts Persistentes (clean slate bei Neustart). Konfigurierbar: Lade-Radius (Default **1** = 3×3), Aktiv-Timeout. Rezept: 8 Powered Rails + 1 Enderperle → 8 Loader Rails.
+- **✨ Debug-Overlay-Framework (neu)**: Allgemeines, erweiterbares Client-Overlay-System (`debug_overlay`-Modul) — zentraler Toggle auf **Numpad +**, Goggles-Gate (Create Engineer's Goggles / `arm_goggles`-Tag), Registry für Debug-Renderer, geteilte Render-Helfer (xray + depth-getestet). Das Cat-Guardian-Overlay teilt sich jetzt diesen Toggle/Keybind.
+- **Chunk-Border-Renderer**: Mit Goggles + Toggle werden alle Chunks mit Loader-Rail dauerhaft umrandet — **blau** (Rail vorhanden) bzw. **rot** (gerade geladen), depth-getestet (von Blöcken verdeckt).
+### Changed
+- **Custom Crafting Recipes**: `chunk_loader_rail`-Rezept + Loot-Table in den korrekten 1.21-Singular-Ordnern (`recipe/`, `loot_table/`).
+### Removed
+- Nicht ladende `cooked_flying_fish`-JSONs (Plural-Ordner) bereits in beta.15 entfernt.
+
 ## [1.0.0-beta.15] - 2026-06-26
 ### Added
 - **Custom Crafting Recipes Modul**: Faire Rail-Upgrade-Rezepte als Defaults — normale Rails lassen sich zu Powered/Detector/Activator Rails aufwerten (Vanilla-Layout, Rails ersetzen den Metallrahmen). Powered: 6 Rails + 1 Gold + 1 Redstone; Detector: 6 Rails + 1 Stone Pressure Plate + 1 Redstone; Activator: 6 Rails + 2 Sticks + 1 Redstone Torch (Ausbeute je 6).

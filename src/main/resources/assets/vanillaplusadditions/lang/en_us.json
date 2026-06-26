@@ -53,5 +53,9 @@
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Cat Guardian overlays: OFF",
   "message.vanillaplusadditions.cat_guardian.associated": "Associated %s cat(s) with this bowl.",
   "message.vanillaplusadditions.cat_guardian.station_full": "Could not associate %s cat(s) because the bowl is full.",
-  "message.vanillaplusadditions.cat_guardian.no_cats": "No tamed cats owned by you found nearby."
+  "message.vanillaplusadditions.cat_guardian.no_cats": "No tamed cats owned by you found nearby.",
+  "block.vanillaplusadditions.chunk_loader_rail": "Chunk Loader Rail",
+  "key.vanillaplusadditions.debug_overlay.toggle": "Toggle Debug Overlay",
+  "message.vanillaplusadditions.debug_overlay.on": "Debug overlay: ON",
+  "message.vanillaplusadditions.debug_overlay.off": "Debug overlay: OFF"
 }

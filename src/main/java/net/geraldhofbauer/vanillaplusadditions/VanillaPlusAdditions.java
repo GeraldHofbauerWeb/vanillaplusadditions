@@ -25,6 +25,8 @@ import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTar
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.MinecartChunkLoadingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
@@ -114,7 +116,10 @@ public class VanillaPlusAdditions {
     private void registerModules() {
         ModuleManager moduleManager = ModuleManager.getInstance();
 
-        // Register all available modules
+        // Register all available modules.
+        // Debug overlay framework first so other modules can plug renderers into it.
+        moduleManager.registerModule(new DebugOverlayModule());
+        moduleManager.registerModule(new MinecartChunkLoadingModule());
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
         moduleManager.registerModule(new WitherSkeletonModule());
         moduleManager.registerModule(new MobGlowModule());

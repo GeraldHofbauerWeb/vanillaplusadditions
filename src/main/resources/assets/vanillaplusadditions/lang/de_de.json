@@ -53,5 +53,9 @@
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",
   "message.vanillaplusadditions.cat_guardian.station_full": "%s Katze(n) konnten nicht assoziiert werden, da der Napf voll ist.",
   "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden.",
-  "gui.vanillaplusadditions.cat_guardian.cats_short": "Katzen: %s/%s"
+  "gui.vanillaplusadditions.cat_guardian.cats_short": "Katzen: %s/%s",
+  "block.vanillaplusadditions.chunk_loader_rail": "Chunk-Loader-Schiene",
+  "key.vanillaplusadditions.debug_overlay.toggle": "Debug-Overlay umschalten",
+  "message.vanillaplusadditions.debug_overlay.on": "Debug-Overlay: AN",
+  "message.vanillaplusadditions.debug_overlay.off": "Debug-Overlay: AUS"
 }

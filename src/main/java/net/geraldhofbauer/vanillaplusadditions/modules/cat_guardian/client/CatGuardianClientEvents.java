@@ -9,7 +9,6 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.api.distmarker.Dist;
@@ -88,14 +87,8 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        // Overlay toggle keybind (rebindable in Controls; default numpad +)
-        while (CatGuardianClientSetup.TOGGLE_OVERLAY.consumeClick()) {
-            boolean enabled = CatGuardianGogglesClientHandler.toggleOverlays();
-            mc.player.displayClientMessage(Component.translatable(enabled
-                    ? "message.vanillaplusadditions.cat_guardian.overlay_on"
-                    : "message.vanillaplusadditions.cat_guardian.overlay_off"), true);
-        }
-
+        // Overlay toggle + keybind are now owned by the shared debug_overlay framework
+        // (CatGuardianGogglesClientHandler reads DebugOverlayState.isEnabled()).
         CatGuardianGogglesClientHandler.onClientTick(mc);
 
         long gameTime = mc.level.getGameTime();

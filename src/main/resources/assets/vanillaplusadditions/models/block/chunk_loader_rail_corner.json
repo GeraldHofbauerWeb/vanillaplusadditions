@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/rail_corner",
+  "textures": {
+    "rail": "vanillaplusadditions:block/chunk_loader_rail_corner"
+  }
+}
