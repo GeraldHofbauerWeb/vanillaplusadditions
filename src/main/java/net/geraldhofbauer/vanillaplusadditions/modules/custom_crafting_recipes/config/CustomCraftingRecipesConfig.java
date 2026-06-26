@@ -18,7 +18,25 @@ public class CustomCraftingRecipesConfig
     private static final String SAMPLE_SHAPELESS_RECIPE =
             "minecraft:leather,minecraft:string->minecraft:bundle;1";
 
-    private static final List<String> DEFAULT_RECIPES = List.of(SAMPLE_RECIPE);
+    // Fair "upgrade" recipes: turn plain rails into the special rail variants without
+    // farming stacks of metal. These are additional recipes; the vanilla ones still work.
+    private static final String POWERED_RAIL_FROM_RAILS =
+            "vanillaplusadditions:powered_rail_from_rails;minecraft:powered_rail;6;R R|RGR|RDR;"
+                    + "R=minecraft:rail,G=minecraft:gold_ingot,D=minecraft:redstone";
+
+    private static final String DETECTOR_RAIL_FROM_RAILS =
+            "vanillaplusadditions:detector_rail_from_rails;minecraft:detector_rail;6;R R|RPR|RDR;"
+                    + "R=minecraft:rail,P=minecraft:stone_pressure_plate,D=minecraft:redstone";
+
+    private static final String ACTIVATOR_RAIL_FROM_RAILS =
+            "vanillaplusadditions:activator_rail_from_rails;minecraft:activator_rail;6;RSR|RTR|RSR;"
+                    + "R=minecraft:rail,S=minecraft:stick,T=minecraft:redstone_torch";
+
+    private static final List<String> DEFAULT_RECIPES = List.of(
+            SAMPLE_RECIPE,
+            POWERED_RAIL_FROM_RAILS,
+            DETECTOR_RAIL_FROM_RAILS,
+            ACTIVATOR_RAIL_FROM_RAILS);
 
     private static final List<String> DEFAULT_SHAPELESS_RECIPES = List.of(SAMPLE_SHAPELESS_RECIPE);
 

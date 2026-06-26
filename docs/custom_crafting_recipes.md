@@ -62,6 +62,43 @@ minecraft:leather,minecraft:string->minecraft:bundle;1
 
 ---
 
+## TODO / Roadmap
+
+- [ ] **Migrate from code-injected recipes to proper JSON datapack recipes.**
+  Today this module (and `flying_fish`) builds `ShapedRecipe`/`ShapelessRecipe` objects in
+  Java and injects them into the `RecipeManager` via `replaceRecipes()` on
+  `AddReloadListenerEvent`. That is a workaround — the *correct* way is to ship recipes as
+  JSON datapack files, which the game loads natively.
+
+  **Why it was done in code:** the mod's `data/vanillaplusadditions/recipes/` folder used the
+  pre-1.21 **plural** name. Since MC 1.21 (snapshot 24w21a) the datapack folder is **singular**
+  `recipe/` (likewise `loot_tables/` → `loot_table/`). Plural folders are silently ignored, so
+  the JSON recipes never loaded — only the code-injected ones worked.
+
+  **Correct 1.21.1 / NeoForge format** (`data/<namespace>/recipe/<name>.json`):
+  ```json
+  {
+    "type": "minecraft:crafting_shaped",
+    "category": "redstone",
+    "pattern": ["R R", "RGR", "RDR"],
+    "key": {
+      "R": "minecraft:rail",
+      "G": "minecraft:gold_ingot",
+      "D": "minecraft:redstone"
+    },
+    "result": { "id": "minecraft:powered_rail", "count": 6 }
+  }
+  ```
+  Note the 1.21 changes: folder is **`recipe`** (singular), result uses **`"id"`** (not
+  `"item"`) plus **`"count"`**, and `key` values may be bare item-id strings.
+  Ref: <https://docs.neoforged.net/docs/resources/server/recipes/>
+
+  When migrating: move the config-driven recipes to generated JSON (ideally via NeoForge
+  **data generation**), then drop the `replaceRecipes()` injection to avoid duplicate-ID
+  collisions between the JSON recipe and the code-injected one.
+
+---
+
 ## See also
 
 - [Module Configuration Guide](MODULE_CONFIG_GUIDE.md)

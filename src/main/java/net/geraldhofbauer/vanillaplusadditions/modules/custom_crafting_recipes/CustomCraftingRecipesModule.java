@@ -54,6 +54,10 @@ public class CustomCraftingRecipesModule
         NeoForge.EVENT_BUS.register(this);
     }
 
+    // TODO: Migrate from code-injected recipes to proper JSON datapack recipes
+    //       (data/<ns>/recipe/*.json — singular folder since MC 1.21). This RecipeManager
+    //       injection is a workaround because the old plural recipes/ folder never loaded.
+    //       See docs/custom_crafting_recipes.md ("TODO / Roadmap") for the correct format.
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         if (!isModuleEnabled()) {
