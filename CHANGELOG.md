@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.17] - 2026-06-26
+### Changed
+- **Minecart Chunk Loading**: Chunk-Border-Debug-Overlay transparenter gemacht — vor allem das Rot der aktuell geladenen Chunks (Linien- und Füll-Alpha reduziert).
+
 ## [1.0.0-beta.16] - 2026-06-26
 ### Added
 - **✨ Minecart Chunk Loading Modul (neu)**: Neue craftbare **Chunk Loader Rail** (Detector-Rail-Optik, rot→blau eingefärbt, 3D-Modell passt sich VanillaTweaks an). Fährt ein Minecart darüber, werden die umliegenden Chunks force-geladen (NeoForge `TicketController`, ticking), sodass Carts nicht mehr an Chunk-Grenzen stehenbleiben. Release nach Timeout, nichts Persistentes (clean slate bei Neustart). Konfigurierbar: Lade-Radius (Default **1** = 3×3), Aktiv-Timeout. Rezept: 8 Powered Rails + 1 Enderperle → 8 Loader Rails.
