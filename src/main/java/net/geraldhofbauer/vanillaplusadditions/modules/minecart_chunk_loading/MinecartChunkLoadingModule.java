@@ -7,6 +7,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.bl
 import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.config.MinecartChunkLoadingConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -34,6 +35,7 @@ import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -76,6 +78,9 @@ public class MinecartChunkLoadingModule
     private static MinecartChunkLoadingModule instance;
 
     private final ChunkLoaderManager manager = new ChunkLoaderManager();
+
+    /** Whether force-loading is currently active (server-wide player gate). */
+    private boolean forcingEnabled = false;
 
     public MinecartChunkLoadingModule() {
         super("minecart_chunk_loading",
@@ -134,7 +139,7 @@ public class MinecartChunkLoadingModule
 
     @SubscribeEvent
     public void onLevelTick(LevelTickEvent.Post event) {
-        if (!isModuleEnabled()) {
+        if (!isModuleEnabled() || !forcingEnabled) {
             return;
         }
         if (!(event.getLevel() instanceof ServerLevel level)) {
@@ -146,6 +151,33 @@ public class MinecartChunkLoadingModule
         }
         manager.reconcile(level, now, getConfig().getChunkLoadRadius(),
                 getConfig().getActiveTimeoutSeconds() * 20L);
+    }
+
+    /**
+     * Server-wide player gate: enables force-loading while players are online (config), and on the
+     * transition into "enabled" (server start / first join) resumes the persisted rail chunks so
+     * stuck carts continue. On the transition into "disabled" (last player left) it pauses.
+     */
+    @SubscribeEvent
+    public void onServerTick(ServerTickEvent.Post event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        MinecraftServer server = event.getServer();
+        boolean playersOnline = server.getPlayerList().getPlayerCount() > 0;
+        boolean shouldLoad = !getConfig().isOnlyWhilePlayersOnline() || playersOnline;
+
+        if (shouldLoad && !forcingEnabled) {
+            int radius = getConfig().getChunkLoadRadius();
+            for (ServerLevel level : server.getAllLevels()) {
+                manager.resume(level, radius);
+            }
+        } else if (!shouldLoad && forcingEnabled) {
+            for (ServerLevel level : server.getAllLevels()) {
+                manager.releaseAll(level);
+            }
+        }
+        forcingEnabled = shouldLoad;
     }
 
     @SubscribeEvent

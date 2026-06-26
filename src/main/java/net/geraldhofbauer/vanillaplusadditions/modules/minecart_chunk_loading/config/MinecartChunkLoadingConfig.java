@@ -9,6 +9,7 @@ public class MinecartChunkLoadingConfig
 
     private ModConfigSpec.IntValue chunkLoadRadius;
     private ModConfigSpec.IntValue activeTimeoutSeconds;
+    private ModConfigSpec.BooleanValue onlyWhilePlayersOnline;
     private ModConfigSpec.IntValue chunkBorderScanRadius;
     private ModConfigSpec.IntValue chunkBorderVerticalSpan;
 
@@ -29,6 +30,13 @@ public class MinecartChunkLoadingConfig
                         "minecart passed over it, in seconds.")
                 .defineInRange("active_timeout_seconds", 15, 1, 300);
 
+        onlyWhilePlayersOnline = builder
+                .comment("Only force-load chunks while at least one player is online.",
+                        "When the last player leaves, loading pauses; on server start / first join the",
+                        "rail chunks that had carts are reloaded so stuck carts continue moving.",
+                        "false = keep loading even with nobody online (e.g. perpetual loops).")
+                .define("only_while_players_online", true);
+
         builder.push("overlay");
         chunkBorderScanRadius = builder
                 .comment("Debug overlay: how many chunks around the player are scanned for loader",
@@ -48,6 +56,10 @@ public class MinecartChunkLoadingConfig
 
     public int getActiveTimeoutSeconds() {
         return activeTimeoutSeconds != null ? activeTimeoutSeconds.get() : 15;
+    }
+
+    public boolean isOnlyWhilePlayersOnline() {
+        return onlyWhilePlayersOnline == null || onlyWhilePlayersOnline.get();
     }
 
     public int getChunkBorderScanRadius() {

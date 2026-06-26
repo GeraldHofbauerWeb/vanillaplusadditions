@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.common.world.chunk.TicketController;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,6 +71,12 @@ public final class ChunkLoaderManager {
     }
 
     private void forceRail(ServerLevel level, Map<BlockPos, Set<Long>> lvlForced, BlockPos railPos, int radius) {
+        forceChunksFor(level, lvlForced, railPos, radius);
+        // Persist so the rail can be resumed after a "no players" pause or a server restart.
+        ChunkLoaderData.get(level).add(railPos.asLong());
+    }
+
+    private void forceChunksFor(ServerLevel level, Map<BlockPos, Set<Long>> lvlForced, BlockPos railPos, int radius) {
         int cx = railPos.getX() >> 4;
         int cz = railPos.getZ() >> 4;
         Set<Long> set = new HashSet<>();
@@ -85,10 +92,61 @@ public final class ChunkLoaderManager {
     }
 
     private void releaseRail(ServerLevel level, Map<BlockPos, Set<Long>> lvlForced, BlockPos railPos) {
+        unforceChunksFor(level, lvlForced, railPos);
+        // Cart left this rail for good — forget it so it isn't resumed later.
+        ChunkLoaderData.get(level).remove(railPos.asLong());
+    }
+
+    private void unforceChunksFor(ServerLevel level, Map<BlockPos, Set<Long>> lvlForced, BlockPos railPos) {
         Set<Long> set = lvlForced.remove(railPos);
         if (set != null) {
             for (long packed : set) {
                 controller.forceChunk(level, railPos, ChunkPos.getX(packed), ChunkPos.getZ(packed), false, true);
+            }
+        }
+    }
+
+    /**
+     * Releases ALL currently forced chunks for a level (e.g. last player left), but KEEPS the
+     * persistent {@link ChunkLoaderData} set so the rails can be resumed later.
+     */
+    public void releaseAll(ServerLevel level) {
+        Map<BlockPos, Set<Long>> lvlForced = forced.get(level);
+        if (lvlForced != null) {
+            for (Map.Entry<BlockPos, Set<Long>> entry : lvlForced.entrySet()) {
+                BlockPos owner = entry.getKey();
+                for (long packed : entry.getValue()) {
+                    controller.forceChunk(level, owner, ChunkPos.getX(packed), ChunkPos.getZ(packed), false, true);
+                }
+            }
+            lvlForced.clear();
+        }
+        Map<BlockPos, Long> lvlActive = active.get(level);
+        if (lvlActive != null) {
+            lvlActive.clear();
+        }
+    }
+
+    /**
+     * Re-forces every rail recorded in {@link ChunkLoaderData} (server start / first player join),
+     * so chunks with stuck carts load again and the carts continue moving.
+     */
+    public void resume(ServerLevel level, int radius) {
+        if (controller == null) {
+            return;
+        }
+        ChunkLoaderData data = ChunkLoaderData.get(level);
+        if (data.rails().isEmpty()) {
+            return;
+        }
+        Map<BlockPos, Long> lvlActive = active.computeIfAbsent(level, k -> new HashMap<>());
+        Map<BlockPos, Set<Long>> lvlForced = forced.computeIfAbsent(level, k -> new HashMap<>());
+        long now = level.getGameTime();
+        for (long packed : new ArrayList<>(data.rails())) {
+            BlockPos railPos = BlockPos.of(packed);
+            lvlActive.put(railPos, now);
+            if (!lvlForced.containsKey(railPos)) {
+                forceChunksFor(level, lvlForced, railPos, radius);
             }
         }
     }

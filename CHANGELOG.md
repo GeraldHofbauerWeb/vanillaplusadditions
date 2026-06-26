@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.19] - 2026-06-26
+### Added
+- **Minecart Chunk Loading**: `only_while_players_online` (Default **true**) — Force-Loading pausiert, sobald kein Spieler mehr online ist. Die Rail-Chunks mit aktiven Carts werden **persistent** gespeichert (`SavedData`) und beim **Server-Start / ersten Join** wieder geladen, sodass stehengebliebene Carts weiterfahren. (`false` = lädt auch bei 0 Spielern, z.B. für Endlosschleifen.)
+
 ## [1.0.0-beta.18] - 2026-06-26
 ### Changed
 - **Minecart Chunk Loading**: Chunk-Loader-Rail-**Rezept** (8 Powered Rails + 1 Enderperle → 8 Rails) und **Block-Drop** jetzt im **Modul-Code** statt als JSON-Datapack (JSON lädt in diesem Mod nicht zuverlässig). Das Rezept ist craftbar, solange das Modul aktiv ist.
