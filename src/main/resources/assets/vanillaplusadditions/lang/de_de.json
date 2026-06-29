@@ -55,6 +55,7 @@
   "message.vanillaplusadditions.cat_guardian.no_cats": "Keine eigenen zahmen Katzen in der Nähe gefunden.",
   "gui.vanillaplusadditions.cat_guardian.cats_short": "Katzen: %s/%s",
   "block.vanillaplusadditions.chunk_loader_rail": "Chunk-Loader-Schiene",
+  "block.vanillaplusadditions.chunk_anchor": "Chunk-Anker",
   "key.vanillaplusadditions.debug_overlay.toggle": "Debug-Overlay umschalten",
   "message.vanillaplusadditions.debug_overlay.on": "Debug-Overlay: AN",
   "message.vanillaplusadditions.debug_overlay.off": "Debug-Overlay: AUS"

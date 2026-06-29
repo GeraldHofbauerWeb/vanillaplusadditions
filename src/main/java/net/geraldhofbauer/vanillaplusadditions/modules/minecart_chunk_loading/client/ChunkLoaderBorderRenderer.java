@@ -80,19 +80,42 @@ public final class ChunkLoaderBorderRenderer implements DebugOverlayRenderer {
         VertexConsumer lines = buffers.getBuffer(DebugRenderUtil.DEPTH_LINES);
         VertexConsumer quads = buffers.getBuffer(DebugRenderUtil.DEPTH_QUADS);
 
+        // Precompute each rail chunk's loaded state so we can cull shared internal walls.
+        Map<ChunkPos, Boolean> loadedState = new HashMap<>();
+        for (ChunkPos cp : railChunks.keySet()) {
+            loadedState.put(cp, isLoaded(cp, radius));
+        }
+
         for (Map.Entry<ChunkPos, Integer> entry : railChunks.entrySet()) {
             ChunkPos cp = entry.getKey();
             double centerY = entry.getValue();
-            boolean loaded = isLoaded(cp, radius);
+            boolean loaded = loadedState.get(cp);
+            // Draw a fill wall on a side only when the neighbour there is NOT a rail chunk of the same
+            // state — i.e. only the outer boundary of each same-state region, never internal walls.
+            // This stops the translucent fills from stacking into an opaque fog inside a region.
+            boolean north = !sameState(loadedState, cp.x, cp.z - 1, loaded);
+            boolean south = !sameState(loadedState, cp.x, cp.z + 1, loaded);
+            boolean west = !sameState(loadedState, cp.x - 1, cp.z, loaded);
+            boolean east = !sameState(loadedState, cp.x + 1, cp.z, loaded);
+
             if (loaded) {
-                // Red (loaded) — noticeably more transparent than blue.
+                // Red (loaded). Fills are single-layer now (internal walls culled), so a moderate alpha.
                 DebugRenderUtil.renderChunkBorder(pose, lines, quads, cp,
-                        centerY - span, centerY + span, 1.0f, 0.2f, 0.2f, 0.45f, 0.04f);
+                        centerY - span, centerY + span, 1.0f, 0.2f, 0.2f, 0.45f, 0.02f,
+                        north, south, west, east);
             } else {
+                // Blue (not loaded).
                 DebugRenderUtil.renderChunkBorder(pose, lines, quads, cp,
-                        centerY - span, centerY + span, 0.25f, 0.55f, 1.0f, 0.6f, 0.06f);
+                        centerY - span, centerY + span, 0.25f, 0.55f, 1.0f, 0.6f, 0.03f,
+                        north, south, west, east);
             }
         }
+    }
+
+    /** True if the neighbour chunk (nx,nz) is a tracked rail chunk with the same loaded state. */
+    private static boolean sameState(Map<ChunkPos, Boolean> states, int nx, int nz, boolean loaded) {
+        Boolean s = states.get(new ChunkPos(nx, nz));
+        return s != null && s == loaded;
     }
 
     /** A rail chunk is "loaded" when an active rail is within the Chebyshev load radius. */

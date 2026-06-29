@@ -22,8 +22,9 @@ public class MinecartChunkLoadingConfig
         chunkLoadRadius = builder
                 .comment("Chunk radius (Chebyshev) force-loaded around an active loader rail.",
                         "0 = only the rail's own chunk; 1 = a 3x3 area; 2 = a 5x5 area.",
-                        "Higher = more chunks ticking but more lookahead (rails can be spaced further).")
-                .defineInRange("chunk_load_radius", 1, 0, 8);
+                        "This is the rolling-load LOOKAHEAD: a larger radius keeps a moving cart inside the",
+                        "loaded region longer so the window rolls along with it. Default 2 (5x5).")
+                .defineInRange("chunk_load_radius", 2, 0, 8);
 
         activeTimeoutSeconds = builder
                 .comment("How long a loader rail stays active (keeps chunks loaded) after the last",
@@ -51,7 +52,7 @@ public class MinecartChunkLoadingConfig
     }
 
     public int getChunkLoadRadius() {
-        return chunkLoadRadius != null ? chunkLoadRadius.get() : 1;
+        return chunkLoadRadius != null ? chunkLoadRadius.get() : 2;
     }
 
     public int getActiveTimeoutSeconds() {

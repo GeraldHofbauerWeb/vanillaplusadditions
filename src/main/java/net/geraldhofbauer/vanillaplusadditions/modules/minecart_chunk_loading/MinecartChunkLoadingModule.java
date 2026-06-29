@@ -254,7 +254,7 @@ public class MinecartChunkLoadingModule
     // ---- Static accessors for the client renderer ----
 
     public static int getChunkLoadRadius() {
-        return instance != null ? instance.getConfig().getChunkLoadRadius() : 1;
+        return instance != null ? instance.getConfig().getChunkLoadRadius() : 2;
     }
 
     public static long getActiveTimeoutTicks() {

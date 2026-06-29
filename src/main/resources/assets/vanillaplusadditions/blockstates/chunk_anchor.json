@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "powered=false": { "model": "vanillaplusadditions:block/chunk_anchor" },
+    "powered=true": { "model": "vanillaplusadditions:block/chunk_anchor_active" }
+  }
+}

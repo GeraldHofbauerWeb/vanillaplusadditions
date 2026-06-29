@@ -96,24 +96,58 @@ public final class DebugRenderUtil {
     public static void renderChunkBorder(PoseStack pose, VertexConsumer lines, VertexConsumer quads,
                                          ChunkPos chunk, double minY, double maxY,
                                          float r, float g, float b, float lineAlpha, float fillAlpha) {
+        renderChunkBorder(pose, lines, quads, chunk, minY, maxY, r, g, b, lineAlpha, fillAlpha,
+                true, true, true, true);
+    }
+
+    /**
+     * As {@link #renderChunkBorder}, but each translucent side face (N/S/W/E) is only drawn when its
+     * flag is set. The bright box outline is always drawn. Callers use this to skip the shared
+     * internal walls between two same-state chunks so the fills don't stack into an opaque fog.
+     */
+    public static void renderChunkBorder(PoseStack pose, VertexConsumer lines, VertexConsumer quads,
+                                         ChunkPos chunk, double minY, double maxY,
+                                         float r, float g, float b, float lineAlpha, float fillAlpha,
+                                         boolean fillNorth, boolean fillSouth,
+                                         boolean fillWest, boolean fillEast) {
         double x0 = chunk.getMinBlockX();
         double z0 = chunk.getMinBlockZ();
         double x1 = x0 + 16.0;
         double z1 = z0 + 16.0;
 
-        // Bright box outline (12 edges) — the thin stripes.
+        // Bright box outline (12 edges) — the thin stripes. Always drawn (keeps the chunk grid).
         LevelRenderer.renderLineBox(pose, lines, x0, minY, z0, x1, maxY, z1, r, g, b, lineAlpha);
 
-        // Faint translucent side faces — the transparent background around the border.
+        // Faint translucent side faces — only on requested (boundary) sides.
         Matrix4f mat = pose.last().pose();
-        // North (z = z0)
-        sideQuad(quads, mat, x0, minY, z0, x1, maxY, z0, r, g, b, fillAlpha);
-        // South (z = z1)
-        sideQuad(quads, mat, x0, minY, z1, x1, maxY, z1, r, g, b, fillAlpha);
-        // West (x = x0)
-        sideQuad(quads, mat, x0, minY, z0, x0, maxY, z1, r, g, b, fillAlpha);
-        // East (x = x1)
-        sideQuad(quads, mat, x1, minY, z0, x1, maxY, z1, r, g, b, fillAlpha);
+        if (fillNorth) {
+            sideQuad(quads, mat, x0, minY, z0, x1, maxY, z0, r, g, b, fillAlpha); // z = z0
+        }
+        if (fillSouth) {
+            sideQuad(quads, mat, x0, minY, z1, x1, maxY, z1, r, g, b, fillAlpha); // z = z1
+        }
+        if (fillWest) {
+            sideQuad(quads, mat, x0, minY, z0, x0, maxY, z1, r, g, b, fillAlpha); // x = x0
+        }
+        if (fillEast) {
+            sideQuad(quads, mat, x1, minY, z0, x1, maxY, z1, r, g, b, fillAlpha); // x = x1
+        }
+    }
+
+    /**
+     * Draws an arbitrary axis-aligned vertical box (bright outline + 4 faint translucent side faces)
+     * over the world-space rectangle [x0,x1]×[z0,z1] and Y band [minY,maxY]. Used e.g. to outline a
+     * Chunk Anchor's whole forced area as one box (no internal walls).
+     */
+    public static void renderBox(PoseStack pose, VertexConsumer lines, VertexConsumer quads,
+                                 double x0, double z0, double x1, double z1, double minY, double maxY,
+                                 float r, float g, float b, float lineAlpha, float fillAlpha) {
+        LevelRenderer.renderLineBox(pose, lines, x0, minY, z0, x1, maxY, z1, r, g, b, lineAlpha);
+        Matrix4f mat = pose.last().pose();
+        sideQuad(quads, mat, x0, minY, z0, x1, maxY, z0, r, g, b, fillAlpha); // north
+        sideQuad(quads, mat, x0, minY, z1, x1, maxY, z1, r, g, b, fillAlpha); // south
+        sideQuad(quads, mat, x0, minY, z0, x0, maxY, z1, r, g, b, fillAlpha); // west
+        sideQuad(quads, mat, x1, minY, z0, x1, maxY, z1, r, g, b, fillAlpha); // east
     }
 
     /** A single vertical quad from (ax,minY,az)→(bx,maxY,bz). NO_CULL makes winding irrelevant. */

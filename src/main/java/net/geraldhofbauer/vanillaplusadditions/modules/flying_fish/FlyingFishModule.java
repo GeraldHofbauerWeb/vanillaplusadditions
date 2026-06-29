@@ -271,7 +271,9 @@ public class FlyingFishModule extends AbstractModule<FlyingFishModule, FlyingFis
         }
 
         Player player = event.getEntity();
-        if (player.level().isClientSide() || player.isPassenger()) {
+        // Skip spectators: they have free-fly movement and any boost/leap/glide impulse (with the
+        // forced velocity sync) jerks the camera around — distracting and pointless in spectator.
+        if (player.level().isClientSide() || player.isPassenger() || player.isSpectator()) {
             return;
         }
 
