@@ -134,6 +134,13 @@ dependencies {
     // Tough As Nails dependency
     implementation files("libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar")
 
+    // BlueMap — compile-time only (optional runtime dependency, gated via ModList in bluemap_signs).
+    // flow-math is BlueMap's jar-in-jar (Vector2i/Vector3d in the marker API) and must be on the
+    // compile classpath separately. localRuntime loads the full BlueMap mod for dev testing.
+    compileOnly files("libs/bluemap-5.7-neoforge.jar")
+    compileOnly files("libs/flow-math-1.0.4-SNAPSHOT.jar")
+    localRuntime files("libs/bluemap-5.7-neoforge.jar")
+
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html

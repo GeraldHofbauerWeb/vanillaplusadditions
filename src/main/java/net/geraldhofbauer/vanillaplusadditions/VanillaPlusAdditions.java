@@ -17,6 +17,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModul
 import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
@@ -143,6 +144,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new BattleDogsModule());
         moduleManager.registerModule(new ChunkResetModule());
         moduleManager.registerModule(new IdleGamerulesModule());
+        moduleManager.registerModule(new BluemapSignsModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

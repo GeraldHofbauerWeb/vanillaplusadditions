@@ -10,7 +10,8 @@
     "CatGuardianTeleportMixin",
     "ChestBlockCatMixin",
     "ChunkStatusTasksMixin",
-    "GenerationChunkHolderMixin"
+    "GenerationChunkHolderMixin",
+    "SignBlockEntityTextMixin"
   ],
   "injectors": {
     "defaultRequire": 1

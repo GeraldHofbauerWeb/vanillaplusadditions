@@ -93,6 +93,14 @@ config="${mod_id}.mixins.json"
     ordering="NONE"
     side="CLIENT"
 
+# BlueMap optional server-side dependency (bluemap_signs module integrates via BlueMapAPI)
+[[dependencies.${mod_id}]]
+    modId="bluemap"
+    type="optional"
+    versionRange="[5.0,)"
+    ordering="AFTER"
+    side="SERVER"
+
 # Here's another dependency
 [[dependencies.${mod_id}]]
     modId="minecraft"
