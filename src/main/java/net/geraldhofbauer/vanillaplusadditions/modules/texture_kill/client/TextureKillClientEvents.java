@@ -1,6 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.client;
 
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
@@ -18,7 +17,7 @@ import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 import java.util.Optional;
 
-@EventBusSubscriber(modid = VanillaPlusAdditions.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class TextureKillClientEvents {
     private TextureKillClientEvents() { }
 

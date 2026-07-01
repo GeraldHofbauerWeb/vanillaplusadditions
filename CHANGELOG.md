@@ -4,9 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.23] - 2026-07-01
+### Added
+- **Standalone-Modul-Jars für ALLE Module**: Der Pilot (beta.22) ist jetzt auf **alle 24 registrierten Module** ausgerollt. Die Pipeline baut `vpa_core` + je ein `vpa_<modul>`-Jar. Neu unterstützt: **Cross-Modul-Deps** (z. B. `vpa_cat_guardian` braucht `vpa_debug_overlay` + `vpa_flying_fish`; die Chunk-Loader brauchen `vpa_debug_overlay`) und **Mixins pro Modul** (`vpa_cat_guardian`, `vpa_bluemap_signs` bringen ihre eigene `mixins.json` mit). Data-Files (Loot/Biome/Tags/Damage-Type) werden dem jeweiligen Modul-Jar zugeordnet; Assets liegen zentral in `vpa_core`. (`mob_drops` ist bewusst ausgenommen — im Bundle nicht registriert. Der globale Worldgen-Crash-Guard bleibt Bundle-only.)
+### Changed
+- **`@EventBusSubscriber(modid = …)` in Modul-Client-Handlern** entfällt (nutzt jetzt die Default-modId der ladenden Jar). Verhalten im Bundle unverändert; nötig, damit Client-Handler (Overlays, Keybinds, Renderer) auch in den Standalone-Jars registriert werden. Analog referenzieren `block_glow`/`texture_kill`/`arm_target_overlay` den Logger über `core.Vpa` statt die `@Mod`-Klasse.
+
 ## [1.0.0-beta.22] - 2026-07-01
 ### Added
-- **Standalone-Modul-Jars (Build-System)**: Die GitHub-Pipeline erzeugt jetzt **zusätzlich** zum gebündelten Jar pro (Pilot-)Modul ein eigenständiges Mod-Jar plus ein gemeinsames `vpa_core`-Jar (Framework + Assets). So lassen sich einzelne Features standalone laden — `vpa_core` + gewünschte `vpa_<modul>`-Jars (Pilot: `flying_fish`, `death_coordinates`, `idle_gamerules`). Die Modul-Jars deklarieren `vpa_core` als Pflicht-Dependency und sind mit dem All-in-one-Bundle als `incompatible` markiert (nie zusammen laden). Das Bundle bleibt unverändert das primäre Artefakt; Releases/CI-Artefakte enthalten beides.
+- **Standalone-Modul-Jars (Build-System, Pilot)**: Die GitHub-Pipeline erzeugt jetzt **zusätzlich** zum gebündelten Jar pro (Pilot-)Modul ein eigenständiges Mod-Jar plus ein gemeinsames `vpa_core`-Jar (Framework + Assets). So lassen sich einzelne Features standalone laden — `vpa_core` + gewünschte `vpa_<modul>`-Jars (Pilot: `flying_fish`, `death_coordinates`, `idle_gamerules`). Die Modul-Jars deklarieren `vpa_core` als Pflicht-Dependency und sind mit dem All-in-one-Bundle als `incompatible` markiert (nie zusammen laden). Das Bundle bleibt unverändert das primäre Artefakt; Releases/CI-Artefakte enthalten beides.
 
 ## [1.0.0-beta.21] - 2026-06-28
 ### Added

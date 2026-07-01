@@ -1,7 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
@@ -18,7 +17,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
  * rendering to every registered {@link DebugOverlayRenderer}. Renderers run only while the
  * toggle is on AND the player wears goggles, so they never re-check either condition.
  */
-@EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class DebugOverlayClientEvents {
 
     private DebugOverlayClientEvents() { }

@@ -342,16 +342,56 @@ def sAuthors     = project.mod_authors.toString()
 def sDescription = project.mod_description.toString()
 
 // One descriptor per standalone artifact. dataGlobs = the module's own data/** files (assets live in core).
+// One entry per registered module. modId + entrypointPkg are derived below; dataGlobs = the module's
+// own data/** files (assets live in core), moduleDeps = required deps on other module jars, mixins =
+// mixin classes the module owns. (mob_drops is intentionally absent — it is not registered in the bundle.)
 def standaloneModules = [
-    [ moduleId: 'flying_fish', modId: 'vpa_flying_fish', displayName: 'Vanilla Plus: Flying Fish',
-      entrypointPkg: 'flying_fish',
+    [ moduleId: 'arm_target_overlay', displayName: 'Vanilla Plus: Arm Target Overlay',
+      dataGlobs: ['data/vanillaplusadditions/tags/item/arm_goggles.json'] ],
+    [ moduleId: 'battle_dogs', displayName: 'Vanilla Plus: Battle Dogs' ],
+    [ moduleId: 'better_mobs', displayName: 'Vanilla Plus: Better Mobs' ],
+    [ moduleId: 'block_glow', displayName: 'Vanilla Plus: Block Glow' ],
+    [ moduleId: 'bluemap_signs', displayName: 'Vanilla Plus: BlueMap Signs',
+      mixins: ['SignBlockEntityTextMixin'] ],
+    [ moduleId: 'cat_guardian', displayName: 'Vanilla Plus: Cat Guardian',
+      dataGlobs: ['data/minecraft/tags/item/enchantable/armor.json',
+                  'data/minecraft/tags/item/enchantable/durability.json'],
+      moduleDeps: ['vpa_debug_overlay', 'vpa_flying_fish'],
+      mixins: ['CatGuardianFloatMixin', 'CatGuardianFollowMixin', 'CatGuardianNavMixin',
+               'CatGuardianTeleportMixin', 'ChestBlockCatMixin'] ],
+    [ moduleId: 'chunk_reset', displayName: 'Vanilla Plus: Chunk Reset' ],
+    [ moduleId: 'custom_crafting_recipes', displayName: 'Vanilla Plus: Custom Crafting Recipes' ],
+    [ moduleId: 'death_coordinates', displayName: 'Vanilla Plus: Death Coordinates' ],
+    [ moduleId: 'debug_overlay', displayName: 'Vanilla Plus: Debug Overlay' ],
+    [ moduleId: 'end_oxygen', displayName: 'Vanilla Plus: End Oxygen',
+      dataGlobs: ['data/vanillaplusadditions/damage_type/out_of_oxygen.json'] ],
+    [ moduleId: 'flying_fish', displayName: 'Vanilla Plus: Flying Fish',
       dataGlobs: ['data/vanillaplusadditions/loot_tables/entities/flying_fish.json',
-                  'data/vanillaplusadditions/neoforge/biome_modifier/flying_fish_spawns.json'] ],
-    [ moduleId: 'death_coordinates', modId: 'vpa_death_coordinates',
-      displayName: 'Vanilla Plus: Death Coordinates', entrypointPkg: 'death_coordinates', dataGlobs: [] ],
-    [ moduleId: 'idle_gamerules', modId: 'vpa_idle_gamerules',
-      displayName: 'Vanilla Plus: Idle Gamerules', entrypointPkg: 'idle_gamerules', dataGlobs: [] ],
+                  'data/vanillaplusadditions/neoforge/biome_modifier/flying_fish_spawns.json',
+                  'data/minecraft/tags/item/fishes.json'] ],
+    [ moduleId: 'food_effects', displayName: 'Vanilla Plus: Food Effects' ],
+    [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
+    [ moduleId: 'hostile_zombified_piglins', displayName: 'Vanilla Plus: Hostile Zombified Piglins' ],
+    [ moduleId: 'idle_gamerules', displayName: 'Vanilla Plus: Idle Gamerules' ],
+    [ moduleId: 'item_vault_viewer', displayName: 'Vanilla Plus: Item Vault Viewer' ],
+    [ moduleId: 'minecart_chunk_loading', displayName: 'Vanilla Plus: Minecart Chunk Loading',
+      dataGlobs: ['data/minecraft/tags/block/rails.json'],
+      moduleDeps: ['vpa_debug_overlay'] ],
+    [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
+    [ moduleId: 'overpacked_slowdown', displayName: 'Vanilla Plus: Overpacked Slowdown' ],
+    [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
+    [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
+      moduleDeps: ['vpa_debug_overlay'] ],
+    [ moduleId: 'texture_kill', displayName: 'Vanilla Plus: Texture Kill' ],
+    [ moduleId: 'wither_skeleton', displayName: 'Vanilla Plus: Wither Skeleton' ],
 ]
+standaloneModules.each {
+    it.modId = "vpa_${it.moduleId}"
+    it.entrypointPkg = it.moduleId
+    it.dataGlobs = it.dataGlobs ?: []
+    it.moduleDeps = it.moduleDeps ?: []
+    it.mixins = it.mixins ?: []
+}
 
 def renderDep = { owner, depId, type, range, ordering, depSide -> """
 [[dependencies.${owner}]]
@@ -362,14 +402,31 @@ def renderDep = { owner, depId, type, range, ordering, depSide -> """
     side="${depSide}"
 """ }
 
+def renderMixinsJson = { d ->
+    def arr = d.mixins.collect { "\"${it}\"" }.join(",\n    ")
+    return """{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "net.geraldhofbauer.vanillaplusadditions.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    ${arr}
+  ]
+}
+"""
+}
+
 def renderModuleToml = { d ->
     def owner = d.modId
     def deps = new StringBuilder()
     deps << renderDep(owner, 'vpa_core',  'required',     "[${sVersion},)", 'AFTER', 'BOTH')
     deps << renderDep(owner, 'neoforge',  'required',     "[${sNeo},)",     'NONE',  'BOTH')
     deps << renderDep(owner, 'minecraft', 'required',     sMcRange,         'NONE',  'BOTH')
+    // Cross-module code deps → require the other module jars.
+    d.moduleDeps.each { md -> deps << renderDep(owner, md, 'required', "[${sVersion},)", 'AFTER', 'BOTH') }
     // Loading a module jar together with the all-in-one bundle double-registers content → fail fast.
     deps << renderDep(owner, 'vanillaplusadditions', 'incompatible', '[0,)', 'NONE', 'BOTH')
+    def mixinsBlock = d.mixins.isEmpty() ? '' : "\n[[mixins]]\nconfig=\"${d.modId}.mixins.json\"\n"
     return """modLoader="javafml"
 loaderVersion="${sLoaderRange}"
 license="${sLicense}"
@@ -381,7 +438,7 @@ version="${sVersion}"
 displayName="${d.displayName}"
 authors="${sAuthors}"
 description='''${sDescription}'''
-${deps}"""
+${deps}${mixinsBlock}"""
 }
 
 def renderCoreToml = {
@@ -417,11 +474,23 @@ tasks.register('generateMeta_vpa_core') {
 standaloneModules.each { d ->
     tasks.register("generateMeta_${d.modId}") {
         group = 'standalone'
-        def outFile = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
-        def content = renderModuleToml(d)
-        inputs.property('content', content)
-        outputs.file(outFile)
-        doLast { outFile.parentFile.mkdirs(); outFile.text = content }
+        def tomlOut = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
+        def tomlContent = renderModuleToml(d)
+        def hasMixins = !d.mixins.isEmpty()
+        def mixinsOut = genMetaRoot.get().dir(d.modId).file("${d.modId}.mixins.json").asFile
+        def mixinsContent = hasMixins ? renderMixinsJson(d) : ''
+        inputs.property('toml', tomlContent)
+        inputs.property('mixins', mixinsContent)
+        outputs.file(tomlOut)
+        if (hasMixins) {
+            outputs.file(mixinsOut)
+        }
+        doLast {
+            tomlOut.parentFile.mkdirs(); tomlOut.text = tomlContent
+            if (hasMixins) {
+                mixinsOut.parentFile.mkdirs(); mixinsOut.text = mixinsContent
+            }
+        }
     }
 }
 
@@ -458,16 +527,22 @@ standaloneModules.each { d ->
         destinationDirectory.set(modulesOutDir)
 
         def tomlFile = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
+        def mixinsJsonFile = genMetaRoot.get().dir(d.modId).file("${d.modId}.mixins.json").asFile
         from(sourceSets.main.output) {
             include "${basePkg}/modules/${d.moduleId}/**"
             include "${basePkg}/standalone/${d.entrypointPkg}/**"
         }
-        // Each data glob in its OWN from-block: piling multiple includes into a single from spec
+        // Each extra include in its OWN from-block: piling multiple includes into a single from spec
         // alongside the sibling into('META-INF') spec makes Gradle silently drop the into file
-        // (reproduced with 2+ data globs). Separate from-blocks avoid the quirk.
+        // (reproduced with 2+ globs). Separate from-blocks avoid the quirk.
         d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
+        // Mixin classes owned by this module (name*.class also catches inner classes).
+        d.mixins.each { mx -> from(sourceSets.main.output) { include "${basePkg}/mixin/${mx}*.class" } }
         into('META-INF') {
             from(tomlFile)  // -> META-INF/neoforge.mods.toml
+        }
+        if (!d.mixins.isEmpty()) {
+            from(mixinsJsonFile)  // -> <modId>.mixins.json at jar root (referenced by the toml [[mixins]])
         }
     }
 }

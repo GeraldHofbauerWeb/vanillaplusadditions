@@ -1,6 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.compat;
 
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.core.Vpa;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.BlockGlowHighlight;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -130,7 +130,7 @@ public final class BlockGlowSableIntegration {
         }
 
         reflectionWarningLogged = true;
-        VanillaPlusAdditions.LOGGER.warn(message + ": {}", ex.getMessage());
+        Vpa.LOGGER.warn(message + ": {}", ex.getMessage());
     }
 
     private static final class SableReflectionApi {

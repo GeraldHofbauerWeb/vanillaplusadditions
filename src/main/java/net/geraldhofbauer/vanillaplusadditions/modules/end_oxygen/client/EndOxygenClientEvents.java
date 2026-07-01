@@ -1,7 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.client;
 
 import com.simibubi.create.content.equipment.armor.BacktankUtil;
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
@@ -20,7 +19,7 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 
 import java.util.List;
 
-@EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class EndOxygenClientEvents {
     private static final ResourceLocation AIR_LEVEL_LAYER = ResourceLocation.withDefaultNamespace("air_level");
 

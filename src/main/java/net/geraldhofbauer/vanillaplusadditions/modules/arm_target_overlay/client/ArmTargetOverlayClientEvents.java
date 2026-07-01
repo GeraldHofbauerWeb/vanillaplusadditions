@@ -35,7 +35,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import java.util.List;
 import java.util.OptionalDouble;
 
-@EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class ArmTargetOverlayClientEvents {
     static final TagKey<Item> ARM_GOGGLES_TAG = TagKey.create(
             Registries.ITEM, ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "arm_goggles"));

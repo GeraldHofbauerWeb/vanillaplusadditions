@@ -1,7 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.core.Vpa;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.config.TextureKillConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -64,7 +64,7 @@ public class TextureRegionEraser implements PreparableReloadListener {
             try {
                 BufferedImage original = ImageIO.read(resource.get().open());
                 if (original == null) {
-                    VanillaPlusAdditions.LOGGER.warn("[TextureKill] Could not decode image: {}", loc);
+                    Vpa.LOGGER.warn("[TextureKill] Could not decode image: {}", loc);
                     continue;
                 }
 
@@ -88,11 +88,11 @@ public class TextureRegionEraser implements PreparableReloadListener {
                 ImageIO.write(img, "PNG", baos);
                 result.put(loc, baos.toByteArray());
             } catch (IOException e) {
-                VanillaPlusAdditions.LOGGER.warn("[TextureKill] Failed to process region erase for {}: {}", loc, e.getMessage());
+                Vpa.LOGGER.warn("[TextureKill] Failed to process region erase for {}: {}", loc, e.getMessage());
             }
         }
 
-        VanillaPlusAdditions.LOGGER.debug("[TextureKill] Prepared {} region-erased textures", result.size());
+        Vpa.LOGGER.debug("[TextureKill] Prepared {} region-erased textures", result.size());
         return result;
     }
 
@@ -111,7 +111,7 @@ public class TextureRegionEraser implements PreparableReloadListener {
                 textureManager.register(entry.getKey(), dt);
                 dt.upload();
             } catch (IOException e) {
-                VanillaPlusAdditions.LOGGER.warn("[TextureKill] DynamicTexture failed for {}: {}", entry.getKey(), e.getMessage());
+                Vpa.LOGGER.warn("[TextureKill] DynamicTexture failed for {}: {}", entry.getKey(), e.getMessage());
             }
         }
     }

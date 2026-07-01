@@ -2,7 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.clien
 
 import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
 import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.core.Vpa;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -76,6 +76,6 @@ final class ArmBlockEntityReflection {
             return;
         }
         warningLogged = true;
-        VanillaPlusAdditions.LOGGER.warn("{}: {}", message, ex.getMessage());
+        Vpa.LOGGER.warn("{}: {}", message, ex.getMessage());
     }
 }

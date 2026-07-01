@@ -1,6 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client;
 
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.minecraft.client.model.CatModel;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -13,7 +12,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
-@EventBusSubscriber(modid = VanillaPlusAdditions.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class CatGuardianClientSetup {
 
     private CatGuardianClientSetup() { }
