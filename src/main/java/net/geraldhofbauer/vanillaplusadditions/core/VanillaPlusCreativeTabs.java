@@ -1,6 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.core;
 
-import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -22,7 +21,7 @@ import java.util.function.Supplier;
  */
 public final class VanillaPlusCreativeTabs {
     private static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
-            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, VanillaPlusAdditions.MODID);
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Vpa.NAMESPACE);
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MAIN_TAB = CREATIVE_TABS.register(
             "main",
@@ -54,7 +53,7 @@ public final class VanillaPlusCreativeTabs {
     }
 
     private static void onBuildCreativeModeTabContents(BuildCreativeModeTabContentsEvent event) {
-        if (!event.getTabKey().location().equals(ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "main"))) {
+        if (!event.getTabKey().location().equals(ResourceLocation.fromNamespaceAndPath(Vpa.NAMESPACE, "main"))) {
             return;
         }
 

@@ -312,3 +312,170 @@ spotbugsTest {
         html.required = true
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Standalone module distribution (ADDITIVE).
+// Produces, from the SAME compiled source set and without reobf:
+//   * vpa_core          — shared framework + all assets (required by every module jar)
+//   * vpa_<module>      — one thin mod jar per pilot module, depending on vpa_core
+// The existing bundle jar (modId vanillaplusadditions, all modules) is unchanged except that it now
+// excludes the standalone/** @Mod entrypoints (so it never declares phantom vpa_* mods).
+// Distribution modes are mutually exclusive: use the bundle OR vpa_core+modules, never both.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Keep the bundle's extra @Mod entrypoints out of the bundle jar.
+tasks.named('jar', Jar) {
+    exclude 'net/geraldhofbauer/vanillaplusadditions/standalone/**'
+}
+
+def basePkg       = 'net/geraldhofbauer/vanillaplusadditions'
+def modulesOutDir = layout.buildDirectory.dir('libs/modules')
+def genMetaRoot   = layout.buildDirectory.dir('generated/moduleMeta')
+
+// Capture properties at configuration time (configuration-cache friendly — no project access at exec).
+def sVersion     = project.mod_version.toString()
+def sNeo         = project.neo_version.toString()
+def sMcRange     = project.minecraft_version_range.toString()
+def sLoaderRange = project.loader_version_range.toString()
+def sLicense     = project.mod_license.toString()
+def sAuthors     = project.mod_authors.toString()
+def sDescription = project.mod_description.toString()
+
+// One descriptor per standalone artifact. dataGlobs = the module's own data/** files (assets live in core).
+def standaloneModules = [
+    [ moduleId: 'flying_fish', modId: 'vpa_flying_fish', displayName: 'Vanilla Plus: Flying Fish',
+      entrypointPkg: 'flying_fish',
+      dataGlobs: ['data/vanillaplusadditions/loot_tables/entities/flying_fish.json',
+                  'data/vanillaplusadditions/neoforge/biome_modifier/flying_fish_spawns.json'] ],
+    [ moduleId: 'death_coordinates', modId: 'vpa_death_coordinates',
+      displayName: 'Vanilla Plus: Death Coordinates', entrypointPkg: 'death_coordinates', dataGlobs: [] ],
+    [ moduleId: 'idle_gamerules', modId: 'vpa_idle_gamerules',
+      displayName: 'Vanilla Plus: Idle Gamerules', entrypointPkg: 'idle_gamerules', dataGlobs: [] ],
+]
+
+def renderDep = { owner, depId, type, range, ordering, depSide -> """
+[[dependencies.${owner}]]
+    modId="${depId}"
+    type="${type}"
+    versionRange="${range}"
+    ordering="${ordering}"
+    side="${depSide}"
+""" }
+
+def renderModuleToml = { d ->
+    def owner = d.modId
+    def deps = new StringBuilder()
+    deps << renderDep(owner, 'vpa_core',  'required',     "[${sVersion},)", 'AFTER', 'BOTH')
+    deps << renderDep(owner, 'neoforge',  'required',     "[${sNeo},)",     'NONE',  'BOTH')
+    deps << renderDep(owner, 'minecraft', 'required',     sMcRange,         'NONE',  'BOTH')
+    // Loading a module jar together with the all-in-one bundle double-registers content → fail fast.
+    deps << renderDep(owner, 'vanillaplusadditions', 'incompatible', '[0,)', 'NONE', 'BOTH')
+    return """modLoader="javafml"
+loaderVersion="${sLoaderRange}"
+license="${sLicense}"
+issueTrackerURL="https://github.com/geraldhofbauer/VanillaPlusAdditions/issues"
+
+[[mods]]
+modId="${d.modId}"
+version="${sVersion}"
+displayName="${d.displayName}"
+authors="${sAuthors}"
+description='''${sDescription}'''
+${deps}"""
+}
+
+def renderCoreToml = {
+    def owner = 'vpa_core'
+    def deps = new StringBuilder()
+    deps << renderDep(owner, 'neoforge',  'required', "[${sNeo},)", 'NONE', 'BOTH')
+    deps << renderDep(owner, 'minecraft', 'required', sMcRange,     'NONE', 'BOTH')
+    return """modLoader="javafml"
+loaderVersion="${sLoaderRange}"
+license="${sLicense}"
+issueTrackerURL="https://github.com/geraldhofbauer/VanillaPlusAdditions/issues"
+
+[[mods]]
+modId="vpa_core"
+version="${sVersion}"
+displayName="Vanilla Plus: Core"
+authors="${sAuthors}"
+logoFile="logo.png"
+description='''Shared framework and assets for the Vanilla Plus standalone module jars.'''
+${deps}"""
+}
+
+// ── Meta generation (one task per artifact) ──────────────────────────────────
+tasks.register('generateMeta_vpa_core') {
+    group = 'standalone'
+    def outFile = genMetaRoot.get().dir('vpa_core').file('META-INF/neoforge.mods.toml').asFile
+    def content = renderCoreToml()
+    inputs.property('content', content)
+    outputs.file(outFile)
+    doLast { outFile.parentFile.mkdirs(); outFile.text = content }
+}
+
+standaloneModules.each { d ->
+    tasks.register("generateMeta_${d.modId}") {
+        group = 'standalone'
+        def outFile = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
+        def content = renderModuleToml(d)
+        inputs.property('content', content)
+        outputs.file(outFile)
+        doLast { outFile.parentFile.mkdirs(); outFile.text = content }
+    }
+}
+
+// ── vpa_core jar: framework + util + ALL assets + core entrypoint ────────────
+tasks.register('coreJar', Jar) {
+    group = 'standalone'
+    description = 'Builds the vpa_core standalone framework jar'
+    dependsOn tasks.named('classes'), tasks.named('processResources'), 'generateMeta_vpa_core'
+
+    archiveBaseName.set('vpa_core')
+    archiveVersion.set(sVersion)
+    destinationDirectory.set(modulesOutDir)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from(sourceSets.main.output) {
+        include "${basePkg}/core/**"
+        include "${basePkg}/util/**"
+        include "${basePkg}/standalone/core/**"   // VpaCore @Mod entrypoint only
+        include 'assets/vanillaplusadditions/**'  // cosmetic resources for every module (safe if unused)
+        include 'logo.png'
+    }
+    from(genMetaRoot.get().dir('vpa_core').asFile)  // injects META-INF/neoforge.mods.toml
+}
+
+// ── Per-module jars from descriptors ─────────────────────────────────────────
+standaloneModules.each { d ->
+    tasks.register("moduleJar_${d.moduleId}", Jar) {
+        group = 'standalone'
+        description = "Builds the ${d.modId} standalone module jar"
+        dependsOn tasks.named('classes'), tasks.named('processResources'), "generateMeta_${d.modId}"
+
+        archiveBaseName.set(d.modId)
+        archiveVersion.set(sVersion)
+        destinationDirectory.set(modulesOutDir)
+
+        def tomlFile = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
+        from(sourceSets.main.output) {
+            include "${basePkg}/modules/${d.moduleId}/**"
+            include "${basePkg}/standalone/${d.entrypointPkg}/**"
+        }
+        // Each data glob in its OWN from-block: piling multiple includes into a single from spec
+        // alongside the sibling into('META-INF') spec makes Gradle silently drop the into file
+        // (reproduced with 2+ data globs). Separate from-blocks avoid the quirk.
+        d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
+        into('META-INF') {
+            from(tomlFile)  // -> META-INF/neoforge.mods.toml
+        }
+    }
+}
+
+// ── Aggregate: build core + every module jar into build/libs/modules/ ────────
+tasks.register('moduleJars') {
+    group = 'standalone'
+    description = 'Builds vpa_core + every standalone module jar into build/libs/modules/'
+    dependsOn 'coreJar'
+    standaloneModules.each { d -> dependsOn "moduleJar_${d.moduleId}" }
+}

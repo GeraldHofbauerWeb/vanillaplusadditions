@@ -99,6 +99,51 @@ public final class ModulesConfig {
     }
 
     /**
+     * Builds a standalone {@link ModConfigSpec} for a <b>single</b> module, used by the per-module
+     * standalone jars (modId {@code vpa_<module>}). The layout mirrors the bundle spec — global options
+     * at the top plus one {@code [modules.<id>]} section — so module code reads its config identically.
+     *
+     * <p>Unlike {@link #getSpec()} this does not touch the shared {@code spec}/{@code configBuilt} state
+     * (that machinery is for the one combined bundle spec). It does assign the static global config
+     * references so {@link #isGlobalDebugLoggingEnabled()} keeps working; when several standalone module
+     * mods load together the globals are last-writer-wins, each backed by that mod's own config file.
+     *
+     * @param module the single module this standalone jar ships
+     * @return a freshly built spec bound to file {@code vpa_<module>-common.toml}
+     */
+    public static ModConfigSpec buildStandaloneSpec(Module module) {
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+
+        builder.comment("VanillaPlusAdditions standalone module configuration");
+
+        globalDebugLogging = builder
+                .comment("Enable debug logging for all modules (can be overridden by individual module settings)")
+                .define("globalDebugLogging", false);
+
+        worldgenCrashGuardEnabled = builder
+                .comment("Emergency workaround: suppress IndexOutOfBoundsException during structure start generation.",
+                        "Use only to keep servers running while isolating incompatible worldgen mods.")
+                .define("worldgenCrashGuardEnabled", false);
+
+        builder.push("modules");
+
+        ModuleConfig config = module.getConfig();
+        if (config != null) {
+            config.buildConfig(builder);
+        } else if (module.isConfigurable()) {
+            builder.comment(String.format("Configuration for %s module", module.getDisplayName()))
+                    .push(module.getModuleId());
+            builder.comment(String.format("Whether the %s module is enabled", module.getDisplayName()))
+                    .define("enabled", module.isEnabledByDefault());
+            builder.pop();
+        }
+
+        builder.pop(); // Close modules section
+
+        return builder.build();
+    }
+
+    /**
      * Registers a module for configuration building.
      * This must be called before the configuration is built (during mod construction).
      *

@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.22] - 2026-07-01
+### Added
+- **Standalone-Modul-Jars (Build-System)**: Die GitHub-Pipeline erzeugt jetzt **zusätzlich** zum gebündelten Jar pro (Pilot-)Modul ein eigenständiges Mod-Jar plus ein gemeinsames `vpa_core`-Jar (Framework + Assets). So lassen sich einzelne Features standalone laden — `vpa_core` + gewünschte `vpa_<modul>`-Jars (Pilot: `flying_fish`, `death_coordinates`, `idle_gamerules`). Die Modul-Jars deklarieren `vpa_core` als Pflicht-Dependency und sind mit dem All-in-one-Bundle als `incompatible` markiert (nie zusammen laden). Das Bundle bleibt unverändert das primäre Artefakt; Releases/CI-Artefakte enthalten beides.
+
+## [1.0.0-beta.21] - 2026-06-28
+### Added
+- **BlueMap Signs Modul**: `[bm]`-Schilder werden zu kuratierten BlueMap-Markern mit eigenen Icon-Keys (34 Pins); Verwaltung via `/bmsigns` (list/add/addat/edit/remove/help). Server-seitig, optional (nur aktiv wenn BlueMap installiert; Klassen-isoliert über `BlueMapAPI`).
+- **Idle Gamerules Modul**: pausiert `doDaylightCycle`, `doWeatherCycle` und `doSeasonCycle`, solange kein Spieler online ist, und schaltet sie beim ersten Join wieder ein.
+- **Chunk Anchor** (Stationary Chunk Loader): platzierbarer Block, der die umliegenden Chunks force-loaded (persistent), plus Fixes am Minecart-Chunk-Loader.
+
 ## [1.0.0-beta.19] - 2026-06-26
 ### Added
 - **Minecart Chunk Loading**: `only_while_players_online` (Default **true**) — Force-Loading pausiert, sobald kein Spieler mehr online ist. Die Rail-Chunks mit aktiven Carts werden **persistent** gespeichert (`SavedData`) und beim **Server-Start / ersten Join** wieder geladen, sodass stehengebliebene Carts weiterfahren. (`false` = lädt auch bei 0 Spielern, z.B. für Endlosschleifen.)

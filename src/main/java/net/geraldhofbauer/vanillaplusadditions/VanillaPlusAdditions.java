@@ -1,6 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions;
 
-import com.mojang.logging.LogUtils;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -65,10 +64,12 @@ import java.util.Comparator;
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(VanillaPlusAdditions.MODID)
 public class VanillaPlusAdditions {
-    // Define mod id in a common place for everything to reference
-    public static final String MODID = "vanillaplusadditions";
-    // Directly reference a slf4j logger
-    public static final Logger LOGGER = LogUtils.getLogger();
+    // Define mod id in a common place for everything to reference.
+    // Delegates to the namespace-neutral core constant so module code that references MODID stays a
+    // compile-time constant (javac inlines it) and standalone module jars don't depend on this class.
+    public static final String MODID = net.geraldhofbauer.vanillaplusadditions.core.Vpa.NAMESPACE;
+    // Directly reference a slf4j logger (shared with the core framework).
+    public static final Logger LOGGER = net.geraldhofbauer.vanillaplusadditions.core.Vpa.LOGGER;
 
     private static final SuggestionProvider<CommandSourceStack> MODULE_ID_SUGGESTIONS = (context, builder) ->
             SharedSuggestionProvider.suggest(
