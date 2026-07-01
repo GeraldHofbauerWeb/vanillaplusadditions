@@ -56,3 +56,13 @@ jobs:
           name: test-results
           path: build/test-results/test/
           if-no-files-found: ignore
+
+      - name: Notify pipepush
+        if: always()                 # notify on success AND failure
+        run: |
+          curl -sf -X POST "$PIPEPUSH_SERVER/api/webhook" \
+            -H "Content-Type: application/json" \
+            -d "{\"token\":\"$PIPEPUSH_TOKEN\",\"status\":\"${{ job.status }}\",\"pipeline\":\"$GITHUB_WORKFLOW\",\"branch\":\"$GITHUB_REF_NAME\",\"commit\":\"$GITHUB_SHA\",\"runId\":\"$GITHUB_RUN_NUMBER\"}"
+        env:
+          PIPEPUSH_TOKEN: ${{ secrets.PIPEPUSH_TOKEN }}
+          PIPEPUSH_SERVER: ${{ vars.PIPEPUSH_SERVER }}
