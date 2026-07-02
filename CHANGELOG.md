@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.24] - 2026-07-03
+### Added
+- **Free Anvil Repair Modul**: Reine Reparaturen am Amboss kosten **keine XP-Level** mehr — sowohl Material-Repair (z. B. Diamantspitzhacke + Diamanten) als auch das Kombinieren zweier gleicher Items, solange das Opfer-Item **unverzaubert** ist. Verzauberungs-Kombis, Bücher und Umbenennen kosten weiterhin Vanilla-XP. Auch Items, die durch die Prior-Work-Penalty schon „Zu teuer!" waren, sind wieder reparierbar; die Penalty steigt bei Gratis-Repairs standardmäßig **nicht** mehr an (Config: `increase_prior_work_penalty`, dazu `free_material_repair` / `free_combine_repair`). Standalone-Jar: `vpa_free_anvil_repair` (eigener Mixin für die Cost-0-Entnahme).
+
 ## [1.0.0-beta.23] - 2026-07-01
 ### Added
 - **Standalone-Modul-Jars für ALLE Module**: Der Pilot (beta.22) ist jetzt auf **alle 24 registrierten Module** ausgerollt. Die Pipeline baut `vpa_core` + je ein `vpa_<modul>`-Jar. Neu unterstützt: **Cross-Modul-Deps** (z. B. `vpa_cat_guardian` braucht `vpa_debug_overlay` + `vpa_flying_fish`; die Chunk-Loader brauchen `vpa_debug_overlay`) und **Mixins pro Modul** (`vpa_cat_guardian`, `vpa_bluemap_signs` bringen ihre eigene `mixins.json` mit). Data-Files (Loot/Biome/Tags/Damage-Type) werden dem jeweiligen Modul-Jar zugeordnet; Assets liegen zentral in `vpa_core`. (`mob_drops` ist bewusst ausgenommen — im Bundle nicht registriert. Der globale Worldgen-Crash-Guard bleibt Bundle-only.)

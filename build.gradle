@@ -370,6 +370,8 @@ def standaloneModules = [
                   'data/vanillaplusadditions/neoforge/biome_modifier/flying_fish_spawns.json',
                   'data/minecraft/tags/item/fishes.json'] ],
     [ moduleId: 'food_effects', displayName: 'Vanilla Plus: Food Effects' ],
+    [ moduleId: 'free_anvil_repair', displayName: 'Vanilla Plus: Free Anvil Repair',
+      mixins: ['AnvilMenuFreeRepairMixin'] ],
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_zombified_piglins', displayName: 'Vanilla Plus: Hostile Zombified Piglins' ],
     [ moduleId: 'idle_gamerules', displayName: 'Vanilla Plus: Idle Gamerules' ],

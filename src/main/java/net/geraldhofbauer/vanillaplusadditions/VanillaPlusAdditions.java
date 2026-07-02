@@ -14,6 +14,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCo
 import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
@@ -146,6 +147,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new ChunkResetModule());
         moduleManager.registerModule(new IdleGamerulesModule());
         moduleManager.registerModule(new BluemapSignsModule());
+        moduleManager.registerModule(new FreeAnvilRepairModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
