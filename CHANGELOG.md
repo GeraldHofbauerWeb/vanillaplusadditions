@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.27] - 2026-07-03
+### Changed
+- **Cat Guardian: Katzen-Inventar liegt jetzt auf einem Modifier-Keybind (Default: Strg)**: Ein **normaler** Rechtsklick auf die eigene Katze löst wieder die **Vanilla-Aktion** (Sitzen/Stehen) aus — das Inventar-GUI kapert plain Klicks nicht mehr. Zum Öffnen des Katzen-Inventars **Modifier halten + Rechtsklick** (Default **Strg/Ctrl**, im Steuerungs-Menü frei belegbar, auch auf eine Maustaste). Shift+Rechtsklick bleibt bei Carry On. Rüstung equipt weiterhin per Rechtsklick mit Cat-Armor in der Hand.
+
 ## [1.0.0-beta.26] - 2026-07-03
 ### Added
 - **Free Anvil Repair: konfigurierbare Zusatz-Materialien (Quark-Style)**: Über die neue Config-Liste `extra_repair_materials` (Format `item=material`) lassen sich Repair-Kombis definieren, die Vanilla nicht kennt — und sie sind ebenso **gratis** wie normale Material-Repairs. Defaults: **Netherite-Gear mit Diamanten** (alle Werkzeuge + Rüstung) sowie **Creates Diving-Gear** (Netherite-Diving mit Diamanten, Copper-Diving mit Kupfer). Einträge für nicht installierte Items/Mods werden still übersprungen. Da das Modul die Reparatur selbst berechnet, greift Quarks eigener Diamant-Repair (der XP kostet) nicht mehr — unsere Variante ist kostenlos. (Netherite- und Copper-Diving werden mit ihrem Basismaterial ohnehin schon vom regulären Material-Pfad kostenlos repariert; die Copper-Einträge sind explizite Absicherung.)

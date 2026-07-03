@@ -49,6 +49,7 @@
   "gui.vanillaplusadditions.cat_guardian.stored_xp": "Stored XP: %s / %s",
   "key.categories.vanillaplusadditions": "Vanilla+ Additions",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Toggle Cat Guardian Overlays",
+  "key.vanillaplusadditions.cat_guardian.open_inventory_modifier": "Open Cat Inventory (hold + right-click cat)",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Cat Guardian overlays: ON",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Cat Guardian overlays: OFF",
   "message.vanillaplusadditions.cat_guardian.associated": "Associated %s cat(s) with this bowl.",

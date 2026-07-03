@@ -48,6 +48,7 @@
   "gui.vanillaplusadditions.cat_guardian.stored_xp": "Gespeicherte XP: %s / %s",
   "key.categories.vanillaplusadditions": "Vanilla+ Additions",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Katzen-Overlays umschalten",
+  "key.vanillaplusadditions.cat_guardian.open_inventory_modifier": "Katzen-Inventar öffnen (halten + Rechtsklick auf Katze)",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Katzen-Overlays: AN",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Katzen-Overlays: AUS",
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",

@@ -6,7 +6,6 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianM
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.phys.BlockHitResult;
@@ -65,10 +64,11 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        // Plain right-click → open cat inventory. Shift+right-click is left to Carry On.
-        // Ctrl+right-click is left uncancelled too, so vanilla sit/stand stays reachable
-        // (armor is removed by dragging it out of the inventory GUI, not via a click gesture).
-        if (!Screen.hasShiftDown() && !Screen.hasControlDown()) {
+        // Modifier (default Ctrl) + right-click → open cat inventory. A plain right-click falls
+        // through to vanilla (sit/stand toggle); Shift+right-click stays with Carry On. The
+        // modifier is a rebindable keybind (see CatGuardianKeybinds). Armor is removed by dragging
+        // it out of the inventory GUI, not via a click gesture.
+        if (CatGuardianKeybinds.isModifierDown()) {
             event.setCanceled(true);
             PacketDistributor.sendToServer(new OpenCatInventoryPacket(cat.getId()));
         }

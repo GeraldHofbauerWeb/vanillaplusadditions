@@ -1296,9 +1296,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             event.setCanceled(true);
         }
         // Armor is removed by dragging it out of the cat inventory GUI (no click gesture for it).
-        // Plain right-click is intercepted client-side to open that GUI (see
-        // CatGuardianClientEvents#onEntityInteract); Shift+right-click (Carry On) and
-        // Ctrl+right-click (vanilla sit/stand) are both left uncancelled.
+        // Modifier+right-click (default Ctrl) opens that GUI client-side (see
+        // CatGuardianClientEvents#onEntityInteract, gated on CatGuardianKeybinds); a plain
+        // right-click falls through to vanilla sit/stand, and Shift+right-click stays with Carry On.
     }
 
     // ---- Cat petting (empty-hand left-click) ----

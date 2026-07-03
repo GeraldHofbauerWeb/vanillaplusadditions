@@ -60,7 +60,7 @@ Turns tamed cats into active base defenders, with food bowls and an automatable 
   - **Creepers are one-shot** at point-blank range (they fear cats, lore-friendly) — no explosion.
   - Never teleports to its owner while on guard duty.
 - **Engineering Goggles overlay** (Create): looking at a guardian cat outlines the cat and its current target; looking at a bowl/station shows the associated-cat count (and, when enabled, the guard radius). Toggle the boxes with a rebindable keybind (default Numpad +).
-- **Cat Inventory GUI** (ctrl-click): equip armor, view food/XP/armor bars.
+- **Cat Inventory GUI** (hold modifier + right-click, default **Ctrl** — rebindable in Controls): equip armor, view food/XP/armor bars. A plain right-click stays vanilla (sit/stand).
 - Fully localized (EN, DE, DE-AT dialect, ES, FR, CS).
 
 ### 🐺 Battle Dogs
