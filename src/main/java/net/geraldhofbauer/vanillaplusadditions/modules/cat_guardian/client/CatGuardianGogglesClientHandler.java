@@ -89,27 +89,37 @@ public final class CatGuardianGogglesClientHandler {
         if (!isWearingGoggles(mc.player)) {
             return;
         }
-        // The whole goggles overlay — the cat-stats popup, the bowl "Associated Cats" tooltip AND
-        // the 3D boxes — is gated behind the debug-overlay keybind (default Numpad +). Wearing
-        // goggles alone no longer shows anything; the player toggles it on when they want it.
-        if (!DebugOverlayState.isEnabled()) {
+        // Two independent triggers (goggles required for both):
+        //  - The info POPUP (cat-stats panel + bowl "Associated Cats" tooltip) is hold-to-peek on
+        //    the cat keybind (default Left Ctrl, see CatGuardianKeybinds): held + looking = shown,
+        //    released = gone.
+        //  - The 3D BOXES (cat/target outlines, guard radius, path) stay on the debug-overlay
+        //    toggle (default Numpad +).
+        // Wearing goggles alone shows nothing until one of the two is active.
+        boolean popupHeld = CatGuardianKeybinds.isModifierDown();
+        boolean boxesOn = DebugOverlayState.isEnabled();
+        if (!popupHeld && !boxesOn) {
             return;
         }
 
         long gameTime = mc.level.getGameTime();
 
-        // Block hit: bowl/station "Associated Cats" tooltip + guard-radius box.
+        // Block hit: bowl/station "Associated Cats" tooltip (popup) + guard-radius box.
         HitResult hitResult = mc.hitResult;
         if (hitResult instanceof BlockHitResult blockHitResult) {
             BlockEntity be = mc.level.getBlockEntity(blockHitResult.getBlockPos());
             if (be instanceof AbstractCatBowlBlockEntity bowl) {
-                int count = bowl.getAssociatedCats().size();
-                int max = CatGuardianModule.getMaxCatsPerStation();
-                List<Component> tooltip = new ArrayList<>();
-                tooltip.add(Component.translatable(
-                        "gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
-                activeTooltip = tooltip;
-                STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
+                if (popupHeld) {
+                    int count = bowl.getAssociatedCats().size();
+                    int max = CatGuardianModule.getMaxCatsPerStation();
+                    List<Component> tooltip = new ArrayList<>();
+                    tooltip.add(Component.translatable(
+                            "gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
+                    activeTooltip = tooltip;
+                }
+                if (boxesOn) {
+                    STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
+                }
             }
         }
 
@@ -117,6 +127,7 @@ public final class CatGuardianGogglesClientHandler {
         Vec3 eyePos = mc.player.getEyePosition();
         Vec3 end = eyePos.add(mc.player.getLookAngle().scale(20.0));
         double closestHit = Double.MAX_VALUE;
+        Cat detectedCat = null;
         for (Cat cat : mc.level.getEntitiesOfClass(Cat.class,
                 mc.player.getBoundingBox().inflate(20.0),
                 c -> isOverlayCandidate(c, mc.player))) {
@@ -125,18 +136,29 @@ public final class CatGuardianGogglesClientHandler {
                 double dist = hit.get().distanceToSqr(eyePos);
                 if (dist < closestHit) {
                     closestHit = dist;
-                    lookedAtCat = cat;
+                    detectedCat = cat;
                 }
             }
         }
-        if (lookedAtCat != null) {
-            CAT_OVERLAY_EXPIRY.put(lookedAtCat.getId(), gameTime + OVERLAY_TIMEOUT_TICKS);
-            if (gameTime >= nextStatRequestTick) {
-                nextStatRequestTick = gameTime + 20;
-                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
-                        new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatStatsPacket(
-                                lookedAtCat.getId()));
+        if (detectedCat != null) {
+            if (popupHeld) {
+                // Drives the stats popup (rendered in onRenderGui) while the key is held.
+                lookedAtCat = detectedCat;
+                if (gameTime >= nextStatRequestTick) {
+                    nextStatRequestTick = gameTime + 20;
+                    net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                            new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatStatsPacket(
+                                    detectedCat.getId()));
+                }
             }
+            if (boxesOn) {
+                CAT_OVERLAY_EXPIRY.put(detectedCat.getId(), gameTime + OVERLAY_TIMEOUT_TICKS);
+            }
+        }
+
+        // Everything below is the 3D-box overlay (toggle only).
+        if (!boxesOn) {
+            return;
         }
 
         // Populate render lists from expiry maps; evict stale entries

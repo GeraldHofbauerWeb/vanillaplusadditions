@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.29] - 2026-07-03
+### Changed
+- **Cat Guardian: Stats-Popup jetzt Hold-to-peek auf der Katzen-Taste (Left Ctrl)**: Das Info-**Popup** (HP/Rüstung/XP/Besitzer + „Associated Cats"-Tooltip) erscheint jetzt, solange du die **Katzen-Taste (Default Left Ctrl) hältst UND die Katze anschaust** — loslassen blendet es aus. Die **3D-Boxen** (Cat-/Target-Outline, Radius, Pfad) bleiben auf dem separaten Overlay-Toggle (Default Numpad +). Goggles bleiben für beides Pflicht. (Korrigiert beta.28, wo das Popup fälschlich am Numpad-+-Toggle hing statt an einer Halte-Taste.)
+
 ## [1.0.0-beta.28] - 2026-07-03
 ### Changed
 - **Cat Guardian: Goggles-Overlay komplett hinter dem Keybind**: Das Info-**Popup** (Cat-Stats-Panel + „Associated Cats"-Tooltip an der Schüssel) wird jetzt — wie die 3D-Boxen — **erst angezeigt, wenn das Overlay-Keybind aktiv ist** (Default Numpad +). Goggles allein zeigen nichts mehr; du blendest das Overlay bei Bedarf ein. (Vorher poppte das Panel dauerhaft auf, sobald man mit Goggles eine eigene Katze/Schüssel anvisierte.)
