@@ -160,6 +160,30 @@ Each module has its own configuration options. See our detailed guides:
 3. Place the jar file in your mods folder
 4. Start Minecraft and enjoy!
 
+## 🧩 Module dependencies (other mods)
+
+**None of these mods are required to run VanillaPlusAdditions** — since v1.0.0-beta.25 all of
+them are optional dependencies. Modules that integrate with another mod detect it at runtime
+and degrade gracefully when it is missing. All modules not listed here are pure vanilla.
+
+| Module | Integrates with | Without that mod |
+|---|---|---|
+| `arm_target_overlay` | [Create](https://modrinth.com/mod/create) | Overlay inactive (it visualizes Create's Mechanical Arm targets) |
+| `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
+| `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
+| `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
+| `cat_guardian` | [Sable](https://modrinth.com/mod/sable) *(optional)* | Cat bowl / feeding station use plain block variants (no ship-assembly awareness) |
+| `block_glow` | Sable *(optional)* | Client integration skipped |
+| `food_effects` | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) *(optional)* | Thirst-related food effects are skipped |
+| `bluemap_signs` | [BlueMap](https://modrinth.com/plugin/bluemap) (server) | Module stays inert (`[bm]` signs do nothing) |
+| `haunted_house` | [Dungeons and Taverns](https://modrinth.com/datapack/dungeons-and-taverns) | Module skips initialization (needs the witch villa structure) |
+
+**Standalone module jars** (`vpa_<module>.jar` from the releases) additionally require
+`vpa_core.jar`; `vpa_cat_guardian` also needs `vpa_debug_overlay` + `vpa_flying_fish`, and the
+two chunk loaders (`vpa_minecart_chunk_loading`, `vpa_stationary_chunk_loader`) need
+`vpa_debug_overlay`. The all-in-one bundle jar has no such requirements (never install bundle
+and standalone jars together).
+
 ## 🔨 Development
 
 ### Prerequisites
