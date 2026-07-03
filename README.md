@@ -96,6 +96,15 @@ Turns tamed cats into active base defenders, with food bowls and an automatable 
   - Empty canteens (all types)
 - **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
 
+### 🔨 Free Anvil Repair
+
+Pure anvil repairs cost **no XP levels** — only plain repairing is free; combining enchanted items, applying books and renaming keep vanilla costs.
+
+- **Material repair** (e.g. diamond pickaxe + diamonds) and **combine repair** of two same-type items (when the sacrifice is unenchanted).
+- Even gear that hit the "Too Expensive!" prior-work cap becomes repairable again; free repairs don't bump the prior-work penalty by default.
+- **Extra repair materials** (`extra_repair_materials`, Quark-style `item=material`): out of the box **netherite gear repairs with diamonds** and **Create's diving gear** with its base material (copper / diamonds). Add your own combos; entries for uninstalled items are skipped.
+- Config: `free_material_repair`, `free_combine_repair`, `increase_prior_work_penalty`, `extra_repair_materials`.
+
 ### 👻 Haunted House
 
 Creates an atmospheric and spooky experience in configured structures (default: Witch Villas).

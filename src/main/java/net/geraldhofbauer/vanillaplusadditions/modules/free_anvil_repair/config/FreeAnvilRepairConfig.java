@@ -4,17 +4,41 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.List;
+
 /**
  * Configuration class for the Free Anvil Repair module.
- * Controls which pure-repair operations are free and whether they still bump the
- * prior-work penalty.
+ * Controls which pure-repair operations are free, whether they still bump the
+ * prior-work penalty, and which extra repair materials (beyond vanilla's) are accepted.
  */
 public class FreeAnvilRepairConfig
         extends AbstractModuleConfig<FreeAnvilRepairModule, FreeAnvilRepairConfig> {
 
+    /**
+     * Default extra repair materials (Quark-style): netherite gear repairs with diamonds,
+     * Create's diving gear with its base material. Entries for missing items (e.g. Create
+     * not installed) are skipped at runtime.
+     */
+    private static final List<String> DEFAULT_EXTRA_REPAIR_MATERIALS = List.of(
+            "minecraft:netherite_sword=minecraft:diamond",
+            "minecraft:netherite_pickaxe=minecraft:diamond",
+            "minecraft:netherite_axe=minecraft:diamond",
+            "minecraft:netherite_shovel=minecraft:diamond",
+            "minecraft:netherite_hoe=minecraft:diamond",
+            "minecraft:netherite_helmet=minecraft:diamond",
+            "minecraft:netherite_chestplate=minecraft:diamond",
+            "minecraft:netherite_leggings=minecraft:diamond",
+            "minecraft:netherite_boots=minecraft:diamond",
+            "create:netherite_diving_helmet=minecraft:diamond",
+            "create:netherite_diving_boots=minecraft:diamond",
+            "create:copper_diving_helmet=minecraft:copper_ingot",
+            "create:copper_diving_boots=minecraft:copper_ingot"
+    );
+
     private ModConfigSpec.BooleanValue freeMaterialRepair;
     private ModConfigSpec.BooleanValue freeCombineRepair;
     private ModConfigSpec.BooleanValue increasePriorWorkPenalty;
+    private ModConfigSpec.ConfigValue<List<? extends String>> extraRepairMaterials;
 
     /**
      * Creates a new FreeAnvilRepairConfig.
@@ -40,6 +64,21 @@ public class FreeAnvilRepairConfig
                 .comment("Whether free repairs still double the hidden prior-work penalty like vanilla does. "
                         + "Default false: repairing doesn't make later enchant operations more expensive.")
                 .define("increase_prior_work_penalty", false);
+
+        extraRepairMaterials = builder
+                .comment("Additional anvil repair materials (Quark-style), format item=material "
+                        + "(e.g. minecraft:netherite_sword=minecraft:diamond).\n"
+                        + "These repairs are handled by this module and are free like regular material repairs. "
+                        + "An item may appear in multiple entries (several accepted materials).\n"
+                        + "Entries whose item or material is not installed are skipped.")
+                .defineList("extra_repair_materials", DEFAULT_EXTRA_REPAIR_MATERIALS,
+                        () -> "minecraft:netherite_sword=minecraft:diamond", o -> {
+                            if (!(o instanceof String s)) {
+                                return false;
+                            }
+                            int eq = s.indexOf('=');
+                            return eq > 0 && eq < s.length() - 1 && s.indexOf('=', eq + 1) < 0;
+                        });
     }
 
     /**
@@ -67,5 +106,14 @@ public class FreeAnvilRepairConfig
      */
     public boolean isIncreasePriorWorkPenaltyValue() {
         return increasePriorWorkPenalty != null && increasePriorWorkPenalty.get();
+    }
+
+    /**
+     * Additional accepted repair materials in {@code item=material} format.
+     *
+     * @return the configured entries (never null)
+     */
+    public List<? extends String> getExtraRepairMaterialsValue() {
+        return extraRepairMaterials == null ? DEFAULT_EXTRA_REPAIR_MATERIALS : extraRepairMaterials.get();
     }
 }

@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.26] - 2026-07-03
+### Added
+- **Free Anvil Repair: konfigurierbare Zusatz-Materialien (Quark-Style)**: Über die neue Config-Liste `extra_repair_materials` (Format `item=material`) lassen sich Repair-Kombis definieren, die Vanilla nicht kennt — und sie sind ebenso **gratis** wie normale Material-Repairs. Defaults: **Netherite-Gear mit Diamanten** (alle Werkzeuge + Rüstung) sowie **Creates Diving-Gear** (Netherite-Diving mit Diamanten, Copper-Diving mit Kupfer). Einträge für nicht installierte Items/Mods werden still übersprungen. Da das Modul die Reparatur selbst berechnet, greift Quarks eigener Diamant-Repair (der XP kostet) nicht mehr — unsere Variante ist kostenlos. (Netherite- und Copper-Diving werden mit ihrem Basismaterial ohnehin schon vom regulären Material-Pfad kostenlos repariert; die Copper-Einträge sind explizite Absicherung.)
+
 ## [1.0.0-beta.25] - 2026-07-03
 ### Changed
 - **Lib-Mods (Create/Sable/ToughAsNails/BlueMap) jetzt wirklich optional**: Das Bundle lädt und läuft ohne die Modpack-Mods. Fixes: `cat_guardian` referenziert Sable nur noch über die neue `SableCatBlocks`-Factory (vorher crashte die Modul-Klasse beim **Linken** ohne Sable — Bytecode-Verifier lädt die Sable-Subklassen wegen Type-Join in den Registrierungs-Lambdas; ein `isLoaded()`-Check kann das nicht verhindern). `end_oxygen` nutzt Create-Backtanks nur noch via `CreateBacktankCompat` (ohne Create: normales Luftanhalten im End). `arm_target_overlay`-/`debug_overlay`-Client-Handler gaten auf `isLoaded("create")` (Goggles-Check fällt auf den `arm_goggles`-Tag zurück). `create` ist jetzt als optionale Dependency in der mods.toml deklariert. (`item_vault_viewer` war bereits sauber isoliert.) Verifiziert: Bundle bootet auf blankem NeoForge-Server ohne Lib-Mods; End-Atmung, Cat-Guardian-Blöcke (Vanilla-Varianten) und Rezept-Degradation laufen sauber.

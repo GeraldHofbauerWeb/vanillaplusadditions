@@ -3,13 +3,22 @@ package net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.config.FreeAnvilRepairConfig;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringUtil;
 import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Free Anvil Repair Module
@@ -18,6 +27,8 @@ import net.neoforged.neoforge.event.AnvilUpdateEvent;
  * <ul>
  *     <li>Material repair — a damaged item plus its repair material (e.g. diamond pickaxe + diamonds)</li>
  *     <li>Sacrifice repair — two items of the same type where the sacrifice carries no enchantments</li>
+ *     <li>Extra materials (configurable, Quark-style) — e.g. netherite gear + diamonds,
+ *         Create diving gear + copper/diamonds</li>
  * </ul>
  * Everything else keeps vanilla costs: combining enchanted items, applying enchanted books and
  * renaming (also renaming while repairing). Because the repair is computed by this module, even
@@ -34,6 +45,10 @@ public class FreeAnvilRepairModule
         extends AbstractModule<FreeAnvilRepairModule, FreeAnvilRepairConfig> {
 
     private static FreeAnvilRepairModule instance;
+
+    /** Parsed {@code extra_repair_materials} entries, cached against the raw config list. */
+    private Map<Item, Set<Item>> extraRepairMaterials = Map.of();
+    private List<? extends String> extraRepairMaterialsSource;
 
     public FreeAnvilRepairModule() {
         super("free_anvil_repair",
@@ -82,7 +97,7 @@ public class FreeAnvilRepairModule
             return; // renaming (even combined with a repair) keeps vanilla costs
         }
 
-        if (left.getItem().isValidRepairItem(left, right)) {
+        if (left.getItem().isValidRepairItem(left, right) || isExtraRepairMaterial(left, right)) {
             if (getConfig().isFreeMaterialRepairValue()) {
                 applyMaterialRepair(event, left, right);
             }
@@ -105,6 +120,47 @@ public class FreeAnvilRepairModule
             return left.has(DataComponents.CUSTOM_NAME);
         }
         return !name.equals(left.getHoverName().getString());
+    }
+
+    /**
+     * Whether the configured {@code extra_repair_materials} accept the right stack as repair
+     * material for the left item (Quark-style, e.g. netherite gear + diamonds). These
+     * combinations are unknown to vanilla, so the module computes the repair itself — which
+     * also means mods that patch the vanilla anvil code path (like Quark's diamond repair)
+     * never run and can't charge XP for it.
+     */
+    private boolean isExtraRepairMaterial(ItemStack left, ItemStack right) {
+        List<? extends String> source = getConfig().getExtraRepairMaterialsValue();
+        if (!source.equals(extraRepairMaterialsSource)) {
+            extraRepairMaterials = parseExtraRepairMaterials(source);
+            extraRepairMaterialsSource = source;
+        }
+        Set<Item> materials = extraRepairMaterials.get(left.getItem());
+        return materials != null && materials.contains(right.getItem());
+    }
+
+    private Map<Item, Set<Item>> parseExtraRepairMaterials(List<? extends String> entries) {
+        Map<Item, Set<Item>> parsed = new HashMap<>();
+        for (String entry : entries) {
+            int eq = entry.indexOf('=');
+            if (eq <= 0 || eq >= entry.length() - 1) {
+                getLogger().warn("Ignoring malformed extra_repair_materials entry '{}'", entry);
+                continue;
+            }
+            ResourceLocation itemId = ResourceLocation.tryParse(entry.substring(0, eq).trim());
+            ResourceLocation materialId = ResourceLocation.tryParse(entry.substring(eq + 1).trim());
+            if (itemId == null || materialId == null
+                    || !BuiltInRegistries.ITEM.containsKey(itemId)
+                    || !BuiltInRegistries.ITEM.containsKey(materialId)) {
+                if (getConfig().shouldDebugLog()) {
+                    getLogger().debug("Skipping extra_repair_materials entry '{}' (item not installed)", entry);
+                }
+                continue;
+            }
+            parsed.computeIfAbsent(BuiltInRegistries.ITEM.get(itemId), item -> new HashSet<>())
+                    .add(BuiltInRegistries.ITEM.get(materialId));
+        }
+        return parsed;
     }
 
     /**
