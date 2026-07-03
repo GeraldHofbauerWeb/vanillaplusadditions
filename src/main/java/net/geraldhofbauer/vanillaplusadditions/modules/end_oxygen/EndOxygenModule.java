@@ -1,7 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen;
 
-import com.simibubi.create.content.equipment.armor.BacktankUtil;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateBacktankCompat;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.config.EndOxygenConfig;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -72,7 +72,7 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
                     player.setAirSupply(1);
                 }
 
-                List<ItemStack> backtanks = BacktankUtil.getAllWithAir(player);
+                List<ItemStack> backtanks = CreateBacktankCompat.getBacktanksWithAir(player);
                 boolean hasDivingHelmet = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(DIVING_HELMETS);
 
                 if (!backtanks.isEmpty() && (!getConfig().requiresFullSet() || hasDivingHelmet)) {
@@ -81,7 +81,7 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
 
                     int depletionRate = getConfig().getBacktankDepletionRate();
                     if (depletionRate > 0 && player.tickCount % depletionRate == 0) {
-                        BacktankUtil.consumeAir(player, backtanks.get(0), 1);
+                        CreateBacktankCompat.consumeAir(player, backtanks.get(0), 1);
                     }
                 } else {
                     event.setCanBreathe(false);

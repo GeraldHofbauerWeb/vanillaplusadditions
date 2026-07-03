@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.25] - 2026-07-03
+### Changed
+- **Lib-Mods (Create/Sable/ToughAsNails/BlueMap) jetzt wirklich optional**: Das Bundle lädt und läuft ohne die Modpack-Mods. Fixes: `cat_guardian` referenziert Sable nur noch über die neue `SableCatBlocks`-Factory (vorher crashte die Modul-Klasse beim **Linken** ohne Sable — Bytecode-Verifier lädt die Sable-Subklassen wegen Type-Join in den Registrierungs-Lambdas; ein `isLoaded()`-Check kann das nicht verhindern). `end_oxygen` nutzt Create-Backtanks nur noch via `CreateBacktankCompat` (ohne Create: normales Luftanhalten im End). `arm_target_overlay`-/`debug_overlay`-Client-Handler gaten auf `isLoaded("create")` (Goggles-Check fällt auf den `arm_goggles`-Tag zurück). `create` ist jetzt als optionale Dependency in der mods.toml deklariert. (`item_vault_viewer` war bereits sauber isoliert.) Verifiziert: Bundle bootet auf blankem NeoForge-Server ohne Lib-Mods; End-Atmung, Cat-Guardian-Blöcke (Vanilla-Varianten) und Rezept-Degradation laufen sauber.
+
 ## [1.0.0-beta.24] - 2026-07-03
 ### Added
 - **Free Anvil Repair Modul**: Reine Reparaturen am Amboss kosten **keine XP-Level** mehr — sowohl Material-Repair (z. B. Diamantspitzhacke + Diamanten) als auch das Kombinieren zweier gleicher Items, solange das Opfer-Item **unverzaubert** ist. Verzauberungs-Kombis, Bücher und Umbenennen kosten weiterhin Vanilla-XP. Auch Items, die durch die Prior-Work-Penalty schon „Zu teuer!" waren, sind wieder reparierbar; die Penalty steigt bei Gratis-Repairs standardmäßig **nicht** mehr an (Config: `increase_prior_work_penalty`, dazu `free_material_repair` / `free_combine_repair`). Standalone-Jar: `vpa_free_anvil_repair` (eigener Mixin für die Cost-0-Entnahme).

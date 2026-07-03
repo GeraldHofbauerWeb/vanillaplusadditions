@@ -29,6 +29,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
@@ -57,11 +58,18 @@ public final class ArmTargetOverlayClientEvents {
                     .createCompositeState(false)
     );
 
+    // The whole overlay targets Create's mechanical arm; without Create the handler must not
+    // reach any Create call (GogglesItem, ArmBlockEntity), which would throw NoClassDefFoundError.
+    private static final boolean CREATE_LOADED = ModList.get().isLoaded("create");
+
     private ArmTargetOverlayClientEvents() {
     }
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        if (!CREATE_LOADED) {
+            return;
+        }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }

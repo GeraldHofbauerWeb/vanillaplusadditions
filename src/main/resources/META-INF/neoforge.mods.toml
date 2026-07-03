@@ -77,6 +77,15 @@ config="${mod_id}.mixins.json"
     # Side this dependency is applied on - BOTH, CLIENT, or SERVER
     side="BOTH"
 
+# Create optional dependency (arm_target_overlay, item_vault_viewer, end_oxygen backtanks,
+# debug_overlay goggles integrate via guarded compat code)
+[[dependencies.${mod_id}]]
+    modId="create"
+    type="optional"
+    versionRange="[6.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Tough As Nails dependency
 [[dependencies.${mod_id}]]
     modId="toughasnails"

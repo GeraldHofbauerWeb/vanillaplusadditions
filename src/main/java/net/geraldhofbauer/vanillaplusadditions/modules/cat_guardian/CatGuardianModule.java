@@ -108,8 +108,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                         .sound(SoundType.STONE)
                         .noOcclusion();
                 if (ModList.get().isLoaded("sable")) {
-                    return new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
-                            .SableCatBowlBlock(props);
+                    // Indirection via SableCatBlocks keeps Sable types out of this class's
+                    // bytecode — a direct "new SableCatBowlBlock" here makes the verifier load
+                    // Sable classes while LINKING this module class, crashing without Sable.
+                    return net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
+                            .SableCatBlocks.createBowl(props);
                 }
                 return new CatBowlBlock(props);
             });
@@ -122,8 +125,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                         .sound(SoundType.STONE)
                         .requiresCorrectToolForDrops();
                 if (ModList.get().isLoaded("sable")) {
-                    return new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
-                            .SableCatFeedingStationBlock(props);
+                    return net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
+                            .SableCatBlocks.createFeedingStation(props);
                 }
                 return new CatFeedingStationBlock(props);
             });

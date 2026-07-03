@@ -1,9 +1,9 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.client;
 
-import com.simibubi.create.content.equipment.armor.BacktankUtil;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateBacktankCompat;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -64,13 +64,13 @@ public final class EndOxygenClientEvents {
             return;
         }
 
-        List<ItemStack> backtanks = BacktankUtil.getAllWithAir(player);
+        List<ItemStack> backtanks = CreateBacktankCompat.getBacktanksWithAir(player);
         if (backtanks.isEmpty()) {
             return;
         }
 
         ItemStack backtank = backtanks.get(0);
-        int air = BacktankUtil.getAir(backtank);
+        int air = CreateBacktankCompat.getAir(backtank);
 
         int x = guiGraphics.guiWidth() / 2 + 90;
         int y = guiGraphics.guiHeight() - 53;
