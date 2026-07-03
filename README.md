@@ -59,7 +59,7 @@ Turns tamed cats into active base defenders, with food bowls and an automatable 
   - Climbs ~1.5-block ledges and walks over fences to reach targets / get home.
   - **Creepers are one-shot** at point-blank range (they fear cats, lore-friendly) — no explosion.
   - Never teleports to its owner while on guard duty.
-- **Engineering Goggles overlay** (Create): looking at a guardian cat outlines the cat and its current target; looking at a bowl/station shows the associated-cat count (and, when enabled, the guard radius). Toggle the boxes with a rebindable keybind (default Numpad +).
+- **Engineering Goggles overlay** (Create): with the overlay toggled on, looking at a guardian cat shows its stats popup and outlines the cat + its current target; looking at a bowl/station shows the associated-cat count and guard radius. The whole overlay (info popups **and** boxes) is behind a rebindable keybind (default Numpad +) — wearing goggles alone shows nothing until you toggle it on.
 - **Cat Inventory GUI** (hold modifier + right-click, default **Ctrl** — rebindable in Controls): equip armor, view food/XP/armor bars. A plain right-click stays vanilla (sit/stand).
 - Fully localized (EN, DE, DE-AT dialect, ES, FR, CS).
 

@@ -89,11 +89,16 @@ public final class CatGuardianGogglesClientHandler {
         if (!isWearingGoggles(mc.player)) {
             return;
         }
+        // The whole goggles overlay — the cat-stats popup, the bowl "Associated Cats" tooltip AND
+        // the 3D boxes — is gated behind the debug-overlay keybind (default Numpad +). Wearing
+        // goggles alone no longer shows anything; the player toggles it on when they want it.
+        if (!DebugOverlayState.isEnabled()) {
+            return;
+        }
 
         long gameTime = mc.level.getGameTime();
 
-        // Block hit: bowl/station "Associated Cats" tooltip — ALWAYS shown while wearing goggles
-        // (expected, non-intrusive info). The radius box below is part of the debug overlay.
+        // Block hit: bowl/station "Associated Cats" tooltip + guard-radius box.
         HitResult hitResult = mc.hitResult;
         if (hitResult instanceof BlockHitResult blockHitResult) {
             BlockEntity be = mc.level.getBlockEntity(blockHitResult.getBlockPos());
@@ -104,9 +109,7 @@ public final class CatGuardianGogglesClientHandler {
                 tooltip.add(Component.translatable(
                         "gui.vanillaplusadditions.cat_guardian.associated_cats", count, max));
                 activeTooltip = tooltip;
-                if (DebugOverlayState.isEnabled()) {
-                    STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
-                }
+                STATION_RADIUS_EXPIRY.put(blockHitResult.getBlockPos(), gameTime + OVERLAY_TIMEOUT_TICKS);
             }
         }
 
@@ -134,11 +137,6 @@ public final class CatGuardianGogglesClientHandler {
                         new net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.RequestCatStatsPacket(
                                 lookedAtCat.getId()));
             }
-        }
-
-        // Everything below (cat outlines, target boxes, station radius) is the debug overlay.
-        if (!DebugOverlayState.isEnabled()) {
-            return;
         }
 
         // Populate render lists from expiry maps; evict stale entries

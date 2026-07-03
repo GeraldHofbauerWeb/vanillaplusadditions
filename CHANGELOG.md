@@ -4,6 +4,10 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.28] - 2026-07-03
+### Changed
+- **Cat Guardian: Goggles-Overlay komplett hinter dem Keybind**: Das Info-**Popup** (Cat-Stats-Panel + „Associated Cats"-Tooltip an der Schüssel) wird jetzt — wie die 3D-Boxen — **erst angezeigt, wenn das Overlay-Keybind aktiv ist** (Default Numpad +). Goggles allein zeigen nichts mehr; du blendest das Overlay bei Bedarf ein. (Vorher poppte das Panel dauerhaft auf, sobald man mit Goggles eine eigene Katze/Schüssel anvisierte.)
+
 ## [1.0.0-beta.27] - 2026-07-03
 ### Changed
 - **Cat Guardian: Katzen-Inventar liegt jetzt auf einem Modifier-Keybind (Default: Strg)**: Ein **normaler** Rechtsklick auf die eigene Katze löst wieder die **Vanilla-Aktion** (Sitzen/Stehen) aus — das Inventar-GUI kapert plain Klicks nicht mehr. Zum Öffnen des Katzen-Inventars **Modifier halten + Rechtsklick** (Default **Strg/Ctrl**, im Steuerungs-Menü frei belegbar, auch auf eine Maustaste). Shift+Rechtsklick bleibt bei Carry On. Rüstung equipt weiterhin per Rechtsklick mit Cat-Armor in der Hand.
