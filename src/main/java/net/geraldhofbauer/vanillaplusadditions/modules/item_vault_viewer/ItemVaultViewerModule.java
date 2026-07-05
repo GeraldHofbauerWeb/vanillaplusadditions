@@ -11,17 +11,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -59,36 +54,7 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
     protected void onInitialize() {
         MENUS.register(getModEventBus());
         getModEventBus().addListener(this::onRegisterPayloadHandlers);
-        NeoForge.EVENT_BUS.register(this);
         getLogger().info("Item Vault Viewer module initialized");
-    }
-
-    @SubscribeEvent
-    public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (!isModuleEnabled() || !isCreateLoaded()) {
-            return;
-        }
-        if (event.getLevel().isClientSide()) {
-            return;
-        }
-        if (event.getHand() != InteractionHand.MAIN_HAND) {
-            return;
-        }
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-        if (player.isShiftKeyDown()) {
-            return;
-        }
-        if (!ItemVaultBlock.isVault(event.getLevel().getBlockState(event.getPos()))) {
-            return;
-        }
-        if (!GogglesItem.isWearingGoggles(player)) {
-            return;
-        }
-
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
     }
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {

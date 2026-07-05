@@ -50,6 +50,8 @@
   "key.categories.vanillaplusadditions": "Vanilla+ Additions",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Toggle Cat Guardian Overlays",
   "key.vanillaplusadditions.cat_guardian.open_inventory_modifier": "Open Cat Inventory (hold + right-click cat)",
+  "key.vanillaplusadditions.item_vault_viewer.open_modifier": "Open Item Vault Viewer (hold + right-click vault)",
+  "key.vanillaplusadditions.arm_target_overlay.peek_modifier": "Show Mechanical Arm Targets (hold + look at arm)",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Cat Guardian overlays: ON",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Cat Guardian overlays: OFF",
   "message.vanillaplusadditions.cat_guardian.associated": "Associated %s cat(s) with this bowl.",

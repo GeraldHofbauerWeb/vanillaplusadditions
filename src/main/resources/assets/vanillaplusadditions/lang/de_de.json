@@ -49,6 +49,8 @@
   "key.categories.vanillaplusadditions": "Vanilla+ Additions",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Katzen-Overlays umschalten",
   "key.vanillaplusadditions.cat_guardian.open_inventory_modifier": "Katzen-Inventar öffnen (halten + Rechtsklick auf Katze)",
+  "key.vanillaplusadditions.item_vault_viewer.open_modifier": "Item-Vault-Viewer öffnen (halten + Rechtsklick auf Vault)",
+  "key.vanillaplusadditions.arm_target_overlay.peek_modifier": "Arm-Zielpunkte anzeigen (halten + auf Arm schauen)",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Katzen-Overlays: AN",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Katzen-Overlays: AUS",
   "message.vanillaplusadditions.cat_guardian.associated": "%s Katze(n) mit diesem Napf assoziiert.",

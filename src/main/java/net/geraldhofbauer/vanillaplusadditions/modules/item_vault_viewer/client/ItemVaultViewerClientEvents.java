@@ -38,6 +38,9 @@ public final class ItemVaultViewerClientEvents {
         if (player.isShiftKeyDown()) {
             return;
         }
+        if (!ItemVaultViewerKeybinds.isModifierDown()) {
+            return;
+        }
         if (!GogglesItem.isWearingGoggles(player)) {
             return;
         }

@@ -88,6 +88,10 @@ public final class ArmTargetOverlayClientEvents {
             return;
         }
 
+        if (!ArmTargetOverlayKeybinds.isModifierDown()) {
+            return;
+        }
+
         if (!(minecraft.hitResult instanceof BlockHitResult blockHit)) {
             return;
         }
