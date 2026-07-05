@@ -42,6 +42,10 @@ test-server/usernamecache.json
 test-server/banned-*.json
 test-server/ops.json
 test-server/whitelist.json
+test-server/eula.txt
+test-server/server.properties
+test-server/config/
+test-server/mods-archive/
 
 # test client (ignore runtime files but keep configuration)
 test-client/logs/
