@@ -128,6 +128,7 @@ public final class CatGuardianGogglesClientHandler {
         Vec3 end = eyePos.add(mc.player.getLookAngle().scale(20.0));
         double closestHit = Double.MAX_VALUE;
         Cat detectedCat = null;
+        Vec3 detectedCatHit = null;
         for (Cat cat : mc.level.getEntitiesOfClass(Cat.class,
                 mc.player.getBoundingBox().inflate(20.0),
                 c -> isOverlayCandidate(c, mc.player))) {
@@ -137,11 +138,14 @@ public final class CatGuardianGogglesClientHandler {
                 if (dist < closestHit) {
                     closestHit = dist;
                     detectedCat = cat;
+                    detectedCatHit = hit.get();
                 }
             }
         }
         if (detectedCat != null) {
-            if (popupHeld) {
+            // The stats POPUP requires clear line-of-sight: a solid block between the eye and the
+            // cat must hide it (the 3D boxes below stay xray on purpose — that's the debug view).
+            if (popupHeld && hasLineOfSight(mc, eyePos, detectedCatHit)) {
                 // Drives the stats popup (rendered in onRenderGui) while the key is held.
                 lookedAtCat = detectedCat;
                 if (gameTime >= nextStatRequestTick) {
@@ -210,6 +214,26 @@ public final class CatGuardianGogglesClientHandler {
 
     public static boolean isWearingGoggles(Player player) {
         return GogglesUtil.isWearingGoggles(player);
+    }
+
+    /**
+     * True when no solid block sits between the player's eye and the cat hit point — so the stats
+     * popup is hidden when the cat is behind a wall.
+     */
+    private static boolean hasLineOfSight(Minecraft mc, Vec3 eyePos, Vec3 catHit) {
+        if (catHit == null || mc.level == null) {
+            return false;
+        }
+        BlockHitResult clip = mc.level.clip(new net.minecraft.world.level.ClipContext(
+                eyePos, catHit,
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                mc.player));
+        if (clip.getType() != HitResult.Type.BLOCK) {
+            return true;
+        }
+        // A block strictly before the cat point occludes it (tiny epsilon for coplanar hits).
+        return clip.getLocation().distanceToSqr(eyePos) >= eyePos.distanceToSqr(catHit) - 1.0e-4;
     }
 
     /**

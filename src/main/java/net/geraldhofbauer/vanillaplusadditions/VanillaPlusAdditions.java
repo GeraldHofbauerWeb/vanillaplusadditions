@@ -22,6 +22,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
@@ -138,6 +139,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new HauntedHouseModule());
         moduleManager.registerModule(new FoodEffectsModule());
         moduleManager.registerModule(new OverpackedSlowdownModule());
+        moduleManager.registerModule(new OverpackedBackpackKeysModule());
         moduleManager.registerModule(new CustomCraftingRecipesModule());
         moduleManager.registerModule(new ArmTargetOverlayModule());
         moduleManager.registerModule(new TextureKillModule());

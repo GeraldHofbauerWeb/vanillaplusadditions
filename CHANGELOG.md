@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.31] - 2026-07-06
+### Added
+- **Neues Modul „Overpacked Backpack Keybinds"**: Tastenkürzel öffnen die drei Fächer des **getragenen** Overpacked-Giant-Backpacks (Curios-`back`-Slot) direkt — **Hauptfach (Mitte, 55 Slots) per `B`**, rechtes und linkes Fach (je 28 Slots) standardmäßig **unbelegt** (im Steuerungs-Menü frei belegbar). Es wird **Overpackeds eigene GUI** verwendet: Da dessen Backpack-Menü an eine platzierte Entity gebunden ist, spawnt der Server aus dem getragenen Item eine kurzlebige, kollisionsfreie `GiantBackpack`-Entity, öffnet darauf das Original-Menü im gewählten Fach und schreibt die Änderungen beim Schließen zurück ins getragene Item (und verwirft die Entity). Ohne Overpacked/Curios ist das Modul ein No-op. (Overpacked + Curios sind als `compileOnly`-Libs eingebunden.)
+### Fixed
+- **Cat Guardian: Stats-Popup wird nicht mehr durch Wände angezeigt**: Das Info-Popup (HP/Rüstung/XP/Besitzer) erschien bisher, sobald der Blickstrahl die Katzen-Hitbox traf — auch wenn ein Block dazwischen lag. Es wird jetzt nur noch bei **freier Sichtlinie** zur Katze gezeigt. Die 3D-Debug-Boxen bleiben bewusst xray.
+
+## [1.0.0-beta.30] - 2026-07-05
+### Changed
+- **Item Vault Viewer & Arm Target Overlay hinter Hold-to-peek-Keybind (Strg)**: Der Item-Vault-Viewer und das Mechanical-Arm-Ziel-Overlay werden jetzt — analog zum Cat-Guardian-Popup — nur angezeigt, solange die Halte-Taste (Default Left Ctrl) gehalten wird, statt dauerhaft beim Anvisieren.
+
 ## [1.0.0-beta.29] - 2026-07-03
 ### Changed
 - **Cat Guardian: Stats-Popup jetzt Hold-to-peek auf der Katzen-Taste (Left Ctrl)**: Das Info-**Popup** (HP/Rüstung/XP/Besitzer + „Associated Cats"-Tooltip) erscheint jetzt, solange du die **Katzen-Taste (Default Left Ctrl) hältst UND die Katze anschaust** — loslassen blendet es aus. Die **3D-Boxen** (Cat-/Target-Outline, Radius, Pfad) bleiben auf dem separaten Overlay-Toggle (Default Numpad +). Goggles bleiben für beides Pflicht. (Korrigiert beta.28, wo das Popup fälschlich am Numpad-+-Toggle hing statt an einer Halte-Taste.)

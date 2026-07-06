@@ -141,6 +141,15 @@ dependencies {
     compileOnly files("libs/flow-math-1.0.4-SNAPSHOT.jar")
     localRuntime files("libs/bluemap-5.7-neoforge.jar")
 
+    // Overpacked (giant backpacks) + Curios — compile-time only, gated at runtime via
+    // ModList.isLoaded in the overpacked_backpack_keys module's compat classes. Overpacked's
+    // backpack GUI is entity-bound and worn via a Curios "back" slot, so both are needed on the
+    // compile classpath. localRuntime loads them for dev testing of the keybind feature.
+    compileOnly files("libs/overgepackt.jar")
+    compileOnly files("libs/curios-neoforge-9.5.1+1.21.1.jar")
+    localRuntime files("libs/overgepackt.jar")
+    localRuntime files("libs/curios-neoforge-9.5.1+1.21.1.jar")
+
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
