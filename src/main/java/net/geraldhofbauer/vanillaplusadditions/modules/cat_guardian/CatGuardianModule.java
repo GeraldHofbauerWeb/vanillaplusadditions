@@ -249,6 +249,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     // Populated in onLivingDrops, consumed in onExperienceDrop (same death tick).
     private final Map<Integer, Integer> pendingXpCapture = new HashMap<>();
 
+    // Stuck detection: last sampled position + consecutive no-progress strikes.
+    private final Map<UUID, net.minecraft.world.phys.Vec3> stuckSample = new HashMap<>();
+    private final Map<UUID, Integer> stuckStrikes = new HashMap<>();
+
     public static double getAssociationRadius() {
         return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
     }
@@ -293,6 +297,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     public static int getCatXpCapacity() {
         return instance != null ? instance.getConfig().getCatXpCapacity() : 500;
+    }
+
+    public static int getGlowDurationTicks() {
+        return instance != null ? instance.getConfig().getGlowDurationTicks() : 600;
     }
 
     // ---- Constructor ----
@@ -478,32 +486,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 })
         );
 
-        event.registrar("1").playToServer(RequestCatGlowPacket.TYPE, RequestCatGlowPacket.STREAM_CODEC,
-                (packet, ctx) -> ctx.enqueueWork(() -> {
-                    if (!isModuleEnabled()) {
-                        return;
-                    }
-                    ServerPlayer player = (ServerPlayer) ctx.player();
-                    BlockPos bowlPos = packet.bowlPos();
-                    if (player.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY() + 0.5, bowlPos.getZ() + 0.5) > 64.0 * 64.0) {
-                        return;
-                    }
-                    if (!(player.level().getBlockEntity(bowlPos) instanceof AbstractCatBowlBlockEntity bowl)) {
-                        return;
-                    }
-                    ServerLevel serverLevel = (ServerLevel) player.level();
-                    int durationTicks = getConfig().getGlowDurationTicks();
-                    for (UUID catUUID : bowl.getAssociatedCats()) {
-                        Entity entity = serverLevel.getEntity(catUUID);
-                        if (entity instanceof Cat cat && cat.isAlive()) {
-                            MobEffectInstance existing = cat.getEffect(MobEffects.GLOWING);
-                            if (existing == null || existing.getDuration() < 200) {
-                                cat.addEffect(new MobEffectInstance(MobEffects.GLOWING, durationTicks, 0, false, false));
-                            }
-                        }
-                    }
-                })
-        );
+        // Note: the old RequestCatGlowPacket round-trip (server-side GLOWING effect on all
+        // associated cats, visible to every player) was replaced by a purely client-side glow —
+        // see CatGuardianClientEvents.tickLocalGlow. Only the looking player sees it, and only
+        // their own cats light up.
     }
 
     private static void broadcastArmorSync(Cat cat) {
@@ -530,10 +516,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getEntity() instanceof Cat cat)) {
             return;
         }
-
-        // Allow cats to navigate through water (costly but not impassable)
-        cat.setPathfindingMalus(PathType.WATER, 8.0f);
-        cat.setPathfindingMalus(PathType.WATER_BORDER, 4.0f);
 
         boolean alreadyAdded = cat.targetSelector.getAvailableGoals().stream()
                 .anyMatch(w -> w.getGoal() instanceof CatGuardTargetGoal);
@@ -645,15 +627,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getEntity() instanceof Cat cat) || cat.level().isClientSide()) {
             return;
         }
-        // Suppress swimming BEFORE travel() runs so the vanilla surface-jump (+0.3 Y that fires
-        // when isSwimming && fluidHeight <= 0.4) cannot catapult the cat when it exits water.
-        // boostWaterNavigation (Post) re-enables it deeper underwater as needed.
-        if (isGuardianCat(cat) && cat.isSwimming() && cat.isInWater()) {
-            double fluidHeight = cat.getFluidHeight(net.minecraft.tags.FluidTags.WATER);
-            if (fluidHeight <= 0.5) {
-                cat.setSwimming(false);
-            }
-        }
         // Strip FollowOwnerGoal BEFORE the goal selector runs this tick, so an associated cat
         // can never teleport to a far-away owner (doing this in Post left a one-tick window in
         // which the goal could still fire — e.g. while a cat was returning to its station).
@@ -675,12 +648,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
-        // Provide swim force toward the next path node when in water so cats can
-        // follow paths that go through or under water, including dives.
-        boostWaterNavigation(cat);
-
         // Per-tick ledge-jump assist so cats reliably clear ~1.5-block steps.
         assistLedgeJump(cat);
+
+        // Stuck detection: repath when a guardian stops making progress toward its goal.
+        tickStuckDetection(cat);
 
         if (cat.tickCount % 10 != 0) {
             return;
@@ -859,42 +831,54 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     /**
-     * Manually steers a guardian cat through water toward its goal — ground navigation is useless
-     * in water, and flowing water otherwise sweeps the cat away. Dives toward an underwater target,
-     * otherwise swims at/near the surface toward the target or back to its bowl, with enough force
-     * to beat the current.
+     * Stuck detection (guardians with an active movement goal — combat target, returning or
+     * fleeing): samples the position every 40 ticks; too little progress → force a repath, and
+     * after three consecutive strikes blacklist the current target and head home. Cats can no
+     * longer dive, so a mob that submerges out of reach would otherwise leave the cat pacing at
+     * the shore forever.
      */
-    private void boostWaterNavigation(Cat cat) {
-        if (!isGuardianCat(cat) || !cat.isInWater()) {
+    private void tickStuckDetection(Cat cat) {
+        if (!isGuardianCat(cat)) {
             return;
         }
-        net.minecraft.world.level.pathfinder.Path path = cat.getNavigation().getPath();
-        if (path == null || path.isDone()) {
-            cat.setSwimming(false);
+        UUID uid = cat.getUUID();
+        boolean wantsToMove = cat.getTarget() != null
+                || cat.getData(CAT_RETURNING.get())
+                || cat.getData(CAT_FLEEING.get());
+        if (!wantsToMove) {
+            stuckSample.remove(uid);
+            stuckStrikes.remove(uid);
             return;
         }
-        int ni = Math.min(path.getNextNodeIndex(), path.getNodeCount() - 1);
-        net.minecraft.world.level.pathfinder.Node node = path.getNode(ni);
-        // Enable swimming mode only when the next node is inside a fluid block. This gives 3D
-        // travel physics (look-direction controls Y) while diving, but disables it as soon as the
-        // next node is on land — preventing the vanilla surface-jump (+0.3 Y) that fires when
-        // isSwimming() is true and fluid height <= fluidJumpThreshold.
-        boolean nextNodeInWater = !cat.level()
-                .getFluidState(new net.minecraft.core.BlockPos(node.x, node.y, node.z))
-                .isEmpty();
-        cat.setSwimming(nextNodeInWater);
-        double dx = node.x + 0.5 - cat.getX();
-        double dy = node.y + 0.5 - cat.getY();
-        double dz = node.z + 0.5 - cat.getZ();
-        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (len < 0.01) {
+        if (cat.tickCount % 40 != 0) {
             return;
         }
-        dx /= len;
-        dy /= len;
-        dz /= len;
-        net.minecraft.world.phys.Vec3 v = cat.getDeltaMovement();
-        cat.setDeltaMovement(v.x * 0.4 + dx * 0.08, v.y * 0.4 + dy * 0.08, v.z * 0.4 + dz * 0.08);
+        net.minecraft.world.phys.Vec3 now = cat.position();
+        net.minecraft.world.phys.Vec3 prev = stuckSample.put(uid, now);
+        if (prev == null) {
+            return;
+        }
+        if (prev.distanceToSqr(now) >= 0.75 * 0.75) {
+            stuckStrikes.remove(uid);
+            return;
+        }
+        int strikes = stuckStrikes.merge(uid, 1, Integer::sum);
+        cat.getNavigation().recomputePath();
+        if (strikes >= 3) {
+            stuckStrikes.remove(uid);
+            LivingEntity target = cat.getTarget();
+            if (target != null) {
+                cat.targetSelector.getAvailableGoals().stream()
+                        .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
+                        .filter(g -> g instanceof CatGuardTargetGoal)
+                        .findFirst()
+                        .ifPresent(g -> ((CatGuardTargetGoal) g).blockTarget(target));
+                cat.setTarget(null);
+            }
+            if (cat.getData(CAT_BOWL_POS.get()) != Long.MIN_VALUE) {
+                cat.setData(CAT_RETURNING.get(), true);
+            }
+        }
     }
 
     private static boolean isFishItem(ItemStack stack) {
@@ -929,6 +913,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             gpn.setCanWalkOverFences(true);
         }
 
+        // Guardian cats may cross shallow water (FloatGoal keeps them at the surface — they can
+        // never dive anymore). Per-instance malus, so vanilla pet cats keep avoiding water.
+        cat.setPathfindingMalus(PathType.WATER, 0.0f);
+        cat.setPathfindingMalus(PathType.WATER_BORDER, 2.0f);
+
         suppressFollowingBehaviors(cat);
 
         // Sync navigation path to clients every 20 ticks for the debug overlay.
@@ -962,6 +951,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             double distSqToBowl = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
             boolean atBase = distSqToBowl <= 16.0;
             if (atBase) {
+                cat.getNavigation().resetMaxVisitedNodesMultiplier();
                 // Heal at base; resume duty once safely recovered
                 cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
                 AbstractCatBowlBlockEntity fleeingBowl = getBowlEntity(cat, bowlPos);
@@ -977,6 +967,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 if (cat.isOrderedToSit()) {
                     cat.setOrderedToSit(false);
                 }
+                // Doubled A* node budget: the way home may span the whole guard radius.
+                cat.getNavigation().setMaxVisitedNodesMultiplier(2.0f);
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
             }
             // Keep fed-state ticking down while fleeing, then skip all normal duty logic
@@ -999,6 +991,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (distSqToBowl <= 16.0 || returningAge >= 1200) {
                 cat.setData(CAT_RETURNING.get(), false);
                 catReturningAge.remove(uid);
+                cat.getNavigation().resetMaxVisitedNodesMultiplier();
                 if (distSqToBowl <= 16.0) {
                     AbstractCatBowlBlockEntity returnBowl = getBowlEntity(cat, bowlPos);
                     if (returnBowl instanceof CatFeedingStationBlockEntity returnStation) {
@@ -1006,6 +999,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     }
                 }
             } else {
+                // Doubled A* node budget: the way home may span the whole guard radius.
+                cat.getNavigation().setMaxVisitedNodesMultiplier(2.0f);
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
                 // If pathfinder can't find a route (nav stays done), nudge the cat
                 // directly toward the bowl so it can escape narrow spaces.
@@ -1747,6 +1742,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (target == null || !target.isAlive()) {
                 return false;
             }
+            // Cats are land guardians: the moment a target fully submerges (e.g. a drowned
+            // diving away), let it go — cats can't dive anymore. No blacklist: the target is
+            // simply filtered while underwater and re-engaged when it surfaces.
+            if (target.isUnderWater()) {
+                return false;
+            }
             // Drop the target the moment it leaves the guard zone (e.g. wanders off or falls
             // into a ravine) so the cat returns to base instead of chasing it indefinitely.
             if (!isWithinGuardZone(cat, target.getX(), target.getY(), target.getZ(), TARGET_ZONE_BUFFER)) {
@@ -1854,8 +1855,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 net.minecraft.world.level.pathfinder.Path path =
                         cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
                 if (!instance.endNodeNear(path,
-                        new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.5)) {
-                    continue; // not reachable
+                        new net.minecraft.world.phys.Vec3(mob.getX(), mob.getY(), mob.getZ()), 2.0)) {
+                    continue; // unreachable or partial path — discard early instead of running at it
                 }
                 if (!isPathWithinZone(path, cat)) {
                     continue; // route exits guard zone
@@ -1880,7 +1881,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
             AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
             List<Monster> hostiles = cat.level().getEntitiesOfClass(
-                    Monster.class, searchBox, m -> !m.isDeadOrDying() && !isBlocked(m));
+                    Monster.class, searchBox, m -> !m.isDeadOrDying() && !isBlocked(m) && !m.isUnderWater());
             if (hostiles.isEmpty()) {
                 return false;
             }

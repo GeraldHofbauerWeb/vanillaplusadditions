@@ -1,9 +1,13 @@
 {
   "replace": false,
   "values": [
-    "vanillaplusadditions:cat_armor_iron",
-    "vanillaplusadditions:cat_armor_gold",
-    "vanillaplusadditions:cat_armor_diamond",
-    "vanillaplusadditions:cat_armor_netherite"
+    { "id": "vanillaplusadditions:cat_armor_iron", "required": false },
+    { "id": "vanillaplusadditions:cat_armor_gold", "required": false },
+    { "id": "vanillaplusadditions:cat_armor_diamond", "required": false },
+    { "id": "vanillaplusadditions:cat_armor_netherite", "required": false },
+    { "id": "vanillaplusadditions:axolotl_armor_iron", "required": false },
+    { "id": "vanillaplusadditions:axolotl_armor_gold", "required": false },
+    { "id": "vanillaplusadditions:axolotl_armor_diamond", "required": false },
+    { "id": "vanillaplusadditions:axolotl_armor_netherite", "required": false }
   ]
 }

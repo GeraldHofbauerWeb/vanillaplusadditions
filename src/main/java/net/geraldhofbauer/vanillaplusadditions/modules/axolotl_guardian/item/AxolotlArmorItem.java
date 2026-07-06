@@ -1,10 +1,10 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item;
+package net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.item;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-public class CatArmorItem extends Item {
+public class AxolotlArmorItem extends Item {
 
     public enum Tier {
         IRON(200, 1.0f),
@@ -31,7 +31,7 @@ public class CatArmorItem extends Item {
 
     private final Tier tier;
 
-    public CatArmorItem(Tier tier, Properties properties) {
+    public AxolotlArmorItem(Tier tier, Properties properties) {
         super(properties.durability(tier.getMaxDurability()));
         this.tier = tier;
     }
@@ -51,11 +51,11 @@ public class CatArmorItem extends Item {
     }
 
     /**
-     * Armadillo scutes (the recipe ingredient) repair cat armor on the anvil. With the
+     * Turtle scutes (the recipe ingredient) repair axolotl armor on the anvil. With the
      * free_anvil_repair module enabled that repair costs 0 levels automatically.
      */
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
-        return repairCandidate.is(Items.ARMADILLO_SCUTE);
+        return repairCandidate.is(Items.TURTLE_SCUTE);
     }
 }

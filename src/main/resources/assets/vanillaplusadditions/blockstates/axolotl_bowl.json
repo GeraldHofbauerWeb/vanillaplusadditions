@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "filled=false": { "model": "vanillaplusadditions:block/axolotl_bowl" },
+    "filled=true":  { "model": "vanillaplusadditions:block/axolotl_bowl_filled" }
+  }
+}

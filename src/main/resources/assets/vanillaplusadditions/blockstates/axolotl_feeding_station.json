@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,filled=false": { "model": "vanillaplusadditions:block/axolotl_feeding_station" },
+    "facing=east,filled=false":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 90 },
+    "facing=south,filled=false": { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 180 },
+    "facing=west,filled=false":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 270 },
+    "facing=north,filled=true":  { "model": "vanillaplusadditions:block/axolotl_feeding_station" },
+    "facing=east,filled=true":   { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 90 },
+    "facing=south,filled=true":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 180 },
+    "facing=west,filled=true":   { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 270 }
+  }
+}

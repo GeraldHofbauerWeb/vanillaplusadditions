@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "vanillaplusadditions:flying_fish_boots",
+      "required": false
+    }
+  ]
+}

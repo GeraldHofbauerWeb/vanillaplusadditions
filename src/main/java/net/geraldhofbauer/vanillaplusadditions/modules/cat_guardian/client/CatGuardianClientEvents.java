@@ -17,13 +17,18 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class CatGuardianClientEvents {
 
-    private static BlockPos lastGlowPos = null;
-    private static long lastGlowSentTick = Long.MIN_VALUE;
+    // Client-side-only glow: catEntityId → game tick when the local glow expires. The glow flag
+    // is re-asserted every tick (server entity-data resyncs would otherwise clear it) and is
+    // never sent to the server — other players see nothing.
+    private static final Map<Integer, Long> GLOW_EXPIRY = new HashMap<>();
 
     // catEntityId → targetEntityId; populated by SyncCatTargetPacket
     static final Map<Integer, Integer> CAT_TARGET_MAP = new HashMap<>();
@@ -78,6 +83,7 @@ public final class CatGuardianClientEvents {
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) {
+            GLOW_EXPIRY.clear();
             return;
         }
 
@@ -91,27 +97,47 @@ public final class CatGuardianClientEvents {
         CatGuardianGogglesClientHandler.onClientTick(mc);
 
         long gameTime = mc.level.getGameTime();
-        if (gameTime % 20 != 0) {
-            return;
+
+        // Looking at a bowl/station refreshes the local glow on the player's OWN associated
+        // cats. Purely client-side — replaces the old server-side GLOWING effect that lit the
+        // cats up for every player nearby. Associated UUIDs come from the block entity (BE data
+        // is synced to clients); ownership from the vanilla-synched owner UUID.
+        if (gameTime % 20 == 0
+                && mc.hitResult instanceof BlockHitResult blockHit
+                && mc.level.getBlockEntity(blockHit.getBlockPos()) instanceof AbstractCatBowlBlockEntity bowl) {
+            BlockPos bowlPos = blockHit.getBlockPos();
+            long expiry = gameTime + CatGuardianModule.getGlowDurationTicks();
+            Set<java.util.UUID> associated = new HashSet<>(bowl.getAssociatedCats());
+            double range = CatGuardianModule.getGuardRadius() + 16.0;
+            for (Cat cat : mc.level.getEntitiesOfClass(Cat.class,
+                    new net.minecraft.world.phys.AABB(bowlPos).inflate(range),
+                    c -> associated.contains(c.getUUID())
+                            && c.isTame() && mc.player.getUUID().equals(c.getOwnerUUID()))) {
+                GLOW_EXPIRY.put(cat.getId(), expiry);
+            }
         }
 
-        if (!(mc.hitResult instanceof BlockHitResult blockHit)) {
-            return;
-        }
-        BlockPos hitPos = blockHit.getBlockPos();
-        if (!(mc.level.getBlockEntity(hitPos) instanceof AbstractCatBowlBlockEntity)) {
-            return;
-        }
+        tickLocalGlow(mc, gameTime);
+    }
 
-        boolean bowlChanged = !hitPos.equals(lastGlowPos);
-        boolean timerElapsed = gameTime - lastGlowSentTick > 400;
-        if (!bowlChanged && !timerElapsed) {
+    private static void tickLocalGlow(Minecraft mc, long gameTime) {
+        if (GLOW_EXPIRY.isEmpty()) {
             return;
         }
-
-        lastGlowPos = hitPos;
-        lastGlowSentTick = gameTime;
-        PacketDistributor.sendToServer(new RequestCatGlowPacket(hitPos));
+        Iterator<Map.Entry<Integer, Long>> iter = GLOW_EXPIRY.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<Integer, Long> entry = iter.next();
+            net.minecraft.world.entity.Entity entity = mc.level.getEntity(entry.getKey());
+            if (entity == null || !entity.isAlive() || entry.getValue() < gameTime) {
+                // Only clear the flag if no real (server-side) glowing effect is active.
+                if (entity instanceof Cat cat && !cat.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)) {
+                    cat.setGlowingTag(false);
+                }
+                iter.remove();
+                continue;
+            }
+            entity.setGlowingTag(true);
+        }
     }
 
     public static void handleSyncCatInventory(SyncCatInventoryPacket packet) {

@@ -26,6 +26,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.Overp
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
@@ -145,6 +146,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new ArmTargetOverlayModule());
         moduleManager.registerModule(new TextureKillModule());
         moduleManager.registerModule(new CatGuardianModule());
+        moduleManager.registerModule(new AxolotlGuardianModule());
         moduleManager.registerModule(new ItemVaultViewerModule());
         moduleManager.registerModule(new BattleDogsModule());
         moduleManager.registerModule(new ChunkResetModule());
