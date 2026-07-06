@@ -119,11 +119,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     public static final DeferredBlock<CatFeedingStationBlock> CAT_FEEDING_STATION =
             BLOCKS.register("cat_feeding_station", () -> {
+                // No requiresCorrectToolForDrops(): the block sits in no mineable/pickaxe tag
+                // (datapack tags are unreliable in this mod), so a "correct tool" could never
+                // match — it would break yielding nothing and mine at hand speed forever.
                 BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
                         .mapColor(MapColor.STONE)
                         .strength(3.5F, 12.0F)
-                        .sound(SoundType.STONE)
-                        .requiresCorrectToolForDrops();
+                        .sound(SoundType.STONE);
                 if (ModList.get().isLoaded("sable")) {
                     return net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
                             .SableCatBlocks.createFeedingStation(props);

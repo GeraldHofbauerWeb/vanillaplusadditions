@@ -7,10 +7,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -34,6 +36,17 @@ public abstract class AbstractCatBowlBlock extends net.minecraft.world.level.blo
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
         builder.add(FILLED);
+    }
+
+    /**
+     * Drops the block itself when broken. This mod's datapack loot-table JSONs don't load
+     * reliably, so block drops are provided in code (see project convention) — without this the
+     * bowl/station break but yield no item. Container contents are dropped separately in each
+     * subclass's {@code onRemove}.
+     */
+    @Override
+    protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
+        return List.of(new ItemStack(this));
     }
 
     /**

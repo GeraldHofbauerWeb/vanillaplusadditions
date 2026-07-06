@@ -4,6 +4,14 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.33] - 2026-07-06
+### Added
+- **Neues Modul „Waystone Amethyst Repair"**: Der **Warp Stone** aus dem Waystones-Mod (`waystones:warp_stone`, hat Haltbarkeit — wird beim Teleportieren aufgebraucht) lässt sich jetzt im **Amboss mit Amethyst** reparieren — eine Kombination, die Vanilla-Ambosse nicht kennen. Jede Materialeinheit stellt standardmäßig 25 % der Max-Haltbarkeit wieder her (wie Vanilla-Materialreparaturen). **Kosten:** normale Amboss-XP-Level — **außer** das Modul **Free Anvil Repair** ist aktiv, dann ist die Reparatur **gratis** (0 Level; nutzt denselben Zero-Cost-Pickup-Pfad wie Free Anvil Repair). Ziel-Item, akzeptierte Materialien (Default `minecraft:amethyst_shard`) und Reparatur-Prozent sind konfigurierbar. Soft-Dependency: Item wird per Registry-Id aufgelöst — ohne Waystones ist das Modul einfach inaktiv (kein vendored Jar nötig).
+
+## [1.0.0-beta.32] - 2026-07-06
+### Fixed
+- **Cat Guardian: Futterstation lässt sich wieder abbauen**: Die Cat Feeding Station war praktisch unabbaubar — sie hatte `requiresCorrectToolForDrops`, lag aber in keinem `mineable/pickaxe`-Tag (Datapack-Tags/-Loot laden in diesem Mod nicht zuverlässig), sodass **kein** Werkzeug je „korrekt" war: Sie brach in Handgeschwindigkeit und ließ **nichts** fallen. Zusätzlich hatten weder Station noch Napf einen Block-Drop im Code. Beides gefixt: Block-Drop jetzt per `getDrops`-Override im gemeinsamen `AbstractCatBowlBlock` (Station **und** Napf droppen sich wieder selbst), und die Werkzeug-Gate der Station entfernt. Der Inhalt (Fische/Loot) wird wie bisher separat beim Abbau ausgeworfen.
+
 ## [1.0.0-beta.31] - 2026-07-06
 ### Added
 - **Neues Modul „Overpacked Backpack Keybinds"**: Tastenkürzel öffnen die drei Fächer des **getragenen** Overpacked-Giant-Backpacks (Curios-`back`-Slot) direkt — **Hauptfach (Mitte, 55 Slots) per `B`**, rechtes und linkes Fach (je 28 Slots) standardmäßig **unbelegt** (im Steuerungs-Menü frei belegbar). Es wird **Overpackeds eigene GUI** verwendet: Da dessen Backpack-Menü an eine platzierte Entity gebunden ist, spawnt der Server aus dem getragenen Item eine kurzlebige, kollisionsfreie `GiantBackpack`-Entity, öffnet darauf das Original-Menü im gewählten Fach und schreibt die Änderungen beim Schließen zurück ins getragene Item (und verwirft die Entity). Ohne Overpacked/Curios ist das Modul ein No-op. (Overpacked + Curios sind als `compileOnly`-Libs eingebunden.)

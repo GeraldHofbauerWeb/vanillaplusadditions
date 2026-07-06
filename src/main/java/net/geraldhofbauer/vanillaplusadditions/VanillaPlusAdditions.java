@@ -15,6 +15,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.C
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.waystone_amethyst_repair.WaystoneAmethystRepairModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
@@ -150,6 +151,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new IdleGamerulesModule());
         moduleManager.registerModule(new BluemapSignsModule());
         moduleManager.registerModule(new FreeAnvilRepairModule());
+        moduleManager.registerModule(new WaystoneAmethystRepairModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
