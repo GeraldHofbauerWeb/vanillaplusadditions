@@ -1,0 +1,51 @@
+# Textur-/Modell-Varianten (Cat + Axolotl Guardian)
+
+Tauschbare Design-Sets für Feeding Stations, Bowls und Tier-Rüstungen.
+Jedes Set ist **vollständig** (Texturen + ggf. Modelle) — anwenden mit:
+
+```bash
+cd texture-variants
+./apply.sh                # listet alles auf
+./apply.sh cat-station A-gemuetliches-holz
+./apply.sh axolotl-armor C-schuppen
+./apply.sh cat-station original    # zurück zum alten Stand
+```
+
+Danach `./gradlew build` und Jar deployen. Vorschau-Renders liegen in `preview/`.
+
+## Gruppen & Varianten
+
+### cat-station / axolotl-station
+Enthält: Station-Textur (Boden), **neue** `_trim`-Textur (Rahmen/Wände),
+Glas-Textur, Bowl-Textur + `_trim`, sowie **überarbeitete Modelle**
+(Aquarium-Rahmen mit Eckpfosten + oberem Rahmen; Bowl-Wände nutzen die
+Trim-Textur statt Streifen aus der Bodentextur).
+
+| Variante | Cat | Axolotl |
+|---|---|---|
+| `A-…` | Gemütliches Holz: Fichte + rotes Kissen, Eichen-Rahmen | Prismarin-Aquarium: Prismarinziegel + dunkler Prismarin-Rahmen |
+| `B-…` | Stein-Bistro: Glattstein + Eisen-Rahmen | Kupfer-Labor: oxidiertes Kupfer + Kupfer-Rahmen |
+| `C-…` | Kirschholz-Café: Kirschholz mit Pfotenabdruck | Korallenriff: Hirnkoralle + Orgelkoralle, Seelaternen-Akzent |
+| `original` | bisheriger Stand (Snapshot) | bisheriger Stand (Snapshot) |
+
+### cat-armor / axolotl-armor
+Entity-Texturen (Vanilla-UV-Layout), je 4 Tiers (iron/gold/diamond/netherite):
+
+| Variante | Look |
+|---|---|
+| `A-vollplatte` | Volle Platte: Body-Panzerung + Helmkappe (+ Stirn-Gem), bei der Katze zusätzlich Beinschienen vorn |
+| `B-harness` | Geschirr: 2 Gurte um den Körper + Rückenplatte, Halsband |
+| `C-schuppen` | Schuppenpanzer: Schuppendecke über Rücken/Flanken, Bauchgurte, bei der Katze Schwanzringe |
+| `original` | bisheriger Stand (Snapshot) |
+
+Die Item-Icons (`textures/item/…`) bleiben unverändert — bei Bedarf passe ich
+sie ans gewählte Set an.
+
+## Technik-Notizen
+- Die Varianten-Stationsmodelle referenzieren `<block>_trim.png` — diese Datei
+  ist NEU; das `original`-Set braucht sie nicht (altes Modell). Übrig gebliebene
+  Trim-PNGs stören nicht.
+- `*_feeding_station_filled.json` ist ungenutzt (Blockstate zeigt für
+  filled=true auf das normale Modell) und bleibt unangetastet.
+- Generator-Skripte: Session-Scratchpad `texgen/` (gen_stations.py, gen_armor.py,
+  render_*.py, iso.py) — bei Bedarf wieder herholbar.
