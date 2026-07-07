@@ -26,6 +26,9 @@ Trim-Textur statt Streifen aus der Bodentextur).
 | `A-…` | Gemütliches Holz: Fichte + rotes Kissen, Eichen-Rahmen | Prismarin-Aquarium: Prismarinziegel + dunkler Prismarin-Rahmen |
 | `B-…` | Stein-Bistro: Glattstein + Eisen-Rahmen | Kupfer-Labor: oxidiertes Kupfer + Kupfer-Rahmen |
 | `C-…` | Kirschholz-Café: Kirschholz mit Pfotenabdruck | Korallenriff: Hirnkoralle + Orgelkoralle, Seelaternen-Akzent |
+| `D-…` | Edle Dunkeleiche: Dunkeleiche + Gold-Rahmen | Wirrwald: Warped Planks + dunkler Prismarin |
+| `E-…` | Bambus-Lounge: Bambus + Mosaik-Rahmen | Amethyst-Grotte: Calcit + Amethyst |
+| `F-…` | Deepslate Modern: Tiefenschiefer + Kupfer | Froglight-Strand: Sand + Perlmutt-Froglight |
 | `original` | bisheriger Stand (Snapshot) | bisheriger Stand (Snapshot) |
 
 ### cat-armor / axolotl-armor
@@ -36,6 +39,9 @@ Entity-Texturen (Vanilla-UV-Layout), je 4 Tiers (iron/gold/diamond/netherite):
 | `A-vollplatte` | Volle Platte: Body-Panzerung + Helmkappe (+ Stirn-Gem), bei der Katze zusätzlich Beinschienen vorn |
 | `B-harness` | Geschirr: 2 Gurte um den Körper + Rückenplatte, Halsband |
 | `C-schuppen` | Schuppenpanzer: Schuppendecke über Rücken/Flanken, Bauchgurte, bei der Katze Schwanzringe |
+| `C2-schuppen-kappe` (nur Axolotl) | Wie C, Helm nur als Kappe oben — nichts im Gesicht |
+| `C3-schuppen-ohne-helm` (nur Axolotl) | Nur Körper-Schuppendecke, Kopf frei |
+| `original-fixed` (nur Katze, **live**) | Original-Look mit korrigierten Pixelfehlern (Ohr-Deckfläche, Vorderbein-Innenseite) |
 | `D-helm` | Nur Kopf: Kappe + Seitenschutz (+ Ohren bei der Katze), Gem |
 | `E-pfoten` | Nur Stiefel/Füßchen (untere Beinreihen + Sohlen) |
 | `F-schienbeinschoner` / `F-beinschienen` | Beinschienen (Katze: Pfoten frei; Axolotl: Beinchen komplett) |
