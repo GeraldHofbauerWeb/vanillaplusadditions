@@ -79,6 +79,13 @@ public class AxolotlFeedingStationScreen extends AbstractContainerScreen<Axolotl
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderTooltip(guiGraphics, mouseX, mouseY);
 
+        // Skin slot hint (only while empty)
+        if (this.hoveredSlot != null && this.hoveredSlot == menu.getSlot(AxolotlFeedingStationMenu.SKIN_SLOT)
+                && !this.hoveredSlot.hasItem()) {
+            guiGraphics.renderTooltip(this.font, Component.translatable(
+                    "gui.vanillaplusadditions.axolotl_guardian.skin_slot"), mouseX, mouseY);
+        }
+
         // XP bar tooltip
         int x = leftPos + XP_BAR_X;
         int y = topPos + XP_BAR_Y;

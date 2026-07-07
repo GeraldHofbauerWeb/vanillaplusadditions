@@ -1,6 +1,8 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.blockentity;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.block.AxolotlFeedingStationBlock;
+import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.block.AxolotlStationSkin;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.menu.AxolotlFeedingStationMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -40,6 +42,30 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         protected void onContentsChanged(int slot) {
             setChanged();
             syncToClient();
+        }
+    };
+
+    /**
+     * Single deco slot: a matching material item (coral, prismarine, copper, ...) reskins the
+     * station block via the {@link AxolotlFeedingStationBlock#SKIN} blockstate property. The item
+     * stays in the slot and comes back when removed or when the station is broken.
+     */
+    private final ItemStackHandler skinInventory = new ItemStackHandler(1) {
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return AxolotlStationSkin.isSkinItem(stack);
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+            syncToClient();
+            applySkinFromSlot();
         }
     };
 
@@ -98,6 +124,26 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         return lootInventory;
     }
 
+    public ItemStackHandler getSkinInventory() {
+        return skinInventory;
+    }
+
+    /** Mirrors the skin-slot content into the block's SKIN state (server-side only). */
+    private void applySkinFromSlot() {
+        Level lvl = getLevel();
+        if (lvl == null || lvl.isClientSide()) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!state.hasProperty(AxolotlFeedingStationBlock.SKIN)) {
+            return;
+        }
+        AxolotlStationSkin skin = AxolotlStationSkin.forItem(skinInventory.getStackInSlot(0));
+        if (state.getValue(AxolotlFeedingStationBlock.SKIN) != skin) {
+            lvl.setBlock(worldPosition, state.setValue(AxolotlFeedingStationBlock.SKIN, skin), 3);
+        }
+    }
+
     public int getStoredXp() {
         return storedXp;
     }
@@ -127,6 +173,7 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.put("loot_inventory", lootInventory.serializeNBT(registries));
+        tag.put("skin_inventory", skinInventory.serializeNBT(registries));
         tag.putInt("stored_xp", storedXp);
         saveAxolotls(tag);
     }
@@ -139,6 +186,9 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         }
         if (tag.contains("loot_inventory")) {
             lootInventory.deserializeNBT(registries, tag.getCompound("loot_inventory"));
+        }
+        if (tag.contains("skin_inventory")) {
+            skinInventory.deserializeNBT(registries, tag.getCompound("skin_inventory"));
         }
         storedXp = tag.getInt("stored_xp");
         loadAxolotls(tag);

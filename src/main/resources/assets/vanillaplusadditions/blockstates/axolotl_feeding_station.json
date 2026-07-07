@@ -1,12 +1,589 @@
 {
-  "variants": {
-    "facing=north,filled=false": { "model": "vanillaplusadditions:block/axolotl_feeding_station" },
-    "facing=east,filled=false":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 90 },
-    "facing=south,filled=false": { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 180 },
-    "facing=west,filled=false":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 270 },
-    "facing=north,filled=true":  { "model": "vanillaplusadditions:block/axolotl_feeding_station" },
-    "facing=east,filled=true":   { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 90 },
-    "facing=south,filled=true":  { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 180 },
-    "facing=west,filled=true":   { "model": "vanillaplusadditions:block/axolotl_feeding_station", "y": 270 }
-  }
+  "multipart": [
+    {
+      "when": {
+        "skin": "original",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station"
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "prismarin_aquarium",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium"
+      }
+    },
+    {
+      "when": {
+        "skin": "prismarin_aquarium",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "prismarin_aquarium",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "prismarin_aquarium",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "kupfer_labor",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor"
+      }
+    },
+    {
+      "when": {
+        "skin": "kupfer_labor",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "kupfer_labor",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "kupfer_labor",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "korallenriff",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallenriff"
+      }
+    },
+    {
+      "when": {
+        "skin": "korallenriff",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallenriff",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "korallenriff",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallenriff",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "korallenriff",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallenriff",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wirrwald",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald"
+      }
+    },
+    {
+      "when": {
+        "skin": "wirrwald",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wirrwald",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wirrwald",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "amethyst_grotte",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_amethyst_grotte"
+      }
+    },
+    {
+      "when": {
+        "skin": "amethyst_grotte",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_amethyst_grotte",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "amethyst_grotte",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_amethyst_grotte",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "amethyst_grotte",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_amethyst_grotte",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "froglight_strand",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_froglight_strand"
+      }
+    },
+    {
+      "when": {
+        "skin": "froglight_strand",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_froglight_strand",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "froglight_strand",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_froglight_strand",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "froglight_strand",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_froglight_strand",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "korallengarten",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallengarten"
+      }
+    },
+    {
+      "when": {
+        "skin": "korallengarten",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallengarten",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "korallengarten",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallengarten",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "korallengarten",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_korallengarten",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "ozeanmonument",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_ozeanmonument"
+      }
+    },
+    {
+      "when": {
+        "skin": "ozeanmonument",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_ozeanmonument",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "ozeanmonument",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_ozeanmonument",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "ozeanmonument",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_ozeanmonument",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "lagune",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_lagune"
+      }
+    },
+    {
+      "when": {
+        "skin": "lagune",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_lagune",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "lagune",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_lagune",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "lagune",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_lagune",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_blau",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_blau"
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_blau",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_blau",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_blau",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_blau",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_blau",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_blau",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_gelb",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_gelb"
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_gelb",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_gelb",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_gelb",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_gelb",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_gelb",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_gelb",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_lila",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_lila"
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_lila",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_lila",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_lila",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_lila",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_lila",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_lila",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rosa",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rosa"
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rosa",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rosa",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rosa",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rosa",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rosa",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rosa",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rot",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rot"
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rot",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rot",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rot",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rot",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "koralle_rot",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rot",
+        "y": 270
+      }
+    }
+  ]
 }

@@ -1,6 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.menu;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.block.AxolotlStationSkin;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.blockentity.AxolotlFeedingStationBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -21,9 +22,11 @@ public class AxolotlFeedingStationMenu extends AbstractContainerMenu {
     private static final int LOOT_SLOTS   = 15;
     private static final int FISH_END     = FISH_SLOTS;              // 0–8
     private static final int LOOT_END     = FISH_SLOTS + LOOT_SLOTS; // 9–23
-    private static final int PLAYER_START = LOOT_END;                // 24–50
-    private static final int PLAYER_END   = PLAYER_START + 27;       // 51
-    private static final int HOTBAR_END   = PLAYER_END + 9;          // 60
+    /** Deco slot that reskins the station block (index right after the loot grid). */
+    public static final int SKIN_SLOT     = LOOT_END;                // 24
+    private static final int PLAYER_START = SKIN_SLOT + 1;           // 25–51
+    private static final int PLAYER_END   = PLAYER_START + 27;       // 52
+    private static final int HOTBAR_END   = PLAYER_END + 9;          // 61
 
     private final AxolotlFeedingStationBlockEntity blockEntity;
 
@@ -46,6 +49,9 @@ public class AxolotlFeedingStationMenu extends AbstractContainerMenu {
                         80 + col * 18, 34 + row * 18));
             }
         }
+
+        // Skin/deco slot — centered in the gap column between the food and loot grids
+        addSlot(new SlotItemHandler(be.getSkinInventory(), 0, 62, 52));
 
         // Player inventory (3 × 9)
         for (int row = 0; row < 3; row++) {
@@ -94,11 +100,7 @@ public class AxolotlFeedingStationMenu extends AbstractContainerMenu {
         ItemStack stack = slot.getItem();
         result = stack.copy();
 
-        if (index < FISH_END) {
-            if (!moveItemStackTo(stack, PLAYER_START, HOTBAR_END, true)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (index < LOOT_END) {
+        if (index <= SKIN_SLOT) {
             if (!moveItemStackTo(stack, PLAYER_START, HOTBAR_END, true)) {
                 return ItemStack.EMPTY;
             }
@@ -108,7 +110,10 @@ public class AxolotlFeedingStationMenu extends AbstractContainerMenu {
                     return ItemStack.EMPTY;
                 }
             } else {
-                if (!moveItemStackTo(stack, FISH_END, LOOT_END, false)) {
+                // Skin materials prefer the (single-item) skin slot, remainder goes to loot storage
+                boolean movedToSkin = AxolotlStationSkin.isSkinItem(stack)
+                        && moveItemStackTo(stack, SKIN_SLOT, SKIN_SLOT + 1, false);
+                if (!stack.isEmpty() && !moveItemStackTo(stack, FISH_END, LOOT_END, false) && !movedToSkin) {
                     return ItemStack.EMPTY;
                 }
             }

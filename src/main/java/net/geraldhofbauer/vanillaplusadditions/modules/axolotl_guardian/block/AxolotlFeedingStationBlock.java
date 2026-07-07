@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -35,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
 public class AxolotlFeedingStationBlock extends AbstractAxolotlBowlBlock {
 
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<AxolotlStationSkin> SKIN =
+            EnumProperty.create("skin", AxolotlStationSkin.class);
 
     // Hitbox shapes matching the model geometry (glass at north face, solid bowl at south).
     // EAST/SOUTH/WEST are 90°/180°/270° CW rotations of NORTH derived with:
@@ -103,13 +106,14 @@ public class AxolotlFeedingStationBlock extends AbstractAxolotlBowlBlock {
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FILLED, false)
                 .setValue(WATERLOGGED, false)
-                .setValue(FACING, Direction.NORTH));
+                .setValue(FACING, Direction.NORTH)
+                .setValue(SKIN, AxolotlStationSkin.ORIGINAL));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
-        builder.add(FACING);
+        builder.add(FACING, SKIN);
     }
 
     @Override
@@ -205,6 +209,7 @@ public class AxolotlFeedingStationBlock extends AbstractAxolotlBowlBlock {
                 && level.getBlockEntity(pos) instanceof AxolotlFeedingStationBlockEntity station) {
             dropHandler(level, pos, station.getInventory());
             dropHandler(level, pos, station.getLootInventory());
+            dropHandler(level, pos, station.getSkinInventory());
             clearAssociationsOnBreak(level, pos, station);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

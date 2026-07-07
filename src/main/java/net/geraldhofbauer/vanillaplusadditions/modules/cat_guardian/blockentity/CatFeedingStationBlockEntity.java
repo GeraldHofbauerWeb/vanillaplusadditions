@@ -1,6 +1,8 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.CatFeedingStationBlock;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.CatStationSkin;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -41,6 +43,30 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         protected void onContentsChanged(int slot) {
             setChanged();
             syncToClient();
+        }
+    };
+
+    /**
+     * Single deco slot: a matching material item (wool, stone, copper, ...) reskins the station
+     * block via the {@link CatFeedingStationBlock#SKIN} blockstate property. The item stays in
+     * the slot and comes back when removed or when the station is broken.
+     */
+    private final ItemStackHandler skinInventory = new ItemStackHandler(1) {
+        @Override
+        public int getSlotLimit(int slot) {
+            return 1;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return CatStationSkin.isSkinItem(stack);
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+            syncToClient();
+            applySkinFromSlot();
         }
     };
 
@@ -103,6 +129,26 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         return lootInventory;
     }
 
+    public ItemStackHandler getSkinInventory() {
+        return skinInventory;
+    }
+
+    /** Mirrors the skin-slot content into the block's SKIN state (server-side only). */
+    private void applySkinFromSlot() {
+        Level lvl = getLevel();
+        if (lvl == null || lvl.isClientSide()) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!state.hasProperty(CatFeedingStationBlock.SKIN)) {
+            return;
+        }
+        CatStationSkin skin = CatStationSkin.forItem(skinInventory.getStackInSlot(0));
+        if (state.getValue(CatFeedingStationBlock.SKIN) != skin) {
+            lvl.setBlock(worldPosition, state.setValue(CatFeedingStationBlock.SKIN, skin), 3);
+        }
+    }
+
     public int getStoredXp() {
         return storedXp;
     }
@@ -132,6 +178,7 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         super.saveAdditional(tag, registries);
         tag.put("inventory", inventory.serializeNBT(registries));
         tag.put("loot_inventory", lootInventory.serializeNBT(registries));
+        tag.put("skin_inventory", skinInventory.serializeNBT(registries));
         tag.putInt("stored_xp", storedXp);
         saveCats(tag);
     }
@@ -144,6 +191,9 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
         }
         if (tag.contains("loot_inventory")) {
             lootInventory.deserializeNBT(registries, tag.getCompound("loot_inventory"));
+        }
+        if (tag.contains("skin_inventory")) {
+            skinInventory.deserializeNBT(registries, tag.getCompound("skin_inventory"));
         }
         storedXp = tag.getInt("stored_xp");
         loadCats(tag);

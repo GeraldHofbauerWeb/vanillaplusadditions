@@ -4,6 +4,29 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.36] - 2026-07-07
+
+### Added
+- **Cat/Axolotl Guardian — Stil-Slot in der Futterstation-GUI**: Neuer Deko-Slot zwischen
+  Futter- und Loot-Grid. Ein passendes Material-Item färbt die Station um (Blockstate-Skin,
+  Item bleibt im Slot und droppt beim Abbau):
+  - Katze: Wolle (alle 16 Farben), Eichen-/Fichtenholz, Kirschholz, Bambus, Stein/Glattstein,
+    Steinziegel, Ziegel (Dorf), Tiefenschiefer (Höhle), Andesit (Create), Kupferbarren
+    (Deepslate Modern), Goldblock (Edle Dunkeleiche), Grasblock (Wiesengarten)
+  - Axolotl: Korallen (5 Farben, Block/Koralle/Fächer), Prismarin, Prismarinziegel
+    (Ozeanmonument), Amethyst, Froglight, Kupferbarren (Kupfer-Labor), Sand (Lagune),
+    Seegurke (Korallengarten), Seelaterne (Korallenriff)
+- Alle Stations-Skins als eigene Modelle/Texturen im Jar (gerahmte Aquarium-Bauart mit
+  Eckpfosten + eigener Trim-Textur); Original-Look bleibt der Default.
+- Cat Armor: neue Variante „Schuppenpanzer mit Kappe" (`texture-variants/cat-armor/C2-schuppen-kappe`).
+
+### Changed
+- Axolotl-Armor (live): Schuppenpanzer mit Kappe + 1px-Krempe (nichts ragt ins Gesicht).
+
+### Fixed
+- Cat Armor (alle Tiers): fehlende Ohr-Deckfläche (rechtes Ohr) und Lücken an der
+  Vorderbein-Innenseite gefüllt — Karo-Muster erhalten.
+
 ## [1.0.0-beta.35] - 2026-07-07
 ### Added
 - **Neues Modul „VPA Options"**: Backup & Restore der Client-Optionen (`options.txt`) inklusive **aller Keybinds** (Vanilla + Mods). Bedienung wahlweise per Client-Command **`/vpaoptions export|restore|delete|list|gui <name>`** oder über den neuen **„Backups…"-Button** oben rechts im Options- und im Steuerungs-Screen (öffnet einen Verwaltungs-Screen mit Snapshot-Liste, Erstellen/Wiederherstellen/Löschen). Zusätzlich **automatische rotierende Backups**: Bei jedem Spielstart wird der aktuelle Stand mit dem neuesten Auto-Snapshot verglichen und bei Abweichung ein `auto_<timestamp>`-Backup angelegt (Default: die letzten 10 bleiben) — schützt davor, dass ein Mod oder ein Fehlklick die Tastenbelegung zerschießt. Vor jedem Restore wird automatisch ein `-prerestore`-Sicherungspunkt angelegt. Scope konfigurierbar: komplette `options.txt` (Default) oder nur Keybinds (`full_options_backup=false`). Snapshots liegen als Klartext unter `config/vanillaplusadditions/options_backups/`. Rein client-seitig; auch als Standalone-Jar `vpa_options`.

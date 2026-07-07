@@ -1,12 +1,1096 @@
 {
-  "variants": {
-    "facing=north,filled=false": { "model": "vanillaplusadditions:block/cat_feeding_station" },
-    "facing=east,filled=false":  { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 90 },
-    "facing=south,filled=false": { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 180 },
-    "facing=west,filled=false":  { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 270 },
-    "facing=north,filled=true":  { "model": "vanillaplusadditions:block/cat_feeding_station" },
-    "facing=east,filled=true":   { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 90 },
-    "facing=south,filled=true":  { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 180 },
-    "facing=west,filled=true":   { "model": "vanillaplusadditions:block/cat_feeding_station", "y": 270 }
-  }
+  "multipart": [
+    {
+      "when": {
+        "skin": "original",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station"
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "original",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "gemuetliches_holz",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_gemuetliches_holz"
+      }
+    },
+    {
+      "when": {
+        "skin": "gemuetliches_holz",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_gemuetliches_holz",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "gemuetliches_holz",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_gemuetliches_holz",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "gemuetliches_holz",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_gemuetliches_holz",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "stein_bistro",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_stein_bistro"
+      }
+    },
+    {
+      "when": {
+        "skin": "stein_bistro",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_stein_bistro",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "stein_bistro",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_stein_bistro",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "stein_bistro",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_stein_bistro",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "kirschholz_cafe",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_kirschholz_cafe"
+      }
+    },
+    {
+      "when": {
+        "skin": "kirschholz_cafe",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_kirschholz_cafe",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "kirschholz_cafe",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_kirschholz_cafe",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "kirschholz_cafe",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_kirschholz_cafe",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "edle_dunkeleiche",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_edle_dunkeleiche"
+      }
+    },
+    {
+      "when": {
+        "skin": "edle_dunkeleiche",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_edle_dunkeleiche",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "edle_dunkeleiche",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_edle_dunkeleiche",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "edle_dunkeleiche",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_edle_dunkeleiche",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "bambus_lounge",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_bambus_lounge"
+      }
+    },
+    {
+      "when": {
+        "skin": "bambus_lounge",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_bambus_lounge",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "bambus_lounge",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_bambus_lounge",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "bambus_lounge",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_bambus_lounge",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "deepslate_modern",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_deepslate_modern"
+      }
+    },
+    {
+      "when": {
+        "skin": "deepslate_modern",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_deepslate_modern",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "deepslate_modern",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_deepslate_modern",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "deepslate_modern",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_deepslate_modern",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "hoehle",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_hoehle"
+      }
+    },
+    {
+      "when": {
+        "skin": "hoehle",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_hoehle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "hoehle",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_hoehle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "hoehle",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_hoehle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wiesengarten",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wiesengarten"
+      }
+    },
+    {
+      "when": {
+        "skin": "wiesengarten",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wiesengarten",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wiesengarten",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wiesengarten",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wiesengarten",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wiesengarten",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "dorf",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_dorf"
+      }
+    },
+    {
+      "when": {
+        "skin": "dorf",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_dorf",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "dorf",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_dorf",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "dorf",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_dorf",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "steinmetz",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_steinmetz"
+      }
+    },
+    {
+      "when": {
+        "skin": "steinmetz",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_steinmetz",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "steinmetz",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_steinmetz",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "steinmetz",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_steinmetz",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "create_andesit",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_create_andesit"
+      }
+    },
+    {
+      "when": {
+        "skin": "create_andesit",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_create_andesit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "create_andesit",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_create_andesit",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "create_andesit",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_create_andesit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_blau",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_blau"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_blau",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_blau",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_blau",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_blau",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_blau",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_blau",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_braun",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_braun"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_braun",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_braun",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_braun",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_braun",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_braun",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_braun",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gelb",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gelb"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gelb",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gelb",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gelb",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gelb",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gelb",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gelb",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_grau",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_grau"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_grau",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_grau",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_grau",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_grau",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_grau",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_grau",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gruen",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gruen"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gruen",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gruen",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gruen",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gruen",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_gruen",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gruen",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellblau",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellblau"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellblau",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellblau",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellblau",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellblau",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellblau",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellblau",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgrau",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgrau"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgrau",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgrau",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgrau",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgrau",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgrau",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgrau",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgruen",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgruen"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgruen",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgruen",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgruen",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgruen",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_hellgruen",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgruen",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_magenta",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_magenta"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_magenta",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_magenta",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_magenta",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_magenta",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_magenta",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_magenta",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_orange",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_orange"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_orange",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_orange",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_orange",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_orange",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_orange",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_orange",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rosa",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rosa"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rosa",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rosa",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rosa",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rosa",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rosa",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rosa",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rot",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rot"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rot",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rot",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rot",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rot",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_rot",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rot",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_schwarz",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_schwarz"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_schwarz",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_schwarz",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_schwarz",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_schwarz",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_schwarz",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_schwarz",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_tuerkis",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_tuerkis"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_tuerkis",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_tuerkis",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_tuerkis",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_tuerkis",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_tuerkis",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_tuerkis",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_violett",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_violett"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_violett",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_violett",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_violett",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_violett",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_violett",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_violett",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_weiss",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_weiss"
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_weiss",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_weiss",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_weiss",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_weiss",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "skin": "wolle_weiss",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "vanillaplusadditions:block/cat_feeding_station_wolle_weiss",
+        "y": 270
+      }
+    }
+  ]
 }
