@@ -36,6 +36,14 @@ Entity-Texturen (Vanilla-UV-Layout), je 4 Tiers (iron/gold/diamond/netherite):
 | `A-vollplatte` | Volle Platte: Body-Panzerung + Helmkappe (+ Stirn-Gem), bei der Katze zusätzlich Beinschienen vorn |
 | `B-harness` | Geschirr: 2 Gurte um den Körper + Rückenplatte, Halsband |
 | `C-schuppen` | Schuppenpanzer: Schuppendecke über Rücken/Flanken, Bauchgurte, bei der Katze Schwanzringe |
+| `D-helm` | Nur Kopf: Kappe + Seitenschutz (+ Ohren bei der Katze), Gem |
+| `E-pfoten` | Nur Stiefel/Füßchen (untere Beinreihen + Sohlen) |
+| `F-schienbeinschoner` / `F-beinschienen` | Beinschienen (Katze: Pfoten frei; Axolotl: Beinchen komplett) |
+| `G-bauchpanzer` | Bauch-/Brustplatte + untere Flankenkante (Rücken frei) |
+| `H-rueckendecke` / `H-rueckenplatte` | Nur Rücken (Katze: wie Pferdedecke inkl. Heck; Axolotl: Platte mit Rückgrat-Grat) |
+| `I-kragen` | Ring um den vorderen Körper/Hals + Brustplatte |
+| `J-schwanzpanzer` | Geschuppter Schwanz bzw. Schwanzflosse + Hinterteil |
+| `K-volle-montur` | Alles zusammen (Körper, Helm, Beine, Schwanz, Gem) |
 | `original` | bisheriger Stand (Snapshot) |
 
 Die Item-Icons (`textures/item/…`) bleiben unverändert — bei Bedarf passe ich
