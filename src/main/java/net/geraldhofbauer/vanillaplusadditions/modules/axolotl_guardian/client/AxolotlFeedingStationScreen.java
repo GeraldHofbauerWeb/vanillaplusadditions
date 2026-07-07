@@ -43,9 +43,11 @@ public class AxolotlFeedingStationScreen extends AbstractContainerScreen<Axolotl
         if (be != null) {
             int count = be.getAssociatedAxolotls().size();
             int max = AxolotlGuardianModule.getMaxAxolotlsPerStation();
+            // Just "count/max", right-aligned — the full "Axolotls: X/8" next to the (long)
+            // station title overflows the 176px panel.
             Component axolotls = Component.translatable(
                     "gui.vanillaplusadditions.axolotl_guardian.axolotls_short", count, max);
-            int x = this.titleLabelX + this.font.width(this.title) + 8;
+            int x = this.imageWidth - 8 - this.font.width(axolotls);
             guiGraphics.drawString(this.font, axolotls, x, this.titleLabelY, LABEL_COLOR, false);
         }
     }

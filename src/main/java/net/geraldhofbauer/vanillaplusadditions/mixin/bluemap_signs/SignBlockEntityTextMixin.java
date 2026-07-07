@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.mixin;
+package net.geraldhofbauer.vanillaplusadditions.mixin.bluemap_signs;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
 import net.minecraft.world.level.block.entity.SignBlockEntity;

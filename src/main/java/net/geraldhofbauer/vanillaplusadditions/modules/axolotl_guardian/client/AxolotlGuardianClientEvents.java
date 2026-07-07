@@ -126,13 +126,24 @@ public final class AxolotlGuardianClientEvents {
                 // Only clear the flag if no real (server-side) glowing effect is active.
                 if (entity != null && entity instanceof Axolotl axolotl
                         && !axolotl.hasEffect(MobEffects.GLOWING)) {
-                    axolotl.setGlowingTag(false);
+                    setLocalGlow(axolotl, false);
                 }
                 iter.remove();
                 continue;
             }
-            entity.setGlowingTag(true);
+            setLocalGlow(entity, true);
         }
+    }
+
+    /**
+     * Sets the glowing shared flag (bit 6) directly. {@code Entity.setGlowingTag(true)} is a
+     * client-side no-op: it writes {@code setSharedFlag(6, isCurrentlyGlowing())}, and
+     * {@code isCurrentlyGlowing()} reads exactly that flag on the client — so the outline never
+     * appears. Going through the invoker mixin flips the bit the renderer actually checks.
+     */
+    private static void setLocalGlow(Entity entity, boolean glow) {
+        ((net.geraldhofbauer.vanillaplusadditions.mixin.core.EntitySharedFlagInvoker) entity)
+                .callSetSharedFlag(6, glow);
     }
 
     public static void handleSyncAxolotlInventory(SyncAxolotlInventoryPacket packet) {

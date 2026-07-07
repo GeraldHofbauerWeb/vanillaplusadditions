@@ -22,6 +22,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSign
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
@@ -154,6 +155,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new BluemapSignsModule());
         moduleManager.registerModule(new FreeAnvilRepairModule());
         moduleManager.registerModule(new WaystoneAmethystRepairModule());
+        moduleManager.registerModule(new OptionsModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

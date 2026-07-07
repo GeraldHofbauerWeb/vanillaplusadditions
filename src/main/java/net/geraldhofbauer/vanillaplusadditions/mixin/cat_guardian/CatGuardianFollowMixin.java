@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.mixin;
+package net.geraldhofbauer.vanillaplusadditions.mixin.cat_guardian;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.minecraft.world.entity.TamableAnimal;

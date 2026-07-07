@@ -4,13 +4,14 @@
   "package": "net.geraldhofbauer.vanillaplusadditions.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "AnvilMenuFreeRepairMixin",
-    "CatGuardianFollowMixin",
-    "CatGuardianTeleportMixin",
-    "ChestBlockCatMixin",
     "ChunkStatusTasksMixin",
     "GenerationChunkHolderMixin",
-    "SignBlockEntityTextMixin"
+    "bluemap_signs.SignBlockEntityTextMixin",
+    "cat_guardian.CatGuardianFollowMixin",
+    "cat_guardian.CatGuardianTeleportMixin",
+    "cat_guardian.ChestBlockCatMixin",
+    "core.EntitySharedFlagInvoker",
+    "free_anvil_repair.AnvilMenuFreeRepairMixin"
   ],
   "injectors": {
     "defaultRequire": 1

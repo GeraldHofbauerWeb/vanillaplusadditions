@@ -365,12 +365,13 @@ def standaloneModules = [
     [ moduleId: 'better_mobs', displayName: 'Vanilla Plus: Better Mobs' ],
     [ moduleId: 'block_glow', displayName: 'Vanilla Plus: Block Glow' ],
     [ moduleId: 'bluemap_signs', displayName: 'Vanilla Plus: BlueMap Signs',
-      mixins: ['SignBlockEntityTextMixin'] ],
+      mixins: ['bluemap_signs.SignBlockEntityTextMixin'] ],
     [ moduleId: 'cat_guardian', displayName: 'Vanilla Plus: Cat Guardian',
       dataGlobs: ['data/minecraft/tags/item/enchantable/armor.json',
                   'data/minecraft/tags/item/enchantable/durability.json'],
       moduleDeps: ['vpa_debug_overlay', 'vpa_flying_fish'],
-      mixins: ['CatGuardianFollowMixin', 'CatGuardianTeleportMixin', 'ChestBlockCatMixin'] ],
+      mixins: ['cat_guardian.CatGuardianFollowMixin', 'cat_guardian.CatGuardianTeleportMixin',
+               'cat_guardian.ChestBlockCatMixin'] ],
     [ moduleId: 'chunk_reset', displayName: 'Vanilla Plus: Chunk Reset' ],
     [ moduleId: 'custom_crafting_recipes', displayName: 'Vanilla Plus: Custom Crafting Recipes' ],
     [ moduleId: 'death_coordinates', displayName: 'Vanilla Plus: Death Coordinates' ],
@@ -384,7 +385,7 @@ def standaloneModules = [
                   'data/minecraft/tags/item/enchantable/foot_armor.json'] ],
     [ moduleId: 'food_effects', displayName: 'Vanilla Plus: Food Effects' ],
     [ moduleId: 'free_anvil_repair', displayName: 'Vanilla Plus: Free Anvil Repair',
-      mixins: ['AnvilMenuFreeRepairMixin'] ],
+      mixins: ['free_anvil_repair.AnvilMenuFreeRepairMixin'] ],
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_zombified_piglins', displayName: 'Vanilla Plus: Hostile Zombified Piglins' ],
     [ moduleId: 'idle_gamerules', displayName: 'Vanilla Plus: Idle Gamerules' ],
@@ -393,6 +394,7 @@ def standaloneModules = [
       dataGlobs: ['data/minecraft/tags/block/rails.json'],
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
+    [ moduleId: 'options', displayName: 'Vanilla Plus: Options' ],
     [ moduleId: 'overpacked_slowdown', displayName: 'Vanilla Plus: Overpacked Slowdown' ],
     [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
     [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
@@ -456,11 +458,17 @@ description='''${sDescription}'''
 ${deps}${mixinsBlock}"""
 }
 
+// Mixins shared by SEVERAL module jars live in vpa_core: two module jars must never ship the
+// same class, or the JPMS layer fails with a split-package ResolutionException (both modules
+// would export net.geraldhofbauer.vanillaplusadditions.mixin).
+def coreMixins = ['core.EntitySharedFlagInvoker']
+
 def renderCoreToml = {
     def owner = 'vpa_core'
     def deps = new StringBuilder()
     deps << renderDep(owner, 'neoforge',  'required', "[${sNeo},)", 'NONE', 'BOTH')
     deps << renderDep(owner, 'minecraft', 'required', sMcRange,     'NONE', 'BOTH')
+    def mixinsBlock = coreMixins.isEmpty() ? '' : "\n[[mixins]]\nconfig=\"vpa_core.mixins.json\"\n"
     return """modLoader="javafml"
 loaderVersion="${sLoaderRange}"
 license="${sLicense}"
@@ -473,7 +481,7 @@ displayName="Vanilla Plus: Core"
 authors="${sAuthors}"
 logoFile="logo.png"
 description='''Shared framework and assets for the Vanilla Plus standalone module jars.'''
-${deps}"""
+${deps}${mixinsBlock}"""
 }
 
 // ── Meta generation (one task per artifact) ──────────────────────────────────
@@ -481,9 +489,20 @@ tasks.register('generateMeta_vpa_core') {
     group = 'standalone'
     def outFile = genMetaRoot.get().dir('vpa_core').file('META-INF/neoforge.mods.toml').asFile
     def content = renderCoreToml()
+    def mixinsOut = genMetaRoot.get().dir('vpa_core').file('vpa_core.mixins.json').asFile
+    def mixinsContent = coreMixins.isEmpty() ? '' : renderMixinsJson([mixins: coreMixins])
     inputs.property('content', content)
+    inputs.property('mixins', mixinsContent)
     outputs.file(outFile)
-    doLast { outFile.parentFile.mkdirs(); outFile.text = content }
+    if (!coreMixins.isEmpty()) {
+        outputs.file(mixinsOut)
+    }
+    doLast {
+        outFile.parentFile.mkdirs(); outFile.text = content
+        if (!coreMixins.isEmpty()) {
+            mixinsOut.parentFile.mkdirs(); mixinsOut.text = mixinsContent
+        }
+    }
 }
 
 standaloneModules.each { d ->
@@ -527,7 +546,11 @@ tasks.register('coreJar', Jar) {
         include 'assets/vanillaplusadditions/**'  // cosmetic resources for every module (safe if unused)
         include 'logo.png'
     }
-    from(genMetaRoot.get().dir('vpa_core').asFile)  // injects META-INF/neoforge.mods.toml
+    // Shared mixins (see coreMixins): owned by core so no two module jars split the mixin package.
+    coreMixins.each { mx ->
+        from(sourceSets.main.output) { include "${basePkg}/mixin/${mx.replace('.', '/')}*.class" }
+    }
+    from(genMetaRoot.get().dir('vpa_core').asFile)  // injects META-INF/neoforge.mods.toml + vpa_core.mixins.json
 }
 
 // ── Per-module jars from descriptors ─────────────────────────────────────────
@@ -551,8 +574,11 @@ standaloneModules.each { d ->
         // alongside the sibling into('META-INF') spec makes Gradle silently drop the into file
         // (reproduced with 2+ globs). Separate from-blocks avoid the quirk.
         d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
-        // Mixin classes owned by this module (name*.class also catches inner classes).
-        d.mixins.each { mx -> from(sourceSets.main.output) { include "${basePkg}/mixin/${mx}*.class" } }
+        // Mixin classes owned by this module (name*.class also catches inner classes). Entries may
+        // be subpackage-qualified ("cat_guardian.ChestBlockCatMixin") — dots map to directories.
+        d.mixins.each { mx ->
+            from(sourceSets.main.output) { include "${basePkg}/mixin/${mx.replace('.', '/')}*.class" }
+        }
         into('META-INF') {
             from(tomlFile)  // -> META-INF/neoforge.mods.toml
         }

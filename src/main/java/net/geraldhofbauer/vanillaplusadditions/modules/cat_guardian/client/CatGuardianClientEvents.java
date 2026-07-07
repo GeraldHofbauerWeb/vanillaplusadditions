@@ -131,13 +131,24 @@ public final class CatGuardianClientEvents {
             if (entity == null || !entity.isAlive() || entry.getValue() < gameTime) {
                 // Only clear the flag if no real (server-side) glowing effect is active.
                 if (entity instanceof Cat cat && !cat.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)) {
-                    cat.setGlowingTag(false);
+                    setLocalGlow(cat, false);
                 }
                 iter.remove();
                 continue;
             }
-            entity.setGlowingTag(true);
+            setLocalGlow(entity, true);
         }
+    }
+
+    /**
+     * Sets the glowing shared flag (bit 6) directly. {@code Entity.setGlowingTag(true)} is a
+     * client-side no-op: it writes {@code setSharedFlag(6, isCurrentlyGlowing())}, and
+     * {@code isCurrentlyGlowing()} reads exactly that flag on the client — so the outline never
+     * appears. Going through the invoker mixin flips the bit the renderer actually checks.
+     */
+    private static void setLocalGlow(net.minecraft.world.entity.Entity entity, boolean glow) {
+        ((net.geraldhofbauer.vanillaplusadditions.mixin.core.EntitySharedFlagInvoker) entity)
+                .callSetSharedFlag(6, glow);
     }
 
     public static void handleSyncCatInventory(SyncCatInventoryPacket packet) {

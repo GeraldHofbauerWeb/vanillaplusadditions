@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.mixin;
+package net.geraldhofbauer.vanillaplusadditions.mixin.free_anvil_repair;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
 import net.minecraft.world.entity.player.Player;
