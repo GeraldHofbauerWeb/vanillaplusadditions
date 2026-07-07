@@ -79,11 +79,20 @@ public class AxolotlFeedingStationScreen extends AbstractContainerScreen<Axolotl
         super.render(guiGraphics, mouseX, mouseY, partialTick);
         renderTooltip(guiGraphics, mouseX, mouseY);
 
-        // Skin slot hint (only while empty)
+        // Skin slot hint (only while empty) — short title + compact material lines instead of
+        // one over-long single-line tooltip.
         if (this.hoveredSlot != null && this.hoveredSlot == menu.getSlot(AxolotlFeedingStationMenu.SKIN_SLOT)
                 && !this.hoveredSlot.hasItem()) {
-            guiGraphics.renderTooltip(this.font, Component.translatable(
-                    "gui.vanillaplusadditions.axolotl_guardian.skin_slot"), mouseX, mouseY);
+            guiGraphics.renderComponentTooltip(this.font, java.util.List.of(
+                    Component.translatable("gui.vanillaplusadditions.axolotl_guardian.skin_slot"),
+                    Component.translatable("gui.vanillaplusadditions.axolotl_guardian.skin_slot.hint")
+                            .withStyle(net.minecraft.ChatFormatting.GRAY),
+                    Component.translatable("gui.vanillaplusadditions.axolotl_guardian.skin_slot.materials1")
+                            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY),
+                    Component.translatable("gui.vanillaplusadditions.axolotl_guardian.skin_slot.materials2")
+                            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY),
+                    Component.translatable("gui.vanillaplusadditions.axolotl_guardian.skin_slot.materials3")
+                            .withStyle(net.minecraft.ChatFormatting.DARK_GRAY)), mouseX, mouseY);
         }
 
         // XP bar tooltip

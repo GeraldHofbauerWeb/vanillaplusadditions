@@ -253,6 +253,9 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private final Map<UUID, net.minecraft.world.phys.Vec3> stuckSample = new HashMap<>();
     private final Map<UUID, Integer> stuckStrikes = new HashMap<>();
 
+    // Chest/bed idle-goal handling for cats on duty (see CatSitGoalSuppressor).
+    private final CatSitGoalSuppressor sitGoalSuppressor = new CatSitGoalSuppressor();
+
     public static double getAssociationRadius() {
         return instance != null ? instance.getConfig().getAssociationRadius() : 64.0D;
     }
@@ -831,11 +834,34 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     }
 
     /**
+     * If the pathfinder can't produce a route home (nav stays done), nudge the cat directly
+     * toward the bowl so it can escape narrow spaces. Shared by the returning and fleeing
+     * home-navigation branches.
+     */
+    private static void nudgeTowardBowlIfPathless(Cat cat, BlockPos bowlPos) {
+        if (cat.isInWater() || !cat.getNavigation().isDone()) {
+            return;
+        }
+        net.minecraft.world.phys.Vec3 towardBowl = new net.minecraft.world.phys.Vec3(
+                bowlPos.getX() + 0.5 - cat.getX(), 0,
+                bowlPos.getZ() + 0.5 - cat.getZ()).normalize().scale(0.18);
+        net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
+        cat.setDeltaMovement(towardBowl.x, vm.y, towardBowl.z);
+    }
+
+    /**
      * Stuck detection (guardians with an active movement goal — combat target, returning or
-     * fleeing): samples the position every 40 ticks; too little progress → force a repath, and
-     * after three consecutive strikes blacklist the current target and head home. Cats can no
-     * longer dive, so a mob that submerges out of reach would otherwise leave the cat pacing at
-     * the shore forever.
+     * fleeing): samples the position every 40 ticks; too little progress adds a strike. The
+     * strikes escalate instead of just repathing forever:
+     * <ol>
+     *   <li>every strike: force a repath</li>
+     *   <li>strike ≥ 2: active hop toward the goal direction — frees cats parked on chests,
+     *       slabs and other partial blocks where the pathfinder's route silently fails</li>
+     *   <li>strike 3: blacklist the combat target (if any) and commit to returning home</li>
+     *   <li>strike ≥ 5 while returning/fleeing (~20s stuck): emergency-teleport to a safe spot
+     *       next to the bowl — the guardian pendant of the vanilla pet owner-teleport, so no
+     *       cat ever stays stranded</li>
+     * </ol>
      */
     private void tickStuckDetection(Cat cat) {
         if (!isGuardianCat(cat)) {
@@ -864,8 +890,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         }
         int strikes = stuckStrikes.merge(uid, 1, Integer::sum);
         cat.getNavigation().recomputePath();
-        if (strikes >= 3) {
-            stuckStrikes.remove(uid);
+        if (strikes >= 2) {
+            unstickHop(cat);
+        }
+        if (strikes == 3) {
             LivingEntity target = cat.getTarget();
             if (target != null) {
                 cat.targetSelector.getAvailableGoals().stream()
@@ -879,6 +907,67 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 cat.setData(CAT_RETURNING.get(), true);
             }
         }
+        boolean headingHome = cat.getData(CAT_RETURNING.get()) || cat.getData(CAT_FLEEING.get());
+        if (strikes >= 5 && headingHome) {
+            long bowlLong = cat.getData(CAT_BOWL_POS.get());
+            if (bowlLong != Long.MIN_VALUE && teleportToBowl(cat, BlockPos.of(bowlLong))) {
+                stuckStrikes.remove(uid);
+                stuckSample.remove(uid);
+            }
+        }
+    }
+
+    /**
+     * Active unstick hop: like {@link #assistLedgeJump}, but without requiring a horizontal
+     * collision — a cat standing ON a chest/slab collides with nothing, its path just never
+     * executes. Only the headroom guard is kept so the hop can't turn into a head-bonk loop.
+     */
+    private void unstickHop(Cat cat) {
+        if (!cat.onGround() || cat.isInWater()) {
+            return;
+        }
+        net.minecraft.world.phys.Vec3 dir = goalDir(cat);
+        if (dir == null) {
+            return;
+        }
+        Direction facing = Direction.getNearest(dir.x, 0, dir.z);
+        BlockPos takeoffHead = cat.blockPosition().above(2);
+        BlockPos landingHead = cat.blockPosition().relative(facing).above(2);
+        if (!cat.level().getBlockState(takeoffHead).getCollisionShape(cat.level(), takeoffHead).isEmpty()
+                || !cat.level().getBlockState(landingHead).getCollisionShape(cat.level(), landingHead).isEmpty()) {
+            return;
+        }
+        cat.setDeltaMovement(dir.x * 0.28, 0.5, dir.z * 0.28);
+        cat.hasImpulse = true;
+    }
+
+    /**
+     * Emergency teleport onto a standable block next to the bowl (vanilla pet-teleport style:
+     * solid floor, two collision-free blocks of clearance). Returns false when no candidate
+     * around the bowl qualifies — the caller simply retries on a later strike.
+     */
+    private boolean teleportToBowl(Cat cat, BlockPos bowlPos) {
+        var level = cat.level();
+        for (BlockPos candidate : BlockPos.betweenClosed(bowlPos.offset(-2, -1, -2), bowlPos.offset(2, 1, 2))) {
+            if (candidate.equals(bowlPos)) {
+                continue; // don't drop the cat into the bowl block itself
+            }
+            BlockPos floor = candidate.below();
+            boolean standable =
+                    level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)
+                            && level.getBlockState(candidate).getCollisionShape(level, candidate).isEmpty()
+                            && level.getBlockState(candidate.above())
+                                    .getCollisionShape(level, candidate.above()).isEmpty()
+                            && level.getFluidState(candidate).isEmpty();
+            if (!standable) {
+                continue;
+            }
+            cat.moveTo(candidate.getX() + 0.5, candidate.getY(), candidate.getZ() + 0.5,
+                    cat.getYRot(), cat.getXRot());
+            cat.getNavigation().stop();
+            return true;
+        }
+        return false;
     }
 
     private static boolean isFishItem(ItemStack stack) {
@@ -901,7 +990,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         UUID uid = cat.getUUID();
         if (!hasBowl) {
-//            logCatHungerReturn(cat, null, "no_bowl_associated", null, null);
+            sitGoalSuppressor.restore(cat); // duty ended (bowl gone) — give idle behaviors back
             tryAutoAssociate(cat, config.getAutoAssociateRadius());
             return;
         }
@@ -919,6 +1008,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         cat.setPathfindingMalus(PathType.WATER_BORDER, 2.0f);
 
         suppressFollowingBehaviors(cat);
+        sitGoalSuppressor.suppress(cat);
 
         // Sync navigation path to clients every 20 ticks for the debug overlay.
         if (cat.tickCount % 20 == 0) {
@@ -970,6 +1060,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 // Doubled A* node budget: the way home may span the whole guard radius.
                 cat.getNavigation().setMaxVisitedNodesMultiplier(2.0f);
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
+                nudgeTowardBowlIfPathless(cat, bowlPos);
             }
             // Keep fed-state ticking down while fleeing, then skip all normal duty logic
             int fedWhileFleeing = cat.getData(CAT_FED_TICKS.get());
@@ -1002,15 +1093,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 // Doubled A* node budget: the way home may span the whole guard radius.
                 cat.getNavigation().setMaxVisitedNodesMultiplier(2.0f);
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 1.0);
-                // If pathfinder can't find a route (nav stays done), nudge the cat
-                // directly toward the bowl so it can escape narrow spaces.
-                if (!cat.isInWater() && cat.getNavigation().isDone()) {
-                    net.minecraft.world.phys.Vec3 towardBowl = new net.minecraft.world.phys.Vec3(
-                            bowlPos.getX() + 0.5 - cat.getX(), 0,
-                            bowlPos.getZ() + 0.5 - cat.getZ()).normalize().scale(0.18);
-                    net.minecraft.world.phys.Vec3 vm = cat.getDeltaMovement();
-                    cat.setDeltaMovement(towardBowl.x, vm.y, towardBowl.z);
-                }
+                nudgeTowardBowlIfPathless(cat, bowlPos);
             }
         } else {
             catReturningAge.remove(uid);
@@ -1489,6 +1572,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(cat.level() instanceof ServerLevel serverLevel)) {
             return;
         }
+        UUID uid = cat.getUUID();
+        catReturningAge.remove(uid);
+        catGoalPath.remove(uid);
+        catGoalPathTick.remove(uid);
+        stuckSample.remove(uid);
+        stuckStrikes.remove(uid);
+        sitGoalSuppressor.forget(uid);
         long bowlLong = cat.getData(CAT_BOWL_POS.get());
         if (bowlLong == Long.MIN_VALUE) {
             return;
@@ -1577,24 +1667,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
      * cats keep their normal follow/teleport behaviour.
      */
     private void suppressOwnerFollow(Cat cat) {
-//        if (!isGuardianCat(cat)) {
-//            return;
-//        }
         // Remove owner-teleport sources and other approach behaviors to ensure cats don't move
-        // towards their owner: FollowOwnerGoal (priority 6) and the panic goal (priority 1)
-        // also remove LookAtPlayerGoal and other player-interaction goals
+        // towards their owner: FollowOwnerGoal (priority 6) and the panic goal (priority 1).
+        // Sit-on-chest/lie-on-bed goals are handled separately (suppressSitGoals, duty-gated).
         cat.goalSelector.getAvailableGoals().stream()
-//                .filter(w -> {
-//                    Goal goal = w.getGoal();
-//                    return goal instanceof FollowOwnerGoal
-//                            || goal instanceof net.minecraft.world.entity.ai.goal.PanicGoal
-//                            || goal instanceof LookAtPlayerGoal
-//                            || goal instanceof TemptGoal
-//                            || goal.getClass().getSimpleName().equals("CatSitOnBlockGoal")
-//                            || goal.getClass().getSimpleName().equals("CatLieOnBedGoal")
-//                            || goal.getClass().getSimpleName().equals("CatRelaxOnOwnerGoal")
-//                            || goal.getClass().getSimpleName().equals("SitWhenOrderedToGoal");
-//                })
                 .filter(w -> w.getGoal() instanceof FollowOwnerGoal
                           || w.getGoal() instanceof net.minecraft.world.entity.ai.goal.PanicGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
@@ -1605,17 +1681,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static void suppressFollowingBehaviors(Cat cat) {
         // Remove goals that would fight with guard-station behaviour or cause wandering/approaching
         cat.goalSelector.getAvailableGoals().stream()
-//                .filter(w -> {
-//                    Goal goal = w.getGoal();
-//                    return goal instanceof FollowOwnerGoal
-//                            || goal instanceof WaterAvoidingRandomStrollGoal
-//                            || goal instanceof LookAtPlayerGoal
-//                            || goal instanceof TemptGoal
-//                            || goal.getClass().getSimpleName().equals("CatSitOnBlockGoal")
-//                            || goal.getClass().getSimpleName().equals("CatLieOnBedGoal")
-//                            || goal.getClass().getSimpleName().equals("CatRelaxOnOwnerGoal")
-//                            || goal.getClass().getSimpleName().equals("SitWhenOrderedToGoal");
-//                })
                 .filter(w -> w.getGoal() instanceof FollowOwnerGoal
                           || w.getGoal() instanceof WaterAvoidingRandomStrollGoal)
                 .map(net.minecraft.world.entity.ai.goal.WrappedGoal::getGoal)
@@ -1627,6 +1692,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .toList()
                 .forEach(cat.targetSelector::removeGoal);
     }
+
 
     /**
      * Buffer (blocks) for target eligibility — avoids flicker at the boundary.
@@ -1728,6 +1794,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     return false;
                 }
                 cat.setData(CAT_RETURNING.get(), false); // interrupt return to engage
+                // The return trip doubled the A* node budget — don't drag that into combat.
+                cat.getNavigation().resetMaxVisitedNodesMultiplier();
             }
             return found;
         }

@@ -785,8 +785,11 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         }
 
         // While playing dead the brain's PLAY_DEAD activity outranks FIGHT and movement is
-        // frozen — don't fight it. Keep the fed state ticking, skip all duty logic.
+        // frozen — don't fight it. Drop any combat target: vanilla rolled play-dead BEFORE our
+        // damage handler ran, so a retaliation target could otherwise sit stale (and long gone /
+        // out of zone) until the axolotl wakes up. Fresh targets are re-acquired afterwards.
         if (axolotl.isPlayingDead()) {
+            eraseAttackTarget(axolotl);
             decrementFedTicks(axolotl);
             syncTargetIfChanged(axolotl);
             return;
@@ -1054,6 +1057,8 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         if (returning) {
             axolotl.setData(AXOLOTL_RETURNING.get(), false);
             returningAge.remove(uid);
+            // The return trip doubled the A* node budget — don't drag that into combat.
+            axolotl.getNavigation().resetMaxVisitedNodesMultiplier();
         }
         Brain<?> brain = axolotl.getBrain();
         brain.setMemory(MemoryModuleType.ATTACK_TARGET, best);
@@ -1168,8 +1173,11 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
 
     /**
      * Stuck detection: samples the position every 40 ticks while the axolotl actively wants to
-     * move (combat target, returning or fleeing). Too little progress → erase the PATH memory so
-     * MoveToTargetSink recomputes; three strikes in a row → blacklist the target and go home.
+     * move (combat target, returning or fleeing). Too little progress adds a strike:
+     * every strike erases the PATH memory so MoveToTargetSink recomputes; strike 3 blacklists
+     * the target and commits to returning home; strike ≥ 5 while returning/fleeing (~20s stuck)
+     * emergency-teleports the axolotl into a water block next to the bowl — the guardian
+     * pendant of the vanilla pet owner-teleport, so no axolotl ever stays stranded.
      */
     private void tickStuckDetection(Axolotl axolotl) {
         UUID uid = axolotl.getUUID();
@@ -1197,14 +1205,48 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         // Force a fresh path attempt — MoveToTargetSink keeps following its stored PATH memory.
         axolotl.getBrain().eraseMemory(MemoryModuleType.PATH);
         axolotl.getNavigation().stop();
-        if (strikes >= 3) {
-            stuckStrikes.remove(uid);
+        if (strikes == 3) {
             LivingEntity target = axolotl.getTarget();
             if (target != null) {
                 blacklist(axolotl, target);
             }
             dropTarget(axolotl, true);
         }
+        boolean headingHome = axolotl.getData(AXOLOTL_RETURNING.get())
+                || axolotl.getData(AXOLOTL_FLEEING.get());
+        if (strikes >= 5 && headingHome) {
+            long bowlLong = axolotl.getData(AXOLOTL_BOWL_POS.get());
+            if (bowlLong != Long.MIN_VALUE && teleportToBowl(axolotl, BlockPos.of(bowlLong))) {
+                stuckStrikes.remove(uid);
+                stuckSample.remove(uid);
+            }
+        }
+    }
+
+    /**
+     * Emergency teleport into a water block next to the bowl. The bowl sits in/under water by
+     * module design, so a candidate practically always exists; returns false otherwise and the
+     * caller simply retries on a later strike.
+     */
+    private boolean teleportToBowl(Axolotl axolotl, BlockPos bowlPos) {
+        var level = axolotl.level();
+        for (BlockPos candidate : BlockPos.betweenClosed(bowlPos.offset(-2, -1, -2), bowlPos.offset(2, 1, 2))) {
+            if (candidate.equals(bowlPos)) {
+                continue; // don't drop the axolotl into the bowl block itself
+            }
+            boolean swimmable =
+                    level.getFluidState(candidate).is(net.minecraft.tags.FluidTags.WATER)
+                            && level.getBlockState(candidate).getCollisionShape(level, candidate).isEmpty();
+            if (!swimmable) {
+                continue;
+            }
+            axolotl.moveTo(candidate.getX() + 0.5, candidate.getY(), candidate.getZ() + 0.5,
+                    axolotl.getYRot(), axolotl.getXRot());
+            axolotl.getNavigation().stop();
+            axolotl.getBrain().eraseMemory(MemoryModuleType.PATH);
+            return true;
+        }
+        return false;
     }
 
     private void syncTargetIfChanged(Axolotl axolotl) {
@@ -1476,7 +1518,18 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 && axolotl.level().getBlockEntity(BlockPos.of(bowlLong)) instanceof AbstractAxolotlBowlBlockEntity bowl) {
             bowl.removeAxolotl(axolotl.getUUID());
         }
+        clearAxolotlState(axolotl.getUUID()); // discarded entity never dies — clean the maps here
         axolotl.discard();
+    }
+
+    /** Drops all per-UUID module state for an axolotl that left the world (death or bucket pickup). */
+    private void clearAxolotlState(UUID uid) {
+        returningAge.remove(uid);
+        searchCooldown.remove(uid);
+        blockedTargets.remove(uid);
+        lastSyncedTarget.remove(uid);
+        stuckSample.remove(uid);
+        stuckStrikes.remove(uid);
     }
 
     /**
@@ -1614,9 +1667,11 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         }
 
         // Retaliation: if hit by a Monster in water inside the zone, engage it directly.
-        // AXOLOTL_FLEEING axolotls ignore this — they're already running home.
+        // AXOLOTL_FLEEING axolotls ignore this — they're already running home. Playing-dead
+        // axolotls too: PLAY_DEAD outranks FIGHT, so a target set now would just sit stale
+        // (and possibly long gone) until the axolotl wakes up.
         if (!axolotl.level().isClientSide() && isGuardianAxolotl(axolotl)
-                && !axolotl.getData(AXOLOTL_FLEEING.get())) {
+                && !axolotl.getData(AXOLOTL_FLEEING.get()) && !axolotl.isPlayingDead()) {
             Entity direct = event.getSource().getDirectEntity();
             Entity indirect = event.getSource().getEntity();
             LivingEntity attacker = direct instanceof Monster m ? m
@@ -1624,6 +1679,15 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             if (attacker != null && !attacker.isDeadOrDying() && attacker.isInWaterOrBubble()
                     && isWithinGuardZone(axolotl, attacker.getX(), attacker.getY(), attacker.getZ(),
                     TARGET_ZONE_BUFFER)) {
+                // End any return trip FIRST: otherwise the returning branch keeps re-asserting
+                // WALK_TARGET(home) every cycle while the FIGHT activity steers toward the
+                // attacker — a permanent tug-of-war (maybeAcquireTarget never clears RETURNING
+                // for a target it didn't acquire itself).
+                if (axolotl.getData(AXOLOTL_RETURNING.get())) {
+                    axolotl.setData(AXOLOTL_RETURNING.get(), false);
+                    returningAge.remove(axolotl.getUUID());
+                    axolotl.getNavigation().resetMaxVisitedNodesMultiplier();
+                }
                 axolotl.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, attacker);
             }
         }
@@ -1745,12 +1809,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             return;
         }
         UUID uid = axolotl.getUUID();
-        returningAge.remove(uid);
-        searchCooldown.remove(uid);
-        blockedTargets.remove(uid);
-        lastSyncedTarget.remove(uid);
-        stuckSample.remove(uid);
-        stuckStrikes.remove(uid);
+        clearAxolotlState(uid);
         long bowlLong = axolotl.getData(AXOLOTL_BOWL_POS.get());
         if (bowlLong == Long.MIN_VALUE) {
             return;

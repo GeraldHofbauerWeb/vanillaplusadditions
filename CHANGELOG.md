@@ -4,6 +4,38 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.37] - 2026-07-07
+
+### Fixed
+- **Cat Guardian — Katze klebt nicht mehr auf Kisten**: Der vanilla Sit-auf-Block-Goal
+  (Katzen setzen sich aktiv auf Kisten/Betten) lief für Guardian-Katzen weiter und hielt
+  sie in Sitting-Pose gegen die Heimweg-Navigation fest. Im Dienst (Napf zugewiesen) werden
+  `CatSitOnBlockGoal` + `CatLieOnBedGoal` jetzt entfernt und beim Dienstende (Napf weg)
+  unverändert wiederhergestellt — Haus-Katzen ohne Napf sitzen weiter gemütlich auf Kisten.
+- **Cat Guardian — Stuck-Eskalation statt Endlos-Repath**: Strike 2 macht einen aktiven
+  Hüpfer in Pfadrichtung (befreit von Kisten/Slabs, auf denen der Pfad still scheitert),
+  Strike 3 blacklistet wie bisher das Ziel, ab Strike 5 (~20s fest) teleportiert die Katze
+  im Heimweg-/Flucht-Modus notfalls auf einen sicheren Block neben den Napf (Guardian-Pendant
+  zum vanilla Haustier-Teleport). Der Richtungs-Schubs bei fehlgeschlagener Pfadsuche greift
+  jetzt auch beim Fliehen (vorher nur beim normalen Heimweg).
+- **Axolotl Guardian — WALK_TARGET-Tauziehen behoben**: Wurde ein heimkehrender Axolotl von
+  einem Monster getroffen, setzte die Retaliation das Kampfziel, ohne den Heimkehr-Status zu
+  löschen — Heimweg-Code und FIGHT-Activity überschrieben sich das Bewegungsziel alle 10 Ticks
+  gegenseitig (Zittern/Oszillieren bis zum Tod des Gegners). Retaliation beendet den Heimweg
+  jetzt sauber; während Play-Dead wird gar kein Ziel mehr gesetzt und ein bestehendes gelöscht
+  (kein staler Angriff auf längst entkommene Gegner nach dem Aufwachen).
+- **Axolotl Guardian — Not-Teleport bei Dauerstuck**: gleiche Eskalation wie bei der Katze —
+  ab Strike 5 im Heimweg-/Flucht-Modus Teleport in einen Wasserblock neben dem Napf.
+- **Beide Guardian-Module — A*-Budget-Leak**: Das für den Heimweg verdoppelte
+  Pathfinding-Node-Budget wird jetzt auch zurückgesetzt, wenn ein Kampf den Heimweg
+  unterbricht (vorher blieb es bis zur nächsten Heimkehr aktiv).
+- **Axolotl Guardian — State-Aufräumen beim Einbuckeln**: Per-UUID-Zustand (Blacklists,
+  Stuck-Zähler, Sync-Cache) wird jetzt auch beim Bucket-Pickup bereinigt, nicht nur beim Tod.
+
+### Changed
+- **Stations-GUI — Stil-Slot-Tooltip aufgeräumt**: statt einer überlangen Einzelzeile jetzt
+  kompakter mehrzeiliger Tooltip (Titel + Hinweis + gruppierte Material-Zeilen).
+
 ## [1.0.0-beta.36] - 2026-07-07
 
 ### Added
