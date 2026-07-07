@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 
 if [ $# -lt 2 ]; then
     echo "Verfuegbare Varianten:"
-    for g in cat-station axolotl-station cat-armor axolotl-armor; do
+    for g in cat-station axolotl-station cat-armor axolotl-armor cat-armor-icons axolotl-armor-icons; do
         [ -d "$g" ] || continue
         echo "  $g:"
         for v in "$g"/*/; do

@@ -27,6 +27,8 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
     private static final int BAR_BG        = 0xFF2B2B2B;
     private static final int BAR_XP        = 0xFF7BE018;
     private static final int LABEL_COLOR   = 0x404040;
+    /** Subtle warm-amber ring marking the skin/deco slot as special (semi-transparent). */
+    private static final int SKIN_SLOT_ACCENT = 0xAAE7B54A;
 
     public CatFeedingStationScreen(CatFeedingStationMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -54,6 +56,7 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         guiGraphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+        outlineSkinSlot(guiGraphics);
 
         CatFeedingStationBlockEntity be = menu.getBlockEntity();
         if (be == null) {
@@ -71,6 +74,22 @@ public class CatFeedingStationScreen extends AbstractContainerScreen<CatFeedingS
         if (filled > 0) {
             guiGraphics.fill(x, y, x + filled, y + XP_BAR_HEIGHT, BAR_XP);
         }
+    }
+
+    /**
+     * Draws a subtle 1px accent frame around the skin/deco slot (just outside the vanilla
+     * 18x18 slot cell) so it reads as "special" next to the plain storage slots.
+     */
+    private void outlineSkinSlot(GuiGraphics guiGraphics) {
+        var skin = menu.getSlot(CatFeedingStationMenu.SKIN_SLOT);
+        int x0 = leftPos + skin.x - 2;
+        int y0 = topPos + skin.y - 2;
+        int x1 = x0 + 20;
+        int y1 = y0 + 20;
+        guiGraphics.fill(x0, y0, x1, y0 + 1, SKIN_SLOT_ACCENT);
+        guiGraphics.fill(x0, y1 - 1, x1, y1, SKIN_SLOT_ACCENT);
+        guiGraphics.fill(x0, y0 + 1, x0 + 1, y1 - 1, SKIN_SLOT_ACCENT);
+        guiGraphics.fill(x1 - 1, y0 + 1, x1, y1 - 1, SKIN_SLOT_ACCENT);
     }
 
     @Override

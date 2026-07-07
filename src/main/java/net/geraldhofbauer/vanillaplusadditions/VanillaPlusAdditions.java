@@ -26,6 +26,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_slowdown.OverpackedSlowdownModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.static_fov.StaticFovModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
@@ -156,6 +157,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new FreeAnvilRepairModule());
         moduleManager.registerModule(new WaystoneAmethystRepairModule());
         moduleManager.registerModule(new OptionsModule());
+        moduleManager.registerModule(new StaticFovModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

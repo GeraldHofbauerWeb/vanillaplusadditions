@@ -32,9 +32,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Axolotl Guardian — State-Aufräumen beim Einbuckeln**: Per-UUID-Zustand (Blacklists,
   Stuck-Zähler, Sync-Cache) wird jetzt auch beim Bucket-Pickup bereinigt, nicht nur beim Tod.
 
+- **Axolotl Guardian — eigene Armor-Item-Icons**: Die Axolotl-Rüstungs-Items zeigten die
+  Cat-Armor-Icons (Ohren + Katzennase). Jetzt eigener Look: Kiemenpanzer mit rosa
+  Kiemenästen, je Tier (Eisen/Gold/Diamant/Netherite).
+
+### Added
+- **Neues Modul `static_fov` (Static FOV)**: Das Sichtfeld weitet sich nicht mehr auf, wenn
+  der Spieler schneller wird (Sprint, Geschwindigkeits-Effekte, Kreativ-Flug). Rein
+  client-seitig; FOV-verengende Effekte wie der Bogen-Zoom bleiben erhalten.
+- **Armor-Icon-Varianten** in `texture-variants/` (`cat-armor-icons`, `axolotl-armor-icons`):
+  je 3 Designs pro Tierart (Cat: Gesicht/Helm/Schuppen; Axolotl:
+  Kiemenpanzer/Kiemenhelm/Flossenpanzer), Vorschau in `texture-variants/preview/armor-icons.png`,
+  anwendbar per `./apply.sh`.
+
 ### Changed
 - **Stations-GUI — Stil-Slot-Tooltip aufgeräumt**: statt einer überlangen Einzelzeile jetzt
   kompakter mehrzeiliger Tooltip (Titel + Hinweis + gruppierte Material-Zeilen).
+- **Stations-GUI — Stil-Slot dezent hervorgehoben**: schmaler halbtransparenter Farbrahmen
+  um den Stil-Slot (Katze: Bernstein, Axolotl: Aqua), damit er sich von den Lager-Slots abhebt.
 
 ## [1.0.0-beta.36] - 2026-07-07
 

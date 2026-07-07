@@ -52,8 +52,16 @@ Entity-Texturen (Vanilla-UV-Layout), je 4 Tiers (iron/gold/diamond/netherite):
 | `K-volle-montur` | Alles zusammen (Körper, Helm, Beine, Schwanz, Gem) |
 | `original` | bisheriger Stand (Snapshot) |
 
-Die Item-Icons (`textures/item/…`) bleiben unverändert — bei Bedarf passe ich
-sie ans gewählte Set an.
+### cat-armor-icons / axolotl-armor-icons
+Item-Icons (`textures/item/<sp>_armor_<tier>.png`, 16px-Pixelart 8× skaliert), je 4 Tiers.
+Vorschau: `preview/armor-icons.png`.
+
+| Variante | Cat | Axolotl |
+|---|---|---|
+| `V1-…` | Gesicht: Brustpanzer mit Ohrenschutz + Nase | Kiemenpanzer: Kopf-/Körperpanzer mit rosa Kiemenästen (**live**) |
+| `V2-…` | Helm: Katzenhelm mit Augenschlitzen | Kiemenhelm: Kopfkappe mit Kiemen, Augen + Visier |
+| `V3-…` | Schuppen: Brustplatte mit Schuppenreihen | Flossenpanzer: Platte mit rosa Rückenkamm + Schwanzflosse |
+| `original` | bisheriger Stand (live) | bisheriger alter Stand (war fälschlich der Cat-Look) |
 
 ## Technik-Notizen
 - Die Varianten-Stationsmodelle referenzieren `<block>_trim.png` — diese Datei
@@ -62,4 +70,4 @@ sie ans gewählte Set an.
 - `*_feeding_station_filled.json` ist ungenutzt (Blockstate zeigt für
   filled=true auf das normale Modell) und bleibt unangetastet.
 - Generator-Skripte: Session-Scratchpad `texgen/` (gen_stations.py, gen_armor.py,
-  render_*.py, iso.py) — bei Bedarf wieder herholbar.
+  gen_armor_icons.py, render_*.py, iso.py) — bei Bedarf wieder herholbar.
