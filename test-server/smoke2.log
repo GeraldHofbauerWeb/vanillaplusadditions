@@ -1,0 +1,70 @@
+[32m[00:31:36.424] [main/INFO] [Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgeserver, --fml.neoForgeVersion, 21.0.167, --fml.fmlVersion, 4.0.23, --fml.mcVersion, 1.21, --fml.neoFormVersion, 20240613.152323, nogui] 
+[m[32m[00:31:36.427] [main/INFO] [Launcher/MODLAUNCHER]: JVM identified as Arch Linux OpenJDK 64-Bit Server VM 21.0.11+10 
+[m[32m[00:31:36.428] [main/INFO] [Launcher/MODLAUNCHER]: ModLauncher 11.0.4+main.d2e20e43 starting: java version 21.0.11 by Arch Linux; OS Linux arch amd64 version 7.0.13-1-MANJARO 
+[m[32m[00:31:36.532] [main/INFO] [loading.ImmediateWindowHandler/]: ImmediateWindowProvider not loading because launch target is forgeserver 
+[m[32m[00:31:36.580] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.6 Source=union:/home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/libraries/net/fabricmc/sponge-mixin/0.14.0+mixin.0.8.6/sponge-mixin-0.14.0+mixin.0.8.6.jar%2375!/ Service=ModLauncher Env=SERVER 
+[m[32m[00:31:36.726] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "server-1.21-20240613.152323-srg.jar" [locator: production server provider +net.neoforged:neoforge:21.0.167:server] 
+[m[32m[00:31:36.739] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "neoforge-21.0.167-universal.jar" [locator: PathBasedLocator[name=neoforge, paths=[libraries/net/neoforged/neoforge/21.0.167/neoforge-21.0.167-universal.jar]], reader: mod manifest] 
+[m[32m[00:31:36.746] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vpa_cat_guardian-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[00:31:36.749] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vpa_core-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[00:31:36.751] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vpa_debug_overlay-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[00:31:36.754] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vpa_flying_fish-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[00:31:36.757] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vpa_mystical_cat-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[00:31:36.828] [main/INFO] [loading.moddiscovery.locators.JarInJarDependencyLocator/]: Found 1 dependencies adding them to mods collection 
+[m[32m[00:31:36.828] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found gamelibrary file "mixinextras-neoforge-0.3.5.jar" [parent: neoforge-21.0.167-universal.jar, locator: jarinjar, reader: mod manifest] 
+[m[32m[00:31:37.020] [main/INFO] [loading.FMLServiceProvider/CORE]: Loading coremod script-engine for [neoforge] 
+[m[32m[00:31:37.552] [main/INFO] [mixin/]: Compatibility level set to JAVA_21 
+[m[32m[00:31:37.561] [main/INFO] [LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeserver' with arguments [nogui] 
+[mWARN StatusConsoleListener Advanced terminal features are not available in this environment
+[00:31:38] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.3.5).
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: vpa_core framework loaded — providing shared modules framework and assets
+[00:31:44] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 21.0.167, for MC 1.21
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Booting standalone module 'debug_overlay' (Debug Overlay)
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Booting standalone module 'mystical_cat' (Mystical Cat)
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Booting standalone module 'flying_fish' (Flying Fish)
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.mo.my.MysticalCatModule/]: Mystical Cat module initialized
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Booting standalone module 'cat_guardian' (Cat Guardian)
+[00:31:44] [modloading-worker-0/INFO] [ne.ge.va.mo.ca.CatGuardianModule/]: Cat Guardian module initialized
+[00:31:44] [main/INFO] [mojang/YggdrasilAuthenticationService]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[00:31:44] [main/WARN] [ne.ne.ne.co.CommonHooks/WP]: The following mods have version differences that were not resolved:
+vpa_axolotl_guardian (version 1.0.0-beta.37 -> MISSING)
+vpa_cat_guardian (version 1.0.0-beta.37 -> 1.0.0-beta.39)
+vpa_core (version 1.0.0-beta.37 -> 1.0.0-beta.39)
+vpa_debug_overlay (version 1.0.0-beta.37 -> 1.0.0-beta.39)
+vpa_flying_fish (version 1.0.0-beta.37 -> 1.0.0-beta.39)
+vpa_options (version 1.0.0-beta.37 -> MISSING)
+Things may not work well.
+[00:31:44] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/libraries/net/minecraft/server/1.21-20240613.152323/server-1.21-20240613.152323-srg.jar%23124!/assets/.mcassetsroot' uses unexpected schema
+[00:31:44] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/libraries/net/minecraft/server/1.21-20240613.152323/server-1.21-20240613.152323-srg.jar%23124!/data/.mcassetsroot' uses unexpected schema
+[00:31:46] [main/INFO] [minecraft/RecipeManager]: Loaded 1290 recipes
+[00:31:46] [main/INFO] [minecraft/AdvancementTree]: Loaded 1399 advancements
+[00:31:46] [Server thread/INFO] [minecraft/DedicatedServer]: Starting minecraft server version 1.21
+[00:31:46] [Server thread/INFO] [minecraft/DedicatedServer]: Loading properties
+[00:31:46] [Server thread/INFO] [minecraft/DedicatedServer]: Default game type: SURVIVAL
+[00:31:46] [Server thread/INFO] [minecraft/MinecraftServer]: Generating keypair
+[00:31:46] [Server thread/INFO] [minecraft/DedicatedServer]: Starting Minecraft server on *:25565
+[00:31:46] [Server thread/INFO] [minecraft/ServerConnectionListener]: Using epoll channel type
+[00:31:46] [Server thread/INFO] [minecraft/DedicatedServer]: Preparing level "world"
+[00:31:48] [Server thread/INFO] [minecraft/MinecraftServer]: Preparing start region for dimension minecraft:overworld
+[00:31:48] [Worker-Main-6/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[00:31:48] [Server thread/INFO] [minecraft/LoggerChunkProgressListener]: Time elapsed: 337 ms
+[00:31:48] [Server thread/INFO] [minecraft/DedicatedServer]: Done (1.468s)! For help, type "help"
+[00:31:48] [Server thread/INFO] [ne.ne.ne.se.pe.PermissionAPI/]: Successfully initialized permission handler neoforge:default_handler
+[00:32:37] [Server thread/INFO] [minecraft/MinecraftServer]: 0 Mystical Cat spot(s) in this dimension.
+[00:32:37] [Server thread/INFO] [minecraft/MinecraftServer]: Summoned new Mystical Cat
+[00:32:37] [Server thread/INFO] [minecraft/MinecraftServer]: No entity was found
+[00:33:04] [Server thread/INFO] [minecraft/MinecraftServer]: No entity was found
+[00:33:04] [Server thread/INFO] [minecraft/MinecraftServer]: No entity was found
+[00:33:04] [Server thread/INFO] [minecraft/MinecraftServer]: No entity was found
+[00:33:04] [Server thread/INFO] [minecraft/MinecraftServer]: No entity was found
+[00:34:32] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping the server
+[00:34:32] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
+[00:34:32] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
+[00:34:32] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[00:34:33] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved

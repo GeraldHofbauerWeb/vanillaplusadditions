@@ -1,0 +1,225 @@
+[32m[22:03:58.294] [main/INFO] [Launcher/MODLAUNCHER]: ModLauncher running: args [--launchTarget, forgeserver, --fml.neoForgeVersion, 21.0.167, --fml.fmlVersion, 4.0.23, --fml.mcVersion, 1.21, --fml.neoFormVersion, 20240613.152323, nogui] 
+[m[32m[22:03:58.297] [main/INFO] [Launcher/MODLAUNCHER]: JVM identified as Arch Linux OpenJDK 64-Bit Server VM 21.0.11+10 
+[m[32m[22:03:58.298] [main/INFO] [Launcher/MODLAUNCHER]: ModLauncher 11.0.4+main.d2e20e43 starting: java version 21.0.11 by Arch Linux; OS Linux arch amd64 version 7.0.13-1-MANJARO 
+[m[32m[22:03:58.386] [main/INFO] [loading.ImmediateWindowHandler/]: ImmediateWindowProvider not loading because launch target is forgeserver 
+[m[32m[22:03:58.425] [main/INFO] [mixin/]: SpongePowered MIXIN Subsystem Version=0.8.6 Source=union:/home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/libraries/net/fabricmc/sponge-mixin/0.14.0+mixin.0.8.6/sponge-mixin-0.14.0+mixin.0.8.6.jar%2375!/ Service=ModLauncher Env=SERVER 
+[m[32m[22:03:58.567] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "server-1.21-20240613.152323-srg.jar" [locator: production server provider +net.neoforged:neoforge:21.0.167:server] 
+[m[32m[22:03:58.579] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "neoforge-21.0.167-universal.jar" [locator: PathBasedLocator[name=neoforge, paths=[libraries/net/neoforged/neoforge/21.0.167/neoforge-21.0.167-universal.jar]], reader: mod manifest] 
+[m[32m[22:03:58.587] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found mod file "vanillaplusadditions-1.0.0-beta.39.jar" [locator: {mods folder locator at /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods}, reader: mod manifest] 
+[m[32m[22:03:58.660] [main/INFO] [loading.moddiscovery.locators.JarInJarDependencyLocator/]: Found 1 dependencies adding them to mods collection 
+[m[32m[22:03:58.661] [main/INFO] [loading.moddiscovery.ModDiscoverer/SCAN]: Found gamelibrary file "mixinextras-neoforge-0.3.5.jar" [parent: neoforge-21.0.167-universal.jar, locator: jarinjar, reader: mod manifest] 
+[m[32m[22:03:58.823] [main/INFO] [loading.FMLServiceProvider/CORE]: Loading coremod script-engine for [neoforge] 
+[m[32m[22:03:59.390] [main/INFO] [mixin/]: Compatibility level set to JAVA_21 
+[m[32m[22:03:59.399] [main/INFO] [LaunchServiceHandler/MODLAUNCHER]: Launching target 'forgeserver' with arguments [nogui] 
+[mWARN StatusConsoleListener Advanced terminal features are not available in this environment
+[22:04:00] [main/INFO] [MixinExtras|Service/]: Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.3.5).
+[22:04:03] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Initializing VanillaPlusAdditions with module system
+[22:04:03] [modloading-worker-0/INFO] [ne.ne.ne.co.NeoForgeMod/NEOFORGE-MOD]: NeoForge mod loading, version 21.0.167, for MC 1.21
+[22:04:03] [modloading-worker-0/INFO] [ne.ge.va.co.Vpa/]: Registered 32 modules
+[22:04:03] [modloading-worker-0/INFO] [ne.ge.va.co.ModuleManager/]: Initializing 31 enabled modules out of 32 registered
+[22:04:03] [modloading-worker-0/INFO] [ne.ge.va.mo.it.ItemVaultViewerModule/]: Module 'Item Vault Viewer' is disabled and will not be initialized
+[22:04:03] [modloading-worker-0/INFO] [ne.ge.va.mo.wa.WaystoneAmethystRepairModule/]: Waystone Amethyst Repair module initialized - Warp Stone repairable with amethyst
+[22:04:03] [modloading-worker-0/ERROR] [ne.ne.fm.ja.FMLModContainer/LOADING]: Failed to create mod instance. ModID: vanillaplusadditions, class net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions
+java.lang.NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule.onInitialize(OverpackedBackpackKeysModule.java:36) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.AbstractModule.initialize(AbstractModule.java:102) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.ModuleManager.initializeModules(ModuleManager.java:107) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions.<init>(VanillaPlusAdditions.java:101) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62) ~[?:?] {}
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502) ~[?:?] {}
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:486) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.javafmlmod.FMLModContainer.constructMod(FMLModContainer.java:115) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$constructMods$3(ModLoader.java:153) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$dispatchParallelTask$7(ModLoader.java:231) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) [?:?] {}
+	at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) [?:?] {}
+	at java.base/java.util.concurrent.CompletableFuture$Completion.exec(CompletableFuture.java:483) [?:?] {}
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) [?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) [?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) [?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) [?:?] {}
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) [?:?] {}
+Caused by: java.lang.ClassNotFoundException: net.nycto_team.overpacked.menu.GiantBackpackMenu
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641) ~[?:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:216) ~[securejarhandler-3.0.8.jar:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:216) ~[securejarhandler-3.0.8.jar:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	... 18 more
+[22:04:04] [main/FATAL] [ne.ne.fm.ModLoader/LOADING]: Failed to wait for future Mod Construction, 1 errors found
+[22:04:04] [main/FATAL] [ne.ne.ne.co.NeoForgeMod/]: Preparing crash report with UUID 7a663a73-0d76-4769-9fb0-682ae7aa5891
+[22:04:04] [main/FATAL] [ne.ne.ne.se.lo.ServerModLoader/]: Crash report saved to ./crash-reports/crash-2026-07-08_22.04.04-fml.txt
+[22:04:04] [main/FATAL] [ne.ne.ne.co.NeoForgeMod/]: Preparing crash report with UUID 1383ea39-d380-4faf-b87e-7bff5e203f27
+---- Minecraft Crash Report ----
+// You're mean.
+
+Time: 2026-07-08 22:04:04
+Description: Mod loading error has occurred
+
+java.lang.Exception: Mod Loading has failed
+	at TRANSFORMER/neoforge@21.0.167/net.neoforged.neoforge.logging.CrashReportExtender.dumpModLoadingCrashReport(CrashReportExtender.java:57) ~[neoforge-21.0.167-universal.jar%23121!/:?] {re:classloading}
+	at TRANSFORMER/neoforge@21.0.167/net.neoforged.neoforge.server.loading.ServerModLoader.load(ServerModLoader.java:41) ~[neoforge-21.0.167-universal.jar%23121!/:?] {re:classloading}
+	at TRANSFORMER/minecraft@1.21/net.minecraft.server.Main.main(Main.java:124) ~[server-1.21-20240613.152323-srg.jar%23120!/:?] {re:classloading}
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?] {}
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:136) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.serverService(CommonLaunchHandler.java:128) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonServerLaunchHandler.runService(CommonServerLaunchHandler.java:32) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.lambda$launchService$4(CommonLaunchHandler.java:118) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.run(Launcher.java:103) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.main(Launcher.java:74) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.run(BootstrapLauncher.java:210) [bootstraplauncher-2.0.2.jar:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:69) [bootstraplauncher-2.0.2.jar:?] {}
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: main
+Stacktrace:
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641) ~[?:?] {}
+-- MOD vanillaplusadditions --
+Details:
+	Caused by 0: java.lang.NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu
+		at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule.onInitialize(OverpackedBackpackKeysModule.java:36) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+		at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.AbstractModule.initialize(AbstractModule.java:102) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+		at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.ModuleManager.initializeModules(ModuleManager.java:107) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+		at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions.<init>(VanillaPlusAdditions.java:101) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+		at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62) ~[?:?] {}
+		at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502) ~[?:?] {}
+		at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:486) ~[?:?] {}
+		at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.javafmlmod.FMLModContainer.constructMod(FMLModContainer.java:115) ~[loader-4.0.23.jar%2360!/:4.0] {}
+		at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$constructMods$3(ModLoader.java:153) ~[loader-4.0.23.jar%2360!/:4.0] {}
+		at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$dispatchParallelTask$7(ModLoader.java:231) ~[loader-4.0.23.jar%2360!/:4.0] {}
+		at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) ~[?:?] {}
+		at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) ~[?:?] {}
+		at java.base/java.util.concurrent.CompletableFuture$Completion.exec(CompletableFuture.java:483) ~[?:?] {}
+		at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[?:?] {}
+		at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[?:?] {}
+		at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[?:?] {}
+		at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[?:?] {}
+		at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[?:?] {}
+
+	Mod File: /home/gerry/Sync-Projekte/Minecraft/VanillaPlusAdditions/test-server/mods/vanillaplusadditions-1.0.0-beta.39.jar
+	Failure message: fml.modloadingissue.failedtoloadmod
+	Mod Version: 1.0.0-beta.39
+	Mod Issue URL: https://github.com/geraldhofbauer/VanillaPlusAdditions/issues
+	Exception message: java.lang.ClassNotFoundException: net.nycto_team.overpacked.menu.GiantBackpackMenu
+Stacktrace:
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641) ~[?:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:216) ~[securejarhandler-3.0.8.jar:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	at cpw.mods.securejarhandler/cpw.mods.cl.ModuleClassLoader.loadClass(ModuleClassLoader.java:216) ~[securejarhandler-3.0.8.jar:?] {}
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526) ~[?:?] {}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.OverpackedBackpackKeysModule.onInitialize(OverpackedBackpackKeysModule.java:36) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.AbstractModule.initialize(AbstractModule.java:102) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.core.ModuleManager.initializeModules(ModuleManager.java:107) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at TRANSFORMER/vanillaplusadditions@1.0.0-beta.39/net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions.<init>(VanillaPlusAdditions.java:101) ~[vanillaplusadditions-1.0.0-beta.39.jar%23122!/:?] {re:classloading}
+	at java.base/jdk.internal.reflect.DirectConstructorHandleAccessor.newInstance(DirectConstructorHandleAccessor.java:62) ~[?:?] {}
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:502) ~[?:?] {}
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:486) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.javafmlmod.FMLModContainer.constructMod(FMLModContainer.java:115) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$constructMods$3(ModLoader.java:153) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.lambda$dispatchParallelTask$7(ModLoader.java:231) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at java.base/java.util.concurrent.CompletableFuture.uniHandle(CompletableFuture.java:934) ~[?:?] {}
+	at java.base/java.util.concurrent.CompletableFuture$UniHandle.tryFire(CompletableFuture.java:911) ~[?:?] {}
+	at java.base/java.util.concurrent.CompletableFuture$Completion.exec(CompletableFuture.java:483) ~[?:?] {}
+	at java.base/java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:387) ~[?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1312) ~[?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool.scan(ForkJoinPool.java:1843) ~[?:?] {}
+	at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1808) ~[?:?] {}
+	at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:188) ~[?:?] {}
+
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21
+	Minecraft Version ID: 1.21
+	Operating System: Linux (amd64) version 7.0.13-1-MANJARO
+	Java Version: 21.0.11, Arch Linux
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Arch Linux
+	Memory: 190172056 bytes (181 MiB) / 432013312 bytes (412 MiB) up to 8388608000 bytes (8000 MiB)
+	CPUs: 12
+	Processor Vendor: AuthenticAMD
+	Processor Name: AMD Ryzen 5 3600 6-Core Processor
+	Identifier: AuthenticAMD Family 23 Model 113 Stepping 0
+	Microarchitecture: Zen 2
+	Frequency (GHz): -0.00
+	Number of physical packages: 1
+	Number of physical CPUs: 6
+	Number of logical CPUs: 12
+	Graphics card #0 name: Battlemage G21 [Arc B580]
+	Graphics card #0 vendor: Intel Corporation (0x8086)
+	Graphics card #0 VRAM (MiB): 16384.00
+	Graphics card #0 deviceId: 0xe20b
+	Graphics card #0 versionInfo: unknown
+	Graphics card #1 name: GP106 [GeForce GTX 1060 6GB]
+	Graphics card #1 vendor: NVIDIA Corporation (0x10de)
+	Graphics card #1 VRAM (MiB): 288.00
+	Graphics card #1 deviceId: 0x1c03
+	Graphics card #1 versionInfo: unknown
+	Virtual memory max (MiB): 51203.04
+	Virtual memory used (MiB): 30147.39
+	Swap memory total (MiB): 35204.50
+	Swap memory used (MiB): 9999.75
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 15871.12, total: 15998.54
+	Space in storage for workdir (MiB): available: 14333.44, total: 452879.81
+	JVM Flags: 0 total; 
+	ModLauncher: 11.0.4+main.d2e20e43
+	ModLauncher launch target: forgeserver
+	ModLauncher services: 
+		sponge-mixin-0.14.0+mixin.0.8.6.jar mixin PLUGINSERVICE 
+		loader-4.0.23.jar slf4jfixer PLUGINSERVICE 
+		loader-4.0.23.jar runtime_enum_extender PLUGINSERVICE 
+		at-modlauncher-10.0.1.jar accesstransformer PLUGINSERVICE 
+		loader-4.0.23.jar runtimedistcleaner PLUGINSERVICE 
+		modlauncher-11.0.4.jar mixin TRANSFORMATIONSERVICE 
+		modlauncher-11.0.4.jar fml TRANSFORMATIONSERVICE 
+	FML Language Providers: 
+		javafml@4.0
+		lowcodefml@4.0
+		minecraft@4.0
+	Mod List: 
+		vanillaplusadditions-1.0.0-beta.39.jar            |Vanilla Plus Additions        |vanillaplusadditions          |1.0.0-beta.39       |Manifest: NOSIGNATURE
+		server-1.21-20240613.152323-srg.jar               |Minecraft                     |minecraft                     |1.21                |Manifest: NOSIGNATURE
+		neoforge-21.0.167-universal.jar                   |NeoForge                      |neoforge                      |21.0.167            |Manifest: NOSIGNATURE
+	Crash Report UUID: 1383ea39-d380-4faf-b87e-7bff5e203f27
+	FML: 4.0.23
+	NeoForge: 21.0.167[22:04:04] [main/ERROR] [minecraft/Main]: Failed to start the minecraft server
+net.neoforged.fml.ModLoadingException: Loading errors encountered:
+	- Vanilla Plus Additions (vanillaplusadditions) has failed to load correctly
+	  java.lang.NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu
+
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.waitForFuture(ModLoader.java:281) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.dispatchParallelTask(ModLoader.java:244) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.constructMods(ModLoader.java:152) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.ModLoader.gatherAndInitializeMods(ModLoader.java:142) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at TRANSFORMER/neoforge@21.0.167/net.neoforged.neoforge.internal.CommonModLoader.begin(CommonModLoader.java:49) ~[neoforge-21.0.167-universal.jar%23121!/:?] {re:classloading}
+	at TRANSFORMER/neoforge@21.0.167/net.neoforged.neoforge.server.loading.ServerModLoader.load(ServerModLoader.java:34) ~[neoforge-21.0.167-universal.jar%23121!/:?] {re:classloading}
+	at TRANSFORMER/minecraft@1.21/net.minecraft.server.Main.main(Main.java:124) ~[server-1.21-20240613.152323-srg.jar%23120!/:?] {re:classloading}
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[?:?] {}
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[?:?] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.runTarget(CommonLaunchHandler.java:136) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.serverService(CommonLaunchHandler.java:128) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonServerLaunchHandler.runService(CommonServerLaunchHandler.java:32) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/fml_loader@4.0.23/net.neoforged.fml.loading.targets.CommonLaunchHandler.lambda$launchService$4(CommonLaunchHandler.java:118) ~[loader-4.0.23.jar%2360!/:4.0] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.run(Launcher.java:103) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.Launcher.main(Launcher.java:74) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at MC-BOOTSTRAP/cpw.mods.modlauncher@11.0.4/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) [modlauncher-11.0.4.jar%2362!/:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.run(BootstrapLauncher.java:210) [bootstraplauncher-2.0.2.jar:?] {}
+	at cpw.mods.bootstraplauncher@2.0.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:69) [bootstraplauncher-2.0.2.jar:?] {}
