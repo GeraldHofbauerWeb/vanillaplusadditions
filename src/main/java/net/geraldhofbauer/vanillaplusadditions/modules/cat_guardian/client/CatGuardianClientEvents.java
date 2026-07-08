@@ -48,7 +48,8 @@ public final class CatGuardianClientEvents {
         if (!event.getLevel().isClientSide()) {
             return;
         }
-        if (!(event.getTarget() instanceof Cat cat)) {
+        if (!(event.getTarget() instanceof Cat cat)
+                || cat.getType() != net.minecraft.world.entity.EntityType.CAT) {
             return;
         }
         if (!cat.isTame()) {
@@ -130,7 +131,8 @@ public final class CatGuardianClientEvents {
             net.minecraft.world.entity.Entity entity = mc.level.getEntity(entry.getKey());
             if (entity == null || !entity.isAlive() || entry.getValue() < gameTime) {
                 // Only clear the flag if no real (server-side) glowing effect is active.
-                if (entity instanceof Cat cat && !cat.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)) {
+                if (entity instanceof Cat cat && cat.getType() == net.minecraft.world.entity.EntityType.CAT
+                        && !cat.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING)) {
                     setLocalGlow(cat, false);
                 }
                 iter.remove();
@@ -157,7 +159,7 @@ public final class CatGuardianClientEvents {
             return;
         }
         net.minecraft.world.entity.Entity ent = mc.level.getEntity(packet.entityId());
-        if (!(ent instanceof Cat cat)) {
+        if (!(ent instanceof Cat cat) || cat.getType() != net.minecraft.world.entity.EntityType.CAT) {
             return;
         }
         cat.getData(CatGuardianModule.CAT_INVENTORY.get()).setArmor(packet.armorStack());

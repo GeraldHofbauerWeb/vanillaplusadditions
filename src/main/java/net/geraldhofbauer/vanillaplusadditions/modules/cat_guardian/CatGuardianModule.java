@@ -282,6 +282,16 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         return instance != null && instance.isModuleEnabled();
     }
 
+    /**
+     * True only for a genuine vanilla cat. Modded {@link Cat} subclasses with their own entity type
+     * (e.g. the Mystical Cat) must never receive guardian behaviour, so every handler that reacts to
+     * {@code instanceof Cat} gates on this. We compare the registered type rather than referencing
+     * the other module's class, so the standalone module jars stay independent.
+     */
+    private static boolean isVanillaCat(Cat cat) {
+        return cat.getType() == net.minecraft.world.entity.EntityType.CAT;
+    }
+
     public static int getMaxCatsPerStation() {
         return instance != null ? instance.getConfig().getMaxCatsPerStation() : 8;
     }
@@ -433,7 +443,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     }
                     ServerPlayer player = (ServerPlayer) ctx.player();
                     Entity entity = player.level().getEntity(packet.entityId());
-                    if (!(entity instanceof Cat cat)) {
+                    if (!(entity instanceof Cat cat) || !isVanillaCat(cat)) {
                         return;
                     }
                     if (!cat.isTame() || !Objects.equals(cat.getOwnerUUID(), player.getUUID())) {
@@ -476,7 +486,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                         return;
                     }
                     ServerPlayer player = (ServerPlayer) ctx.player();
-                    if (!(player.level().getEntity(packet.catId()) instanceof Cat cat)) {
+                    if (!(player.level().getEntity(packet.catId()) instanceof Cat cat) || !isVanillaCat(cat)) {
                         return;
                     }
                     if (player.distanceToSqr(cat) > 64.0 * 64.0) {
@@ -516,7 +526,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (event.getLevel().isClientSide()) {
             return;
         }
-        if (!(event.getEntity() instanceof Cat cat)) {
+        if (!(event.getEntity() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
 
@@ -562,7 +572,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getTarget() instanceof Cat cat)) {
+        if (!(event.getTarget() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
         ServerPlayer player = (ServerPlayer) event.getEntity();
@@ -593,7 +603,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!(event.getParentB() instanceof Cat parentB)) {
             return;
         }
-        if (!(event.getChild() instanceof Cat baby)) {
+        if (!(event.getChild() instanceof Cat baby) || !isVanillaCat(baby)) {
             return;
         }
 
@@ -627,7 +637,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getEntity() instanceof Cat cat) || cat.level().isClientSide()) {
+        if (!(event.getEntity() instanceof Cat cat) || !isVanillaCat(cat) || cat.level().isClientSide()) {
             return;
         }
         // Strip FollowOwnerGoal BEFORE the goal selector runs this tick, so an associated cat
@@ -641,7 +651,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getEntity() instanceof Cat cat)) {
+        if (!(event.getEntity() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
         if (cat.level().isClientSide()) {
@@ -1320,7 +1330,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getTarget() instanceof Cat cat)) {
+        if (!(event.getTarget() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
 
@@ -1388,7 +1398,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getTarget() instanceof Cat cat)) {
+        if (!(event.getTarget() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
         if (!event.getEntity().getMainHandItem().isEmpty()) {
@@ -1410,7 +1420,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getEntity() instanceof Cat cat)) {
+        if (!(event.getEntity() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
         CatInventoryData invData = cat.getData(CAT_INVENTORY.get());
@@ -1563,7 +1573,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        if (!(event.getEntity() instanceof Cat cat)) {
+        if (!(event.getEntity() instanceof Cat cat) || !isVanillaCat(cat)) {
             return;
         }
         if (!cat.isTame()) {

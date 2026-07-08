@@ -11,7 +11,8 @@
     "cat_guardian.CatGuardianTeleportMixin",
     "cat_guardian.ChestBlockCatMixin",
     "core.EntitySharedFlagInvoker",
-    "free_anvil_repair.AnvilMenuFreeRepairMixin"
+    "free_anvil_repair.AnvilMenuFreeRepairMixin",
+    "mystical_cat.CatRelaxStateInvoker"
   ],
   "injectors": {
     "defaultRequire": 1

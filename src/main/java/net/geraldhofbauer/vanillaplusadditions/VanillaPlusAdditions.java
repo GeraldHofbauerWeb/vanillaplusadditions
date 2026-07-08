@@ -35,6 +35,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetMod
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.MinecartChunkLoadingModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.MysticalCatModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stationary_chunk_loader.StationaryChunkLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
@@ -160,6 +161,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new OptionsModule());
         moduleManager.registerModule(new StaticFovModule());
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
+        moduleManager.registerModule(new MysticalCatModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

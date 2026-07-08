@@ -174,6 +174,7 @@ public final class CatGuardianGogglesClientHandler {
                 continue;
             }
             if (mc.level.getEntity(entry.getKey()) instanceof Cat cat
+                    && cat.getType() == net.minecraft.world.entity.EntityType.CAT
                     && isOverlayCandidate(cat, mc.player)) {
                 // Always outline the looked-at cat itself — confirmation it is recognised,
                 // even when it currently has no target.
