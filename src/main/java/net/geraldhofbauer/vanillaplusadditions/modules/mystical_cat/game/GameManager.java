@@ -4,7 +4,18 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.MysticalCatM
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.config.CatWinBehavior;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.config.MysticalCatConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.entity.MysticalCatEntity;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.CandleKeeperGame;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.FetchRiddleGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.GhostEscortGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.HotColdGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.ParkourGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.PedestalOfferingGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.ShadowWavesGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.SimonSaysGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.SnowballTargetsGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.TargetRangeGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.WispChaseGame;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.games.WoolHuntGame;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -52,6 +63,17 @@ public final class GameManager {
 
     private GameManager() {
         games.add(new FetchRiddleGame());
+        games.add(new WispChaseGame());
+        games.add(new HotColdGame());
+        games.add(new SimonSaysGame());
+        games.add(new ParkourGame());
+        games.add(new WoolHuntGame());
+        games.add(new CandleKeeperGame());
+        games.add(new PedestalOfferingGame());
+        games.add(new ShadowWavesGame());
+        games.add(new TargetRangeGame());
+        games.add(new SnowballTargetsGame());
+        games.add(new GhostEscortGame());
     }
 
     public static GameManager get() {
@@ -373,22 +395,38 @@ public final class GameManager {
     }
 
     @SubscribeEvent
+    public void onGameMobDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if (!event.getEntity().getPersistentData().getString(GameSession.GAME_TAG).isEmpty()) {
+            event.getDrops().clear();
+        }
+    }
+
+    @SubscribeEvent
+    public void onGameMobXp(net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event) {
+        if (!event.getEntity().getPersistentData().getString(GameSession.GAME_TAG).isEmpty()) {
+            event.setDroppedExperience(0);
+        }
+    }
+
+    @SubscribeEvent
     public void onEntityJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) {
             return;
         }
         Entity entity = event.getEntity();
-        // Orphan cleanup: a game-tagged entity with no matching live session is crash debris.
+        // Orphan cleanup: any game-tagged entity with no matching live session is crash debris —
+        // spawned mobs AND ghost-escort cats (which must never survive a reload).
         String tag = entity.getPersistentData().getString(GameSession.GAME_TAG);
-        if (!tag.isEmpty() && !(entity instanceof MysticalCatEntity)) {
+        if (!tag.isEmpty()) {
             boolean owned = byPlayer.values().stream().anyMatch(s -> s.snapshotId().equals(tag));
             if (!owned) {
                 entity.discard();
                 return;
             }
         }
-        // A cat that loads while not mid-game must show its sleeping pose (synced flags aren't saved).
-        if (entity instanceof MysticalCatEntity cat && !byCat.containsKey(cat.getUUID())) {
+        // A resting cat that loads while not mid-game must show its sleeping pose (synced flags
+        // aren't saved to NBT, so they reset to standing on reload).
+        if (entity instanceof MysticalCatEntity cat && !cat.isGhost() && !byCat.containsKey(cat.getUUID())) {
             cat.setSleepingPose();
         }
     }

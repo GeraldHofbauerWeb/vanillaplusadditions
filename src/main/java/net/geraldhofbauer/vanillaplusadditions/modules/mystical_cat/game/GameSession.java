@@ -158,6 +158,25 @@ public class GameSession {
         return false;
     }
 
+    /**
+     * Restores the original state at a single placed position (e.g. a broken wool block), leaving
+     * the record in place so the final {@link #restoreBlocks} pass is idempotent.
+     */
+    public void restoreSingleBlock(BlockPos pos) {
+        BlockPos immutable = pos.immutable();
+        for (BlockSnapshot s : snapshots) {
+            if (s.pos().equals(immutable)) {
+                level.setBlock(immutable, s.original(), 3);
+                return;
+            }
+        }
+    }
+
+    /** Surface height (first non-motion-blocking Y) at the given column. */
+    public int groundY(int x, int z) {
+        return level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+    }
+
     /** Restores every placed block in reverse order and drops the crash mirror. */
     public void restoreBlocks() {
         for (int i = snapshots.size() - 1; i >= 0; i--) {

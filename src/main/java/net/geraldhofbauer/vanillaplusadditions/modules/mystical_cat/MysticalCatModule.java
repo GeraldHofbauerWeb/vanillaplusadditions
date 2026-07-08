@@ -132,7 +132,8 @@ public class MysticalCatModule extends AbstractModule<MysticalCatModule, Mystica
         if (cat.level().isClientSide()) {
             return InteractionResult.sidedSuccess(true);
         }
-        if (!isActive() || !(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
+        // A ghost-escort cat is scenery, not an interactable cat — never start a game on it.
+        if (cat.isGhost() || !isActive() || !(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
             return InteractionResult.sidedSuccess(false);
         }
         return GameManager.get().handleInteract(cat, serverPlayer, hand);
