@@ -451,6 +451,16 @@ public final class GameManager {
 
     // ---- helpers ----
 
+    /** Aborts the player's active game (command hook). Returns true if a game was running. */
+    public boolean abortPlayer(ServerPlayer player) {
+        GameSession session = byPlayer.get(player.getUUID());
+        if (session != null) {
+            abort(session, "fail_generic");
+            return true;
+        }
+        return false;
+    }
+
     public GameSession sessionForCat(MysticalCatEntity cat) {
         return byCat.get(cat.getUUID());
     }

@@ -7,7 +7,9 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.client.MysticalCatClientHooks;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.config.MysticalCatConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.entity.MysticalCatEntity;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.command.MysticalCatCommand;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.GameManager;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.spot.SpotSpawner;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.InteractionHand;
@@ -109,12 +111,21 @@ public class MysticalCatModule extends AbstractModule<MysticalCatModule, Mystica
 
         NeoForge.EVENT_BUS.register(this);
         GameManager.init();
+        SpotSpawner.init();
         contentRegistered = true;
 
         getLogger().info("Mystical Cat module initialized");
     }
 
     @SubscribeEvent
+    public void onRegisterCommands(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        MysticalCatCommand.register(event.getDispatcher());
+    }
+
+    // Mod-bus event: registered via getModEventBus().addListener in onInitialize (no @SubscribeEvent).
     public void onEntityAttributeCreation(EntityAttributeCreationEvent event) {
         event.put(
                 MYSTICAL_CAT.get(),
