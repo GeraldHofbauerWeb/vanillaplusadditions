@@ -4,6 +4,22 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.39] - 2026-07-08
+
+### Added
+- **Neues Modul: Create Water Wheel Unstucker** (`create_water_wheel_unstucker`): Create-
+  Wasserräder bleiben manchmal stehen, wenn ihr Chunk entladen und wieder geladen wird
+  (Kinetik-Netzwerk-/FlowScore-Desync — bisher nur per Wrench/Block-Neuplatzieren fixbar).
+  Das Modul merkt sich Wasserrad-Positionen beim Chunk-Load (deckt den Server-Start ab)
+  und bei Platzierungen und prüft periodisch NUR diese Positionen (kein globaler Scan).
+  Stehende Räder werden automatisch wieder angeworfen: erst sanft (FlowScore-Neuberechnung
+  + Rotations-Re-Announce), dann hart (Kinetik-Netzwerk detach/re-attach, wie Wrench raus
+  und wieder rein). Überlastete Räder (Overstress) und Räder ohne Wasserfluss werden in
+  Ruhe gelassen; nach 3 Fehlversuchen ~5 Minuten Backoff mit einmaliger Log-Warnung.
+  Config: `check_interval_ticks` (100), `post_load_delay_ticks` (60), `max_fix_attempts`
+  (3), `hard_kick` (true). Nur aktiv, wenn Create installiert ist; auch als Standalone-Jar
+  `vpa_create_water_wheel_unstucker` verfügbar.
+
 ## [1.0.0-beta.38] - 2026-07-08
 
 ### Fixed
