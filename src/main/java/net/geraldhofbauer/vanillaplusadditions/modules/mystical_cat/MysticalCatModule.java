@@ -7,6 +7,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.client.MysticalCatClientHooks;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.config.MysticalCatConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.entity.MysticalCatEntity;
+import net.geraldhofbauer.vanillaplusadditions.modules.mystical_cat.game.GameManager;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.InteractionHand;
@@ -107,6 +108,7 @@ public class MysticalCatModule extends AbstractModule<MysticalCatModule, Mystica
         }
 
         NeoForge.EVENT_BUS.register(this);
+        GameManager.init();
         contentRegistered = true;
 
         getLogger().info("Mystical Cat module initialized");
@@ -123,14 +125,16 @@ public class MysticalCatModule extends AbstractModule<MysticalCatModule, Mystica
     }
 
     /**
-     * Right-click dispatch for a Mystical Cat. Wired to the game/trade framework in a later step;
-     * for now it acknowledges the interaction so vanilla never runs.
+     * Right-click dispatch for a Mystical Cat. On the server it hands off to the {@link GameManager}
+     * (active game → trade → start game); on the client it just acknowledges so vanilla never runs.
      */
     public static InteractionResult handleCatInteract(MysticalCatEntity cat, Player player, InteractionHand hand) {
-        boolean client = cat.level().isClientSide();
-        if (!client) {
-            cat.setSittingPose();
+        if (cat.level().isClientSide()) {
+            return InteractionResult.sidedSuccess(true);
         }
-        return InteractionResult.sidedSuccess(client);
+        if (!isActive() || !(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) {
+            return InteractionResult.sidedSuccess(false);
+        }
+        return GameManager.get().handleInteract(cat, serverPlayer, hand);
     }
 }
