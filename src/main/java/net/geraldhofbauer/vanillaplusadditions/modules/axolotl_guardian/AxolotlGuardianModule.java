@@ -324,6 +324,9 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     // Stuck detection: last sampled position + consecutive no-progress strikes.
     private final Map<UUID, net.minecraft.world.phys.Vec3> stuckSample = new HashMap<>();
     private final Map<UUID, Integer> stuckStrikes = new HashMap<>();
+    // Homebound progress sample: last sampled distance to the bowl while returning/fleeing.
+    // Catches "moving but circling" — position deltas alone never call that stuck.
+    private final Map<UUID, Double> homeDistSample = new HashMap<>();
 
     // Maps dead entity ID → guardian axolotl entity ID; used to redirect XP to the axolotl.
     private final Map<Integer, Integer> pendingXpCapture = new HashMap<>();
@@ -832,11 +835,18 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         // Ordinary post-combat return: assert the WALK_TARGET home each cycle (MoveToTargetSink
         // erases it when it gives up — re-asserting restarts the attempt, which is the brain-mob
         // version of the cat's repath loop). Interruptible by new targets. Clears when within
-        // ~4 blocks of the bowl, or after a time cap so a failed path never strands the axolotl.
+        // ~4 blocks of the bowl; a return that hasn't arrived after a minute teleports home.
         if (axolotl.getData(AXOLOTL_RETURNING.get())) {
             int age = returningAge.merge(uid, 10, Integer::sum); // tickAxolotl runs every 10 ticks
             double distSqToBowl = axolotl.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
-            if (distSqToBowl <= 16.0 || age >= 1200) {
+            // A full minute without arriving means the path has failed for good — don't strand
+            // the axolotl wherever it drifted, emergency-port it home. Only if even the teleport
+            // finds no water spot (bowl area broken) give up in place at 90s.
+            if (distSqToBowl > 16.0 && age >= 1200 && teleportToBowl(axolotl, bowlPos)) {
+                distSqToBowl = axolotl.distanceToSqr(
+                        bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
+            }
+            if (distSqToBowl <= 16.0 || age >= 1800) {
                 axolotl.setData(AXOLOTL_RETURNING.get(), false);
                 returningAge.remove(uid);
                 axolotl.getNavigation().resetMaxVisitedNodesMultiplier();
@@ -871,7 +881,10 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             if (axolotl.getTarget() == null && !axolotl.getData(AXOLOTL_RETURNING.get())) {
                 double idleDistSq = axolotl.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
                 if (idleDistSq > 64.0) {
-                    walkTargetTo(axolotl, bowlPos, 0.8f);
+                    // Route the trip through the returning machinery (doubled node budget,
+                    // circling detection, emergency teleport) instead of a bare walk target
+                    // that silently dies when A* fails and leaves the axolotl adrift.
+                    axolotl.setData(AXOLOTL_RETURNING.get(), true);
                 } else if (idleDistSq <= 16.0) {
                     AbstractAxolotlBowlBlockEntity idleBowl = getBowlEntity(axolotl, bowlPos);
                     if (idleBowl instanceof AxolotlFeedingStationBlockEntity idleStation) {
@@ -974,6 +987,14 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             return;
         }
         if (!target.isAlive()) {
+            dropTarget(axolotl, true);
+            return;
+        }
+        // Vanilla's own StartAttacking (attackables sensor) re-acquires any nearby hostile and
+        // knows nothing about our blacklist — the tick after strike 3 drops an unreachable mob,
+        // vanilla locks right back onto it and the axolotl keeps pressing against the obstacle.
+        // Keep erasing it for as long as the blacklist entry lasts.
+        if (isBlacklisted(axolotl, target)) {
             dropTarget(axolotl, true);
             return;
         }
@@ -1172,21 +1193,24 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     }
 
     /**
-     * Stuck detection: samples the position every 40 ticks while the axolotl actively wants to
-     * move (combat target, returning or fleeing). Too little progress adds a strike:
-     * every strike erases the PATH memory so MoveToTargetSink recomputes; strike 3 blacklists
-     * the target and commits to returning home; strike ≥ 5 while returning/fleeing (~20s stuck)
-     * emergency-teleports the axolotl into a water block next to the bowl — the guardian
-     * pendant of the vanilla pet owner-teleport, so no axolotl ever stays stranded.
+     * Stuck detection: samples every 40 ticks while the axolotl actively wants to move (combat
+     * target, returning or fleeing). A strike is either too little position movement OR — on
+     * homebound trips — swimming without getting closer to the bowl (failed paths degrade into
+     * RandomSwim circling). Every strike erases the PATH memory so MoveToTargetSink recomputes;
+     * strike 3 blacklists the target and commits to returning home; strike ≥ 5 while
+     * returning/fleeing (~20s stuck) emergency-teleports the axolotl into a water block next
+     * to the bowl — the guardian pendant of the vanilla pet owner-teleport, so no axolotl ever
+     * stays stranded.
      */
     private void tickStuckDetection(Axolotl axolotl) {
         UUID uid = axolotl.getUUID();
-        boolean wantsToMove = axolotl.getTarget() != null
-                || axolotl.getData(AXOLOTL_RETURNING.get())
+        boolean homebound = axolotl.getData(AXOLOTL_RETURNING.get())
                 || axolotl.getData(AXOLOTL_FLEEING.get());
+        boolean wantsToMove = axolotl.getTarget() != null || homebound;
         if (!wantsToMove) {
             stuckSample.remove(uid);
             stuckStrikes.remove(uid);
+            homeDistSample.remove(uid);
             return;
         }
         if (axolotl.tickCount % 40 != 0) {
@@ -1194,10 +1218,28 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         }
         net.minecraft.world.phys.Vec3 now = axolotl.position();
         net.minecraft.world.phys.Vec3 prev = stuckSample.put(uid, now);
+
+        // Homebound trips also track distance to the bowl: a failed return path degrades into
+        // vanilla RandomSwim circling — plenty of movement, zero progress. Only counts as a
+        // strike while still >5 blocks out (fighting/wandering around home is fine).
+        Double distNow = null;
+        Double distPrev = null;
+        long bowlLong = axolotl.getData(AXOLOTL_BOWL_POS.get());
+        if (homebound && bowlLong != Long.MIN_VALUE) {
+            BlockPos bowl = BlockPos.of(bowlLong);
+            distNow = Math.sqrt(axolotl.distanceToSqr(
+                    bowl.getX() + 0.5, bowl.getY() + 0.5, bowl.getZ() + 0.5));
+            distPrev = homeDistSample.put(uid, distNow);
+        } else {
+            homeDistSample.remove(uid);
+        }
         if (prev == null) {
             return;
         }
-        if (prev.distanceToSqr(now) >= 0.75 * 0.75) {
+        boolean noMove = prev.distanceToSqr(now) < 0.75 * 0.75;
+        boolean noHomeProgress = distNow != null && distPrev != null
+                && distNow > 5.0 && distPrev - distNow < 0.5;
+        if (!noMove && !noHomeProgress) {
             stuckStrikes.remove(uid);
             return;
         }
@@ -1214,12 +1256,11 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         }
         boolean headingHome = axolotl.getData(AXOLOTL_RETURNING.get())
                 || axolotl.getData(AXOLOTL_FLEEING.get());
-        if (strikes >= 5 && headingHome) {
-            long bowlLong = axolotl.getData(AXOLOTL_BOWL_POS.get());
-            if (bowlLong != Long.MIN_VALUE && teleportToBowl(axolotl, BlockPos.of(bowlLong))) {
-                stuckStrikes.remove(uid);
-                stuckSample.remove(uid);
-            }
+        if (strikes >= 5 && headingHome
+                && bowlLong != Long.MIN_VALUE && teleportToBowl(axolotl, BlockPos.of(bowlLong))) {
+            stuckStrikes.remove(uid);
+            stuckSample.remove(uid);
+            homeDistSample.remove(uid);
         }
     }
 
@@ -1530,6 +1571,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         lastSyncedTarget.remove(uid);
         stuckSample.remove(uid);
         stuckStrikes.remove(uid);
+        homeDistSample.remove(uid);
     }
 
     /**
@@ -1676,9 +1718,15 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             Entity indirect = event.getSource().getEntity();
             LivingEntity attacker = direct instanceof Monster m ? m
                     : indirect instanceof Monster m2 ? m2 : null;
+            // A blacklisted attacker was already proven unreachable (strike 3 / zone exit).
+            // Re-engaging would pin the axolotl against the obstacle again — and clearing
+            // RETURNING below would disarm the strike-5 emergency teleport. A trident drowned
+            // behind a wall stays ignored; only a melee-range hit (provably reachable)
+            // overrides the blacklist.
             if (attacker != null && !attacker.isDeadOrDying() && attacker.isInWaterOrBubble()
                     && isWithinGuardZone(axolotl, attacker.getX(), attacker.getY(), attacker.getZ(),
-                    TARGET_ZONE_BUFFER)) {
+                    TARGET_ZONE_BUFFER)
+                    && (!isBlacklisted(axolotl, attacker) || axolotl.distanceToSqr(attacker) <= 9.0)) {
                 // End any return trip FIRST: otherwise the returning branch keeps re-asserting
                 // WALK_TARGET(home) every cycle while the FIGHT activity steers toward the
                 // attacker — a permanent tug-of-war (maybeAcquireTarget never clears RETURNING

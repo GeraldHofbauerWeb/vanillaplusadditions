@@ -4,6 +4,29 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.38] - 2026-07-08
+
+### Fixed
+- **Axolotl Guardian — Wand-Presser endgültig behoben**: Die vanilla Axolotl-AI erwirbt
+  Feindziele (Drowned/Guardians) selbstständig und kennt unsere Unerreichbar-Blacklist
+  nicht — einen Tick nachdem Strike 3 ein unerreichbares Ziel fallen ließ, war es wieder
+  gesetzt und der Axolotl drückte endlos gegen die Wand. Die Zonen-Überwachung wirft
+  geblacklistete Ziele jetzt jeden Zyklus wieder raus. Zusätzlich respektiert die
+  Retaliation die Blacklist (ein Trident-Drowned hinter der Wand wird ignoriert; nur
+  Nahkampf-Treffer — beweisbar erreichbar — dürfen sie übersteuern), damit sie nicht
+  mehr den Heimkehr-Status löscht und so den Not-Teleport entschärft.
+- **Axolotl Guardian — Kreisschwimmen gilt jetzt als stuck**: Scheitert der Heimweg-Pfad,
+  degradiert die Bewegung zu vanilla Zufallsschwimmen — viel Bewegung, null Fortschritt,
+  die bisherige Positions-Delta-Erkennung schlug nie an. Heimkehrende/fliehende Axolotl
+  tracken jetzt zusätzlich die Distanz zum Napf; keine Annäherung = Strike, ab Strike 5
+  greift der Not-Teleport.
+- **Axolotl Guardian — Heimweg gibt nicht mehr still auf**: Nach 60s erfolglosem Heimweg
+  wurde der Rückkehr-Status einfach gelöscht und der Axolotl trieb ziellos in der Ferne.
+  Jetzt wird er stattdessen zum Napf teleportiert (Aufgeben nur noch, falls selbst der
+  Teleport kein Wasser am Napf findet). Auch die Idle-Leine (>8 Blöcke vom Napf) läuft
+  jetzt über die robuste Heimkehr-Maschinerie statt über ein nacktes Bewegungsziel, das
+  bei fehlgeschlagener Pfadsuche still verpuffte.
+
 ## [1.0.0-beta.37] - 2026-07-07
 
 ### Fixed
