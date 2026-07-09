@@ -1454,17 +1454,9 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             return;
         }
 
-        // Guardian axolotls don't breed (parity with guardian cats) — block the vanilla
-        // tropical-fish-bucket love-mode interaction for them. Owned non-guardians may breed.
-        if (heldItem.is(Items.TROPICAL_FISH_BUCKET) && isGuardianAxolotl(axolotl)) {
-            event.setCanceled(true);
-            event.setCancellationResult(net.minecraft.world.InteractionResult.sidedSuccess(
-                    event.getLevel().isClientSide()));
-            return;
-        }
-
-        // Tropical fish (the plain item — vanilla ignores it, breeding uses the bucket):
-        // unowned → taming attempt; owned → feed (any player may feed, like cats).
+        // Tropical fish (the plain item — vanilla only breeds via the bucket, we also accept
+        // the plain item so Gerry can mass-breed without farming buckets):
+        // unowned → taming attempt; owned → feed (any player may feed, like cats) + breed.
         if (isAxolotlFood(heldItem)) {
             event.setCanceled(true);
             event.setCancellationResult(net.minecraft.world.InteractionResult.sidedSuccess(
@@ -1494,7 +1486,15 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 axolotl.setHealth(axolotl.getMaxHealth());
                 axolotl.level().playSound(null, axolotl.getX(), axolotl.getY(), axolotl.getZ(),
                         SoundEvents.AXOLOTL_IDLE_WATER, axolotl.getSoundSource(), 1.0f, 1.0f);
-                if (axolotl.level() instanceof ServerLevel sl) {
+
+                // Mass breeding: an adult, breed-ready owned axolotl (guardian or not) goes into
+                // love mode on the same feed, mirroring Animal#mobInteract. Vanilla only allows
+                // this via the tropical-fish bucket; we allow it via the plain (farmable) fish
+                // too, since Gerry needs to breed axolotls at scale. setInLove() spawns its own
+                // heart particles, so we skip the manual ones in that branch to avoid doubling up.
+                if (axolotl.getAge() == 0 && axolotl.canFallInLove()) {
+                    axolotl.setInLove(player);
+                } else if (axolotl.level() instanceof ServerLevel sl) {
                     sl.sendParticles(ParticleTypes.HEART,
                             axolotl.getX(), axolotl.getEyeY(), axolotl.getZ(), 7, 0.3, 0.3, 0.3, 0);
                 }
