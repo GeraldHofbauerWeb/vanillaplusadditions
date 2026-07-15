@@ -21,6 +21,10 @@ group = mod_group_id
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
     gradlePluginPortal() // For SpotBugs plugin
+    maven { // JEI — its anvil-recipe API (compat plugin registers the mob-armor scute repairs)
+        name = 'Jared\'s maven'
+        url = 'https://maven.blamejared.com/'
+    }
 }
 
 base {
@@ -99,12 +103,14 @@ dependencies {
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
 
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    // JEI — compile-time API only, gated at runtime: our @JeiPlugin classes are loaded solely by JEI's
+    // own annotation scan (never referenced by our code), so a client/server without JEI simply never
+    // touches them. The plugins register the mob-armor scute repairs as anvil recipes so they show up
+    // in JEI (vanilla anvil repair is code-only — JEI cannot auto-discover it, see AnvilRecipeMaker).
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    // Full JEI at localRuntime (not runtimeOnly) so we do not publish a hard dependency on it.
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
