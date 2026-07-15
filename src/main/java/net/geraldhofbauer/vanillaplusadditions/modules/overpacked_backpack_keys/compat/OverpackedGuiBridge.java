@@ -12,6 +12,7 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
@@ -73,7 +74,22 @@ public final class OverpackedGuiBridge {
         // Recreate the entity exactly as GiantBackpackItem.use() does: colour from the item, sleeping
         // bag colour + inventory from the item's CUSTOM_DATA (LoadInventory takes the "Items" subtag).
         GiantBackpack entity = new GiantBackpack(ModEntities.giant_backpack.get(), level);
-        entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), 0.0f);
+        // Place the helper a bit in front of the player along their (horizontal) look direction — not
+        // inside the player — and rotate it to face the player (yRot + 180), exactly like Overpacked's
+        // own GiantBackpackItem.use() does when you place a backpack on the ground.
+        Vec3 look = player.getViewVector(1.0f);
+        Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
+        double horizontalLen = horizontal.length();
+        Vec3 forward = horizontalLen > 1.0e-4
+                ? horizontal.scale(1.0 / horizontalLen)
+                : Vec3.directionFromRotation(0.0f, player.getYRot());
+        double spawnDistance = 1.5;
+        entity.moveTo(
+                player.getX() + forward.x * spawnDistance,
+                player.getY(),
+                player.getZ() + forward.z * spawnDistance,
+                player.getYRot() + 180.0f,
+                0.0f);
         entity.setNoGravity(true);
         entity.noPhysics = true; // transient helper — never blocks or shoves the player
         if (worn.stack().getItem() instanceof GiantBackpackItem backpackItem) {
@@ -168,8 +184,14 @@ public final class OverpackedGuiBridge {
         ItemStack saved = entity.getPickResult(); // colored backpack with full Items/Count NBT
         CustomData data = saved.get(DataComponents.CUSTOM_DATA);
         ItemStack updated = session.originalWorn().copy();
+        // The pick-result IS the source of truth for the edited contents. When the player empties the
+        // backpack completely, Overpacked's save_item(0) returns a bare stack with NO CUSTOM_DATA — so
+        // we must CLEAR the stale Items on the worn item, not keep them. Otherwise the old contents
+        // reappear on the next open (duplication).
         if (data != null) {
             updated.set(DataComponents.CUSTOM_DATA, data);
+        } else {
+            updated.remove(DataComponents.CUSTOM_DATA);
         }
         if (CuriosBackpackAccess.isGiantBackpackInSlot(player, session.identifier(), session.index())) {
             CuriosBackpackAccess.setWorn(player, session.identifier(), session.index(), updated);
