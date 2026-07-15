@@ -1,8 +1,13 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item;
 
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorTooltip;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
+
+import java.util.List;
 
 public class CatArmorItem extends Item {
 
@@ -57,5 +62,12 @@ public class CatArmorItem extends Item {
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
         return repairCandidate.is(Items.ARMADILLO_SCUTE);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        MobArmorTooltip.append(tooltipComponents, tier.getAttackBonus());
+        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

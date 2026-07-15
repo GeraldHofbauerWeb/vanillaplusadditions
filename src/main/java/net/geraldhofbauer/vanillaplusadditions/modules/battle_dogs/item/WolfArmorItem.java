@@ -1,10 +1,16 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.item;
 
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorTooltip;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+
+import java.util.List;
 
 public class WolfArmorItem extends AnimalArmorItem {
 
@@ -55,5 +61,12 @@ public class WolfArmorItem extends AnimalArmorItem {
     @Override
     public boolean isEnchantable(ItemStack stack) {
         return false;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        MobArmorTooltip.append(tooltipComponents, tier.getAttackBonus());
+        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 }

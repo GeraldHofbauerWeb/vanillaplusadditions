@@ -29,6 +29,8 @@
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Deslizate mas rapido sobre la superficie del agua",
   "item.vanillaplusadditions.flying_fish_boots.desc_2": "Al esprintar sobre el agua, das pequenos saltos y planeas brevemente",
   "item.vanillaplusadditions.flying_fish_boots.desc_3": "No compatible con Depth Strider/Frost Walker",
+  "tooltip.vanillaplusadditions.mob_armor.attack": "+%s de daño de ataque para el portador",
+  "tooltip.vanillaplusadditions.mob_armor.absorb": "Absorbe todo el daño recibido (gasta durabilidad)",
   "block.vanillaplusadditions.cat_bowl": "Bol para gatos",
   "block.vanillaplusadditions.cat_feeding_station": "Estación de alimentación para gatos",
   "item.vanillaplusadditions.cat_armor_iron": "Armadura de hierro para gato",

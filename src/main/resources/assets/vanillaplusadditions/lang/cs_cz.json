@@ -29,6 +29,8 @@
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Klouzej rychleji po hladině vody",
   "item.vanillaplusadditions.flying_fish_boots.desc_2": "Při sprintu po vodě získáš krátké skoky a jemné klouzání",
   "item.vanillaplusadditions.flying_fish_boots.desc_3": "Není kompatibilní s Depth Strider/Frost Walker",
+  "tooltip.vanillaplusadditions.mob_armor.attack": "+%s poškození útokem pro nositele",
+  "tooltip.vanillaplusadditions.mob_armor.absorb": "Pohltí veškeré příchozí poškození (spotřebuje trvanlivost)",
   "block.vanillaplusadditions.cat_bowl": "Kočičí miska",
   "block.vanillaplusadditions.cat_feeding_station": "Kočičí krmící stanice",
   "item.vanillaplusadditions.cat_armor_iron": "Železné kočičí brnění",

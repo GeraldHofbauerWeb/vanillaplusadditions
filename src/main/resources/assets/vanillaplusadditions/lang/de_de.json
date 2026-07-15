@@ -116,6 +116,8 @@
   "item.vanillaplusadditions.flying_fish_boots.desc_1": "Lass dich schneller ueber die Wasseroberflaeche treiben",
   "item.vanillaplusadditions.flying_fish_boots.desc_2": "Beim Sprinten auf Wasser springst du kurz auf und gleitest sanft",
   "item.vanillaplusadditions.flying_fish_boots.desc_3": "Nicht kompatibel mit Depth Strider/Frost Walker",
+  "tooltip.vanillaplusadditions.mob_armor.attack": "+%s Angriffsschaden für den Träger",
+  "tooltip.vanillaplusadditions.mob_armor.absorb": "Absorbiert allen eingehenden Schaden (verbraucht Haltbarkeit)",
   "item.vanillaplusadditions.flying_fish_bucket": "Eimer mit fliegendem Fisch",
   "item.vanillaplusadditions.flying_fish_spawn_egg": "Fliegender-Fisch-Spawn-Ei",
   "item.vanillaplusadditions.wolf_armor_diamond": "Diamant-Wolfsrüstung",
