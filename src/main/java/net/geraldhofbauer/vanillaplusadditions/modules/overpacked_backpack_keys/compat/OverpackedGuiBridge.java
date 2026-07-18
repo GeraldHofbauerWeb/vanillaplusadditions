@@ -90,6 +90,15 @@ public final class OverpackedGuiBridge {
                 player.getZ() + forward.z * spawnDistance,
                 player.getYRot() + 180.0f,
                 0.0f);
+        // Would the in-front spot drop the helper into a block (e.g. the wall a mounted item frame
+        // hangs on, when the player stands right at the shelf)? Then it would overlap the frame /
+        // entity there — stealing the frame's crosshair pick and becoming an accidental hit target
+        // whose GiantBackpack.hurt() would dump its contents. Fall back to spawning it inside the
+        // player: out of the crosshair, off wall frames. Mirrors the noCollision guard in
+        // Overpacked's own GiantBackpackItem.use(). A clear spot in front keeps the 1.5-block offset.
+        if (!level.noCollision(entity, entity.getBoundingBox())) {
+            entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot() + 180.0f, 0.0f);
+        }
         entity.setNoGravity(true);
         entity.noPhysics = true; // transient helper — never blocks or shoves the player
         if (worn.stack().getItem() instanceof GiantBackpackItem backpackItem) {
