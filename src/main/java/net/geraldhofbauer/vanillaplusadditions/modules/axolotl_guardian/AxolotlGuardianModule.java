@@ -376,9 +376,15 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         return instance != null ? instance.getConfig().getGlowDurationTicks() : 600;
     }
 
-    /** The single food predicate: bowls, station and hand-feeding all accept exactly this. */
+    /**
+     * The single food predicate: bowls, station, hand-feeding and taming all accept exactly this.
+     * Covers every edible drop of the vanilla {@code AXOLOTL_HUNT_TARGETS} (cod, salmon, tropical
+     * fish, pufferfish) so a guardian both self-stocks its station from its catch and eats any of
+     * them — squid/tadpole drop no fish item. See {@link #onLivingDrops}.
+     */
     public static boolean isAxolotlFood(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(Items.TROPICAL_FISH);
+        return !stack.isEmpty() && (stack.is(Items.COD) || stack.is(Items.SALMON)
+                || stack.is(Items.TROPICAL_FISH) || stack.is(Items.PUFFERFISH));
     }
 
     /**
@@ -998,8 +1004,10 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             dropTarget(axolotl, true);
             return;
         }
-        if (axolotl.getData(AXOLOTL_FED_TICKS.get()) <= 0) {
-            // Fed state ran out mid-fight → disengage, go home
+        if (target instanceof Monster && axolotl.getData(AXOLOTL_FED_TICKS.get()) <= 0) {
+            // Fed state ran out mid-fight → disengage from the hostile, go home. Fish (non-Monster
+            // hunt targets) are exempt: a hungry guardian may still finish catching a passing fish
+            // to restock its station — it stays leashed to the zone by the checks below.
             dropTarget(axolotl, true);
             return;
         }
@@ -1463,21 +1471,33 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             return;
         }
 
-        // Tropical fish (the plain item — vanilla only breeds via the bucket, we also accept
-        // the plain item so Gerry can mass-breed without farming buckets):
-        // unowned → taming attempt; owned → feed (any player may feed, like cats) + breed
-        // (guardians excepted, parity with guardian cats — see bucket block above).
+        // Tropical fish / cod / salmon / pufferfish (the plain items — vanilla only breeds via the
+        // bucket; we also accept the plain item so Gerry can mass-breed without farming buckets).
+        // Hand-feeding only DOES something in two cases:
+        //   • UNOWNED axolotl → taming attempt (1/3 → owner).
+        //   • OWNED and breed-ready → love mode (guardians excluded, parity with guardian cats).
+        // An already-owned axolotl is otherwise NOT hand-feedable — no free full-heal / fed-ticks
+        // refuel (guardians eat from their bowl/station). We still swallow the click so the player
+        // doesn't accidentally eat their own cod/salmon on an owned, non-breed-ready axolotl.
         if (isAxolotlFood(heldItem)) {
+            boolean owned = isOwned(axolotl);
+            boolean breedReady = owned && axolotl.getAge() == 0 && axolotl.canFallInLove()
+                    && !isGuardianAxolotl(axolotl);
+
             event.setCanceled(true);
             event.setCancellationResult(net.minecraft.world.InteractionResult.sidedSuccess(
                     event.getLevel().isClientSide()));
             if (event.getLevel().isClientSide()) {
                 return;
             }
+            if (owned && !breedReady) {
+                return; // owned but not breeding → no-op; fish kept
+            }
             if (!player.isCreative()) {
                 heldItem.shrink(1);
             }
-            if (!isOwned(axolotl)) {
+            if (!owned) {
+                // Unowned → taming attempt.
                 if (axolotl.getRandom().nextInt(3) == 0) {
                     axolotl.setData(AXOLOTL_OWNER.get(), player.getUUID().toString());
                     broadcastOwnerSync(axolotl);
@@ -1492,23 +1512,8 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                             axolotl.getX(), axolotl.getEyeY(), axolotl.getZ(), 5, 0.3, 0.3, 0.3, 0);
                 }
             } else {
-                axolotl.setData(AXOLOTL_FED_TICKS.get(), getFedDurationTicks());
-                axolotl.setHealth(axolotl.getMaxHealth());
-                axolotl.level().playSound(null, axolotl.getX(), axolotl.getY(), axolotl.getZ(),
-                        SoundEvents.AXOLOTL_IDLE_WATER, axolotl.getSoundSource(), 1.0f, 1.0f);
-
-                // Mass breeding: an adult, breed-ready owned NON-guardian axolotl goes into love
-                // mode on the same feed, mirroring Animal#mobInteract. Vanilla only allows this
-                // via the tropical-fish bucket; we allow it via the plain (farmable) fish too,
-                // since Gerry needs to breed axolotls at scale. Guardians are excluded (parity
-                // with guardian cats, see bucket block above). setInLove() spawns its own heart
-                // particles, so we skip the manual ones in that branch to avoid doubling up.
-                if (axolotl.getAge() == 0 && axolotl.canFallInLove() && !isGuardianAxolotl(axolotl)) {
-                    axolotl.setInLove(player);
-                } else if (axolotl.level() instanceof ServerLevel sl) {
-                    sl.sendParticles(ParticleTypes.HEART,
-                            axolotl.getX(), axolotl.getEyeY(), axolotl.getZ(), 7, 0.3, 0.3, 0.3, 0);
-                }
+                // Owned + breed-ready → love mode. setInLove() spawns its own heart particles.
+                axolotl.setInLove(player);
             }
             return;
         }
@@ -1704,11 +1709,19 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         ItemStack armor = invData.getArmor();
         if (armor.getItem() instanceof AxolotlArmorItem) {
             // Armor absorbs 100% of damage; each damage point drains 1 durability.
-            // Note: vanilla play-dead already rolled on the RAW damage in Axolotl.hurt() before
-            // this event — an armored guardian can still flop over. Deliberate flavor; if it
-            // annoys in testing, erase PLAY_DEAD_TICKS here.
             float absorbed = event.getNewDamage();
             event.setNewDamage(0f);
+
+            // Vanilla rolled play-dead on the RAW damage inside Axolotl.hurt() (before this event),
+            // setting PLAY_DEAD_TICKS. An armored guardian shouldn't flop out of the fight — nor
+            // grab the free play-dead Regeneration — while it's still healthy. Erase the memory
+            // before the axolotl's own customServerAiStep reads it (and before PlayDead.start runs),
+            // so an armored guardian only plays dead once its armor is gone and HP is truly low.
+            // Because armor zeroed the damage above, getHealth() here is the post-damage HP.
+            if (isGuardianAxolotl(axolotl)
+                    && axolotl.getHealth() > getConfig().getPlayDeadMinHealth()) {
+                axolotl.getBrain().eraseMemory(MemoryModuleType.PLAY_DEAD_TICKS);
+            }
 
             armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), axolotl,
                     net.minecraft.world.entity.EquipmentSlot.CHEST);
@@ -1806,6 +1819,33 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
 
         // Record for XP redirection (consumed by onExperienceDrop in the same tick)
         pendingXpCapture.put(event.getEntity().getId(), axolotl.getId());
+
+        // Route any edible catch (cod/salmon/tropical fish/pufferfish from the axolotl's vanilla
+        // fish hunting) into its bowl/station fish slots as real food — BEFORE the loot capture
+        // below, so a guardian self-restocks its station instead of the fish becoming loot.
+        // Deposit item-by-item so a full station keeps the leftover, which then falls through to
+        // loot / the ground. Non-food drops (ink sacs, bones, …) are left for the loot loop.
+        AbstractAxolotlBowlBlockEntity fishBowl =
+                getBowlEntity(axolotl, BlockPos.of(axolotl.getData(AXOLOTL_BOWL_POS.get())));
+        if (fishBowl != null) {
+            Iterator<ItemEntity> fishIter = event.getDrops().iterator();
+            while (fishIter.hasNext()) {
+                ItemEntity itemEntity = fishIter.next();
+                ItemStack drop = itemEntity.getItem();
+                if (!isAxolotlFood(drop)) {
+                    continue;
+                }
+                ItemStack single = drop.copyWithCount(1);
+                while (!drop.isEmpty() && fishBowl.insertFish(single, false)) {
+                    drop.shrink(1);
+                }
+                if (drop.isEmpty()) {
+                    fishIter.remove();
+                } else {
+                    itemEntity.setItem(drop);
+                }
+            }
+        }
 
         AxolotlInventoryData axolotlInv = axolotl.getData(AXOLOTL_INVENTORY.get());
         var lootHandler = axolotlInv.getInventory();

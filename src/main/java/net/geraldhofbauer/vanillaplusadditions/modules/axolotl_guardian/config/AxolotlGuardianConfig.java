@@ -16,6 +16,7 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
     private ModConfigSpec.IntValue axolotlXpCapacity;
     private ModConfigSpec.IntValue stationXpCapacity;
     private ModConfigSpec.IntValue xpPerBottle;
+    private ModConfigSpec.IntValue playDeadMinHealth;
 
     public AxolotlGuardianConfig(AxolotlGuardianModule module) {
         super(module);
@@ -53,6 +54,14 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
         xpPerBottle = builder
                 .comment("XP points consumed per Bottle o' Enchanting produced at the station")
                 .defineInRange("xp_per_bottle", 8, 1, 64);
+        playDeadMinHealth = builder
+                .comment("An ARMORED guardian axolotl may only play dead once its health drops to "
+                        + "this value or below (absolute HP; axolotl max health is 14). Keeps an "
+                        + "armored guardian from flopping out of the fight — and from getting the "
+                        + "play-dead self-Regeneration — while healthy. In practice this only kicks "
+                        + "in after its armor breaks (armor absorbs 100% of damage). Unarmored "
+                        + "axolotls keep vanilla play-dead.")
+                .defineInRange("play_dead_min_health", 4, 1, 14);
     }
 
     public double getAssociationRadius() {
@@ -93,5 +102,9 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
 
     public int getXpPerBottle() {
         return xpPerBottle != null ? xpPerBottle.get() : 8;
+    }
+
+    public int getPlayDeadMinHealth() {
+        return playDeadMinHealth != null ? playDeadMinHealth.get() : 4;
     }
 }
