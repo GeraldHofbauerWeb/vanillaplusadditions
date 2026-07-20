@@ -4,6 +4,25 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.42] - 2026-07-20
+
+### Added
+- **Verzauberbare Mob-Rüstungen (Cat / Axolotl / Wolf)**: Cat-, Axolotl- und Wolf-Rüstung
+  sind jetzt am Zaubertisch und per Buch am Amboss verzauberbar (neu in den
+  `minecraft:enchantable/armor`- und `.../durability`-Tags). Auf frisch gecrafteter Rüstung
+  werden **standardmäßig Unbreaking/Sharpness/Thorns** gebacken (config-gesteuert pro Modul).
+  **Sharpness** gibt den Guardians Bonus-Angriffsschaden, **Thorns** reflektiert einen Anteil
+  des absorbierten Schadens an lebende Angreifer zurück. Die Enchantments werden zusätzlich in
+  **JEIs Amboss-Rezept-Tab** angezeigt.
+- **Guardian-Axolotls heilen sich**: Verletzte Guardian-Axolotls kehren außerhalb des Kampfes
+  zum Napf zurück und regenerieren dort.
+
+### Changed
+- **Axolotl-Rüstung: doppelte Haltbarkeit** — die Max-Haltbarkeit aller Axolotl-Rüstungs-Tiers
+  wurde verdoppelt.
+- Neue Config-Keys pro Modul (`BattleDogsConfig` plus Kampf-Effekt-Keys in Cat/Axolotl/Battle Dogs)
+  für Default-Enchant-Level und Thorns-Reflect-Anteil.
+
 ## [1.0.0-beta.39] - 2026-07-08
 
 ### Added
