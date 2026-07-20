@@ -1,4 +1,5 @@
 {
+  "block.vanillaplusadditions.air_block": "Air Block",
   "block.vanillaplusadditions.axolotl_bowl": "Axolotl Bowl",
   "block.vanillaplusadditions.axolotl_feeding_station": "Axolotl Feeding Station",
   "block.vanillaplusadditions.cat_bowl": "Cat Bowl",
@@ -102,6 +103,7 @@
   "gui.vanillaplusadditions.options.name_hint": "backup name",
   "gui.vanillaplusadditions.options.restore": "Restore",
   "gui.vanillaplusadditions.options.screen_title": "VPA Options Backups",
+  "item.vanillaplusadditions.air_block_revealer": "Air Block Revealer",
   "item.vanillaplusadditions.axolotl_armor_diamond": "Diamond Axolotl Armor",
   "item.vanillaplusadditions.axolotl_armor_gold": "Golden Axolotl Armor",
   "item.vanillaplusadditions.axolotl_armor_iron": "Iron Axolotl Armor",

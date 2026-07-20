@@ -1,4 +1,5 @@
 {
+  "block.vanillaplusadditions.air_block": "Luftblock",
   "block.vanillaplusadditions.axolotl_bowl": "Axolotl-Napf",
   "block.vanillaplusadditions.axolotl_feeding_station": "Axolotl-Futterstation",
   "block.vanillaplusadditions.cat_bowl": "Katzennapf",
@@ -102,6 +103,7 @@
   "gui.vanillaplusadditions.options.name_hint": "Backup-Name",
   "gui.vanillaplusadditions.options.restore": "Wiederherstellen",
   "gui.vanillaplusadditions.options.screen_title": "VPA Options-Backups",
+  "item.vanillaplusadditions.air_block_revealer": "Luftblock-Aufspürer",
   "item.vanillaplusadditions.axolotl_armor_diamond": "Diamant-Axolotlrüstung",
   "item.vanillaplusadditions.axolotl_armor_gold": "Goldene Axolotlrüstung",
   "item.vanillaplusadditions.axolotl_armor_iron": "Eisen-Axolotlrüstung",
