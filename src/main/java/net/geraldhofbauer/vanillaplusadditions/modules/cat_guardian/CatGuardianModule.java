@@ -13,6 +13,8 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client.CatGuardianClientEvents;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
+import net.minecraft.core.RegistryAccess;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatInventoryMenu;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
@@ -345,19 +347,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!isModuleEnabled()) {
             return;
         }
-        event.addListener(new CatGuardianRecipeReloadListener(event.getServerResources().getRecipeManager()));
+        event.addListener(new CatGuardianRecipeReloadListener(
+                event.getServerResources().getRecipeManager(), event.getRegistryAccess()));
     }
 
-    private void applyCatGuardianRecipes(RecipeManager recipeManager) {
+    private void applyCatGuardianRecipes(RecipeManager recipeManager, RegistryAccess registryAccess) {
         Map<ResourceLocation, RecipeHolder<?>> mergedRecipes = new LinkedHashMap<>();
         for (RecipeHolder<?> recipeHolder : recipeManager.getRecipes()) {
             mergedRecipes.put(recipeHolder.id(), recipeHolder);
         }
 
-        addCatShapedRecipe(mergedRecipes, "cat_armor_iron", CAT_ARMOR_IRON.get(), Items.IRON_INGOT);
-        addCatShapedRecipe(mergedRecipes, "cat_armor_gold", CAT_ARMOR_GOLD.get(), Items.GOLD_INGOT);
-        addCatShapedRecipe(mergedRecipes, "cat_armor_diamond", CAT_ARMOR_DIAMOND.get(), Items.DIAMOND);
-        addCatShapedRecipe(mergedRecipes, "cat_armor_netherite", CAT_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_iron", CAT_ARMOR_IRON.get(), Items.IRON_INGOT, registryAccess);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_gold", CAT_ARMOR_GOLD.get(), Items.GOLD_INGOT, registryAccess);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_diamond", CAT_ARMOR_DIAMOND.get(), Items.DIAMOND, registryAccess);
+        addCatShapedRecipe(mergedRecipes, "cat_armor_netherite", CAT_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT,
+                registryAccess);
 
         // Cat bowl: smooth_stone U-shape
         addShapedRecipe(mergedRecipes, "cat_bowl",
@@ -376,14 +380,21 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         recipeManager.replaceRecipes(mergedRecipes.values());
     }
 
-    private void addCatShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem, Item material) {
+    private void addCatShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem,
+                                    Item material, RegistryAccess registryAccess) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
         Map<Character, Ingredient> key = Map.of(
                 'S', Ingredient.of(Items.ARMADILLO_SCUTE),
                 'X', Ingredient.of(material)
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "X  ", "XXX", "S S");
-        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        ItemStack result = new ItemStack(resultItem);
+        CatGuardianConfig config = getConfig();
+        MobArmorEnchantments.applyDefaults(result, registryAccess,
+                config.getDefaultUnbreakingLevel(),
+                config.getDefaultSharpnessLevel(),
+                config.getDefaultThornsLevel());
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }
 
@@ -398,9 +409,11 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
     private final class CatGuardianRecipeReloadListener implements PreparableReloadListener {
         private final RecipeManager recipeManager;
+        private final RegistryAccess registryAccess;
 
-        private CatGuardianRecipeReloadListener(RecipeManager recipeManager) {
+        private CatGuardianRecipeReloadListener(RecipeManager recipeManager, RegistryAccess registryAccess) {
             this.recipeManager = recipeManager;
+            this.registryAccess = registryAccess;
         }
 
         @Override
@@ -408,7 +421,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                                               ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
                                               Executor backgroundExecutor, Executor gameExecutor) {
             return preparationBarrier.wait(Unit.INSTANCE)
-                    .thenRunAsync(() -> applyCatGuardianRecipes(recipeManager), gameExecutor);
+                    .thenRunAsync(() -> applyCatGuardianRecipes(recipeManager, registryAccess), gameExecutor);
         }
 
         @Override
@@ -1421,6 +1434,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
 
         // Armor absorbs 100% of damage; each damage point drains 1 durability
         float absorbed = event.getNewDamage();
+        // Read Thorns before the armor possibly breaks below, so the reflect still fires.
+        int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
         event.setNewDamage(0f);
 
         armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), cat, net.minecraft.world.entity.EquipmentSlot.CHEST);
@@ -1429,6 +1444,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             removeArmorAttribute(cat);
         }
         broadcastArmorSync(cat);
+
+        // Thorns: reflect a share of the absorbed damage back to a living attacker.
+        MobArmorEnchantments.reflectThorns(cat, event.getSource(), absorbed, thornsLevel,
+                getConfig().getThornsReflectFraction());
 
         // Retaliation: if hit by a Monster in zone, re-run full path-length target selection.
         // CAT_FLEEING cats ignore this — they're already running home.
@@ -1473,6 +1492,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 : indirect instanceof Cat c2 ? c2 : null;
         if (cat == null || !cat.isTame() || !isGuardianCat(cat)) {
             return;
+        }
+        // Sharpness: armored guardians deal bonus outgoing damage (read off the equipped armor).
+        int sharpnessLevel = MobArmorEnchantments.getSharpnessLevel(
+                cat.getData(CAT_INVENTORY.get()).getArmor());
+        if (sharpnessLevel > 0) {
+            event.setNewDamage(event.getNewDamage() + 0.5f + 0.5f * sharpnessLevel);
         }
         if (cat.getOwner() instanceof Player owner) {
             victim.setLastHurtByPlayer(owner);

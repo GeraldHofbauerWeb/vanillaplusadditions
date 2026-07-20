@@ -16,6 +16,10 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     private ModConfigSpec.IntValue catXpCapacity;
     private ModConfigSpec.IntValue stationXpCapacity;
     private ModConfigSpec.IntValue xpPerBottle;
+    private ModConfigSpec.IntValue defaultUnbreakingLevel;
+    private ModConfigSpec.IntValue defaultSharpnessLevel;
+    private ModConfigSpec.IntValue defaultThornsLevel;
+    private ModConfigSpec.DoubleValue thornsReflectFraction;
 
     public CatGuardianConfig(CatGuardianModule module) {
         super(module);
@@ -53,6 +57,22 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
         xpPerBottle = builder
                 .comment("XP points consumed per Bottle o' Enchanting produced at the station")
                 .defineInRange("xp_per_bottle", 8, 1, 64);
+        defaultUnbreakingLevel = builder
+                .comment("Default Unbreaking level baked onto freshly crafted cat armor "
+                        + "(0 = none). Unbreaking works natively and extends armor durability.")
+                .defineInRange("default_unbreaking_level", 3, 0, 10);
+        defaultSharpnessLevel = builder
+                .comment("Default Sharpness level baked onto freshly crafted cat armor "
+                        + "(0 = none). Adds bonus outgoing damage when the cat attacks a mob.")
+                .defineInRange("default_sharpness_level", 2, 0, 10);
+        defaultThornsLevel = builder
+                .comment("Default Thorns level baked onto freshly crafted cat armor "
+                        + "(0 = none). Reflects a share of incoming damage back to the attacker.")
+                .defineInRange("default_thorns_level", 2, 0, 10);
+        thornsReflectFraction = builder
+                .comment("Base fraction of absorbed damage reflected back to the attacker, scaled "
+                        + "by the armor's Thorns level (0.0 = none, 1.0 = full).")
+                .defineInRange("thorns_reflect_fraction", 0.33D, 0.0D, 1.0D);
     }
 
     public double getAssociationRadius() {
@@ -93,6 +113,22 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
 
     public int getXpPerBottle() {
         return xpPerBottle != null ? xpPerBottle.get() : 8;
+    }
+
+    public int getDefaultUnbreakingLevel() {
+        return defaultUnbreakingLevel != null ? defaultUnbreakingLevel.get() : 3;
+    }
+
+    public int getDefaultSharpnessLevel() {
+        return defaultSharpnessLevel != null ? defaultSharpnessLevel.get() : 2;
+    }
+
+    public int getDefaultThornsLevel() {
+        return defaultThornsLevel != null ? defaultThornsLevel.get() : 2;
+    }
+
+    public double getThornsReflectFraction() {
+        return thornsReflectFraction != null ? thornsReflectFraction.get() : 0.33D;
     }
 
 }

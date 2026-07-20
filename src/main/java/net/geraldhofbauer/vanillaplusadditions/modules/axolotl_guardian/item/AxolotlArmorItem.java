@@ -12,10 +12,10 @@ import java.util.List;
 public class AxolotlArmorItem extends Item {
 
     public enum Tier {
-        IRON(200, 1.0f),
-        GOLD(100, 2.0f),
-        DIAMOND(400, 3.0f),
-        NETHERITE(600, 4.0f);
+        IRON(400, 1.0f),
+        GOLD(200, 2.0f),
+        DIAMOND(800, 3.0f),
+        NETHERITE(1200, 4.0f);
 
         private final int maxDurability;
         private final float attackBonus;
@@ -47,12 +47,14 @@ public class AxolotlArmorItem extends Item {
 
     @Override
     public int getEnchantmentValue() {
-        return 0;
-    }
-
-    @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return false;
+        // Material-based enchantability so the armor can be enchanted at a table (mirrors the
+        // vanilla ArmorMaterials enchantment values). Anvil book enchanting works regardless.
+        return switch (tier) {
+            case IRON -> 9;
+            case GOLD -> 25;
+            case DIAMOND -> 10;
+            case NETHERITE -> 15;
+        };
     }
 
     /**

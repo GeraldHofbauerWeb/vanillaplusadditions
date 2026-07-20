@@ -59,11 +59,6 @@ public class WolfArmorItem extends AnimalArmorItem {
     }
 
     @Override
-    public boolean isEnchantable(ItemStack stack) {
-        return false;
-    }
-
-    @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         MobArmorTooltip.append(tooltipComponents, tier.getAttackBonus());

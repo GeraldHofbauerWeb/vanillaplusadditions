@@ -6,6 +6,8 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
+import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorRepairs;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -39,5 +41,14 @@ public class CatGuardianJeiPlugin implements IModPlugin {
                 CatGuardianModule.CAT_ARMOR_DIAMOND.get(),
                 CatGuardianModule.CAT_ARMOR_NETHERITE.get());
         JeiMobArmorRepairs.register(registration, Items.ARMADILLO_SCUTE, armors);
+
+        if (ModuleManager.getInstance().getModule("cat_guardian")
+                instanceof CatGuardianModule module) {
+            CatGuardianConfig config = module.getConfig();
+            JeiMobArmorEnchantments.register(registration, armors,
+                    config.getDefaultUnbreakingLevel(),
+                    config.getDefaultSharpnessLevel(),
+                    config.getDefaultThornsLevel());
+        }
     }
 }

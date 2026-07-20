@@ -22,8 +22,10 @@ import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlPathPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlStatsPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlTargetPacket;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -464,19 +466,24 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         if (!isModuleEnabled()) {
             return;
         }
-        event.addListener(new AxolotlGuardianRecipeReloadListener(event.getServerResources().getRecipeManager()));
+        event.addListener(new AxolotlGuardianRecipeReloadListener(
+                event.getServerResources().getRecipeManager(), event.getRegistryAccess()));
     }
 
-    private void applyAxolotlGuardianRecipes(RecipeManager recipeManager) {
+    private void applyAxolotlGuardianRecipes(RecipeManager recipeManager, RegistryAccess registryAccess) {
         Map<ResourceLocation, RecipeHolder<?>> mergedRecipes = new LinkedHashMap<>();
         for (RecipeHolder<?> recipeHolder : recipeManager.getRecipes()) {
             mergedRecipes.put(recipeHolder.id(), recipeHolder);
         }
 
-        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_iron", AXOLOTL_ARMOR_IRON.get(), Items.IRON_INGOT);
-        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_gold", AXOLOTL_ARMOR_GOLD.get(), Items.GOLD_INGOT);
-        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_diamond", AXOLOTL_ARMOR_DIAMOND.get(), Items.DIAMOND);
-        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_netherite", AXOLOTL_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
+        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_iron", AXOLOTL_ARMOR_IRON.get(), Items.IRON_INGOT,
+                registryAccess);
+        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_gold", AXOLOTL_ARMOR_GOLD.get(), Items.GOLD_INGOT,
+                registryAccess);
+        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_diamond", AXOLOTL_ARMOR_DIAMOND.get(), Items.DIAMOND,
+                registryAccess);
+        addArmorShapedRecipe(mergedRecipes, "axolotl_armor_netherite", AXOLOTL_ARMOR_NETHERITE.get(),
+                Items.NETHERITE_INGOT, registryAccess);
 
         // Axolotl bowl: prismarine U-shape (ocean counterpart of the smooth-stone cat bowl)
         addShapedRecipe(mergedRecipes, "axolotl_bowl",
@@ -496,14 +503,20 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     }
 
     private void addArmorShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name,
-                                      Item resultItem, Item material) {
+                                      Item resultItem, Item material, RegistryAccess registryAccess) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
         Map<Character, Ingredient> key = Map.of(
                 'S', Ingredient.of(Items.TURTLE_SCUTE),
                 'X', Ingredient.of(material)
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "X  ", "XXX", "S S");
-        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        ItemStack result = new ItemStack(resultItem);
+        AxolotlGuardianConfig config = getConfig();
+        MobArmorEnchantments.applyDefaults(result, registryAccess,
+                config.getDefaultUnbreakingLevel(),
+                config.getDefaultSharpnessLevel(),
+                config.getDefaultThornsLevel());
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }
 
@@ -518,9 +531,11 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
 
     private final class AxolotlGuardianRecipeReloadListener implements PreparableReloadListener {
         private final RecipeManager recipeManager;
+        private final RegistryAccess registryAccess;
 
-        private AxolotlGuardianRecipeReloadListener(RecipeManager recipeManager) {
+        private AxolotlGuardianRecipeReloadListener(RecipeManager recipeManager, RegistryAccess registryAccess) {
             this.recipeManager = recipeManager;
+            this.registryAccess = registryAccess;
         }
 
         @Override
@@ -528,7 +543,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                                               ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
                                               Executor backgroundExecutor, Executor gameExecutor) {
             return preparationBarrier.wait(Unit.INSTANCE)
-                    .thenRunAsync(() -> applyAxolotlGuardianRecipes(recipeManager), gameExecutor);
+                    .thenRunAsync(() -> applyAxolotlGuardianRecipes(recipeManager, registryAccess), gameExecutor);
         }
 
         @Override
@@ -886,12 +901,21 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             // only runs while WALK_TARGET is absent, so close to home it wanders freely).
             if (axolotl.getTarget() == null && !axolotl.getData(AXOLOTL_RETURNING.get())) {
                 double idleDistSq = axolotl.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
-                if (idleDistSq > 64.0) {
+                // A moderately hurt (but not emergency-fleeing) axolotl proactively heads home to
+                // heal, routed through the same returning machinery as a distant idle axolotl.
+                boolean wantsToHeal = healthPct < (float) config.getHealReturnThreshold();
+                if (idleDistSq > 64.0 || wantsToHeal) {
                     // Route the trip through the returning machinery (doubled node budget,
                     // circling detection, emergency teleport) instead of a bare walk target
                     // that silently dies when A* fails and leaves the axolotl adrift.
                     axolotl.setData(AXOLOTL_RETURNING.get(), true);
                 } else if (idleDistSq <= 16.0) {
+                    // Near home and out of combat: gently regenerate up to the recovery target so
+                    // an axolotl that returned for any reason tops back up to (near) full health.
+                    // Short, refreshed, particle-free effect mirrors the emergency flee-heal.
+                    if (healthPct < (float) config.getHealRecoveryTarget()) {
+                        axolotl.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                    }
                     AbstractAxolotlBowlBlockEntity idleBowl = getBowlEntity(axolotl, bowlPos);
                     if (idleBowl instanceof AxolotlFeedingStationBlockEntity idleStation) {
                         transferLootToStation(axolotl, idleStation);
@@ -1710,6 +1734,8 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         if (armor.getItem() instanceof AxolotlArmorItem) {
             // Armor absorbs 100% of damage; each damage point drains 1 durability.
             float absorbed = event.getNewDamage();
+            // Read Thorns before the armor possibly breaks below, so the reflect still fires.
+            int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
             event.setNewDamage(0f);
 
             // Vanilla rolled play-dead on the RAW damage inside Axolotl.hurt() (before this event),
@@ -1730,6 +1756,10 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 removeArmorAttribute(axolotl);
             }
             broadcastArmorSync(axolotl);
+
+            // Thorns: reflect a share of the absorbed damage back to a living attacker.
+            MobArmorEnchantments.reflectThorns(axolotl, event.getSource(), absorbed, thornsLevel,
+                    getConfig().getThornsReflectFraction());
         }
 
         // Retaliation: if hit by a Monster in water inside the zone, engage it directly.
@@ -1789,6 +1819,12 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 : indirect instanceof Axolotl a2 ? a2 : null;
         if (axolotl == null || !isGuardianAxolotl(axolotl)) {
             return;
+        }
+        // Sharpness: armored guardians deal bonus outgoing damage (read off the equipped armor).
+        int sharpnessLevel = MobArmorEnchantments.getSharpnessLevel(
+                axolotl.getData(AXOLOTL_INVENTORY.get()).getArmor());
+        if (sharpnessLevel > 0) {
+            event.setNewDamage(event.getNewDamage() + 0.5f + 0.5f * sharpnessLevel);
         }
         UUID owner = getOwnerUUID(axolotl);
         if (owner != null && axolotl.level().getPlayerByUUID(owner) instanceof Player ownerPlayer) {

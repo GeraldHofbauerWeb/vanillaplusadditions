@@ -2,13 +2,16 @@ package net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs;
 
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
-import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
 import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
+import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config.BattleDogsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.item.WolfArmorItem;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -41,9 +44,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public class BattleDogsModule extends AbstractModule<
-        BattleDogsModule,
-        AbstractModuleConfig.DefaultModuleConfig<BattleDogsModule>> {
+public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDogsConfig> {
 
     private static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(VanillaPlusAdditions.MODID);
@@ -72,7 +73,7 @@ public class BattleDogsModule extends AbstractModule<
                 "battle_dogs",
                 "Battle Dogs",
                 "Adds iron, gold, diamond, and netherite armor for tamed wolves.",
-                AbstractModuleConfig::createDefault
+                BattleDogsConfig::new
         );
     }
 
@@ -163,9 +164,46 @@ public class BattleDogsModule extends AbstractModule<
 
         // Armor absorbs 100% of damage; each damage point drains 1 durability
         float absorbed = event.getNewDamage();
+        // Read Thorns before the armor possibly breaks below, so the reflect still fires.
+        int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
         event.setNewDamage(0f);
 
         armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), wolf, EquipmentSlot.BODY);
+
+        // Thorns: reflect a share of the absorbed damage back to a living attacker.
+        MobArmorEnchantments.reflectThorns(wolf, event.getSource(), absorbed, thornsLevel,
+                getConfig().getThornsReflectFraction());
+    }
+
+    /**
+     * Sharpness: an armored guardian wolf deals bonus outgoing damage (read off its body armor).
+     * Mirrors the axolotl/cat attack handlers; the wolf module previously had no attack-side hook.
+     *
+     * @param event the damage-pre event for the mob the wolf is attacking
+     */
+    @SubscribeEvent
+    public void onMobDamagedByWolf(LivingDamageEvent.Pre event) {
+        if (!isModuleEnabled()) {
+            return;
+        }
+        if (event.getEntity() instanceof Wolf) {
+            return; // wolf-as-victim is handled by onWolfHurt
+        }
+        Entity direct = event.getSource().getDirectEntity();
+        Entity indirect = event.getSource().getEntity();
+        Wolf wolf = direct instanceof Wolf w ? w
+                : indirect instanceof Wolf w2 ? w2 : null;
+        if (wolf == null) {
+            return;
+        }
+        ItemStack armor = wolf.getBodyArmorItem();
+        if (!(armor.getItem() instanceof WolfArmorItem)) {
+            return;
+        }
+        int sharpnessLevel = MobArmorEnchantments.getSharpnessLevel(armor);
+        if (sharpnessLevel > 0) {
+            event.setNewDamage(event.getNewDamage() + 0.5f + 0.5f * sharpnessLevel);
+        }
     }
 
     @SubscribeEvent
@@ -173,39 +211,50 @@ public class BattleDogsModule extends AbstractModule<
         if (!isModuleEnabled()) {
             return;
         }
-        event.addListener(new BattleDogsRecipeReloadListener(event.getServerResources().getRecipeManager()));
+        event.addListener(new BattleDogsRecipeReloadListener(
+                event.getServerResources().getRecipeManager(), event.getRegistryAccess()));
     }
 
-    private void applyBattleDogsRecipes(RecipeManager recipeManager) {
+    private void applyBattleDogsRecipes(RecipeManager recipeManager, RegistryAccess registryAccess) {
         Map<ResourceLocation, RecipeHolder<?>> mergedRecipes = new LinkedHashMap<>();
         for (RecipeHolder<?> recipeHolder : recipeManager.getRecipes()) {
             mergedRecipes.put(recipeHolder.id(), recipeHolder);
         }
 
-        addShapedRecipe(mergedRecipes, "wolf_armor_iron", WOLF_ARMOR_IRON.get(), Items.IRON_INGOT);
-        addShapedRecipe(mergedRecipes, "wolf_armor_gold", WOLF_ARMOR_GOLD.get(), Items.GOLD_INGOT);
-        addShapedRecipe(mergedRecipes, "wolf_armor_diamond", WOLF_ARMOR_DIAMOND.get(), Items.DIAMOND);
-        addShapedRecipe(mergedRecipes, "wolf_armor_netherite", WOLF_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT);
+        addShapedRecipe(mergedRecipes, "wolf_armor_iron", WOLF_ARMOR_IRON.get(), Items.IRON_INGOT, registryAccess);
+        addShapedRecipe(mergedRecipes, "wolf_armor_gold", WOLF_ARMOR_GOLD.get(), Items.GOLD_INGOT, registryAccess);
+        addShapedRecipe(mergedRecipes, "wolf_armor_diamond", WOLF_ARMOR_DIAMOND.get(), Items.DIAMOND, registryAccess);
+        addShapedRecipe(mergedRecipes, "wolf_armor_netherite", WOLF_ARMOR_NETHERITE.get(), Items.NETHERITE_INGOT,
+                registryAccess);
 
         recipeManager.replaceRecipes(mergedRecipes.values());
     }
 
-    private void addShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem, Item material) {
+    private void addShapedRecipe(Map<ResourceLocation, RecipeHolder<?>> recipes, String name, Item resultItem,
+                                 Item material, RegistryAccess registryAccess) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, name);
         Map<Character, Ingredient> key = Map.of(
                 'S', Ingredient.of(Items.ARMADILLO_SCUTE),
                 'X', Ingredient.of(material)
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "S  ", "XXX", "X X");
-        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, new ItemStack(resultItem));
+        ItemStack result = new ItemStack(resultItem);
+        BattleDogsConfig config = getConfig();
+        MobArmorEnchantments.applyDefaults(result, registryAccess,
+                config.getDefaultUnbreakingLevel(),
+                config.getDefaultSharpnessLevel(),
+                config.getDefaultThornsLevel());
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }
 
     private final class BattleDogsRecipeReloadListener implements PreparableReloadListener {
         private final RecipeManager recipeManager;
+        private final RegistryAccess registryAccess;
 
-        private BattleDogsRecipeReloadListener(RecipeManager recipeManager) {
+        private BattleDogsRecipeReloadListener(RecipeManager recipeManager, RegistryAccess registryAccess) {
             this.recipeManager = recipeManager;
+            this.registryAccess = registryAccess;
         }
 
         @Override
@@ -213,7 +262,7 @@ public class BattleDogsModule extends AbstractModule<
                                               ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler,
                                               Executor backgroundExecutor, Executor gameExecutor) {
             return preparationBarrier.wait(Unit.INSTANCE)
-                    .thenRunAsync(() -> applyBattleDogsRecipes(recipeManager), gameExecutor);
+                    .thenRunAsync(() -> applyBattleDogsRecipes(recipeManager, registryAccess), gameExecutor);
         }
 
         @Override

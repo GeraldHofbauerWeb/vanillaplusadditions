@@ -9,6 +9,10 @@
     { "id": "vanillaplusadditions:axolotl_armor_gold", "required": false },
     { "id": "vanillaplusadditions:axolotl_armor_diamond", "required": false },
     { "id": "vanillaplusadditions:axolotl_armor_netherite", "required": false },
+    { "id": "vanillaplusadditions:wolf_armor_iron", "required": false },
+    { "id": "vanillaplusadditions:wolf_armor_gold", "required": false },
+    { "id": "vanillaplusadditions:wolf_armor_diamond", "required": false },
+    { "id": "vanillaplusadditions:wolf_armor_netherite", "required": false },
     { "id": "vanillaplusadditions:flying_fish_boots", "required": false }
   ]
 }

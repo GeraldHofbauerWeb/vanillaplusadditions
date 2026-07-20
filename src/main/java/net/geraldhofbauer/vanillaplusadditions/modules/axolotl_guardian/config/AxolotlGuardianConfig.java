@@ -17,6 +17,12 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
     private ModConfigSpec.IntValue stationXpCapacity;
     private ModConfigSpec.IntValue xpPerBottle;
     private ModConfigSpec.IntValue playDeadMinHealth;
+    private ModConfigSpec.DoubleValue healReturnThreshold;
+    private ModConfigSpec.DoubleValue healRecoveryTarget;
+    private ModConfigSpec.IntValue defaultUnbreakingLevel;
+    private ModConfigSpec.IntValue defaultSharpnessLevel;
+    private ModConfigSpec.IntValue defaultThornsLevel;
+    private ModConfigSpec.DoubleValue thornsReflectFraction;
 
     public AxolotlGuardianConfig(AxolotlGuardianModule module) {
         super(module);
@@ -62,6 +68,31 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
                         + "in after its armor breaks (armor absorbs 100% of damage). Unarmored "
                         + "axolotls keep vanilla play-dead.")
                 .defineInRange("play_dead_min_health", 4, 1, 14);
+        healReturnThreshold = builder
+                .comment("A fed, out-of-combat guardian axolotl whose health drops below this "
+                        + "fraction of its max HP proactively swims back to its bowl/station to "
+                        + "heal. Sits above the hardcoded emergency-flee threshold (0.20).")
+                .defineInRange("heal_return_threshold", 0.60D, 0.0D, 1.0D);
+        healRecoveryTarget = builder
+                .comment("While at/near its home block, a guardian axolotl keeps regenerating "
+                        + "until its health reaches this fraction of its max HP.")
+                .defineInRange("heal_recovery_target", 1.0D, 0.0D, 1.0D);
+        defaultUnbreakingLevel = builder
+                .comment("Default Unbreaking level baked onto freshly crafted axolotl armor "
+                        + "(0 = none). Unbreaking works natively and extends armor durability.")
+                .defineInRange("default_unbreaking_level", 3, 0, 10);
+        defaultSharpnessLevel = builder
+                .comment("Default Sharpness level baked onto freshly crafted axolotl armor "
+                        + "(0 = none). Adds bonus outgoing damage when the axolotl attacks a mob.")
+                .defineInRange("default_sharpness_level", 2, 0, 10);
+        defaultThornsLevel = builder
+                .comment("Default Thorns level baked onto freshly crafted axolotl armor "
+                        + "(0 = none). Reflects a share of incoming damage back to the attacker.")
+                .defineInRange("default_thorns_level", 2, 0, 10);
+        thornsReflectFraction = builder
+                .comment("Base fraction of absorbed damage reflected back to the attacker, scaled "
+                        + "by the armor's Thorns level (0.0 = none, 1.0 = full).")
+                .defineInRange("thorns_reflect_fraction", 0.33D, 0.0D, 1.0D);
     }
 
     public double getAssociationRadius() {
@@ -106,5 +137,29 @@ public class AxolotlGuardianConfig extends AbstractModuleConfig<AxolotlGuardianM
 
     public int getPlayDeadMinHealth() {
         return playDeadMinHealth != null ? playDeadMinHealth.get() : 4;
+    }
+
+    public double getHealReturnThreshold() {
+        return healReturnThreshold != null ? healReturnThreshold.get() : 0.60D;
+    }
+
+    public double getHealRecoveryTarget() {
+        return healRecoveryTarget != null ? healRecoveryTarget.get() : 1.0D;
+    }
+
+    public int getDefaultUnbreakingLevel() {
+        return defaultUnbreakingLevel != null ? defaultUnbreakingLevel.get() : 3;
+    }
+
+    public int getDefaultSharpnessLevel() {
+        return defaultSharpnessLevel != null ? defaultSharpnessLevel.get() : 2;
+    }
+
+    public int getDefaultThornsLevel() {
+        return defaultThornsLevel != null ? defaultThornsLevel.get() : 2;
+    }
+
+    public double getThornsReflectFraction() {
+        return thornsReflectFraction != null ? thornsReflectFraction.get() : 0.33D;
     }
 }
