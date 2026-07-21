@@ -12,10 +12,10 @@ import java.util.List;
 public class AxolotlArmorItem extends Item {
 
     public enum Tier {
-        IRON(400, 1.0f),
-        GOLD(200, 2.0f),
-        DIAMOND(800, 3.0f),
-        NETHERITE(1200, 4.0f);
+        IRON(800, 1.0f),
+        GOLD(400, 2.0f),
+        DIAMOND(1600, 3.0f),
+        NETHERITE(2400, 4.0f);
 
         private final int maxDurability;
         private final float attackBonus;

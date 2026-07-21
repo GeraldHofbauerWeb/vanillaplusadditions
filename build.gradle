@@ -379,6 +379,8 @@ def standaloneModules = [
       mixins: ['cat_guardian.CatGuardianFollowMixin', 'cat_guardian.CatGuardianTeleportMixin',
                'cat_guardian.ChestBlockCatMixin'] ],
     [ moduleId: 'chunk_reset', displayName: 'Vanilla Plus: Chunk Reset' ],
+    [ moduleId: 'conduit_attack_range', displayName: 'Vanilla Plus: Conduit Attack Range',
+      mixins: ['conduit_attack_range.ConduitBlockEntityMixin'] ],
     [ moduleId: 'create_water_wheel_unstucker', displayName: 'Vanilla Plus: Create Water Wheel Unstucker' ],
     [ moduleId: 'custom_crafting_recipes', displayName: 'Vanilla Plus: Custom Crafting Recipes' ],
     [ moduleId: 'death_coordinates', displayName: 'Vanilla Plus: Death Coordinates' ],

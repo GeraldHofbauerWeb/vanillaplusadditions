@@ -175,12 +175,27 @@ public class FreeAnvilRepairModule
     }
 
     /**
+     * Durability restored per repair material unit: vanilla's 25% of max, boosted by the
+     * configured {@code repair_boost_percent}. At least 1 so a tiny boost still repairs.
+     */
+    private int repairPerUnit(int maxDamage) {
+        return Math.max(1, boosted(maxDamage / 4));
+    }
+
+    /** Scales a base repair amount by {@code repair_boost_percent} (0 = unchanged). */
+    private int boosted(int base) {
+        return base * (100 + getConfig().getRepairBoostPercentValue()) / 100;
+    }
+
+    /**
      * Vanilla material repair (AnvilMenu.createResult): each material unit repairs up to 25% of
-     * max durability; consumed units become the material cost. Level cost is set to 0.
+     * max durability (boosted by {@code repair_boost_percent}); consumed units become the material
+     * cost. Level cost is set to 0.
      */
     private void applyMaterialRepair(AnvilUpdateEvent event, ItemStack left, ItemStack right) {
         ItemStack result = left.copy();
-        int damagePerUnit = Math.min(result.getDamageValue(), result.getMaxDamage() / 4);
+        int perUnit = repairPerUnit(result.getMaxDamage());
+        int damagePerUnit = Math.min(result.getDamageValue(), perUnit);
         if (damagePerUnit <= 0) {
             return; // nothing repairable (vanilla shows no result either)
         }
@@ -189,7 +204,7 @@ public class FreeAnvilRepairModule
         while (damagePerUnit > 0 && unitsUsed < right.getCount()) {
             result.setDamageValue(result.getDamageValue() - damagePerUnit);
             unitsUsed++;
-            damagePerUnit = Math.min(result.getDamageValue(), result.getMaxDamage() / 4);
+            damagePerUnit = Math.min(result.getDamageValue(), perUnit);
         }
 
         applyPriorWorkPenalty(result, right);
@@ -211,6 +226,8 @@ public class FreeAnvilRepairModule
     private void applySacrificeRepair(AnvilUpdateEvent event, ItemStack left, ItemStack right) {
         int leftRemaining = left.getMaxDamage() - left.getDamageValue();
         int rightRemaining = right.getMaxDamage() - right.getDamageValue();
+        // No repair boost here on purpose: the +50% applies only to material repairs
+        // (item + its resource), never to combining two of the same item.
         int merged = leftRemaining + rightRemaining + left.getMaxDamage() * 12 / 100;
         int newDamage = Math.max(left.getMaxDamage() - merged, 0);
         if (newDamage >= left.getDamageValue()) {

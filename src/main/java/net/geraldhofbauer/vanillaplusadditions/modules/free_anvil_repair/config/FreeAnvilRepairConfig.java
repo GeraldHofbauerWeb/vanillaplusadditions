@@ -32,12 +32,15 @@ public class FreeAnvilRepairConfig
             "create:netherite_diving_helmet=minecraft:diamond",
             "create:netherite_diving_boots=minecraft:diamond",
             "create:copper_diving_helmet=minecraft:copper_ingot",
-            "create:copper_diving_boots=minecraft:copper_ingot"
+            "create:copper_diving_boots=minecraft:copper_ingot",
+            "minecraft:trident=minecraft:prismarine_shard",
+            "minecraft:bow=minecraft:stick"
     );
 
     private ModConfigSpec.BooleanValue freeMaterialRepair;
     private ModConfigSpec.BooleanValue freeCombineRepair;
     private ModConfigSpec.BooleanValue increasePriorWorkPenalty;
+    private ModConfigSpec.IntValue repairBoostPercent;
     private ModConfigSpec.ConfigValue<List<? extends String>> extraRepairMaterials;
 
     /**
@@ -64,6 +67,13 @@ public class FreeAnvilRepairConfig
                 .comment("Whether free repairs still double the hidden prior-work penalty like vanilla does. "
                         + "Default false: repairing doesn't make later enchant operations more expensive.")
                 .define("increase_prior_work_penalty", false);
+
+        repairBoostPercent = builder
+                .comment("Extra durability restored when repairing an item with its resource material "
+                        + "(e.g. diamond sword + diamond), in percent. 0 = vanilla amounts; 50 = each "
+                        + "material unit restores 50% more (still capped at full durability, so it just needs "
+                        + "fewer materials to fully repair). Does NOT apply to combining two of the same item.")
+                .defineInRange("repair_boost_percent", 50, 0, 500);
 
         extraRepairMaterials = builder
                 .comment("Additional anvil repair materials (Quark-style), format item=material "
@@ -106,6 +116,15 @@ public class FreeAnvilRepairConfig
      */
     public boolean isIncreasePriorWorkPenaltyValue() {
         return increasePriorWorkPenalty != null && increasePriorWorkPenalty.get();
+    }
+
+    /**
+     * Extra durability restored by module-handled repairs, in percent (0 = vanilla amounts).
+     *
+     * @return the configured repair boost percentage
+     */
+    public int getRepairBoostPercentValue() {
+        return repairBoostPercent == null ? 50 : repairBoostPercent.get();
     }
 
     /**
