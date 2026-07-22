@@ -26,8 +26,11 @@ import java.util.List;
  *     <li>replace the {@code pos.closerThan(target, 8.0)} retain check with the same scaled radius,
  *         so far-acquired targets aren't dropped the next tick.</li>
  * </ul>
- * {@code findDestroyTarget} (re-acquire by UUID after reload) keeps the vanilla 8-block box — it has
- * no {@code positions} in scope and only re-finds an already-chosen target.
+ * A fourth edit widens {@code findDestroyTarget}'s search box to the maximum possible hostile radius.
+ * That method resolves the target entity by UUID and is what the <em>client</em> uses (via
+ * {@code updateClientTarget}) to render the vanilla attack beam; with the stock 8-block box a mob
+ * damaged beyond 8 blocks stays unresolved client-side, so no beam is drawn. It has no
+ * {@code positions} in scope, but since it matches an exact UUID a generously large box is safe.
  */
 @Mixin(ConduitBlockEntity.class)
 public class ConduitBlockEntityMixin {
@@ -71,5 +74,23 @@ public class ConduitBlockEntityMixin {
                 ? ConduitAttackRangeModule.hostileRadius(positions.size())
                 : distance;
         return self.closerThan(target, radius);
+    }
+
+    @Redirect(
+            method = "findDestroyTarget",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/block/entity/ConduitBlockEntity;"
+                            + "getDestroyRangeAABB(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/AABB;"
+            )
+    )
+    private static AABB vpaFindDestroyRange(BlockPos rangePos) {
+        int radius = ConduitAttackRangeModule.isActive()
+                ? ConduitAttackRangeModule.maxHostileRadius()
+                : 8;
+        int x = rangePos.getX();
+        int y = rangePos.getY();
+        int z = rangePos.getZ();
+        return new AABB(x, y, z, x + 1, y + 1, z + 1).inflate(radius);
     }
 }

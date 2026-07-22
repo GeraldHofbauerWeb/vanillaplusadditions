@@ -20,6 +20,9 @@ import net.geraldhofbauer.vanillaplusadditions.modules.conduit_attack_range.conf
 public class ConduitAttackRangeModule
         extends AbstractModule<ConduitAttackRangeModule, ConduitAttackRangeConfig> {
 
+    /** Vanilla's maximum conduit frame-block count ({@code MIN_KILL_SIZE} / full frame). */
+    private static final int MAX_FRAMES = 42;
+
     private static ConduitAttackRangeModule instance;
 
     public ConduitAttackRangeModule() {
@@ -69,5 +72,17 @@ public class ConduitAttackRangeModule
         int divisor = module != null ? Math.max(1, module.getConfig().getRadiusDivisorValue()) : 2;
         int effectRadius = frameCount / 7 * 16;
         return Math.max(1, effectRadius / divisor);
+    }
+
+    /**
+     * Largest hostile radius any conduit can reach (at the maximum 42 frames). Used to size the
+     * target-reacquire search box in {@code findDestroyTarget}, which has no frame count in scope:
+     * a target acquired at any conduit's actual radius is always within this bound, so the client
+     * can resolve the target UUID and render the attack beam even beyond vanilla's 8 blocks.
+     *
+     * @return the maximum possible hostile-damage radius in blocks
+     */
+    public static int maxHostileRadius() {
+        return hostileRadius(MAX_FRAMES);
     }
 }

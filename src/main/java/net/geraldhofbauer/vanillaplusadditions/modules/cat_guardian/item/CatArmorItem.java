@@ -12,17 +12,19 @@ import java.util.List;
 public class CatArmorItem extends Item {
 
     public enum Tier {
-        IRON(200, 1.0f),
-        GOLD(100, 2.0f),
-        DIAMOND(400, 3.0f),
-        NETHERITE(600, 4.0f);
+        IRON(200, 1.0f, Items.IRON_INGOT),
+        GOLD(100, 2.0f, Items.GOLD_INGOT),
+        DIAMOND(400, 3.0f, Items.DIAMOND),
+        NETHERITE(600, 4.0f, Items.NETHERITE_INGOT);
 
         private final int maxDurability;
         private final float attackBonus;
+        private final Item repairMaterial;
 
-        Tier(int maxDurability, float attackBonus) {
+        Tier(int maxDurability, float attackBonus, Item repairMaterial) {
             this.maxDurability = maxDurability;
             this.attackBonus = attackBonus;
+            this.repairMaterial = repairMaterial;
         }
 
         public int getMaxDurability() {
@@ -31,6 +33,11 @@ public class CatArmorItem extends Item {
 
         public float getAttackBonus() {
             return attackBonus;
+        }
+
+        /** The tier's base metal/gem (iron/gold/diamond/netherite), which repairs the armor. */
+        public Item getRepairMaterial() {
+            return repairMaterial;
         }
     }
 
@@ -58,12 +65,14 @@ public class CatArmorItem extends Item {
     }
 
     /**
-     * Armadillo scutes (the recipe ingredient) repair cat armor on the anvil. With the
-     * free_anvil_repair module enabled that repair costs 0 levels automatically.
+     * Armadillo scutes (the recipe ingredient) or the tier's base metal/gem (iron, gold, diamond,
+     * netherite) repair cat armor on the anvil — mirroring how vanilla armor repairs with its own
+     * material. With the free_anvil_repair module enabled that repair costs 0 levels automatically.
      */
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
-        return repairCandidate.is(Items.ARMADILLO_SCUTE);
+        return repairCandidate.is(Items.ARMADILLO_SCUTE)
+                || repairCandidate.is(tier.getRepairMaterial());
     }
 
     @Override
