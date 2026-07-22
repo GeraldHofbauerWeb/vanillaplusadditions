@@ -15,6 +15,7 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
     private ModConfigSpec.IntValue waterBreathingEffectIntervalBonus;
     private ModConfigSpec.IntValue backtankDepletionRate;
     private ModConfigSpec.BooleanValue requiresFullSet;
+    private ModConfigSpec.BooleanValue conduitPowerGrantsAir;
 
     public EndOxygenConfig(EndOxygenModule module) {
         super(module);
@@ -47,6 +48,11 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
                 .comment("Whether a diving helmet is required along with the backtank to breathe.")
                 .define("requires_full_set", true);
         builder.pop();
+
+        conduitPowerGrantsAir = builder
+                .comment("Whether the Conduit Power effect (e.g. from an End Conduit) lets the player "
+                        + "breathe freely in the End, refilling air each tick. Default true.")
+                .define("conduit_power_grants_air", true);
     }
 
     public int getAirConsumptionInterval() {
@@ -71,5 +77,9 @@ public class EndOxygenConfig extends AbstractModuleConfig<EndOxygenModule, EndOx
 
     public boolean requiresFullSet() {
         return requiresFullSet.get();
+    }
+
+    public boolean conduitPowerGrantsAir() {
+        return conduitPowerGrantsAir == null || conduitPowerGrantsAir.get();
     }
 }

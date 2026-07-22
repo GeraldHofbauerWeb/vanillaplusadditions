@@ -68,6 +68,14 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
                     return;
                 }
 
+                // Conduit Power (e.g. from an End Conduit) grants free breathing in the End:
+                // refill air every tick so the player never suffocates while in range.
+                if (getConfig().conduitPowerGrantsAir() && player.hasEffect(MobEffects.CONDUIT_POWER)) {
+                    event.setCanBreathe(true);
+                    event.setRefillAirAmount(player.getMaxAirSupply());
+                    return;
+                }
+
                 if (player.getAirSupply() < 1) {
                     player.setAirSupply(1);
                 }

@@ -385,6 +385,7 @@ def standaloneModules = [
     [ moduleId: 'custom_crafting_recipes', displayName: 'Vanilla Plus: Custom Crafting Recipes' ],
     [ moduleId: 'death_coordinates', displayName: 'Vanilla Plus: Death Coordinates' ],
     [ moduleId: 'debug_overlay', displayName: 'Vanilla Plus: Debug Overlay' ],
+    [ moduleId: 'end_conduit', displayName: 'Vanilla Plus: End Conduit' ],
     [ moduleId: 'end_oxygen', displayName: 'Vanilla Plus: End Oxygen',
       dataGlobs: ['data/vanillaplusadditions/damage_type/out_of_oxygen.json'] ],
     [ moduleId: 'flying_fish', displayName: 'Vanilla Plus: Flying Fish',

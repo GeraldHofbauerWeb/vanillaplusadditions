@@ -12,6 +12,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.BetterMobsMod
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.death_coordinates.DeathCoordinatesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.CustomCraftingRecipesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.EndConduitModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
@@ -140,6 +141,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new BetterMobsModule());
         moduleManager.registerModule(new DeathCoordinatesModule());
         moduleManager.registerModule(new EndOxygenModule());
+        moduleManager.registerModule(new EndConduitModule());
         moduleManager.registerModule(new FlyingFishModule());
         moduleManager.registerModule(new StackablesModule());
         moduleManager.registerModule(new HauntedHouseModule());
