@@ -11,7 +11,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.renderer.blockentity.ConduitRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
@@ -20,9 +19,10 @@ import org.joml.Vector3f;
 
 /**
  * Block entity renderer for the {@link EndConduitBlockEntity}. A near-verbatim copy of the vanilla
- * {@link ConduitRenderer#render}, retyped to our block entity — it bakes the vanilla-registered
- * {@code ModelLayers.CONDUIT_*} layers and reuses {@link ConduitRenderer}'s public sprite materials,
- * so the placed End Conduit looks and animates pixel-identically to a vanilla conduit.
+ * {@code ConduitRenderer#render}, retyped to our block entity — it bakes the vanilla-registered
+ * {@code ModelLayers.CONDUIT_*} layers but draws them with our violet/gold-tinted
+ * {@link EndConduitTextures} sprites, so the placed End Conduit animates like a vanilla conduit in
+ * the End's colours.
  */
 public class EndConduitBER implements BlockEntityRenderer<EndConduitBlockEntity> {
 
@@ -46,7 +46,7 @@ public class EndConduitBER implements BlockEntityRenderer<EndConduitBlockEntity>
         float time = (float) blockEntity.getTickCount() + partialTick;
         if (!blockEntity.isActive()) {
             float rot = blockEntity.getActiveRotation(0.0F);
-            VertexConsumer shellBuffer = ConduitRenderer.SHELL_TEXTURE.buffer(bufferSource, RenderType::entitySolid);
+            VertexConsumer shellBuffer = EndConduitTextures.SHELL.buffer(bufferSource, RenderType::entitySolid);
             poseStack.pushPose();
             poseStack.translate(0.5F, 0.5F, 0.5F);
             poseStack.mulPose(new Quaternionf().rotationY(rot * (float) (Math.PI / 180.0)));
@@ -61,7 +61,7 @@ public class EndConduitBER implements BlockEntityRenderer<EndConduitBlockEntity>
             Vector3f axis = new Vector3f(0.5F, 1.0F, 0.5F).normalize();
             poseStack.mulPose(new Quaternionf().rotationAxis(rot * (float) (Math.PI / 180.0), axis));
             this.cage.render(poseStack,
-                    ConduitRenderer.ACTIVE_SHELL_TEXTURE.buffer(bufferSource, RenderType::entityCutoutNoCull),
+                    EndConduitTextures.CAGE.buffer(bufferSource, RenderType::entityCutoutNoCull),
                     packedLight, packedOverlay);
             poseStack.popPose();
 
@@ -74,7 +74,7 @@ public class EndConduitBER implements BlockEntityRenderer<EndConduitBlockEntity>
                 poseStack.mulPose(new Quaternionf().rotationZ((float) (Math.PI / 2)));
             }
             VertexConsumer windBuffer =
-                    (windFrame == 1 ? ConduitRenderer.VERTICAL_WIND_TEXTURE : ConduitRenderer.WIND_TEXTURE)
+                    (windFrame == 1 ? EndConduitTextures.VERTICAL_WIND : EndConduitTextures.WIND)
                             .buffer(bufferSource, RenderType::entityCutoutNoCull);
             this.wind.render(poseStack, windBuffer, packedLight, packedOverlay);
             poseStack.popPose();
@@ -95,7 +95,7 @@ public class EndConduitBER implements BlockEntityRenderer<EndConduitBlockEntity>
                     camera.getXRot() * (float) (Math.PI / 180.0), (float) Math.PI));
             poseStack.scale(1.3333334F, 1.3333334F, 1.3333334F);
             this.eye.render(poseStack,
-                    (blockEntity.isHunting() ? ConduitRenderer.OPEN_EYE_TEXTURE : ConduitRenderer.CLOSED_EYE_TEXTURE)
+                    (blockEntity.isHunting() ? EndConduitTextures.OPEN_EYE : EndConduitTextures.CLOSED_EYE)
                             .buffer(bufferSource, RenderType::entityCutoutNoCull),
                     packedLight, packedOverlay);
             poseStack.popPose();
