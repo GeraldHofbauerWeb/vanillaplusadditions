@@ -28,8 +28,9 @@ import java.util.List;
  * as anvil recipes: {@code plain armor + matching enchanted book -> enchanted armor}. Complements
  * {@link JeiMobArmorRepairs} (scute repairs) so a player can look up how to enchant their mob armor.
  *
- * <p>Sharpness is a weapon enchant a real vanilla anvil would not apply to armor — the displayed
- * recipe documents the module's innate sharpness behavior rather than a literal anvil action.
+ * <p>Sharpness is normally a weapon-only enchant; the mob armors are added to the
+ * {@code #minecraft:enchantable/sharp_weapon} tag so the anvil actually applies it, making this a
+ * literal anvil action rather than mere documentation.
  *
  * <p>Lives in {@code util} so each module's {@code @JeiPlugin} can call it, and is only ever reached
  * from within a JEI plugin (client-only, loaded solely by JEI's annotation scan).
