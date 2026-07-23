@@ -2,8 +2,10 @@ package net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstu
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -39,6 +41,7 @@ final class WaterWheelKinetics {
     private static Method attachKinetics;
     private static Method updateGeneratedRotation;
     private static Method determineAndApplyFlowScore;
+    private static Field materialField;
 
     private WaterWheelKinetics() {
     }
@@ -153,6 +156,43 @@ final class WaterWheelKinetics {
         }
     }
 
+    /**
+     * Reads the wheel's applied visual material ({@code WaterWheelBlockEntity.material}).
+     *
+     * @param be The water wheel block entity
+     * @return the material block state, or null if unavailable
+     */
+    static BlockState getMaterial(BlockEntity be) {
+        ensureInitialized();
+        if (materialField == null || !isWaterWheelBE(be)) {
+            return null;
+        }
+        try {
+            return (BlockState) materialField.get(be);
+        } catch (ReflectiveOperationException ex) {
+            warnOnce("Failed to read water wheel material", ex);
+            return null;
+        }
+    }
+
+    /**
+     * Restores the wheel's visual material after a re-init break+replace.
+     *
+     * @param be       The water wheel block entity
+     * @param material The material block state to apply (no-op if null)
+     */
+    static void setMaterial(BlockEntity be, BlockState material) {
+        ensureInitialized();
+        if (materialField == null || material == null || !isWaterWheelBE(be)) {
+            return;
+        }
+        try {
+            materialField.set(be, material);
+        } catch (ReflectiveOperationException ex) {
+            warnOnce("Failed to restore water wheel material", ex);
+        }
+    }
+
     private static float invokeFloat(Method method, BlockEntity be) {
         ensureInitialized();
         if (method == null || !isWaterWheelBE(be)) {
@@ -185,6 +225,13 @@ final class WaterWheelKinetics {
                     updateGeneratedRotation = generating.getMethod("updateGeneratedRotation");
                     determineAndApplyFlowScore = waterWheel.getMethod("determineAndApplyFlowScore");
                     waterWheelClass = waterWheel;
+                    // Optional: the visual material (planks) applied to the wheel. Preserved across a
+                    // break+replace re-init. Its absence must NOT disable the whole layer.
+                    try {
+                        materialField = waterWheel.getField("material");
+                    } catch (NoSuchFieldException nsf) {
+                        materialField = null;
+                    }
                 } catch (ReflectiveOperationException | LinkageError ex) {
                     warnOnce("Failed to initialize Create water wheel reflection"
                             + " - the unstucker will be inactive", ex);

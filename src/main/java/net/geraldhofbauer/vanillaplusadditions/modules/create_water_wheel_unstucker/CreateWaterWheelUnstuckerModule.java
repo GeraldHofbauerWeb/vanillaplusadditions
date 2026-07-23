@@ -1,13 +1,17 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker;
 
+import com.mojang.brigadier.Command;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.config.CreateWaterWheelUnstuckerConfig;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -65,7 +69,8 @@ public class CreateWaterWheelUnstuckerModule
         registry = new WaterWheelRegistry();
         stallManager = new WaterWheelStallManager(this, registry);
         NeoForge.EVENT_BUS.register(this);
-        getLogger().info("Create Water Wheel Unstucker module initialized");
+        getLogger().info("Create Water Wheel Unstucker module initialized (Create reflection available: {})",
+                WaterWheelKinetics.isAvailable());
     }
 
     /**
@@ -84,6 +89,10 @@ public class CreateWaterWheelUnstuckerModule
         }
         List<BlockPos> found = registry.discoverChunk(level, chunk);
         if (!found.isEmpty()) {
+            if (getConfig().shouldDebugLog()) {
+                getLogger().info("[create_water_wheel_unstucker] discovery: {} wheel(s) in chunk {} of {}: {}",
+                        found.size(), event.getChunk().getPos(), level.dimension().location(), found);
+            }
             stallManager.enqueuePostLoadCheck(level, found);
         }
     }
@@ -144,6 +153,35 @@ public class CreateWaterWheelUnstuckerModule
             return;
         }
         stallManager.tick(event.getServer());
+    }
+
+    /**
+     * Registers {@code /vpaunstuck} (op-only): re-initialises all tracked, stalled water wheels in
+     * loaded chunks on demand (break + re-place, preserving orientation and material).
+     *
+     * @param event The command registration event
+     */
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        if (!isCreateLoaded()) {
+            return;
+        }
+        event.getDispatcher().register(Commands.literal("vpaunstuck")
+                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .executes(ctx -> {
+                    if (!isModuleEnabled() || stallManager == null) {
+                        ctx.getSource().sendFailure(
+                                Component.literal("Water Wheel Unstucker module is disabled."));
+                        return 0;
+                    }
+                    getLogger().info("[create_water_wheel_unstucker] /vpaunstuck invoked by {}",
+                            ctx.getSource().getTextName());
+                    int started = stallManager.unstickAll(ctx.getSource().getServer());
+                    ctx.getSource().sendSuccess(() -> Component.literal(
+                            "[Water Wheel Unstucker] Re-initialising " + started
+                                    + " stalled water wheel(s) in loaded chunks."), true);
+                    return started == 0 ? Command.SINGLE_SUCCESS : started;
+                }));
     }
 
     /**

@@ -16,6 +16,8 @@ public class CreateWaterWheelUnstuckerConfig
     private ModConfigSpec.IntValue postLoadDelayTicks;
     private ModConfigSpec.IntValue maxFixAttempts;
     private ModConfigSpec.BooleanValue hardKick;
+    private ModConfigSpec.BooleanValue autoFix;
+    private ModConfigSpec.IntValue reinitFloodTicks;
 
     /**
      * Creates the config for the given module instance.
@@ -49,6 +51,19 @@ public class CreateWaterWheelUnstuckerConfig
                 .comment("Allow the hard fix escalation: detach + re-attach the wheel's kinetic network",
                         "(equivalent to wrenching the wheel out and back in). false = soft kicks only.")
                 .define("hard_kick", true);
+
+        autoFix = builder
+                .comment("Automatically re-initialise stalled wheels during the periodic sweep.",
+                        "false (default) = detection only; fix on demand via the /vpaunstuck command.",
+                        "The re-init briefly breaks + re-places the wheel (a manual fix, done by code) so",
+                        "adjacent water re-flows - the only thing that revives a reload-stalled wheel.")
+                .define("auto_fix", false);
+
+        reinitFloodTicks = builder
+                .comment("Ticks the wheel is removed during a re-init so adjacent water can flood the gap",
+                        "and re-establish active flow before the wheel is placed back. Tune if wheels don't",
+                        "reliably restart (more ticks = more flood time).")
+                .defineInRange("reinit_flood_ticks", 6, 1, 40);
     }
 
     /**
@@ -85,5 +100,23 @@ public class CreateWaterWheelUnstuckerConfig
      */
     public boolean isHardKickEnabled() {
         return hardKick == null || hardKick.get();
+    }
+
+    /**
+     * Whether stalled wheels are re-initialised automatically during the sweep (vs. command-only).
+     *
+     * @return true if the periodic sweep should fix stalled wheels itself
+     */
+    public boolean isAutoFixEnabled() {
+        return autoFix != null && autoFix.get();
+    }
+
+    /**
+     * Ticks the wheel is removed during a re-init so adjacent water can flood the gap.
+     *
+     * @return the flood duration in ticks
+     */
+    public int getReinitFloodTicks() {
+        return reinitFloodTicks != null ? reinitFloodTicks.get() : 6;
     }
 }
