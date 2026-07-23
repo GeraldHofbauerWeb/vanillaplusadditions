@@ -6,6 +6,8 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.block.EndConduitBlock;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.blockentity.EndConduitBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.config.EndConduitConfig;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
@@ -63,6 +65,9 @@ public class EndConduitModule extends AbstractModule<EndConduitModule, EndCondui
     private static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, VanillaPlusAdditions.MODID);
 
+    private static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
+            DeferredRegister.create(Registries.PARTICLE_TYPE, VanillaPlusAdditions.MODID);
+
     // ---- Registered content ----
 
     public static final DeferredBlock<EndConduitBlock> END_CONDUIT =
@@ -80,6 +85,10 @@ public class EndConduitModule extends AbstractModule<EndConduitModule, EndCondui
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EndConduitBlockEntity>> END_CONDUIT_BE =
             BLOCK_ENTITY_TYPES.register("end_conduit",
                     () -> BlockEntityType.Builder.of(EndConduitBlockEntity::new, END_CONDUIT.get()).build(null));
+
+    /** Violet/endstone-gold-tinted variant of the vanilla nautilus conduit particle. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> END_NAUTILUS =
+            PARTICLE_TYPES.register("end_nautilus", () -> new SimpleParticleType(false));
 
     // ---- Singleton for static access from the block entity ----
 
@@ -130,6 +139,7 @@ public class EndConduitModule extends AbstractModule<EndConduitModule, EndCondui
         BLOCKS.register(getModEventBus());
         ITEMS.register(getModEventBus());
         BLOCK_ENTITY_TYPES.register(getModEventBus());
+        PARTICLE_TYPES.register(getModEventBus());
 
         VanillaPlusCreativeTabs.addToMainTab(END_CONDUIT_ITEM);
 

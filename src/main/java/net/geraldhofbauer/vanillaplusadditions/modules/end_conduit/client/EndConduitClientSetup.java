@@ -1,11 +1,13 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.client;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.EndConduitModule;
+import net.minecraft.client.particle.FlyTowardsPositionParticle;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 
@@ -23,6 +25,13 @@ public final class EndConduitClientSetup {
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(EndConduitModule.END_CONDUIT_BE.get(), EndConduitBER::new);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
+        // Reuse the vanilla nautilus particle behaviour, bound to our tinted sprite.
+        event.registerSpriteSet(EndConduitModule.END_NAUTILUS.get(),
+                FlyTowardsPositionParticle.NautilusProvider::new);
     }
 
     @SubscribeEvent

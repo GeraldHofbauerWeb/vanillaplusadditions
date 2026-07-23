@@ -3,7 +3,6 @@ package net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.blockentity;
 import com.google.common.collect.Lists;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_conduit.EndConduitModule;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -182,7 +181,7 @@ public class EndConduitBlockEntity extends BlockEntity {
                 float dx = -0.5F + random.nextFloat() + (float) rel.getX();
                 float dy = -2.0F + random.nextFloat() + (float) rel.getY();
                 float dz = -0.5F + random.nextFloat() + (float) rel.getZ();
-                level.addParticle(ParticleTypes.NAUTILUS, origin.x, origin.y, origin.z, dx, dy, dz);
+                level.addParticle(EndConduitModule.END_NAUTILUS.get(), origin.x, origin.y, origin.z, dx, dy, dz);
             }
         }
     }
