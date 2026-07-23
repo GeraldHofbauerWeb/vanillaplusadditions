@@ -3,8 +3,19 @@
 ## Branching / Workflow
 Gerry hat für dieses Projekt explizit festgelegt: **direkt auf `master` arbeiten, kein PR-Flow.**
 Es gibt kein `staging`, kein PR-Flow — direkt auf `master`.
-Lead-Dev darf Commits direkt auf `master` pushen. (Eigene Feature-PRs schreibe ich generell
-nicht mehr; ich merge nur Mac-Claudes PRs.)
+(Eigene Feature-PRs schreibe ich generell nicht mehr; ich merge nur Mac-Claudes PRs.)
+
+## Deploy / Commit / Push — nur auf Gerrys Kommando (WICHTIG, 2026-07-23)
+- **Niemals ohne Gerrys ausdrückliches Kommando:** committen, taggen, pushen ODER auf den
+  **Server (games2) deployen / den Server neustarten.**
+- **Standard beim Iterieren an Änderungen: nur der lokale Client** —
+  `bash scripts/deploy.sh --client [--no-build]`. Build + Client-Deploy darf ich frei machen.
+- **Grund:** games2 ist ein **Live-Server**. Ein Restart zwingt Sebi, mit exakt der neuen
+  Jar-Version neu zu starten (die Gerry ihm erst schicken muss) — ein überraschender Restart
+  stört ihn mitten im Spiel. Darum Server-Deploys, Commits, Tags und Pushes aufheben, bis Gerry
+  es explizit sagt.
+- Nach jedem Client-Deploy: Gerry erinnern, MC **frisch** zu starten (nie ins laufende Spiel
+  hot-swappen — korrumpiert das Jar).
 
 ## Recipes & block loot: ALWAYS via code, never JSON
 JSON-Datapack-Dateien laden in diesem Mod **nicht zuverlässig** (mehrfach bestätigt — auch im
