@@ -4,6 +4,19 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.55] - 2026-07-27
+
+### Fixed
+- **Mob Unloader lädt jetzt zuverlässig ab**: Ein Mob, der einen Minecart reitet, ist ein
+  *Passagier* — und `Entity#save` verweigert das Serialisieren von Passagieren (die werden
+  normal über ihr Fahrzeug gespeichert). Dadurch schlug das Einlagern im Unloader immer fehl
+  (Loader war nie betroffen, da Pen-Mobs keine Passagiere sind). Jetzt via `saveAsPassenger`.
+
+### Added
+- **Comparator-Output** an Mob Loader/Unloader: `0` = leer, `1` = feindlicher Mob
+  (MONSTER-Kategorie), `2` = freundlicher/neutraler Mob. Aktualisiert sich sofort beim
+  Ein-/Auslagern, sodass Redstone auf den Inhalt reagieren kann.
+
 ## [1.0.0-beta.42] - 2026-07-20
 
 ### Added

@@ -15,6 +15,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.animal.WaterAnimal;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
@@ -112,7 +113,11 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
     /** Captures a mob into storage: serialises it, updates the display, and removes it from the world. */
     protected void storeMob(LivingEntity mob) {
         CompoundTag tag = new CompoundTag();
-        if (!mob.save(tag)) {
+        // saveAsPassenger, not save(): Entity#save returns false for a mob that is currently a
+        // passenger (e.g. riding the minecart the unloader pulls from), because passengers are
+        // normally persisted via their vehicle. saveAsPassenger writes the full tag (incl. "id")
+        // regardless, matching what takeStoredEntity's loadEntityRecursive expects.
+        if (!mob.saveAsPassenger(tag)) {
             return; // not persistable (shouldn't happen for Mobs)
         }
         this.storedMob = tag;
@@ -252,6 +257,22 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         displayBaby = baby;
         setChanged();
         syncToClient();
+        // The stored mob (and thus the comparator output) just changed → refresh any comparator.
+        if (level != null && !level.isClientSide()) {
+            level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
+        }
+    }
+
+    /**
+     * Comparator output for the block: {@code 0} when empty, {@code 1} for a stored <b>hostile</b>
+     * mob ({@link MobCategory#MONSTER}), {@code 2} for anything else (friendly/neutral). Lets redstone
+     * branch on what the block is currently holding.
+     */
+    public int getComparatorOutput() {
+        if (displayType == null) {
+            return 0;
+        }
+        return displayType.getCategory() == MobCategory.MONSTER ? 1 : 2;
     }
 
     protected void syncToClient() {

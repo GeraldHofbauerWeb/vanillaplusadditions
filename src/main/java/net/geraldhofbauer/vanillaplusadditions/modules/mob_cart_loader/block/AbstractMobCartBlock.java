@@ -129,6 +129,21 @@ public abstract class AbstractMobCartBlock extends BaseEntityBlock {
     }
 
     /**
+     * Emits a comparator signal describing the stored mob: 0 = empty, 1 = hostile, 2 = friendly
+     * (see {@link AbstractMobCartBlockEntity#getComparatorOutput()}).
+     */
+    @Override
+    protected boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof AbstractMobCartBlockEntity be
+                ? be.getComparatorOutput() : 0;
+    }
+
+    /**
      * Whether the block is active (inverse redstone: active unless powered).
      *
      * @param state the block state

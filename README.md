@@ -63,6 +63,7 @@ Two directional blocks that automate moving mobs in and out of minecarts on the 
 - **Mob Loader** boards a mob standing in the adjacent pen into a parked, empty rideable minecart.
 - **Mob Unloader** ejects a mob riding a parked minecart into the adjacent pen.
 - **Inverse redstone**: active by default, a redstone signal disables the block. 6-way directional with a distinct **input** and **output** face (flow chevrons on the glass sides point input → output). Never touches players.
+- **Comparator output** on the stored mob: `0` = empty, `1` = a hostile mob (MONSTER category), `2` = a friendly/neutral mob — so redstone can react to *what* is being moved.
 - The affected mob spins as a **live model inside the glass block**; with Create's Engineering Goggles a stats panel shows the mob type and (while sneaking) its health.
 - Craft with a glass frame + a minecart, a saddle and a hopper (loader) / dropper (unloader).
 
