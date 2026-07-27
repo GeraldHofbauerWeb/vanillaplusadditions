@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=north,powered=false": { "model": "vanillaplusadditions:block/mob_loader" },
+    "facing=east,powered=false":  { "model": "vanillaplusadditions:block/mob_loader", "y": 90 },
+    "facing=south,powered=false": { "model": "vanillaplusadditions:block/mob_loader", "y": 180 },
+    "facing=west,powered=false":  { "model": "vanillaplusadditions:block/mob_loader", "y": 270 },
+    "facing=up,powered=false":    { "model": "vanillaplusadditions:block/mob_loader", "x": 270 },
+    "facing=down,powered=false":  { "model": "vanillaplusadditions:block/mob_loader", "x": 90 },
+    "facing=north,powered=true":  { "model": "vanillaplusadditions:block/mob_loader_inactive" },
+    "facing=east,powered=true":   { "model": "vanillaplusadditions:block/mob_loader_inactive", "y": 90 },
+    "facing=south,powered=true":  { "model": "vanillaplusadditions:block/mob_loader_inactive", "y": 180 },
+    "facing=west,powered=true":   { "model": "vanillaplusadditions:block/mob_loader_inactive", "y": 270 },
+    "facing=up,powered=true":     { "model": "vanillaplusadditions:block/mob_loader_inactive", "x": 270 },
+    "facing=down,powered=true":   { "model": "vanillaplusadditions:block/mob_loader_inactive", "x": 90 }
+  }
+}

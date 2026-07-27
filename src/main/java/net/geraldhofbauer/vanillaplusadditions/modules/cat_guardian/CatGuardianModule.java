@@ -127,7 +127,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 BlockBehaviour.Properties props = BlockBehaviour.Properties.of()
                         .mapColor(MapColor.STONE)
                         .strength(3.5F, 12.0F)
-                        .sound(SoundType.STONE);
+                        .sound(SoundType.STONE)
+                        // Non-full glass model: without this the block occludes, culling the faces
+                        // of the wall/floor behind it — they show through the glass as a black hole.
+                        .noOcclusion();
                 if (ModList.get().isLoaded("sable")) {
                     return net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.sable
                             .SableCatBlocks.createFeedingStation(props);

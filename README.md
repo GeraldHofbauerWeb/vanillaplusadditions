@@ -2,158 +2,165 @@
 
 ![Banner](docs/github_banner.png)
 
-A Minecraft NeoForge mod that enhances vanilla gameplay with useful additions while maintaining the original feel.
+A Minecraft NeoForge mod (1.21.1) that enhances vanilla gameplay with useful additions while maintaining the original feel.
 
-> 🤖 **AI Collaboration Notice**: This project was developed in collaboration with the Warp AI assistant (powered by Claude 3.5 Sonnet). The AI helped with code implementation, documentation, and project structure. While the core ideas and direction came from human creativity, the AI's assistance made this project more robust and feature-complete. We believe in transparency about AI usage while celebrating the potential of human-AI collaboration in software development.
+> 🤖 **AI Collaboration Notice**: This project was developed in collaboration with AI coding assistants. The AI helped with code implementation, documentation, and project structure. While the core ideas and direction came from human creativity, the AI's assistance made this project more robust and feature-complete. We believe in transparency about AI usage while celebrating the potential of human-AI collaboration in software development.
 
 ## 🎯 Features
 
-### 🔥 Hostile Zombified Piglins
-- Makes zombified piglins always hostile in the Nether
-- Configurable detection range and anger duration
-- Smart targeting system with player switching
+VanillaPlusAdditions is **modular**: every feature below is a self-contained module that can be
+enabled/disabled and configured independently (`config/vanillaplusadditions-common.toml`, hot-reloaded
+on save). Runtime toggling is also possible with `/vpa module enable|disable <id>`. All integrations
+with other mods are **optional** — modules detect them at runtime and degrade gracefully.
 
-### 💀 Wither Skeleton Enforcer
-- Prevents normal skeletons from spawning in Nether fortresses
-- Replaces them with Wither Skeletons if enabled
-- Server-wide broadcast messages for blocked spawns (in debug mode)
-- TODO - Config to enable it only in Nether fortresses or the entire Nether
+---
 
-### ✨ MobGlow Command
-- Make specific mob types glow for easier tracking
-- Configurable duration (including infinite)
-- Clear glow effects by type or all at once
-- Perfect for server administration and debugging
+### 🐾 Companions & Guardians
 
-### 🍎 Food Effects
-
-Enhances food items with additional potion effects and thirst restoration.
-
-- **Custom Potion Effects**: Add any potion effect to any item via configuration.
-- **Tough As Nails Support**: 
-  - Thirst restoration for drinks and food.
-  - Heating/Cooling effect tooltips for items that provide them.
-  - Optional dependency: works automatically if Tough As Nails is installed.
-- **Always Edible**: Items configured with effects automatically become edible even if the player is full.
-- **Probability System**: Effects can have a specific chance to occur (e.g., 25% chance for a gold apple to restore thirst).
-- **Extensive Defaults**: Includes many default effects for Vanilla, Create, and Tough As Nails items.
-
-### 🐦‍🔥 Better Mobs
-
-- Enhances mob variety and challenge
-- Mobs can now spawn with customizable armor and potion effects
-- Configurable spawn chances and equipment tiers
-- Different settings based on Y-Levels or Nether/End dimensions
-- TODO - Better levels configuration (for twilight forest, etc.)
-
-### 🐱 Cat Guardian
-
+#### 🐱 Cat Guardian
 Turns tamed cats into active base defenders, with food bowls and an automatable feeding station.
-
 - **Cat Bowls & Feeding Station**: Associate tamed cats with a bowl (shift-right-click). Fed cats (fish) actively guard the area and attack hostile mobs within the guard radius (default 32 blocks XZ / 16 Y, configurable).
-- **Cat Armor**: Iron, Gold, Diamond and Netherite — increase attack damage and absorb incoming damage.
+- **Cat Armor**: Iron, Gold, Diamond and Netherite — increase attack damage and absorb incoming damage; repairable at the anvil (scute or the tier's ingot).
 - **Loot & XP Collection**: Cats gather drops from kills into an internal inventory; XP from their kills is buffered and, at a feeding station, converted into Bottles o' Enchanting (hopper/Create-automatable).
-- **Smart Guard AI**:
-  - Returns to base after combat and re-engages nearby threats; low-health cats flee home to heal (and ignore mobs until safe).
-  - Dives after underwater mobs (e.g. Drowned) with water breathing, and swims against currents toward its goal.
-  - Climbs ~1.5-block ledges and walks over fences to reach targets / get home.
-  - **Creepers are one-shot** at point-blank range (they fear cats, lore-friendly) — no explosion.
-  - Never teleports to its owner while on guard duty.
-- **Engineering Goggles overlay** (Create): while wearing goggles, **hold the cat keybind (default Left Ctrl)** and look at a guardian cat to peek its **stats popup** (HP / armor / XP / owner) or a bowl's associated-cat count — release to hide. The **3D boxes** (cat + target outlines, guard radius, path) are on a separate rebindable toggle (default Numpad +). Goggles alone show nothing until one of the two is active.
-- **Cat Inventory GUI** (hold modifier + right-click, default **Ctrl** — rebindable in Controls): equip armor, view food/XP/armor bars. A plain right-click stays vanilla (sit/stand).
-- Fully localized (EN, DE, DE-AT dialect, ES, FR, CS).
+- **Smart Guard AI**: returns to base after combat, low-health cats flee home to heal, dives after underwater mobs with water breathing, climbs ledges/fences, one-shots point-blank creepers (no explosion), never teleports while on guard duty.
+- **Engineering Goggles overlay** (Create): hold the cat keybind (default Left Ctrl) and look at a guardian cat to peek its stats popup (HP / armor / XP / owner); 3D boxes (outlines, guard radius, path) on a separate toggle (default Numpad +).
+- **Cat Inventory GUI** (modifier + right-click): equip armor, view food/XP/armor bars. Station skins selectable via a deco slot. Fully localized (EN, DE, DE-AT, ES, FR, CS).
 
-### 🐺 Battle Dogs
+#### 🐸 Axolotl Guardian
+The underwater counterpart to Cat Guardian: axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs. Axolotls can be scooped and placed via a bucket round-trip, and stations support decorative skins. Owner is mirrored to the client for overlays.
 
-- **Wolf Armor**: Iron, Gold, Diamond and Netherite, rendered by the vanilla wolf armor layer.
-- Increases the wolf's attack damage by material tier.
-- Equip by right-click, remove with shears.
+#### 🐺 Battle Dogs
+Adds Iron, Gold, Diamond and Netherite **wolf armor**, rendered by the vanilla wolf-armor layer. Each tier increases the wolf's attack damage. Equip by right-click, remove with shears.
 
-### 🐟 Flying Fish
+---
 
-- A new aquatic mob with spawn egg, bucket, and cooked food variant.
-- **Flying Fish Boots**: skim faster across the water surface and gain short leaps while sprinting on water.
+### 👹 Mobs & Spawning
 
-### 🪦 Death Coords Logger
+#### 🔥 Hostile Zombified Piglins
+Makes zombified piglins always aggressive towards players in the Nether for a more challenging experience. Configurable detection range and anger duration, with smart targeting and player switching.
 
-- Logs player death coordinates to
-    - all players
-    - TODO - only the deceased player
-    - TODO - the server console
-- Operators can teleport to death locations by clicking the message
+#### 💀 Wither Skeleton Enforcer
+Prevents normal skeletons from spawning in the Nether and (optionally) replaces them with Wither Skeletons. Broadcasts messages about blocked spawns in debug mode.
 
-### 📦 Stackables
+#### 🐦‍🔥 Better Mobs
+Enhances mob variety and challenge: mobs can spawn with customizable armor and potion effects. Configurable spawn chances and equipment tiers, with different settings per Y-level or Nether/End dimension.
 
-- Makes non-stackable items stackable (e.g., stews, potions)
-- Increases stack sizes for modded items (Tough as Nails support included)
-- Configurable stack sizes for vanilla items:
-  - Potions, splash potions, lingering potions (default: 16)
-  - Mushroom stew, rabbit stew, beetroot soup, suspicious stew (default: 64)
-- Auto-detection for Tough as Nails items:
-  - All juice types (apple, melon, cactus, sweet berry, chorus fruit, glow berry, pumpkin)
-  - Water bottles (dirty, purified)
-  - Ice cream and Charc-Os
-  - Empty canteens (all types)
-- **Note**: Filled canteens with durability cannot be made stackable due to Minecraft limitations.
+#### ✨ Mob Glow (command)
+`/mobglow` makes all mobs of a specified type glow (configurable duration, including infinite) for easier tracking. Clear by type or all at once — handy for server administration and debugging.
 
-### 🔨 Free Anvil Repair
+#### 👻 Haunted House
+Creates an atmospheric, spooky experience in configured structures (default: Witch Villas).
+- **Witch Spawn Boosting** in target structures, then **invisible entity replacement** (Alex's Mobs Murmurs) that stay invisible until a player looks directly at them (raycast line-of-sight).
+- **Atmospheric fog** (darkness effect) inside the structure, with configurable intensity, dissipating on exit.
+- **Disabled by default**; auto-enables when Alex's Mobs (`alexsmobs`) and Dungeons and Taverns (`mr_dungeons_andtaverns`) are both present.
 
+---
+
+### 🧱 Blocks, Rails & Create Companions
+
+#### 🚃 Mob Cart Loader
+Two directional blocks that automate moving mobs in and out of minecarts on the adjacent rail:
+- **Mob Loader** boards a mob standing in the adjacent pen into a parked, empty rideable minecart.
+- **Mob Unloader** ejects a mob riding a parked minecart into the adjacent pen.
+- **Inverse redstone**: active by default, a redstone signal disables the block. 6-way directional with a distinct **input** and **output** face (flow chevrons on the glass sides point input → output). Never touches players.
+- The affected mob spins as a **live model inside the glass block**; with Create's Engineering Goggles a stats panel shows the mob type and (while sneaking) its health.
+- Craft with a glass frame + a minecart, a saddle and a hopper (loader) / dropper (unloader).
+
+#### 🛤️ Minecart Chunk Loading
+Adds a **Chunk Loader Rail** that keeps chunks loaded around traveling minecarts, so long-distance rail networks don't stall at chunk borders. Chunks are forced only while a cart is active and released after a timeout.
+
+#### ⚓ Stationary Chunk Loader
+A **Chunk Anchor** block that force-loads its chunk (plus a configurable radius) while redstone-powered — for redstone clocks and Create contraptions that must keep running in unloaded chunks.
+
+#### 💧 Create Water Wheel Unstucker
+Detects Create water wheels that stalled after a chunk reload (a known kinetic/flow desync) and can kick them back into rotation. Ships with the `/vpaunstuck` command to re-initialise stalled wheels on demand; auto-fix is opt-in.
+
+#### 🔱 Conduit Attack Range
+Makes vanilla conduits **attack hostile mobs at every active tier** (not just at full size), within half the Conduit Power radius, and fixes the client-side attack beam so the animation shows correctly.
+
+#### 🌌 End Conduit
+An **End-only conduit upgrade**: a distinct craftable item that renders like a vanilla conduit but activates only in the End, needs **no water**, and forms its frame from Glowstone / End Stone / End Stone Bricks / Sea Lantern. It grants Conduit Power (and, together with End Oxygen, effectively unlimited air) on dry End land. Crafted from chorus fruit, eyes of ender and a vanilla conduit.
+
+---
+
+### 🛠️ Items & Crafting
+
+#### 🐟 Flying Fish
+A new aquatic mob with spawn egg, bucket and cooked food variant, woven into vanilla fishing. **Flying Fish Boots** let you skim faster across the water surface and gain short leaps while sprinting on water.
+
+#### 📦 Stackables
+Makes normally-unstackable items stackable and raises stack sizes for configured items:
+- Potions / splash / lingering (default 16); stews & soups (default 64).
+- Auto-detects Tough As Nails items (juices, water bottles, ice cream, empty canteens, …).
+- Note: filled canteens with durability can't be stacked (Minecraft limitation).
+
+#### 🧰 Custom Crafting Recipes
+Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator). The place to add your own vanilla/cross-mod recipes without a datapack.
+
+#### 🔨 Free Anvil Repair
 Pure anvil repairs cost **no XP levels** — only plain repairing is free; combining enchanted items, applying books and renaming keep vanilla costs.
+- Material repair and same-type combine repair (unenchanted sacrifice), even for gear past the "Too Expensive!" cap.
+- **Extra repair materials** (`extra_repair_materials`, Quark-style `item=material`): netherite gear repairs with diamonds and Create's diving gear with its base material out of the box; add your own combos.
 
-- **Material repair** (e.g. diamond pickaxe + diamonds) and **combine repair** of two same-type items (when the sacrifice is unenchanted).
-- Even gear that hit the "Too Expensive!" prior-work cap becomes repairable again; free repairs don't bump the prior-work penalty by default.
-- **Extra repair materials** (`extra_repair_materials`, Quark-style `item=material`): out of the box **netherite gear repairs with diamonds** and **Create's diving gear** with its base material (copper / diamonds). Add your own combos; entries for uninstalled items are skipped.
-- Config: `free_material_repair`, `free_combine_repair`, `increase_prior_work_penalty`, `extra_repair_materials`.
+#### 💎 Waystone Amethyst Repair
+Repair the Waystones **Warp Stone** with amethyst in an anvil (free while Free Anvil Repair is enabled). Inactive without the Waystones mod.
 
-### 👻 Haunted House
+---
 
-Creates an atmospheric and spooky experience in configured structures (default: Witch Villas).
+### 🌍 World & Environment
 
-#### Features:
-- 🧙 **Witch Spawn Boosting**: Increases witch population in target structures
-  - Default 50% chance to replace mob spawns with witches
-  - Ensures sufficient witches for replacement mechanic
-  - Configurable via `witch_spawn_boost_chance`
+#### 🫧 End Oxygen
+Removes breathable oxygen from the End, so players must hold their breath or use gear (Create backtanks, Conduit Power via the End Conduit) to survive. Configurable.
 
-- 👻 **Invisible Entity Replacement**: Replaces witches with invisible Murmurs (currently zombies for testing)
-  - Default 10% of witches become invisible entities
-  - Entities remain invisible until a player looks directly at them
-  - Advanced line-of-sight detection with raycast verification
-  - Combined effect: ~5% of all mob spawns become invisible entities
-  - Configurable via `target_mobs` list
+#### 🍎 Food Effects
+Enhances food items with additional potion effects and thirst restoration.
+- Add any potion effect to any item via config, with an optional probability per effect; configured items become **always edible**.
+- **Tough As Nails** support (optional): thirst restoration and heating/cooling tooltips.
+- Ships with extensive defaults for Vanilla, Create and Tough As Nails items.
 
-- 🌫️ **Atmospheric Fog**: Creates spooky ambiance inside structures
-  - Applies darkness effect (natural cave-like fog)
-  - Configurable on/off via `enable_fog_effect` (default: true)
-  - Adjustable intensity (0-5) via `fog_effect_amplifier` (default: 0)
-  - Automatically dissipates when leaving structure
+#### 🌙 Idle Gamerule Pause
+Pauses day / weather / season cycles while the server is empty and resumes them on the first join — the world doesn't drift while nobody is online.
 
-- ⚙️ **Fully Configurable**:
-  - Target structures list (default: `nova_structures:witch_villa`)
-  - Mob replacement rates per entity type
-  - Witch spawn boost percentage
-  - Fog effect toggle and intensity
-  - Comprehensive debug logging
+#### 🗺️ Chunk Reset (command)
+Provides a command to delete and regenerate chunks from world generation — useful for resetting explored areas to pick up new world-gen.
 
-#### Requirements:
-- Alex's Mobs mod (alexsmobs) - for Murmur entity
-- Dungeons and Taverns mod (mr_dungeons_andtaverns) - for Witch Villa structure
+---
 
-#### Status:
-**Disabled by default** - Module requires Alex's Mobs and Dungeons and Taverns mods to function. 
-Will automatically enable when both required mods are detected.
+### 🥽 Overlays, HUD & Quality-of-Life
 
-#### Configuration Example:
-```toml
-[haunted_house]
-    enabled = true
-    debug_logging = true
-    witch_spawn_boost_chance = 50.0
-    enable_fog_effect = true
-    fog_effect_amplifier = 0
-    target_mobs = ["minecraft:witch:10"]
-    target_structures = ["nova_structures:witch_villa"]
-```
+#### 🧪 Debug Overlay (framework)
+The shared **Engineering-Goggles debug-overlay** framework other modules plug into: a global toggle plus chunk borders, cat stats, and more. Uses Create's goggles when present, falling back to the `vanillaplusadditions:arm_goggles` item tag.
+
+#### 🦾 Arm Target Overlay
+While wearing Engineering Goggles, shows a Create **Mechanical Arm's** input/output target positions in the world — makes configuring arms much easier.
+
+#### 📦 Item Vault Viewer
+Lets players view the contents of a Create **Item Vault** by looking at it with Engineering Goggles.
+
+#### 🎥 Static FOV
+Stops the field-of-view from widening when the player moves faster (sprinting, Speed, elytra/flight) — a steadier view.
+
+#### ⚙️ VPA Options (backup/restore)
+Backup & restore of client options (`options.txt`) including **all keybinds** — manual snapshots via `/vpaoptions` or an Options-screen button, plus automatic rotating backups whenever settings change. Great when a modpack update scrambles your controls.
+
+#### 🎒 Overpacked Backpack Keybinds
+Keybinds to open the compartments of a worn **Overpacked** giant backpack (main compartment on `B`/`K` by default; right/left compartments unbound) without taking it off. Needs Overpacked + Curios.
+
+#### 🐌 Overpacked Slowdown Override
+Overrides the movement slowdown from the **Overpacked** mod with a configurable multiplier (up to and including no slowdown). Needs Overpacked.
+
+#### 🪦 Death Coordinates Announcer
+Announces player death coordinates in chat; operators can click the message to teleport to the death location.
+
+---
+
+### 🔌 Integrations & Utility
+
+#### 🗺️ BlueMap Signs
+Turns `[bm]` signs into curated **BlueMap** markers; manage them with `/bmsigns`. Server-side; inert without BlueMap.
+
+#### 🚫 Texture Kill
+Replaces configured textures with a fully transparent one — handy for hiding cosmetic textures from other mods (e.g. Create contraption hats). Format: `namespace:textures/category/name.png`.
 
 ## 🔧 Configuration
 
@@ -165,7 +172,7 @@ Each module has its own configuration options. See our detailed guides:
 ## 🚀 Installation
 
 1. Download the latest version from [Releases](https://github.com/Gerry3010/vanillaplusadditions/releases)
-2. Install NeoForge for Minecraft 1.21
+2. Install NeoForge for Minecraft 1.21.1
 3. Place the jar file in your mods folder
 4. Start Minecraft and enjoy!
 
@@ -179,13 +186,20 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 |---|---|---|
 | `arm_target_overlay` | [Create](https://modrinth.com/mod/create) | Overlay inactive (it visualizes Create's Mechanical Arm targets) |
 | `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
+| `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
+| `mob_cart_loader` | Create *(optional)* | Fully functional — the goggle stats panel just won't show |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
 | `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
+| `overpacked_backpack_keys` | [Overpacked](https://modrinth.com/mod/overpacked) + [Curios](https://modrinth.com/mod/curios) | Module inactive (needs a worn giant backpack) |
+| `overpacked_slowdown` | Overpacked | Module inactive (nothing to override) |
+| `waystone_amethyst_repair` | [Waystones](https://modrinth.com/mod/waystones) | Module inactive (needs the Warp Stone) |
 | `cat_guardian` | [Sable](https://modrinth.com/mod/sable) *(optional)* | Cat bowl / feeding station use plain block variants (no ship-assembly awareness) |
+| `axolotl_guardian` | Sable *(optional)* | Axolotl bowl / feeding station use plain block variants |
 | `block_glow` | Sable *(optional)* | No difference — the integration only additionally highlights blocks *inside* Sable sub-levels (ships), which don't exist without Sable |
 | `food_effects` | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) *(optional)* | Thirst-related food effects are skipped |
+| `stackables` | Tough As Nails *(optional)* | Only vanilla items are made stackable |
 | `bluemap_signs` | [BlueMap](https://modrinth.com/plugin/bluemap) (server) | Module stays inert (`[bm]` signs do nothing) |
-| `haunted_house` | [Dungeons and Taverns](https://modrinth.com/datapack/dungeons-and-taverns) | Module skips initialization (needs the witch villa structure) |
+| `haunted_house` | [Alex's Mobs](https://modrinth.com/mod/alexs-mobs) + [Dungeons and Taverns](https://modrinth.com/datapack/dungeons-and-taverns) | Module skips initialization (needs the Murmur entity + witch villa structure) |
 
 **Standalone module jars** (`vpa_<module>.jar` from the releases) additionally require
 `vpa_core.jar`; `vpa_cat_guardian` also needs `vpa_debug_overlay` + `vpa_flying_fish`, and the
@@ -233,7 +247,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🌟 Credits
 
 - **Developer**: Gerald Hofbauer
-- **AI Assistant**: Warp AI (Claude 3.5 Sonnet)
 - **Framework**: [NeoForge](https://neoforged.net/)
 
 ## 📚 Documentation
@@ -251,7 +264,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Slowdown Override](docs/overpacked_slowdown.md)
 - [Texture Kill](docs/texture_kill.md)
-- [Warp AI Development (WARP)](WARP.md)
 
 ## 🐛 Debug Logging
 
@@ -265,16 +277,3 @@ VanillaPlusAdditions includes a sophisticated debug logging system:
 - [GitHub Repository](https://github.com/Gerry3010/vanillaplusadditions)
 - [Issue Tracker](https://github.com/Gerry3010/vanillaplusadditions/issues)
 - [NeoForge](https://neoforged.net/)
-
-## 💬 About AI Assistance
-
-This project demonstrates the potential of human-AI collaboration in software development. The AI assistant helped with:
-
-- Code implementation
-- Documentation writing
-- Project structure
-- CI/CD setup
-- Testing frameworks
-- Bug fixes
-
-While the AI provided technical assistance, all creative decisions, feature ideas, and project direction came from human input. We believe this transparency about AI usage is important for the open-source community.

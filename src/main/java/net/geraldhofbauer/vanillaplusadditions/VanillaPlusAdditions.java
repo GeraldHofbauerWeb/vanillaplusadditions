@@ -34,6 +34,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsMod
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.conduit_attack_range.ConduitAttackRangeModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.MinecartChunkLoadingModule;
@@ -164,6 +165,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new StaticFovModule());
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
         moduleManager.registerModule(new ConduitAttackRangeModule());
+        moduleManager.registerModule(new MobCartLoaderModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
