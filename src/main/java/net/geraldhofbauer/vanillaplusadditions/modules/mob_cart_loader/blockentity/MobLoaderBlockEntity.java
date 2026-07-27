@@ -4,6 +4,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLo
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.block.AbstractMobCartBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,7 +14,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Loads a pen mob into a parked, empty rideable minecart. Shows the pen candidate as the mini-mob.
+ * Captures a mob from the adjacent pen (input side) and holds it inside; releases it into a parked,
+ * empty rideable minecart on the output side once that side is unobstructed.
  */
 public class MobLoaderBlockEntity extends AbstractMobCartBlockEntity {
 
@@ -23,19 +25,31 @@ public class MobLoaderBlockEntity extends AbstractMobCartBlockEntity {
 
     @Override
     protected void tickServer(ServerLevel level, BlockPos pos, BlockState state) {
-        // Loader: mob comes from the input (pen) side, goes into a cart on the output side.
-        Mob penMob = findPenMob(level, inputPos(state));
-        // Display the pen candidate even before (or without) a cart present.
-        updateDisplayFrom(penMob);
-
-        if (!AbstractMobCartBlock.isActive(state) || penMob == null) {
+        if (!AbstractMobCartBlock.isActive(state)) {
             return;
         }
-        Minecart cart = findParkedEmptyMinecart(level, outputPos(state));
+        if (!hasStored()) {
+            // Suck in a pen mob and hold it (removed from the world → it can no longer escape).
+            Mob pen = findPenMob(level, inputPos(state));
+            if (pen != null) {
+                storeMob(pen);
+            }
+            return;
+        }
+        // Holding a mob → load it into a parked, empty cart when the output side is clear.
+        BlockPos out = outputPos(state);
+        if (outputBlocked(level, out)) {
+            return;
+        }
+        Minecart cart = findParkedEmptyMinecart(level, out);
         if (cart == null) {
             return;
         }
-        penMob.startRiding(cart, true);
+        Entity mob = takeStoredEntity(level, cart.getX(), cart.getY(), cart.getZ());
+        if (mob != null) {
+            level.addFreshEntity(mob);
+            mob.startRiding(cart, true);
+        }
     }
 
     /** Nearest parked, empty, rideable minecart at the cart position. */

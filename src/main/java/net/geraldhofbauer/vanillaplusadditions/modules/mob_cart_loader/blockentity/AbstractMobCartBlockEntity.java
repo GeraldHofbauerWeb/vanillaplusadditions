@@ -10,10 +10,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.WaterAnimal;
+import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -26,10 +29,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Shared block-entity logic for the mob loader/unloader: throttled scanning of the adjacent rail
- * (front / {@link AbstractMobCartBlock#FACING}) and pen (opposite side), plus tracking of the
- * relevant mob for the spinning mini-mob renderer and the goggle stats panel. The relevant-mob
- * source and the load/unload action differ per subclass ({@link #tickServer}).
+ * Shared block-entity logic for the mob loader/unloader. The block <b>captures and stores</b> one
+ * mob internally (as entity NBT): the loader pulls a mob from the adjacent pen, the unloader pulls a
+ * passenger from a parked minecart. The stored mob is shown as the spinning mini-mob and is only
+ * <b>released to the output side when that side is unobstructed</b> — a solid block in front (e.g. a
+ * piston head) keeps the mob buffered inside, so releasing can be gated with redstone/pistons. The
+ * whole block is disabled while redstone-powered (inverse control). Breaking the block releases the
+ * stored mob so it is never lost.
  *
  * <p>Contains no Create references; the goggle panel that reads {@link #getDisplayType()} lives in a
  * separate client handler gated on Create's goggles.</p>
@@ -38,6 +44,10 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
     /** Cart is considered "parked" below this squared horizontal speed. */
     protected static final double PARKED_EPSILON = 1.0E-4;
+
+    /** The held mob as full entity NBT (server-authoritative, persisted); null when empty. */
+    @Nullable
+    private CompoundTag storedMob;
 
     // --- Synced display state (what the BER/goggles show) ---
     @Nullable
@@ -58,10 +68,6 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
     // ---- Tick dispatch ----
 
-    /**
-     * Server ticker entry point (registered by the block). Throttled by the module's configured
-     * interval, then dispatched to the subclass {@link #tickServer}.
-     */
     public static void serverTick(Level level, BlockPos pos, BlockState state, AbstractMobCartBlockEntity be) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
@@ -73,7 +79,7 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         be.tickServer(serverLevel, pos, state);
     }
 
-    /** Per-scan server logic: update the display mob and (if active) load/unload. */
+    /** Per-scan server logic: capture into storage and/or release to the output. */
     protected abstract void tickServer(ServerLevel level, BlockPos pos, BlockState state);
 
     // ---- Geometry ----
@@ -92,9 +98,98 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         return worldPosition.relative(facing(state).getOpposite());
     }
 
+    /** True if a solid block occupies the position (blocks release; rails/air are not solid). */
+    protected boolean outputBlocked(Level level, BlockPos pos) {
+        return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+    }
+
+    // ---- Storage ----
+
+    public boolean hasStored() {
+        return storedMob != null;
+    }
+
+    /** Captures a mob into storage: serialises it, updates the display, and removes it from the world. */
+    protected void storeMob(LivingEntity mob) {
+        CompoundTag tag = new CompoundTag();
+        if (!mob.save(tag)) {
+            return; // not persistable (shouldn't happen for Mobs)
+        }
+        this.storedMob = tag;
+        setDisplay(mob.getType(), mob.getHealth(), mob.getMaxHealth(), mob.isBaby());
+        mob.discard();
+    }
+
+    /**
+     * Reconstructs the stored entity at (x,y,z) and clears the storage + display. The caller adds it
+     * to the world (and optionally makes it ride a cart).
+     *
+     * @return the reconstructed entity, or null if nothing was stored / reconstruction failed
+     */
+    @Nullable
+    protected Entity takeStoredEntity(ServerLevel level, double x, double y, double z) {
+        if (storedMob == null) {
+            return null;
+        }
+        CompoundTag tag = storedMob;
+        Entity entity = EntityType.loadEntityRecursive(tag, level, e -> {
+            e.moveTo(x, y, z, e.getYRot(), e.getXRot());
+            return e;
+        });
+        storedMob = null;
+        setDisplay(null, 0.0f, 0.0f, false);
+        return entity;
+    }
+
+    /**
+     * Reconstructs and spawns the stored mob near {@code pos}. Water-breathing mobs (axolotl, fish,
+     * squid, …) are placed into a water block at/around {@code pos} so they don't suffocate.
+     *
+     * @return true if a mob was released
+     */
+    public boolean releaseStoredNear(ServerLevel level, BlockPos pos) {
+        Entity entity = takeStoredEntity(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+        if (entity == null) {
+            return false;
+        }
+        if (needsWater(entity)) {
+            BlockPos water = findWaterNear(level, pos);
+            if (water != null) {
+                entity.moveTo(water.getX() + 0.5, water.getY() + 0.5, water.getZ() + 0.5,
+                        entity.getYRot(), entity.getXRot());
+            }
+        }
+        level.addFreshEntity(entity);
+        return true;
+    }
+
+    /** Releases the stored mob (used when the block is broken). */
+    public void dropStored(ServerLevel level, BlockPos pos) {
+        releaseStoredNear(level, pos);
+    }
+
+    private static boolean needsWater(Entity entity) {
+        return entity instanceof WaterAnimal
+                || entity instanceof Axolotl
+                || (entity instanceof LivingEntity living && living.canBreatheUnderwater());
+    }
+
+    @Nullable
+    private static BlockPos findWaterNear(Level level, BlockPos center) {
+        if (level.getFluidState(center).is(FluidTags.WATER)) {
+            return center;
+        }
+        for (Direction dir : Direction.values()) {
+            BlockPos p = center.relative(dir);
+            if (level.getFluidState(p).is(FluidTags.WATER)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     // ---- Shared detection helpers ----
 
-    /** Nearest living, non-riding mob standing in the pen column (feet block + one above). */
     @Nullable
     protected Mob findPenMob(ServerLevel level, BlockPos penPos) {
         AABB box = new AABB(penPos).expandTowards(0.0, 1.0, 0.0);
@@ -103,7 +198,6 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         return nearest(mobs, penPos);
     }
 
-    /** Any minecart occupying the cart position. */
     @Nullable
     protected AbstractMinecart findCart(ServerLevel level, BlockPos cartPos) {
         AABB box = new AABB(cartPos).inflate(0.4);
@@ -115,7 +209,6 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         return cart.getDeltaMovement().horizontalDistanceSqr() < PARKED_EPSILON;
     }
 
-    /** First mob passenger of the cart, if any (players/other entities are ignored). */
     @Nullable
     protected static Mob firstMobPassenger(AbstractMinecart cart) {
         for (Entity passenger : cart.getPassengers()) {
@@ -145,16 +238,7 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
     // ---- Display state ----
 
-    /** Updates the displayed mob from a living entity (or clears it when {@code mob} is null). */
-    protected void updateDisplayFrom(@Nullable LivingEntity mob) {
-        if (mob == null) {
-            updateDisplay(null, 0.0f, 0.0f, false);
-        } else {
-            updateDisplay(mob.getType(), mob.getHealth(), mob.getMaxHealth(), mob.isBaby());
-        }
-    }
-
-    private void updateDisplay(@Nullable EntityType<?> type, float health, float maxHealth, boolean baby) {
+    private void setDisplay(@Nullable EntityType<?> type, float health, float maxHealth, boolean baby) {
         boolean changed = type != displayType
                 || Float.compare(health, mobHealth) != 0
                 || Float.compare(maxHealth, mobMaxHealth) != 0
@@ -194,10 +278,8 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
     }
 
     /**
-     * Client-only: a cached, non-ticking entity instance of {@link #displayType} for rendering the
-     * spinning mini-mob (mirrors {@code BaseSpawner.getOrCreateDisplayEntity}). Rebuilt on type change.
-     *
-     * @return the display entity, or null if no mob is currently shown
+     * Client-only: a cached, non-ticking entity of {@link #displayType} for the spinning mini-mob
+     * (mirrors {@code BaseSpawner.getOrCreateDisplayEntity}). Rebuilt on type change.
      */
     @Nullable
     public Entity getOrCreateDisplayEntity() {
@@ -218,11 +300,7 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
     // ---- NBT / sync ----
 
-    @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        // Always write an explicit presence flag so an emptied display is unambiguously synced to
-        // the client (an absent key could otherwise leave a stale mob showing).
+    private void writeDisplay(CompoundTag tag) {
         boolean hasMob = displayType != null;
         tag.putBoolean("HasMob", hasMob);
         if (hasMob) {
@@ -233,9 +311,7 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
         }
     }
 
-    @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    private void readDisplay(CompoundTag tag) {
         ResourceLocation id = tag.getBoolean("HasMob")
                 ? ResourceLocation.tryParse(tag.getString("DisplayMob")) : null;
         if (id != null) {
@@ -249,14 +325,33 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
             mobMaxHealth = 0.0f;
             displayBaby = false;
         }
-        // Invalidate the render cache so the BER rebuilds from the new type.
         cachedDisplayEntity = null;
         cachedEntityType = null;
     }
 
     @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        writeDisplay(tag);
+        if (storedMob != null) {
+            tag.put("StoredMob", storedMob.copy());
+        }
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        readDisplay(tag);
+        // Full mob NBT is disk-only (never sent in the update packet), so it survives client syncs.
+        storedMob = tag.contains("StoredMob") ? tag.getCompound("StoredMob") : storedMob;
+    }
+
+    @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return saveWithoutMetadata(registries);
+        // Client only needs the lightweight display state, not the full stored-mob NBT.
+        CompoundTag tag = new CompoundTag();
+        writeDisplay(tag);
+        return tag;
     }
 
     @Override

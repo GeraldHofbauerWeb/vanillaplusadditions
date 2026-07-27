@@ -3,6 +3,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.block;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.blockentity.AbstractMobCartBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -111,6 +112,20 @@ public abstract class AbstractMobCartBlock extends BaseEntityBlock {
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         return List.of(new ItemStack(this));
+    }
+
+    /**
+     * Releases any stored mob back into the world when the block is removed, so a buffered mob is
+     * never lost.
+     */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState,
+                            boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel
+                && serverLevel.getBlockEntity(pos) instanceof AbstractMobCartBlockEntity be) {
+            be.dropStored(serverLevel, pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     /**
