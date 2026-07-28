@@ -136,9 +136,9 @@
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Katzen-Overlays umschalten",
   "key.vanillaplusadditions.debug_overlay.toggle": "Debug-Overlay umschalten",
   "key.vanillaplusadditions.item_vault_viewer.open_modifier": "Item-Vault-Viewer öffnen (halten + Rechtsklick auf Vault)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_left": "Rucksack öffnen (linkes Fach)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_main": "Rucksack öffnen (Hauptfach)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_right": "Rucksack öffnen (rechtes Fach)",
+  "key.vanillaplusadditions.overpacked_extensions.open_left": "Rucksack öffnen (linkes Fach)",
+  "key.vanillaplusadditions.overpacked_extensions.open_main": "Rucksack öffnen (Hauptfach)",
+  "key.vanillaplusadditions.overpacked_extensions.open_right": "Rucksack öffnen (rechtes Fach)",
   "message.action_bar.low_oxygen_alert": "§cWARNUNG: WENIG SAUERSTOFF",
   "message.action_bar.remaining_oxygen": "Verbleibender Sauerstoff: %s %s",
   "message.vanillaplusadditions.axolotl_guardian.associated": "%s Axolotl(s) mit diesem Napf assoziiert.",
@@ -162,8 +162,8 @@
   "message.vanillaplusadditions.options.restored_keys": "Options-Backup '%s' wiederhergestellt (%s Tastenbelegungen angewendet).",
   "message.vanillaplusadditions.options.scope_full": "alle Optionen",
   "message.vanillaplusadditions.options.scope_keys": "nur Tastenbelegung",
-  "message.vanillaplusadditions.overpacked_backpack_keys.no_backpack": "Du trägst keinen großen Rucksack.",
-  "message.vanillaplusadditions.overpacked_backpack_keys.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
+  "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Du trägst keinen großen Rucksack.",
+  "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
   "message.vpa.death_coords": "Spieler %s ist an folgenden Koordinaten gestorben: X=%d, Y=%d, Z=%d in Dimension %s",
   "message.vpa.death_coords.hover": "Klicken, um zum Todesort zu teleportieren"
 }

@@ -4,6 +4,23 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.56] - 2026-07-28
+
+### Changed
+- **Overpacked-Module zusammengelegt**: `overpacked_slowdown` und `overpacked_backpack_keys` sind zu
+  einem Modul **`overpacked_extensions`** verschmolzen. Beide Features bleiben einzeln schaltbar
+  (`slowdown_multiplier`, `backpack_keys_enabled`). **Hinweis:** Die Config-Sektionen
+  `[modules.overpacked_slowdown]` / `[modules.overpacked_backpack_keys]` heißen jetzt
+  `[modules.overpacked_extensions]` — ein evtl. gesetzter `slowdown_multiplier` fällt einmalig auf den
+  Default `0.0` (= kein Slowdown) zurück. Der Standalone-Jar heißt jetzt `vpa_overpacked_extensions`
+  statt `vpa_overpacked_slowdown`.
+
+### Notes
+- **Sortieren & Suchen im Rucksack** werden bewusst **nicht** im Mod nachgebaut: Quark liefert beides
+  bereits. Man muss Overpackeds Screen nur in Quarks `"Allowed Screens"`-Whitelist eintragen
+  (`config/quark-common.toml`), dann erscheinen Quarks eigener Sort-Button **und** das
+  ChestSearching-Suchfeld auf dem Backpack — 1:1. Details: `docs/overpacked_extensions.md`.
+
 ## [1.0.0-beta.55] - 2026-07-27
 
 ### Fixed

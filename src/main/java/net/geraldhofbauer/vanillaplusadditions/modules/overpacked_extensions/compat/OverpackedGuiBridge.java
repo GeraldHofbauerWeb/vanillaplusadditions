@@ -1,6 +1,6 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.compat;
+package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat;
 
-import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.compat.CuriosBackpackAccess.Worn;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.CuriosBackpackAccess.Worn;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -65,7 +65,7 @@ public final class OverpackedGuiBridge {
         Optional<Worn> wornOpt = CuriosBackpackAccess.findWorn(player);
         if (wornOpt.isEmpty()) {
             player.displayClientMessage(Component.translatable(
-                    "message.vanillaplusadditions.overpacked_backpack_keys.no_backpack"), true);
+                    "message.vanillaplusadditions.overpacked_extensions.no_backpack"), true);
             return;
         }
         Worn worn = wornOpt.get();

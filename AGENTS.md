@@ -34,7 +34,7 @@ When tagging and pushing a new release (e.g. `git tag vX.Y.Z && git push --tags`
 
 ## Project-specific conventions
 - Put `if (!isModuleEnabled()) return;` at the top of event handlers and guard side-specific logic explicitly with `level.isClientSide()` / server-side casts.
-- Event priority is part of feature behavior: `HauntedHouseModule` uses `HIGHEST`/`HIGH` on `FinalizeSpawnEvent`; `OverpackedSlowdownModule` uses `LOW` to run after Overpacked’s default handler.
+- Event priority is part of feature behavior: `HauntedHouseModule` uses `HIGHEST`/`HIGH` on `FinalizeSpawnEvent`; `overpacked_extensions`' `SlowdownFeature` uses `LOW` to run after Overpacked’s default handler.
 - Optional mod integration is runtime-gated with `ModList.get().isLoaded(...)`; `HauntedHouseModule.shouldInitialize()` hard-disables without `mr_dungeons_andtaverns`, while `FoodEffectsModule` conditionally enables Tough As Nails support.
 - Resource IDs and module IDs are the real API surface. Config sections are `[modules.<module_id>]` such as `[modules.food_effects]` or `[modules.mob_glow]`.
 - The mod JAR is always copied by Gradle (`copyJarToTestEnvironments`) after `build` — do **not** add manual copy logic in shell scripts, as the version string changes with every release.

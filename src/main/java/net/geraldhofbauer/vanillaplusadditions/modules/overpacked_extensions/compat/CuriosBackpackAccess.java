@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.compat;
+package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +13,7 @@ import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import java.util.Optional;
 
 /**
- * Curios-only helper for the Overpacked backpack keybinds: locates the giant backpack the player
+ * Curios-only helper for the Overpacked backpack features: locates the giant backpack the player
  * wears (any color variant, matched by the {@code #overpacked:giant_backpacks} item tag) and writes
  * an updated stack back into the same Curios slot.
  *

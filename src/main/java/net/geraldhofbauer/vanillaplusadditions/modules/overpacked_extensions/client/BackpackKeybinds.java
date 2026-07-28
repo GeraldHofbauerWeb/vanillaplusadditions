@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.client;
+package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
@@ -11,34 +11,34 @@ import org.lwjgl.glfw.GLFW;
 /**
  * Keybinds that open the compartments of the worn Overpacked giant backpack.
  *
- * <p>Main (center) compartment defaults to {@code K}; the right and left compartments are
+ * <p>Main (center) compartment defaults to {@code B}; the right and left compartments are
  * <em>unbound</em> by default (players can bind them in the Controls menu). All three share the
  * shared {@code key.categories.vanillaplusadditions} category.
  */
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-public final class OverpackedBackpackKeysKeybinds {
+public final class BackpackKeybinds {
 
     private static final String CATEGORY = "key.categories.vanillaplusadditions";
 
     public static final KeyMapping OPEN_MAIN = new KeyMapping(
-            "key.vanillaplusadditions.overpacked_backpack_keys.open_main",
+            "key.vanillaplusadditions.overpacked_extensions.open_main",
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_B,
             CATEGORY);
 
     public static final KeyMapping OPEN_RIGHT = new KeyMapping(
-            "key.vanillaplusadditions.overpacked_backpack_keys.open_right",
+            "key.vanillaplusadditions.overpacked_extensions.open_right",
             InputConstants.Type.KEYSYM,
             InputConstants.UNKNOWN.getValue(),
             CATEGORY);
 
     public static final KeyMapping OPEN_LEFT = new KeyMapping(
-            "key.vanillaplusadditions.overpacked_backpack_keys.open_left",
+            "key.vanillaplusadditions.overpacked_extensions.open_left",
             InputConstants.Type.KEYSYM,
             InputConstants.UNKNOWN.getValue(),
             CATEGORY);
 
-    private OverpackedBackpackKeysKeybinds() {
+    private BackpackKeybinds() {
     }
 
     @SubscribeEvent

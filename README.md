@@ -144,11 +144,12 @@ Stops the field-of-view from widening when the player moves faster (sprinting, S
 #### ⚙️ VPA Options (backup/restore)
 Backup & restore of client options (`options.txt`) including **all keybinds** — manual snapshots via `/vpaoptions` or an Options-screen button, plus automatic rotating backups whenever settings change. Great when a modpack update scrambles your controls.
 
-#### 🎒 Overpacked Backpack Keybinds
-Keybinds to open the compartments of a worn **Overpacked** giant backpack (main compartment on `B`/`K` by default; right/left compartments unbound) without taking it off. Needs Overpacked + Curios.
+#### 🎒 Overpacked Extensions
+Quality-of-life features for **Overpacked** giant backpacks (each individually toggleable):
+- **Slowdown override** — rescale Overpacked's full-backpack movement penalty with a configurable multiplier (up to and including no slowdown). Needs Overpacked.
+- **Backpack keybinds** — open the compartments of a worn giant backpack (main compartment on `B` by default; right/left unbound) without taking it off. Needs Overpacked + Curios.
 
-#### 🐌 Overpacked Slowdown Override
-Overrides the movement slowdown from the **Overpacked** mod with a configurable multiplier (up to and including no slowdown). Needs Overpacked.
+*Sorting & searching inside the backpack aren't reimplemented — Quark already does both. Whitelist Overpacked's screen in Quark's config to get Quark's own sort button + search bar on the backpack (see [docs](docs/overpacked_extensions.md)).*
 
 #### 🪦 Death Coordinates Announcer
 Announces player death coordinates in chat; operators can click the message to teleport to the death location.
@@ -191,8 +192,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `mob_cart_loader` | Create *(optional)* | Fully functional — the goggle stats panel just won't show |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
 | `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
-| `overpacked_backpack_keys` | [Overpacked](https://modrinth.com/mod/overpacked) + [Curios](https://modrinth.com/mod/curios) | Module inactive (needs a worn giant backpack) |
-| `overpacked_slowdown` | Overpacked | Module inactive (nothing to override) |
+| `overpacked_extensions` | [Overpacked](https://modrinth.com/mod/overpacked) + [Curios](https://modrinth.com/mod/curios) | Slowdown override still works with Overpacked alone; backpack keybinds + sort button are inert without a worn giant backpack |
 | `waystone_amethyst_repair` | [Waystones](https://modrinth.com/mod/waystones) | Module inactive (needs the Warp Stone) |
 | `cat_guardian` | [Sable](https://modrinth.com/mod/sable) *(optional)* | Cat bowl / feeding station use plain block variants (no ship-assembly awareness) |
 | `axolotl_guardian` | Sable *(optional)* | Axolotl bowl / feeding station use plain block variants |
@@ -263,7 +263,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
 - [End Oxygen](docs/end_oxygen.md)
 - [Mob Drops](docs/mob_drops.md)
-- [Overpacked Slowdown Override](docs/overpacked_slowdown.md)
+- [Overpacked Extensions](docs/overpacked_extensions.md)
 - [Texture Kill](docs/texture_kill.md)
 
 ## 🐛 Debug Logging

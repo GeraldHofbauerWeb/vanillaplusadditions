@@ -1,4 +1,4 @@
-package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_backpack_keys.network;
+package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network;
 
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.minecraft.network.FriendlyByteBuf;

@@ -136,9 +136,9 @@
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Toggle Cat Guardian Overlays",
   "key.vanillaplusadditions.debug_overlay.toggle": "Toggle Debug Overlay",
   "key.vanillaplusadditions.item_vault_viewer.open_modifier": "Open Item Vault Viewer (hold + right-click vault)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_left": "Open Backpack (left compartment)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_main": "Open Backpack (main compartment)",
-  "key.vanillaplusadditions.overpacked_backpack_keys.open_right": "Open Backpack (right compartment)",
+  "key.vanillaplusadditions.overpacked_extensions.open_left": "Open Backpack (left compartment)",
+  "key.vanillaplusadditions.overpacked_extensions.open_main": "Open Backpack (main compartment)",
+  "key.vanillaplusadditions.overpacked_extensions.open_right": "Open Backpack (right compartment)",
   "message.action_bar.low_oxygen_alert": "§cLOW OXYGEN ALERT",
   "message.action_bar.remaining_oxygen": "Remaining Oxygen: %s %s",
   "message.vanillaplusadditions.axolotl_guardian.associated": "Associated %s axolotl(s) with this bowl.",
@@ -162,8 +162,8 @@
   "message.vanillaplusadditions.options.restored_keys": "Options backup '%s' restored (%s keybinds applied).",
   "message.vanillaplusadditions.options.scope_full": "full options",
   "message.vanillaplusadditions.options.scope_keys": "keybinds only",
-  "message.vanillaplusadditions.overpacked_backpack_keys.no_backpack": "You aren't wearing a giant backpack.",
-  "message.vanillaplusadditions.overpacked_backpack_keys.unavailable": "Overpacked backpack access is unavailable.",
+  "message.vanillaplusadditions.overpacked_extensions.no_backpack": "You aren't wearing a giant backpack.",
+  "message.vanillaplusadditions.overpacked_extensions.unavailable": "Overpacked backpack access is unavailable.",
   "message.vpa.death_coords": "Player %s died at coordinates: X=%d, Y=%d, Z=%d in dimension %s",
   "message.vpa.death_coords.hover": "Click to teleport to death location"
 }

@@ -148,7 +148,7 @@ dependencies {
     localRuntime files("libs/bluemap-5.7-neoforge.jar")
 
     // Overpacked (giant backpacks) + Curios — compile-time only, gated at runtime via
-    // ModList.isLoaded in the overpacked_backpack_keys module's compat classes. Overpacked's
+    // ModList.isLoaded in the overpacked_extensions module's compat classes. Overpacked's
     // backpack GUI is entity-bound and worn via a Curios "back" slot, so both are needed on the
     // compile classpath. localRuntime loads them for dev testing of the keybind feature.
     compileOnly files("libs/overgepackt.jar")
@@ -405,7 +405,7 @@ def standaloneModules = [
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
     [ moduleId: 'options', displayName: 'Vanilla Plus: Options' ],
-    [ moduleId: 'overpacked_slowdown', displayName: 'Vanilla Plus: Overpacked Slowdown' ],
+    [ moduleId: 'overpacked_extensions', displayName: 'Vanilla Plus: Overpacked Extensions' ],
     [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
     [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
       moduleDeps: ['vpa_debug_overlay'] ],
