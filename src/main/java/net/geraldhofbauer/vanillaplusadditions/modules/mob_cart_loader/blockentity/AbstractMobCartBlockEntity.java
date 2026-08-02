@@ -2,6 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.blockent
 
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.block.AbstractMobCartBlock;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.compat.CreateTrainAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -38,8 +39,8 @@ import java.util.List;
  * whole block is disabled while redstone-powered (inverse control). Breaking the block releases the
  * stored mob so it is never lost.
  *
- * <p>Contains no Create references; the goggle panel that reads {@link #getDisplayType()} lives in a
- * separate client handler gated on Create's goggles.</p>
+ * <p>Create is only ever reached through {@link CreateTrainAccess} (train-carriage seats) and the
+ * separate client handler for the goggle panel that reads {@link #getDisplayType()} — both optional.</p>
  */
 public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
@@ -101,7 +102,40 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
     /** True if a solid block occupies the position (blocks release; rails/air are not solid). */
     protected boolean outputBlocked(Level level, BlockPos pos) {
-        return !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+        BlockState state = level.getBlockState(pos);
+        // Create tracks do have a collision shape, but they are a valid target rather than a gate.
+        if (CreateTrainAccess.isTrack(state)) {
+            return false;
+        }
+        return !state.getCollisionShape(level, pos).isEmpty();
+    }
+
+    /**
+     * Looks for the Create track this block points at. Starting at {@code from}, it walks up to
+     * {@code track_search_distance} blocks along {@code dir} so the block does not have to sit
+     * directly in the track bed — it may stand a few blocks off to the side, next to the carriage
+     * body. The scan stops at the first solid block, so it never reaches through a wall.
+     *
+     * @return the track position, or null if the sub-feature is off, Create is missing, or no track
+     *         is in range
+     */
+    @Nullable
+    protected BlockPos findTrackTarget(Level level, BlockPos from, Direction dir) {
+        if (!CreateTrainAccess.isCreateLoaded() || !MobCartLoaderModule.isTrainSupportEnabled()) {
+            return null;
+        }
+        int distance = MobCartLoaderModule.getTrackSearchDistance();
+        for (int i = 0; i < distance; i++) {
+            BlockPos pos = from.relative(dir, i);
+            BlockState state = level.getBlockState(pos);
+            if (CreateTrainAccess.isTrack(state)) {
+                return pos;
+            }
+            if (!state.getCollisionShape(level, pos).isEmpty()) {
+                return null; // a wall between the block and the track — don't reach through it
+            }
+        }
+        return null;
     }
 
     // ---- Storage ----

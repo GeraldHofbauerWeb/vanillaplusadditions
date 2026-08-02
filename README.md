@@ -59,9 +59,10 @@ Creates an atmospheric, spooky experience in configured structures (default: Wit
 ### 🧱 Blocks, Rails & Create Companions
 
 #### 🚃 Mob Cart Loader
-Two directional blocks that automate moving mobs in and out of minecarts on the adjacent rail:
+Two directional blocks that automate moving mobs in and out of minecarts on the adjacent rail — and, with Create, in and out of train carriages:
 - **Mob Loader** boards a mob standing in the adjacent pen into a parked, empty rideable minecart.
 - **Mob Unloader** ejects a mob riding a parked minecart into the adjacent pen.
+- **Create trains** (optional, on by default): point the loader's **output** face — or the unloader's **input** face — at a **Create track** instead of a rail, and the same blocks serve **carriage seats**. The block doesn't have to sit in the track bed: it scans up to 3 blocks along its facing direction (configurable), so it can stand off to the side next to the carriage body — but the scan stops at the first solid block, so it never reaches through a wall. The mob goes into (or comes out of) the seat nearest to that track, within a configurable radius (default 4 blocks). Only **standing** trains are served, so a train passing through is never touched. Unlike Create's own seats this deliberately ignores Create's `seatHostileMobs` restriction — hostile mobs can be shipped by rail, and the comparator still tells you what's aboard.
 - **Inverse redstone**: active by default, a redstone signal disables the block. 6-way directional with a distinct **input** and **output** face (flow chevrons on the glass sides point input → output). Never touches players.
 - **Comparator output** on the stored mob: `0` = empty, `1` = a hostile mob (MONSTER category), `2` = a friendly/neutral mob — so redstone can react to *what* is being moved.
 - The affected mob spins as a **live model inside the glass block**; with Create's Engineering Goggles a stats panel shows the mob type and (while sneaking) its health.
@@ -189,7 +190,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `arm_target_overlay` | [Create](https://modrinth.com/mod/create) | Overlay inactive (it visualizes Create's Mechanical Arm targets) |
 | `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
 | `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
-| `mob_cart_loader` | Create *(optional)* | Fully functional — the goggle stats panel just won't show |
+| `mob_cart_loader` | Create *(optional)* | Minecart loading/unloading fully functional — train-carriage seats and the goggle stats panel need Create |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
 | `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
 | `overpacked_extensions` | [Overpacked](https://modrinth.com/mod/overpacked) + [Curios](https://modrinth.com/mod/curios) | Slowdown override still works with Overpacked alone; backpack keybinds + sort button are inert without a worn giant backpack |

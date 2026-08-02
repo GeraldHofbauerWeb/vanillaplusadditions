@@ -4,6 +4,25 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.57] - 2026-08-03
+
+### Added
+- **Mob Loader/Unloader bedienen jetzt auch Create-Züge**: Zeigt die Output-Fläche des Loaders —
+  bzw. die Input-Fläche des Unloaders — auf ein **Create-Gleis** statt auf eine Rail, setzen dieselben
+  Blöcke den Mob in einen **Waggon-Sitz** (bzw. holen ihn dort heraus). Es wird der Sitz genommen, der
+  dem Gleis am nächsten ist. Nur **stehende** Züge werden bedient, ein durchfahrender Zug bleibt
+  unangetastet. Ohne Create ändert sich nichts, das Minecart-Verhalten bleibt identisch.
+- Der Block muss **nicht im Gleisbett stehen**: er scannt bis zu `track_search_distance` Blöcke
+  entlang seiner Blickrichtung nach einem Gleis und darf so seitlich neben dem Wagenkasten stehen.
+  Der Scan stoppt am ersten festen Block, greift also nie durch eine Wand.
+- Neue Config-Sektion `[modules.mob_cart_loader.create_trains]`: `enabled` (Default `true`),
+  `track_search_distance` (Default `3`, 1 = direkt am Gleis), `seat_search_radius` (Default `4.0`,
+  gemessen ab dem gefundenen Gleis).
+
+### Notes
+- Creates eigene `seatHostileMobs`-Einschränkung wird bewusst **ignoriert** — feindliche Mobs lassen
+  sich per Zug verschicken, und der Comparator zeigt weiterhin an, was gerade an Bord geht.
+
 ## [1.0.0-beta.56] - 2026-07-28
 
 ### Changed

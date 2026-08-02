@@ -122,6 +122,30 @@ public class MobCartLoaderModule extends AbstractModule<MobCartLoaderModule, Mob
         return module != null ? module.getConfig().getCheckIntervalTicks() : 5;
     }
 
+    /**
+     * @return true if the blocks may also serve Create train carriage seats (default true).
+     */
+    public static boolean isTrainSupportEnabled() {
+        MobCartLoaderModule module = instance;
+        return module == null || module.getConfig().isTrainSupportEnabled();
+    }
+
+    /**
+     * @return how many blocks along its facing direction a block looks for a Create track (default 3).
+     */
+    public static int getTrackSearchDistance() {
+        MobCartLoaderModule module = instance;
+        return module != null ? module.getConfig().getTrackSearchDistance() : 3;
+    }
+
+    /**
+     * @return the maximum distance in blocks between the track block and a carriage seat (default 4).
+     */
+    public static double getTrainSeatSearchRadius() {
+        MobCartLoaderModule module = instance;
+        return module != null ? module.getConfig().getTrainSeatSearchRadius() : 4.0;
+    }
+
     // ---- Lifecycle ----
 
     @Override

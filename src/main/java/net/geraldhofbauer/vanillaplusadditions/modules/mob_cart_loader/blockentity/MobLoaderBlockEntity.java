@@ -2,6 +2,8 @@ package net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.blockent
 
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.block.AbstractMobCartBlock;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.compat.CreateTrainAccess;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.compat.CreateTrainAccess.TrainSeat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -15,7 +17,8 @@ import java.util.List;
 
 /**
  * Captures a mob from the adjacent pen (input side) and holds it inside; releases it into a parked,
- * empty rideable minecart on the output side once that side is unobstructed.
+ * empty rideable minecart on the output side once that side is unobstructed. If the output side is a
+ * Create track instead, the mob is seated in the nearest free seat of a standing train carriage.
  */
 public class MobLoaderBlockEntity extends AbstractMobCartBlockEntity {
 
@@ -42,13 +45,28 @@ public class MobLoaderBlockEntity extends AbstractMobCartBlockEntity {
             return;
         }
         Minecart cart = findParkedEmptyMinecart(level, out);
-        if (cart == null) {
+        if (cart != null) {
+            Entity mob = takeStoredEntity(level, cart.getX(), cart.getY(), cart.getZ());
+            if (mob != null) {
+                level.addFreshEntity(mob);
+                mob.startRiding(cart, true);
+            }
             return;
         }
-        Entity mob = takeStoredEntity(level, cart.getX(), cart.getY(), cart.getZ());
+        // No cart — if the output points at a Create track, board a standing train instead.
+        BlockPos track = findTrackTarget(level, out, facing(state).getOpposite());
+        if (track == null) {
+            return;
+        }
+        TrainSeat seat = CreateTrainAccess.findFreeSeat(level, track,
+                MobCartLoaderModule.getTrainSeatSearchRadius());
+        if (seat == null) {
+            return;
+        }
+        Entity mob = takeStoredEntity(level, seat.worldPos().x, seat.worldPos().y, seat.worldPos().z);
         if (mob != null) {
             level.addFreshEntity(mob);
-            mob.startRiding(cart, true);
+            CreateTrainAccess.seat(seat, mob);
         }
     }
 
