@@ -1,0 +1,9 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "0": "vanillaplusadditions:block/chunk_loader_track",
+    "1": "vanillaplusadditions:block/chunk_loader_track_mip",
+    "2": "vanillaplusadditions:block/chunk_loader_track_crossing",
+    "particle": "vanillaplusadditions:block/chunk_loader_track"
+  }
+}

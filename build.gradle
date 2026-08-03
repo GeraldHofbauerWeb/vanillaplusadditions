@@ -126,6 +126,15 @@ dependencies {
     // Create dependency
     implementation files("libs/create-1.21.1-6.0.9.jar")
 
+    // Create's jar-in-jar libs (Registrate/Flywheel/Ponder+Catnip), extracted for COMPILE ONLY —
+    // needed to subclass TrackBlock / use TrackMaterialFactory (train_chunk_loading module).
+    // Runtime copies come from Create's own META-INF/jarjar; adding these to localRuntime would
+    // double-load them. Re-extract on Create upgrades:
+    //   unzip -j libs/create-<ver>.jar 'META-INF/jarjar/*.jar' -d libs/create-nested/
+    compileOnly files("libs/create-nested/Registrate-MC1.21-1.3.0+67.jar",
+                      "libs/create-nested/flywheel-neoforge-1.21.1-1.0.6.jar",
+                      "libs/create-nested/ponder-neoforge-1.0.81+mc1.21.1.jar")
+
     // Optional Sable / Create Aeronautics dependency for sub-level support
     // The jar is intentionally local-only due third-party licensing constraints.
     def sableJars = fileTree("libs") {
@@ -410,6 +419,10 @@ def standaloneModules = [
     [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'texture_kill', displayName: 'Vanilla Plus: Texture Kill' ],
+    [ moduleId: 'train_chunk_loading', displayName: 'Vanilla Plus: Train Chunk Loading',
+      dataGlobs: ['data/create/tags/block/tracks.json',
+                  'data/create/tags/block/girdable_tracks.json'],
+      moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'wither_skeleton', displayName: 'Vanilla Plus: Wither Skeleton' ],
 ]
 standaloneModules.each {

@@ -1,0 +1,7 @@
+{
+  "parent": "create:block/track/teleport",
+  "textures": {
+    "3": "vanillaplusadditions:block/chunk_loader_track",
+    "particle": "vanillaplusadditions:block/chunk_loader_track"
+  }
+}

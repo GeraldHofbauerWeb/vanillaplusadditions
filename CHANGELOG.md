@@ -4,6 +4,38 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.58] - 2026-08-03
+
+### Added
+- **Neues Modul `train_chunk_loading` — Chunk Loader Track für Create-Züge**: Eine echte,
+  verbindbare Create-Track-Variante (eigenes `TrackMaterial`, Kurven/Steigungen/Girder wie beim
+  normalen Gleis, Optik = blau umgefärbter Create-Track inkl. Kurven), die Chunks um darüber
+  fahrende Züge geladen hält. Create selbst simuliert Züge durch ungeladene Chunks nur — Bord-
+  Maschinen (Bohrer, Deployer, Hopper, Storage-Interfaces) stehen dabei still; über Chunk-Loader-
+  Gleisen laufen sie weiter. Mechanik 1:1 wie die Chunk Loader Rail: aktiv solange ein Waggon
+  drübersteht, Release nach Timeout, Persistenz über Restarts, `only_while_players_online`-Gate,
+  Debug-Overlay mit Chunk-Grenzen. Rezept (per Code): 8× Create-Gleis um 1 Ender Pearl → 8 Stück.
+  Hinweis: Loader-Gleise enger als `chunk_load_radius × 16` Blöcke setzen — Gleise in ungeladenen
+  Chunks sehen den (simulierten) Zug nicht.
+- **Ponder-Entry für den Chunk Loader Track** („W" auf dem Item halten): erklärt in vier Schritten,
+  was das Gleis tut und in welchen Abständen man es am besten platziert (Faustregel
+  `chunk_load_radius × 16` Blöcke, Standard 32), inkl. Timeout-/Persistenz-Hinweis. En + De
+  lokalisiert.
+- **Mob Loader/Unloader: Sneak-Platzieren dreht den Block um 180°** — beide Orientierungen sind
+  damit von derselben Position aus setzbar.
+- **Item Vault Viewer öffnet jetzt auch Vaults auf Create-Contraptions** (Carts, Züge, Aufzüge):
+  Strg+Rechtsklick mit Engineering Goggles auf ein gemountetes Vault zeigt den aggregierten
+  Inhalt — auch während der Fahrt. Create selbst verweigert dort bewusst jede GUI. Der Viewer
+  schließt sich wie gewohnt ab 64 Blöcken Distanz oder beim Disassemblieren.
+
+### Internal
+- `ChunkLoaderManager`/`ChunkLoaderData` aus `minecart_chunk_loading` nach `util/chunkload`
+  generalisiert (pro Modul eigener SavedData-Name + TicketController; keine World-Data-Migration
+  nötig).
+- Creates jar-in-jar-Libs (Registrate/Flywheel/Ponder) nach `libs/create-nested/` extrahiert und
+  als **compileOnly** eingebunden — nötig, um `TrackBlock`/`TrackMaterialFactory` zu kompilieren.
+  Zur Laufzeit kommen die Klassen weiterhin aus Creates eigenem jarjar.
+
 ## [1.0.0-beta.57] - 2026-08-03
 
 ### Added

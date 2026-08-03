@@ -71,6 +71,9 @@ Two directional blocks that automate moving mobs in and out of minecarts on the 
 #### 🛤️ Minecart Chunk Loading
 Adds a **Chunk Loader Rail** that keeps chunks loaded around traveling minecarts, so long-distance rail networks don't stall at chunk borders. Chunks are forced only while a cart is active and released after a timeout.
 
+#### 🚄 Train Chunk Loading
+Adds a **Chunk Loader Track** — a real, connectable **Create train track** variant (curves, slopes, girders — everything a normal track does) that keeps chunks loaded around trains passing over it. Create itself only *simulates* trains through unloaded chunks: they keep moving, but onboard drills, deployers, hoppers and portable storage interfaces stop working. Over Chunk Loader Tracks they keep running. Same mechanics as the Chunk Loader Rail: chunks are forced while a carriage is over the track and released after a timeout; state survives restarts. Craft it like the rail: 8 train tracks around an ender pearl → 8 tracks. **Placement tip:** a track in an *unloaded* chunk can't see the train — space loader tracks closer than `chunk_load_radius × 16` blocks along the line so the loaded corridor rolls along with the train. A **Ponder entry** (hold **W** on the item) walks through the placement rules in-game.
+
 #### ⚓ Stationary Chunk Loader
 A **Chunk Anchor** block that force-loads its chunk (plus a configurable radius) while redstone-powered — for redstone clocks and Create contraptions that must keep running in unloaded chunks.
 
@@ -137,7 +140,7 @@ The shared **Engineering-Goggles debug-overlay** framework other modules plug in
 While wearing Engineering Goggles, shows a Create **Mechanical Arm's** input/output target positions in the world — makes configuring arms much easier.
 
 #### 📦 Item Vault Viewer
-Lets players view the contents of a Create **Item Vault** by looking at it with Engineering Goggles.
+Lets players view the aggregated contents of a Create **Item Vault**: wear Engineering Goggles and **Ctrl+right-click** the vault (modifier key rebindable). Works on placed vaults **and on vaults mounted on moving Create contraptions** — carts, trains, elevators — where Create itself deliberately opens nothing.
 
 #### 🎥 Static FOV
 Stops the field-of-view from widening when the player moves faster (sprinting, Speed, elytra/flight) — a steadier view.
@@ -189,6 +192,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 |---|---|---|
 | `arm_target_overlay` | [Create](https://modrinth.com/mod/create) | Overlay inactive (it visualizes Create's Mechanical Arm targets) |
 | `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
+| `train_chunk_loading` | Create | Module skips initialization entirely (it adds a Create track variant) |
 | `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
 | `mob_cart_loader` | Create *(optional)* | Minecart loading/unloading fully functional — train-carriage seats and the goggle stats panel need Create |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |

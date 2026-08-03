@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "vanillaplusadditions:chunk_loader_track",
+      "required": false
+    }
+  ]
+}

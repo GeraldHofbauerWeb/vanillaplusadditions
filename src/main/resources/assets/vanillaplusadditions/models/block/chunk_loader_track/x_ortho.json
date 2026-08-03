@@ -1,0 +1,8 @@
+{
+  "parent": "create:block/track/x_ortho",
+  "textures": {
+    "1": "vanillaplusadditions:block/chunk_loader_track",
+    "2": "vanillaplusadditions:block/chunk_loader_track_mip",
+    "particle": "vanillaplusadditions:block/chunk_loader_track"
+  }
+}

@@ -37,6 +37,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLo
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.MinecartChunkLoadingModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.train_chunk_loading.TrainChunkLoadingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stationary_chunk_loader.StationaryChunkLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
@@ -133,6 +134,7 @@ public class VanillaPlusAdditions {
         // Debug overlay framework first so other modules can plug renderers into it.
         moduleManager.registerModule(new DebugOverlayModule());
         moduleManager.registerModule(new MinecartChunkLoadingModule());
+        moduleManager.registerModule(new TrainChunkLoadingModule());
         moduleManager.registerModule(new StationaryChunkLoaderModule());
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
         moduleManager.registerModule(new WitherSkeletonModule());

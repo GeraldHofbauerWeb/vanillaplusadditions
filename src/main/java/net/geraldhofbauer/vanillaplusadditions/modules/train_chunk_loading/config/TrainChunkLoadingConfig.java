@@ -1,0 +1,73 @@
+package net.geraldhofbauer.vanillaplusadditions.modules.train_chunk_loading.config;
+
+import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.train_chunk_loading.TrainChunkLoadingModule;
+import net.neoforged.neoforge.common.ModConfigSpec;
+
+public class TrainChunkLoadingConfig
+        extends AbstractModuleConfig<TrainChunkLoadingModule, TrainChunkLoadingConfig> {
+
+    private ModConfigSpec.IntValue chunkLoadRadius;
+    private ModConfigSpec.IntValue activeTimeoutSeconds;
+    private ModConfigSpec.BooleanValue onlyWhilePlayersOnline;
+    private ModConfigSpec.IntValue chunkBorderScanRadius;
+    private ModConfigSpec.IntValue chunkBorderVerticalSpan;
+
+    public TrainChunkLoadingConfig(TrainChunkLoadingModule module) {
+        super(module);
+    }
+
+    @Override
+    protected void buildModuleSpecificConfig(ModConfigSpec.Builder builder) {
+        chunkLoadRadius = builder
+                .comment("Chunk radius (Chebyshev) force-loaded around an active loader track.",
+                        "0 = only the track's own chunk; 1 = a 3x3 area; 2 = a 5x5 area.",
+                        "This is the rolling-load LOOKAHEAD: a larger radius keeps a moving train inside the",
+                        "loaded region longer so the window rolls along with it. Default 2 (5x5).")
+                .defineInRange("chunk_load_radius", 2, 0, 8);
+
+        activeTimeoutSeconds = builder
+                .comment("How long a loader track stays active (keeps chunks loaded) after the last",
+                        "train carriage passed over it, in seconds.")
+                .defineInRange("active_timeout_seconds", 15, 1, 300);
+
+        onlyWhilePlayersOnline = builder
+                .comment("Only force-load chunks while at least one player is online.",
+                        "When the last player leaves, loading pauses; on server start / first join the",
+                        "track chunks that had trains are reloaded so waiting trains continue moving.",
+                        "false = keep loading even with nobody online (e.g. perpetual loops).")
+                .define("only_while_players_online", true);
+
+        builder.push("overlay");
+        chunkBorderScanRadius = builder
+                .comment("Debug overlay: how many chunks around the player are scanned for loader",
+                        "tracks to draw permanent chunk borders for.")
+                .defineInRange("chunk_border_scan_radius", 8, 1, 16);
+
+        chunkBorderVerticalSpan = builder
+                .comment("Debug overlay: vertical extent (blocks above/below the track) of the",
+                        "rendered chunk border band.")
+                .defineInRange("chunk_border_vertical_span", 24, 4, 256);
+        builder.pop();
+    }
+
+    public int getChunkLoadRadius() {
+        return chunkLoadRadius != null ? chunkLoadRadius.get() : 2;
+    }
+
+    public int getActiveTimeoutSeconds() {
+        return activeTimeoutSeconds != null ? activeTimeoutSeconds.get() : 15;
+    }
+
+    public boolean isOnlyWhilePlayersOnline() {
+        return onlyWhilePlayersOnline == null || onlyWhilePlayersOnline.get();
+    }
+
+    public int getChunkBorderScanRadius() {
+        return chunkBorderScanRadius != null ? chunkBorderScanRadius.get() : 8;
+    }
+
+    public int getChunkBorderVerticalSpan() {
+        return chunkBorderVerticalSpan != null ? chunkBorderVerticalSpan.get() : 24;
+    }
+}

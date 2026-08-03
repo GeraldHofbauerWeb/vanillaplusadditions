@@ -32,8 +32,8 @@ import java.util.List;
  * signal), disabled while powered.
  *
  * <p>{@link #FACING} stores the <b>input</b> direction (the face pointing toward the player when
- * placed, observer-style); the output is the opposite face. Which physical side is the cart vs the
- * pen depends on the subclass. Block-entity logic (cart/mob detection, loading/unloading, mob
+ * placed, observer-style, or away from them when sneak-placed); the output is the opposite face.
+ * Which physical side is the cart vs the pen depends on the subclass. Block-entity logic (cart/mob detection, loading/unloading, mob
  * display sync) lives in {@link AbstractMobCartBlockEntity}.</p>
  */
 public abstract class AbstractMobCartBlock extends BaseEntityBlock {
@@ -62,8 +62,13 @@ public abstract class AbstractMobCartBlock extends BaseEntityBlock {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         // Input face (FACING) points toward the player (observer-style); output is the opposite side.
+        // Sneak-placing flips the block by 180°, so both orientations are reachable from one spot.
+        Direction input = context.getNearestLookingDirection().getOpposite();
+        if (context.isSecondaryUseActive()) {
+            input = input.getOpposite();
+        }
         return this.defaultBlockState()
-                .setValue(FACING, context.getNearestLookingDirection().getOpposite())
+                .setValue(FACING, input)
                 .setValue(POWERED, context.getLevel().hasNeighborSignal(context.getClickedPos()));
     }
 
