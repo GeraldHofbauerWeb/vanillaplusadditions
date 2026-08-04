@@ -4,6 +4,19 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.60] - 2026-08-04
+
+### Fixed
+- **Water Wheel Unstucker erkennt jetzt auch hängende Räder, die „Overstressed" melden.** Bisher
+  wurden overstresste Räder grundsätzlich in Ruhe gelassen (`1 skipped (overstressed)`), auch wenn
+  nur Neu-Platzieren half. Grund: Verliert ein Rad beim Chunk-Reload seinen Flow-Score, steuert es
+  **keine Kapazität** mehr bei — die unveränderte Nachfrage kippt das Netz, und jedes Rad darauf
+  meldet „Overstressed". Es ist also derselbe Reload-Desync, nur mit anderem Symptom.
+  Unterschieden wird jetzt an der erzeugten Drehzahl (`clamp(flowScore, ±1) * 8 / size`, hängt nur
+  am Wasserfluss, nie am Stress-Netz): `!= 0` → echte Überlastung, wird weiterhin **nie** angefasst;
+  `== 0` → Desync, wird re-initialisiert. Gilt für Auto-Erkennung und `/vpaunstuck`; die Befehls-
+  Summary weist beide Fälle getrennt aus.
+
 ## [1.0.0-beta.59] - 2026-08-04
 
 ### Fixed

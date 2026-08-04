@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * <p>A wheel is a stall candidate when its kinetic speed is 0 although it is neither overstressed
  * (a legitimate stop we never fight) nor dry (no water/lava nearby - a decorative wheel). The fix
- * mimics the manual break + re-place players use ({@link #reinitWheel}): it wakes the surrounding
+ * mimics the manual break + re-place players use ({@link #beginReinit}): it wakes the surrounding
  * fluids so settled water re-flows, then re-runs Create's own flow-score recompute via a scheduled
  * block tick. After {@code max_fix_attempts} consecutive failures the wheel backs off for ~5 minutes
  * with a one-time warning; a wheel seen spinning resets all of its state.</p>
@@ -35,6 +35,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * check shortly after a chunk with wheels loads (exactly when the reload desync strikes), and a
  * periodic sweep as a safety net. All state is server-thread-only except the post-load hand-off
  * queue, which chunk-load events may fill from worker threads.</p>
+ *
+ * <p><b>Overstressed wheels</b> come in two flavours, told apart by the wheel's own generated speed
+ * ({@code clamp(flowScore, -1, 1) * 8 / size} — derived purely from the water flow, never from the
+ * network's stress):</p>
+ * <ul>
+ *   <li><i>generated speed != 0</i> — a genuine overload. The wheel's flow is intact and it still
+ *       contributes its capacity, the network simply demands more. Never touched.</li>
+ *   <li><i>generated speed == 0</i> — the reload desync, wearing an overstressed mask: having lost
+ *       its flow score the wheel contributes nothing, so the remaining demand tips the network over
+ *       and every wheel on it reports "Overstressed". Treated as stalled and re-initialised.</li>
+ * </ul>
  */
 class WaterWheelStallManager {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -181,8 +192,9 @@ class WaterWheelStallManager {
             clearState(level, pos);
             return;
         }
-        if (WaterWheelKinetics.isOverStressed(be)) {
-            // Legitimate stop - never fight Create's stress mechanics.
+        if (WaterWheelKinetics.isOverStressed(be) && WaterWheelKinetics.getGeneratedSpeed(be) != 0.0f) {
+            // Genuine overload: the wheel's flow is intact, it still contributes its capacity, the
+            // network simply demands more. Never fight Create's stress mechanics.
             clearState(level, pos);
             return;
         }
@@ -237,6 +249,7 @@ class WaterWheelStallManager {
      */
     int unstickAll(MinecraftServer server) {
         int started = 0;
+        int staleStress = 0;
         int skippedOverstressed = 0;
         int skippedNoFluid = 0;
         int spinning = 0;
@@ -254,25 +267,32 @@ class WaterWheelStallManager {
                     spinning++;
                     continue;
                 }
-                if (WaterWheelKinetics.isOverStressed(be)) {
-                    skippedOverstressed++;
-                    continue;
-                }
                 if (!hasNearbyFluid(level, pos)) {
                     skippedNoFluid++;
                     continue;
                 }
+                float generated = WaterWheelKinetics.getGeneratedSpeed(be);
+                boolean stressed = WaterWheelKinetics.isOverStressed(be);
+                if (stressed && generated != 0.0f) {
+                    // Genuine overload — the wheel still produces its share. Leave it alone.
+                    skippedOverstressed++;
+                    continue;
+                }
+                if (stressed) {
+                    staleStress++;
+                }
                 LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck: re-initialising stalled wheel at {} ({}),"
-                        + " generatedSpeed={}", pos.toShortString(), level.dimension().location(),
-                        WaterWheelKinetics.getGeneratedSpeed(be));
+                        + " generatedSpeed={}, overstressed={}", pos.toShortString(), level.dimension().location(),
+                        generated, stressed);
                 beginReinit(level, pos, be);
                 clearState(level, pos); // fresh on-demand fix - drop any prior backoff
                 started++;
             }
         }
-        LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck summary: {} re-initialised, {} already spinning,"
-                        + " {} skipped (overstressed), {} skipped (no water nearby). Outcomes logged shortly.",
-                started, spinning, skippedOverstressed, skippedNoFluid);
+        LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck summary: {} re-initialised ({} of them stuck on a"
+                        + " stale overstressed state), {} already spinning, {} skipped (genuinely overstressed),"
+                        + " {} skipped (no water nearby). Outcomes logged shortly.",
+                started, staleStress, spinning, skippedOverstressed, skippedNoFluid);
         return started;
     }
 
