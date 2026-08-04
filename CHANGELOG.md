@@ -4,6 +4,22 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.59] - 2026-08-04
+
+### Fixed
+- **Item Vault Viewer auf Create-Contraptions funktioniert jetzt wirklich** (in beta.58 ausgeliefert,
+  aber wirkungslos). Zwei unabhängige Fehler:
+  - *Client:* Der Raytrace auf Contraptions fand den Vault nicht. Er läuft jetzt exakt wie Creates
+    eigener (`ContraptionHandler.loadedContraptions` statt `getEntitiesOfClass`, Ray vorab auf den
+    nächsten Weltblock gekürzt statt nachträglicher Sichtprüfung) — Contraption-Entities sind
+    `isPickable() == false`, weshalb der alte `mc.hitResult`-Vergleich Treffer verwerfen konnte.
+  - *Server:* Es wurde nur ein einzelner Vault-Block gelesen (meist ein leerer) → GUI blieb leer.
+    Ein Multiblock-Vault hat kein gemeinsames Inventar: jeder Block hält seine eigenen 20 Slots,
+    der Controller legt zur Laufzeit nur einen `SameSizeCombinedInvWrapper` darüber, und Creates
+    Assembly mountet jeden Block einzeln. Der Viewer sammelt jetzt alle Mitglieder des Multiblocks
+    ein (über den `Controller`-Stempel in der Block-NBT) und liest sie in Creates Mitglieder-
+    Reihenfolge zusammen.
+
 ## [1.0.0-beta.58] - 2026-08-03
 
 ### Added

@@ -111,30 +111,45 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
                     }
 
                     ServerPlayer player = (ServerPlayer) ctx.player();
+                    getLogger().debug("[IVV/contraption] packet from {}: entity #{} local {}",
+                            player.getGameProfile().getName(), packet.entityId(), packet.localPos());
                     if (!GogglesItem.isWearingGoggles(player) || player.isShiftKeyDown()) {
+                        getLogger().debug("[IVV/contraption] rejected: goggles/sneak gate");
                         return;
                     }
                     if (!(player.level().getEntity(packet.entityId())
                             instanceof AbstractContraptionEntity contraption) || !contraption.isAlive()) {
+                        getLogger().debug("[IVV/contraption] rejected: entity #{} not a live contraption ({})",
+                                packet.entityId(), player.level().getEntity(packet.entityId()));
                         return;
                     }
                     BlockPos localPos = packet.localPos();
                     StructureTemplate.StructureBlockInfo info =
                             contraption.getContraption().getBlocks().get(localPos);
                     if (info == null || !ItemVaultBlock.isVault(info.state())) {
+                        getLogger().debug("[IVV/contraption] rejected: block at local {} is {}",
+                                localPos, info == null ? "<absent>" : info.state().getBlock());
                         return;
                     }
                     Vec3 global = contraption.toGlobalVector(Vec3.atCenterOf(localPos), 1.0f);
                     if (player.distanceToSqr(global) > 64.0 * 64.0) {
+                        getLogger().debug("[IVV/contraption] rejected: too far ({} blocks)",
+                                Math.sqrt(player.distanceToSqr(global)));
                         return;
                     }
 
-                    IItemHandler inventory = ContraptionVaultAccess.findVaultStorage(contraption, localPos);
-                    if (inventory == null) {
+                    List<IItemHandler> inventories =
+                            ContraptionVaultAccess.findVaultStorages(contraption, localPos);
+                    if (inventories.isEmpty()) {
+                        getLogger().debug("[IVV/contraption] rejected: no mounted storage for local {} "
+                                        + "(known storages: {})", localPos,
+                                contraption.getContraption().getStorage().getAllItemStorages().keySet());
                         return;
                     }
 
-                    List<ItemStack> stacks = aggregateStacks(inventory);
+                    List<ItemStack> stacks = aggregateStacks(inventories);
+                    getLogger().debug("[IVV/contraption] opening viewer with {} stacks "
+                            + "({} vault blocks)", stacks.size(), inventories.size());
                     openViewer(player,
                             new ItemVaultViewerMenu.ContraptionAnchor(contraption.getId(), localPos), stacks);
                 }));
@@ -157,7 +172,22 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
     }
 
     private static List<ItemStack> aggregateStacks(IItemHandler handler) {
+        return aggregateStacks(List.of(handler));
+    }
+
+    /**
+     * Merges equal stacks across one or more handlers. A multiblock vault on a contraption is
+     * mounted as one storage per block, so its contents only add up when all of them are read.
+     */
+    private static List<ItemStack> aggregateStacks(List<IItemHandler> handlers) {
         List<ItemStack> stacks = new ArrayList<>();
+        for (IItemHandler handler : handlers) {
+            collectStacks(handler, stacks);
+        }
+        return stacks;
+    }
+
+    private static void collectStacks(IItemHandler handler, List<ItemStack> stacks) {
         for (int slot = 0; slot < handler.getSlots(); slot++) {
             ItemStack stack = handler.getStackInSlot(slot);
             if (stack.isEmpty()) {
@@ -177,7 +207,6 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
                 stacks.add(stack.copy());
             }
         }
-        return stacks;
     }
 
     private static BlockEntity getController(BlockEntity blockEntity) {

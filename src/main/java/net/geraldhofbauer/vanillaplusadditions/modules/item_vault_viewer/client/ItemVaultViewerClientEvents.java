@@ -1,9 +1,11 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.client;
 
 import com.simibubi.create.content.contraptions.AbstractContraptionEntity;
+import com.simibubi.create.content.contraptions.ContraptionHandler;
 import com.simibubi.create.content.contraptions.ContraptionHandlerClient;
 import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import com.simibubi.create.content.logistics.vault.ItemVaultBlock;
+import net.createmod.catnip.data.Couple;
 import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
@@ -18,7 +20,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -27,9 +28,16 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.ref.WeakReference;
 
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class ItemVaultViewerClientEvents {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ItemVaultViewerClientEvents.class);
+
     private ItemVaultViewerClientEvents() {
     }
 
@@ -74,8 +82,10 @@ public final class ItemVaultViewerClientEvents {
     /**
      * Contraption vaults never fire {@link PlayerInteractEvent.RightClickBlock} — Create routes
      * contraption clicks through this input event ({@code ContraptionHandlerClient}). We hook it
-     * at HIGH priority (before Create's own handler), ray trace nearby contraptions ourselves and
-     * open the viewer for a hit vault block. Ray inputs are computed catnip-free.
+     * at HIGH priority (before Create's own handler) and mirror Create's own lookup exactly:
+     * the same ray inputs (already clamped to the nearest world block), the same contraption
+     * registry ({@code ContraptionHandler.loadedContraptions}) and the same ray trace. Only when
+     * the hit block is a vault do we take over; anything else falls through to Create untouched.
      */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onUseKeyOnContraption(InputEvent.InteractionKeyMappingTriggered event) {
@@ -87,7 +97,7 @@ public final class ItemVaultViewerClientEvents {
         }
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.level == null) {
+        if (player == null || mc.level == null || player.isSpectator()) {
             return;
         }
         if (player.isShiftKeyDown() || !ItemVaultViewerKeybinds.isModifierDown()) {
@@ -98,47 +108,79 @@ public final class ItemVaultViewerClientEvents {
             return;
         }
         if (!GogglesItem.isWearingGoggles(player)) {
+            diag("modifier held but no goggles worn — ignoring");
             return;
         }
 
-        double reach = player.blockInteractionRange();
-        Vec3 from = player.getEyePosition(1.0f);
-        Vec3 to = from.add(player.getViewVector(1.0f).scale(reach));
+        // Identical inputs to Create's own handler: origin at the eyes, target already shortened
+        // to the nearest world block so we never reach through walls.
+        Couple<Vec3> rayInputs = ContraptionHandlerClient.getRayInputs(player);
+        Vec3 origin = rayInputs.getFirst();
+        Vec3 target = rayInputs.getSecond();
+        AABB searchBox = new AABB(origin, target).inflate(16.0);
 
         AbstractContraptionEntity bestEntity = null;
         BlockPos bestLocalPos = null;
-        double bestDistSqr = Double.MAX_VALUE;
-        AABB searchBox = player.getBoundingBox().inflate(reach + 16);
-        for (AbstractContraptionEntity entity
-                : mc.level.getEntitiesOfClass(AbstractContraptionEntity.class, searchBox)) {
-            BlockHitResult hit = ContraptionHandlerClient.rayTraceContraption(from, to, entity);
+        double bestDistance = Double.MAX_VALUE;
+        int loaded = 0;
+        int inRange = 0;
+        int rayHits = 0;
+        String lastHitBlock = "-";
+
+        for (WeakReference<AbstractContraptionEntity> ref
+                : ContraptionHandler.loadedContraptions.get(mc.level).values()) {
+            AbstractContraptionEntity entity = ref.get();
+            if (entity == null) {
+                continue;
+            }
+            loaded++;
+            if (!entity.getBoundingBox().intersects(searchBox)) {
+                continue;
+            }
+            inRange++;
+            BlockHitResult hit = ContraptionHandlerClient.rayTraceContraption(origin, target, entity);
             if (hit == null) {
                 continue;
             }
+            rayHits++;
             StructureTemplate.StructureBlockInfo info =
                     entity.getContraption().getBlocks().get(hit.getBlockPos());
-            if (info == null || !ItemVaultBlock.isVault(info.state())) {
+            if (info == null) {
+                lastHitBlock = "<not in blocks map>";
                 continue;
             }
-            double distSqr = entity.toGlobalVector(hit.getLocation(), 1.0f).distanceToSqr(from);
-            if (distSqr < bestDistSqr) {
-                bestDistSqr = distSqr;
+            lastHitBlock = String.valueOf(info.state().getBlock());
+            if (!ItemVaultBlock.isVault(info.state())) {
+                continue;
+            }
+            double distance = entity.toGlobalVector(hit.getLocation(), 1.0f).distanceTo(origin);
+            if (distance < bestDistance) {
+                bestDistance = distance;
                 bestEntity = entity;
                 bestLocalPos = hit.getBlockPos();
             }
         }
+
         if (bestEntity == null) {
-            return;
-        }
-        // Don't reach "through" a closer world block the crosshair is actually pointing at.
-        if (mc.hitResult != null && mc.hitResult.getType() == HitResult.Type.BLOCK
-                && mc.hitResult.getLocation().distanceToSqr(from) < bestDistSqr) {
+            diag("no vault hit — contraptions loaded={} inRange={} rayHits={} lastHitBlock={} "
+                    + "origin={} target={}", loaded, inRange, rayHits, lastHitBlock, origin, target);
             return;
         }
 
+        diag("vault hit on contraption #{} at local {} (dist {}) — sending packet",
+                bestEntity.getId(), bestLocalPos, String.format("%.2f", bestDistance));
         event.setCanceled(true);
         event.setSwingHand(false);
         PacketDistributor.sendToServer(
                 new OpenContraptionVaultViewerPacket(bestEntity.getId(), bestLocalPos));
+    }
+
+    /**
+     * Traces why a contraption click did or did not open the viewer. Only ever reached on a
+     * deliberate modifier + use-key press; kept at debug level so it is one log config away when
+     * the ray trace needs investigating again.
+     */
+    private static void diag(String message, Object... args) {
+        LOGGER.debug("[IVV/contraption] " + message, args);
     }
 }
