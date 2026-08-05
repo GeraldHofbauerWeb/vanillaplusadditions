@@ -4,6 +4,23 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.61] - 2026-08-05
+
+### Fixed
+- **Flying Fish verdrängen keine Cods mehr.** Sie gehören zur Kategorie `WATER_AMBIENT` — derselben
+  wie Cod, Salmon, Tropical Fish und Pufferfish — und wurden mit Gewicht **28** in Warm, Lukewarm
+  und Deep Lukewarm Ocean eingefügt. Zum Vergleich: Cod hat dort **15** bzw. **8**. Der Cod-Anteil
+  fiel dadurch von ~33 % auf ~20 %, zusätzlich gedrückt durch das geteilte Mob-Cap der Kategorie.
+  Neu: Im **Warm Ocean** bleibt es bei Gewicht 28 (dort spawnt vanilla ohnehin kein Cod), in
+  **Lukewarm/Deep Lukewarm** nur noch **8**. Flying Fish bleiben gut findbar, Cod spawnt wieder
+  nahezu in Vanilla-Häufigkeit.
+
+### Changed
+- **Roher Flying Fish ist jetzt Katzenfutter** (`minecraft:cat_food`) — zähmen, heilen, anlocken und
+  züchten funktionieren damit genau wie mit Cod oder Salmon, weil `Cat.isFood()` und das Tempt-Goal
+  beide an diesem Tag hängen. Gekochter Fisch zählt bewusst nicht, wie in Vanilla; Ozelots haben
+  einen eigenen Tag (`ocelot_food`) und bleiben unverändert.
+
 ## [1.0.0-beta.60] - 2026-08-04
 
 ### Fixed

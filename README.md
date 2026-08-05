@@ -91,7 +91,7 @@ An **End-only conduit upgrade**: a distinct craftable item that renders like a v
 ### 🛠️ Items & Crafting
 
 #### 🐟 Flying Fish
-A new aquatic mob with spawn egg, bucket and cooked food variant, woven into vanilla fishing. **Flying Fish Boots** let you skim faster across the water surface and gain short leaps while sprinting on water.
+A new aquatic mob with spawn egg, bucket and cooked food variant, woven into vanilla fishing. **Flying Fish Boots** let you skim faster across the water surface and gain short leaps while sprinting on water. Raw Flying Fish also counts as **cat food** — it tames, heals and breeds cats just like cod does. Spawns are common in warm oceans (where cod does not spawn at all) and deliberately rare in lukewarm oceans, so they don't crowd cod out of the shared water-ambient mob cap.
 
 #### 📦 Stackables
 Makes normally-unstackable items stackable and raises stack sizes for configured items:
