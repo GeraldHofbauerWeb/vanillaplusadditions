@@ -4,6 +4,61 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.64] - 2026-08-05
+
+### Added
+- **Neues Modul `mob_spawn_overlay` — F3+M zeigt Monster-Spawnplätze.** Markiert jede Position,
+  an der feindliche Mobs spawnen können; das, was früher OptiFines `F7` konnte und mit
+  Sodium/Iris fehlt. Vanilla 1.21.1 hat dafür nichts: `handleDebugKeys` belegt nur
+  `1,2,3, A,B,C,D,G,H,I,L,N,P,Q,S,T,F4`, und keiner der 20 `DebugRenderer` deckt Spawns ab.
+  - **Rot** = spawnt jetzt zuverlässig, **gelb** = spawnt, sobald es dunkel wird, **violetter
+    Rand** = auch für die breitere Spinnen-Hitbox groß genug.
+  - Geprüft wird Vanillas eigene Kette: `SpawnPlacementTypes.ON_GROUND` (Block darunter gültig,
+    Block + Block darüber frei von Kollisionsform/Fluid/Redstone/`#prevent_mob_spawning_inside`),
+    Kollisionsfreiheit für die echte Spawn-Hitbox und der Lichttest gegen
+    `monsterSpawnBlockLightLimit` + `monsterSpawnLightTest` der **Dimension** statt hartkodierter
+    0–7 — Nether und End stimmen damit ebenfalls.
+  - Darstellung als flaches Bodenfeld mit tilebarer 45°-Streifentextur, deren UVs aus
+    Weltkoordinaten kommen und über die Zeit scrollen, plus additivem Shimmer-Pass. Marker sitzen
+    über die Kollisionsform des Blocks darunter bündig auf Halbstufen und Ackerland.
+  - Toggle-Taste, Scan-Radien, Rescan-Intervall, Farben, Streifenbreite, Scrollgeschwindigkeit,
+    Shimmer-Stärke und Röntgen-Modus sind konfigurierbar.
+  - Bewusst *nicht* geprüft: 24-Blöcke-Spielerabstand und Mob-Cap — beides ist momentan und würde
+    beim Spawn-Proofing nur stören. Ebenso kann das Overlay nicht sagen, *welcher* Mob spawnt:
+    `Biome.NETWORK_CODEC` überträgt `MobSpawnSettings.EMPTY`, der Client kennt die Spawn-Listen
+    der Biome also nicht.
+
+### Changed
+- **Build unterstützt jetzt client-only Mixins** (`clientMixins` je Standalone-Modul). Die landen
+  im `"client"`-Block der Mixin-Config, damit ein Dedicated Server sie überspringt, statt an
+  einer fehlenden Client-Klasse zu scheitern. Nötig für den `KeyboardHandler`-Hook, über den
+  F3+M sauber läuft — er setzt Vanillas `handledDebugKey`, sodass beim Loslassen von F3 nicht
+  zusätzlich der Debug-Screen aufgeht.
+
+### Fixed
+- **`/vpaunstuck` befreit jetzt auch Wasserräder, die auf einem Phantom-„Overstressed" festhängen.**
+  Bisher hat der Befehl jedes überstresste Rad, das noch Drehzahl erzeugt, pauschal übersprungen
+  („genuinely overstressed") — auf games2 blieben damit 7 Räder stehen, obwohl sie kein echter
+  Verbraucher blockierte. Grund: `KineticBlockEntity.getSpeed()` liefert bei `overStressed` hart 0,
+  Stillstand und Überlastung sehen von außen also identisch aus. Der Befehl unterscheidet sie jetzt,
+  bevor er einen einzigen Block anfasst:
+  - **Netz-Neuberechnung** (`updateNetwork()` + `sync()`) — rechnet Stress und Kapazität aus den
+    aktuellen Mitgliedern neu und schiebt das Ergebnis an alle. Räumt ein Netz auf, das noch Zahlen
+    aus einem längst verlassenen Zustand mit sich trägt. Läuft auch im periodischen Sweep, weil es
+    keine Blöcke verändert (`auto_fix` bleibt das Gate für Block-Eingriffe).
+  - **Phantom-Tally verwerfen** (nur per Befehl, `clear_phantom_stress`, Standard `true`) — Create
+    führt eine laufende Stress-/Kapazitätssumme für Mitglieder in ungeladenen Chunks
+    (`unloadedStress`/`unloadedCapacity`/`unloadedMembers`, in `calculateStress()` aufaddiert). Wird
+    ein Mitglied entfernt, während sein Chunk ungeladen ist, zieht es seinen Anteil nie wieder ab —
+    das Netz meldet dann für immer eine Überlastung, die keine existierende Maschine verursacht. Der
+    Befehl verwirft diese Summe, aber nur wenn die geladenen Mitglieder allein nachweislich unter
+    die geladene Kapazität passen. Wirklich ungeladene Maschinen melden sich beim nächsten
+    Chunk-Load selbst wieder an.
+  - **Echte Überlastung** überlebt beides und bleibt unangetastet — inklusive Log der konkreten
+    Zahlen (Kapazität, Stress, ungeladener Anteil, Mitgliederzahl), statt nur „skipped".
+  Die Zugriffe laufen wie im ganzen Modul über Reflection (Ponder-Abhängigkeit), gegen die
+  Server-Version Create 6.0.10 verifiziert; fehlt ein Feld, entfällt nur die jeweilige Stufe.
+
 ## [1.0.0-beta.63] - 2026-08-05
 
 ### Changed
