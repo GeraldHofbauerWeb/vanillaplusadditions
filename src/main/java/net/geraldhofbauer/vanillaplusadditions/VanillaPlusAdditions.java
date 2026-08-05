@@ -23,6 +23,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSign
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_spawn_overlay.MobSpawnOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.OverpackedExtensionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
@@ -166,6 +167,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new MobCartLoaderModule());
+        moduleManager.registerModule(new MobSpawnOverlayModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

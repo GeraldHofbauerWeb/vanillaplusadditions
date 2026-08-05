@@ -64,5 +64,7 @@
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Afficher/masquer les surcouches Chat Gardien",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Surcouches Chat Gardien : ACTIVÉ",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Surcouches Chat Gardien : DÉSACTIVÉ",
-  "message.vanillaplusadditions.cat_guardian.station_full": "Impossible d'associer %s chat(s) car le bol est plein."
+  "message.vanillaplusadditions.cat_guardian.station_full": "Impossible d'associer %s chat(s) car le bol est plein.",
+  "message.vanillaplusadditions.mob_spawn_overlay.off": "Calque d'apparition : DÉSACTIVÉ",
+  "message.vanillaplusadditions.mob_spawn_overlay.on": "Calque d'apparition : ACTIVÉ"
 }

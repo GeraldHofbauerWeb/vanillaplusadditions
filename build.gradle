@@ -416,6 +416,8 @@ def standaloneModules = [
       dataGlobs: ['data/minecraft/tags/block/rails.json'],
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
+    [ moduleId: 'mob_spawn_overlay', displayName: 'Vanilla Plus: Mob Spawn Overlay',
+      clientMixins: ['mob_spawn_overlay.KeyboardHandlerDebugKeyMixin'] ],
     [ moduleId: 'options', displayName: 'Vanilla Plus: Options' ],
     [ moduleId: 'overpacked_extensions', displayName: 'Vanilla Plus: Overpacked Extensions' ],
     [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
@@ -434,6 +436,10 @@ standaloneModules.each {
     it.dataGlobs = it.dataGlobs ?: []
     it.moduleDeps = it.moduleDeps ?: []
     it.mixins = it.mixins ?: []
+    // Mixins targeting client-only classes (e.g. KeyboardHandler): they must land in the
+    // "client" block, or a dedicated server fails to apply them.
+    it.clientMixins = it.clientMixins ?: []
+    it.allMixins = it.mixins + it.clientMixins
 }
 
 def renderDep = { owner, depId, type, range, ordering, depSide -> """
@@ -446,7 +452,13 @@ def renderDep = { owner, depId, type, range, ordering, depSide -> """
 """ }
 
 def renderMixinsJson = { d ->
-    def arr = d.mixins.collect { "\"${it}\"" }.join(",\n    ")
+    def arr = (d.mixins ?: []).collect { "\"${it}\"" }.join(",\n    ")
+    def clientArr = (d.clientMixins ?: []).collect { "\"${it}\"" }.join(",\n    ")
+    // Client-only targets go into "client" so a dedicated server skips them instead of erroring.
+    def clientBlock = clientArr.isEmpty() ? '' : """,
+  "client": [
+    ${clientArr}
+  ]"""
     return """{
   "required": false,
   "minVersion": "0.8",
@@ -454,7 +466,7 @@ def renderMixinsJson = { d ->
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     ${arr}
-  ]
+  ]${clientBlock}
 }
 """
 }
@@ -469,7 +481,7 @@ def renderModuleToml = { d ->
     d.moduleDeps.each { md -> deps << renderDep(owner, md, 'required', "[${sVersion},)", 'AFTER', 'BOTH') }
     // Loading a module jar together with the all-in-one bundle double-registers content → fail fast.
     deps << renderDep(owner, 'vanillaplusadditions', 'incompatible', '[0,)', 'NONE', 'BOTH')
-    def mixinsBlock = d.mixins.isEmpty() ? '' : "\n[[mixins]]\nconfig=\"${d.modId}.mixins.json\"\n"
+    def mixinsBlock = d.allMixins.isEmpty() ? '' : "\n[[mixins]]\nconfig=\"${d.modId}.mixins.json\"\n"
     return """modLoader="javafml"
 loaderVersion="${sLoaderRange}"
 license="${sLicense}"
@@ -536,7 +548,7 @@ standaloneModules.each { d ->
         group = 'standalone'
         def tomlOut = genMetaRoot.get().dir(d.modId).file('META-INF/neoforge.mods.toml').asFile
         def tomlContent = renderModuleToml(d)
-        def hasMixins = !d.mixins.isEmpty()
+        def hasMixins = !d.allMixins.isEmpty()
         def mixinsOut = genMetaRoot.get().dir(d.modId).file("${d.modId}.mixins.json").asFile
         def mixinsContent = hasMixins ? renderMixinsJson(d) : ''
         inputs.property('toml', tomlContent)
@@ -602,13 +614,13 @@ standaloneModules.each { d ->
         d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
         // Mixin classes owned by this module (name*.class also catches inner classes). Entries may
         // be subpackage-qualified ("cat_guardian.ChestBlockCatMixin") — dots map to directories.
-        d.mixins.each { mx ->
+        d.allMixins.each { mx ->
             from(sourceSets.main.output) { include "${basePkg}/mixin/${mx.replace('.', '/')}*.class" }
         }
         into('META-INF') {
             from(tomlFile)  // -> META-INF/neoforge.mods.toml
         }
-        if (!d.mixins.isEmpty()) {
+        if (!d.allMixins.isEmpty()) {
             from(mixinsJsonFile)  // -> <modId>.mixins.json at jar root (referenced by the toml [[mixins]])
         }
     }

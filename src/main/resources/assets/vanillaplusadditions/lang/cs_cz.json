@@ -64,5 +64,7 @@
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Překryvy Kočičího strážce: VYPNUTO",
   "message.vanillaplusadditions.cat_guardian.associated": "Přiřazeno %s koček k této misce.",
   "message.vanillaplusadditions.cat_guardian.station_full": "Nelze přiřadit %s koček, protože miska je plná.",
-  "message.vanillaplusadditions.cat_guardian.no_cats": "V okolí nebyly nalezeny žádné tvé ochočené kočky."
+  "message.vanillaplusadditions.cat_guardian.no_cats": "V okolí nebyly nalezeny žádné tvé ochočené kočky.",
+  "message.vanillaplusadditions.mob_spawn_overlay.off": "Překryv míst spawnu: VYPNUTO",
+  "message.vanillaplusadditions.mob_spawn_overlay.on": "Překryv míst spawnu: ZAPNUTO"
 }

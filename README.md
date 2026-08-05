@@ -136,6 +136,9 @@ Provides a command to delete and regenerate chunks from world generation — use
 #### 🧪 Debug Overlay (framework)
 The shared **Engineering-Goggles debug-overlay** framework other modules plug into: a global toggle plus chunk borders, cat stats, and more. Uses Create's goggles when present, falling back to the `vanillaplusadditions:arm_goggles` item tag.
 
+#### 👹 Mob Spawn Overlay
+Press **F3 + M** to light up every position where hostile mobs can spawn — the spawn view OptiFine's `F7` used to give you, which Sodium/Iris don't bring along. Red fields spawn mobs right now, yellow ones once it gets dark, and a violet outline marks spots roomy enough for a spider. The check mirrors vanilla's own spawn code (ground placement, block/sky light, hitbox clearance) and is dimension-aware, so the Nether and the End are judged by their own light rules. Key, scan radius, colors and the animated stripes are configurable.
+
 #### 🦾 Arm Target Overlay
 While wearing Engineering Goggles, shows a Create **Mechanical Arm's** input/output target positions in the world — makes configuring arms much easier.
 

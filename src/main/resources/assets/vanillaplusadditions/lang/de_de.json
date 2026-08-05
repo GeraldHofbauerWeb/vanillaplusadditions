@@ -157,6 +157,8 @@
   "message.vanillaplusadditions.cat_guardian.station_full": "%s Katze(n) konnten nicht assoziiert werden, da der Napf voll ist.",
   "message.vanillaplusadditions.debug_overlay.off": "Debug-Overlay: AUS",
   "message.vanillaplusadditions.debug_overlay.on": "Debug-Overlay: AN",
+  "message.vanillaplusadditions.mob_spawn_overlay.off": "Spawn-Overlay: AUS",
+  "message.vanillaplusadditions.mob_spawn_overlay.on": "Spawn-Overlay: AN",
   "message.vanillaplusadditions.options.deleted": "Options-Backup '%s' gelöscht.",
   "message.vanillaplusadditions.options.error": "Options-Backup-Vorgang fehlgeschlagen: %s",
   "message.vanillaplusadditions.options.exported": "Options-Backup '%s' gespeichert (%s).",
