@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.config.BetterMobsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.better_mobs.config.BetterMobsConfigKey;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -175,10 +177,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                 ItemStack helmet = getItemForTypeAndMaterial("helmet", material);
                 if (helmet != null && !helmet.isEmpty()) {
                     // Durability setzen
-                    int maxDurability = helmet.getMaxDamage();
-                    int percentDurability = config.getMaxDurabilityValue();
                     int percentDropChance = config.getDropChanceValue();
-                    helmet.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    applyArmorDurability(helmet, armorDurabilityPercent(setup, 0));
                     // Drop-Chance setzen
                     mob.setDropChance(EquipmentSlot.HEAD, percentDropChance / 100.0f);
                     mob.setItemSlot(EquipmentSlot.HEAD, helmet);
@@ -200,10 +200,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             if (spawnedArmor.contains("chestplate")) {
                 ItemStack chest = getItemForTypeAndMaterial("chestplate", material);
                 if (chest != null && !chest.isEmpty()) {
-                    int maxDurability = chest.getMaxDamage();
-                    int percentDurability = config.getMaxDurabilityValue();
                     int percentDropChance = config.getDropChanceValue();
-                    chest.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    applyArmorDurability(chest, armorDurabilityPercent(setup, 1));
                     mob.setDropChance(EquipmentSlot.CHEST, percentDropChance / 100.0f);
                     mob.setItemSlot(EquipmentSlot.CHEST, chest);
                     debugInfo.append("Armor - Chestplate: ").append(getItemNameStr(chest)).append("\n");
@@ -224,10 +222,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             if (spawnedArmor.contains("leggings")) {
                 ItemStack legs = getItemForTypeAndMaterial("leggings", material);
                 if (legs != null && !legs.isEmpty()) {
-                    int maxDurability = legs.getMaxDamage();
-                    int percentDurability = config.getMaxDurabilityValue();
                     int percentDropChance = config.getDropChanceValue();
-                    legs.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    applyArmorDurability(legs, armorDurabilityPercent(setup, 2));
                     mob.setDropChance(EquipmentSlot.LEGS, percentDropChance / 100.0f);
                     mob.setItemSlot(EquipmentSlot.LEGS, legs);
                     debugInfo.append("Armor - Leggings: ").append(getItemNameStr(legs)).append("\n");
@@ -248,10 +244,8 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
             if (spawnedArmor.contains("boots")) {
                 ItemStack boots = getItemForTypeAndMaterial("boots", material);
                 if (boots != null && !boots.isEmpty()) {
-                    int maxDurability = boots.getMaxDamage();
-                    int percentDurability = config.getMaxDurabilityValue();
                     int percentDropChance = config.getDropChanceValue();
-                    boots.setDamageValue(maxDurability - (maxDurability * percentDurability / 100));
+                    applyArmorDurability(boots, armorDurabilityPercent(setup, 3));
                     mob.setDropChance(EquipmentSlot.FEET, percentDropChance / 100.0f);
                     mob.setItemSlot(EquipmentSlot.FEET, boots);
                     debugInfo.append("Armor - Boots: ").append(getItemNameStr(boots)).append("\n");
@@ -496,6 +490,43 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
         };
     }
 
+    /**
+     * Reads the pre-rolled remaining-durability percentage for one armor slot.
+     *
+     * @param setup the equipment setup for this mob
+     * @param slotIndex helmet 0, chestplate 1, leggings 2, boots 3
+     * @return remaining durability in percent
+     */
+    private static int armorDurabilityPercent(Map<BetterMobsConfigKey, List<String>> setup, int slotIndex) {
+        List<String> rolls = setup.get(BetterMobsConfigKey.ARMOR_DURABILITY);
+        if (rolls == null || rolls.isEmpty()) {
+            return BetterMobsConfig.DEFAULT_MAX_ARMOR_DURABILITY_PERCENT;
+        }
+        try {
+            return Integer.parseInt(rolls.get(slotIndex % rolls.size()));
+        } catch (NumberFormatException e) {
+            return BetterMobsConfig.DEFAULT_MAX_ARMOR_DURABILITY_PERCENT;
+        }
+    }
+
+    /**
+     * Wears an armor piece down to the given remaining durability. Mob armor is battle-worn loot, not
+     * a free full-durability set - by default it never keeps more than a fifth of its durability.
+     *
+     * @param stack the armor stack to damage in place
+     * @param remainingPercent remaining durability in percent (clamped to 1-100)
+     */
+    private static void applyArmorDurability(ItemStack stack, int remainingPercent) {
+        int maxDurability = stack.getMaxDamage();
+        if (maxDurability <= 0) {
+            return;
+        }
+        int percent = Math.max(1, Math.min(100, remainingPercent));
+        int remaining = Math.max(1, maxDurability * percent / 100);
+        // Never hand out an already-broken piece: damage stays below the maximum.
+        stack.setDamageValue(Math.max(0, Math.min(maxDurability - remaining, maxDurability - 1)));
+    }
+
     // Hilfsfunktion: Armor-Verzauberungen anwenden
     private void applyArmorEnchantments(ServerLevel serverLevel,
                                         java.util.UUID uuid,
@@ -507,12 +538,7 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
         }
         Random random = new Random(uuid.getLeastSignificantBits());
         enchants.forEach((enchant) -> {
-            // TODO: Log entfernen und min/max level aus config holen
-            //  (Derzeit returnt die Config-Liste random level, was'n bug is)
-            // FIXME: Get min/max level from config instead of random level from list... or does it work as intended
-            //  - Nope
-            getLogger().debug("Enchantment levels available: {}", enchantLevels);
-            int level = Integer.parseInt(enchantLevels.get(random.nextInt(enchantLevels.size())));
+            int rolledLevel = Integer.parseInt(enchantLevels.get(random.nextInt(enchantLevels.size())));
             ResourceKey<Enchantment> enchantmentKey = switch (enchant) {
                 case "protection" -> Enchantments.PROTECTION;
                 case "fire_protection" -> Enchantments.FIRE_PROTECTION;
@@ -561,7 +587,9 @@ public class BetterMobsModule extends AbstractModule<BetterMobsModule, BetterMob
                     Enchantment newEnchant = optHolder.get().value();
                     if (newEnchant.canEnchant(stack)
                             && EnchantmentHelper.isEnchantmentCompatible(allEnchantments.keySet(), optHolder.get())) {
-                        stack.enchant(optHolder.get(), level);
+                        // The rolled level ignores per-enchantment caps, so clamp before writing it:
+                        // otherwise the config's max_level of 4 produces Unbreaking IV and friends.
+                        stack.enchant(optHolder.get(), MobArmorEnchantments.clampLevel(optHolder.get(), rolledLevel));
                     }
                 }
             }

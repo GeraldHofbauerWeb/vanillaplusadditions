@@ -34,6 +34,9 @@ Adds Iron, Gold, Diamond and Netherite **wolf armor**, rendered by the vanilla w
 
 ---
 
+#### 🧪 Pet Potions
+Throw a healing or regeneration potion at an angry tamed animal and it forgives you. Hitting somebody else's wolf normally leaves you with no way out — vanilla only exempts an animal's *own* owner from being targeted, and the sole appeasement it offers is dying. Splash and lingering potions both work, and the pardon is aimed: the animal stays angry at everyone else. It also fixes the reason the throw usually fails — vanilla swallows the right-click for *any* tamed animal, so the potion never left your hand.
+
 ### 👹 Mobs & Spawning
 
 #### 🔥 Hostile Zombified Piglins
@@ -43,7 +46,7 @@ Makes zombified piglins always aggressive towards players in the Nether for a mo
 Prevents normal skeletons from spawning in the Nether and (optionally) replaces them with Wither Skeletons. Broadcasts messages about blocked spawns in debug mode.
 
 #### 🐦‍🔥 Better Mobs
-Enhances mob variety and challenge: mobs can spawn with customizable armor and potion effects. Configurable spawn chances and equipment tiers, with different settings per Y-level or Nether/End dimension.
+Enhances mob variety and challenge: mobs can spawn with customizable armor and potion effects. Configurable spawn chances and equipment tiers, with different settings per Y-level or Nether/End dimension. Armor comes battle-worn — each piece rolls its own remaining durability (5–20 % by default, configurable per dimension), and enchantment levels are clamped to what each enchantment actually allows, so no more Unbreaking IV on netherite leggings.
 
 #### ✨ Mob Glow (command)
 `/mobglow` makes all mobs of a specified type glow (configurable duration, including infinite) for easier tracking. Clear by type or all at once — handy for server administration and debugging.

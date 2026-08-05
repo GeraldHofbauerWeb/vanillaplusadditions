@@ -26,6 +26,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_spawn_overlay.MobSpawnOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.OverpackedExtensionsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.pet_potions.PetPotionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.static_fov.StaticFovModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
@@ -168,6 +169,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new MobCartLoaderModule());
         moduleManager.registerModule(new MobSpawnOverlayModule());
+        moduleManager.registerModule(new PetPotionsModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

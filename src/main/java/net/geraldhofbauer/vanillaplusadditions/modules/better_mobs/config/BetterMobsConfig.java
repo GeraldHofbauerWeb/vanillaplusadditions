@@ -14,6 +14,15 @@ import java.util.*;
 public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, BetterMobsConfig> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BetterMobsConfig.class);
 
+    /** Lowest remaining armor durability, in percent, used when a dimension section has no entry. */
+    public static final int DEFAULT_MIN_ARMOR_DURABILITY_PERCENT = 5;
+
+    /** Highest remaining armor durability, in percent - mob armor never exceeds one fifth. */
+    public static final int DEFAULT_MAX_ARMOR_DURABILITY_PERCENT = 20;
+
+    /** One durability roll per armor slot: helmet, chestplate, leggings, boots. */
+    private static final int ARMOR_DURABILITY_ROLL_COUNT = 4;
+
     private static final List<String> DEFAULT_ENABLED_MOBS = List.of(
             "minecraft:zombie",
             "minecraft:skeleton",
@@ -170,6 +179,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;1");
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;3");
 
+        // Remaining armor durability in percent - mob gear is battered, never factory-fresh
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";min_percent;5");
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";max_percent;20");
+
         // Potion effects
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;5");
@@ -248,6 +261,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;2");
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;4");
 
+        // Remaining armor durability in percent - mob gear is battered, never factory-fresh
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";min_percent;5");
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";max_percent;20");
+
         // Potion effects
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;10");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;10");
@@ -323,6 +340,10 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";min_level;2");
         config.add(BetterMobsConfigKey.ENCHANTMENT_LEVELS.name() + ";max_level;4");
 
+        // Remaining armor durability in percent - mob gear is battered, never factory-fresh
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";min_percent;5");
+        config.add(BetterMobsConfigKey.ARMOR_DURABILITY.name() + ";max_percent;20");
+
         // Potion effects
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";speed;20");
         config.add(BetterMobsConfigKey.POTION_EFFECTS.name() + ";strength;10");
@@ -372,7 +393,8 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
      * @return maximum durability, or default value if not configured
      */
     public int getMaxDurabilityValue() {
-        return maxDurability != null ? maxDurability.get() : 250;
+        // Fallback must stay inside the configured 1-100 range; 250 produced a negative damage value.
+        return maxDurability != null ? maxDurability.get() : 100;
     }
 
     /**
@@ -585,6 +607,32 @@ public class BetterMobsConfig extends AbstractModuleConfig<BetterMobsModule, Bet
                     String.valueOf(selectedLevel2)
             ));
         }
+
+        // Armor durability: one roll per armor piece, so helmet/chestplate/leggings/boots are worn
+        // down differently instead of all four sharing a single value.
+        int minPercent = DEFAULT_MIN_ARMOR_DURABILITY_PERCENT;
+        int maxPercent = DEFAULT_MAX_ARMOR_DURABILITY_PERCENT;
+        List<String[]> durabilityEntries = groupedEntries.get(BetterMobsConfigKey.ARMOR_DURABILITY);
+        if (durabilityEntries != null) {
+            for (String[] entry : durabilityEntries) {
+                try {
+                    if (entry[1].equals("min_percent")) {
+                        minPercent = Integer.parseInt(entry[2]);
+                    } else if (entry[1].equals("max_percent")) {
+                        maxPercent = Integer.parseInt(entry[2]);
+                    }
+                } catch (NumberFormatException e) {
+                    LOGGER.warn("Invalid armor durability value in Better Mobs config: {};{}", entry[1], entry[2]);
+                }
+            }
+        }
+        minPercent = Math.max(1, Math.min(100, minPercent));
+        maxPercent = Math.max(minPercent, Math.min(100, maxPercent));
+        List<String> durabilityRolls = new ArrayList<>(ARMOR_DURABILITY_ROLL_COUNT);
+        for (int i = 0; i < ARMOR_DURABILITY_ROLL_COUNT; i++) {
+            durabilityRolls.add(String.valueOf(minPercent + random.nextInt(maxPercent - minPercent + 1)));
+        }
+        equipment.put(BetterMobsConfigKey.ARMOR_DURABILITY, durabilityRolls);
 
         // Potion Effects
         List<String[]> potionEffects = groupedEntries.get(BetterMobsConfigKey.POTION_EFFECTS);

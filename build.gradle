@@ -420,6 +420,8 @@ def standaloneModules = [
       clientMixins: ['mob_spawn_overlay.KeyboardHandlerDebugKeyMixin'] ],
     [ moduleId: 'options', displayName: 'Vanilla Plus: Options' ],
     [ moduleId: 'overpacked_extensions', displayName: 'Vanilla Plus: Overpacked Extensions' ],
+    [ moduleId: 'pet_potions', displayName: 'Vanilla Plus: Pet Potions',
+      mixins: ['pet_potions.AreaEffectCloudAccessor'] ],
     [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
     [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
       moduleDeps: ['vpa_debug_overlay'] ],

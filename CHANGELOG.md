@@ -4,6 +4,50 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.65] - 2026-08-05
+
+### Added
+- **Neues Modul `pet_potions` — der Heiltrank als Entschuldigung.** Wer versehentlich das gezähmte
+  Tier eines anderen Spielers schlägt, kommt in Vanilla nicht mehr heraus: `TamableAnimal.canAttack`
+  nimmt nur den **eigenen** Owner vom Zielen aus, für alle anderen greift `HurtByTargetGoal` ganz
+  normal. Die einzige Vanilla-Beschwichtigung ist `NeutralMob.playerDied` — man muss **sterben**.
+  Jetzt reicht ein geworfener Heil- oder Regenerationstrank.
+  - Beruhigt wird über `NeutralMob.stopBeingAngry()` (Wolf) bzw. `setTarget`/`setLastHurtByMob`
+    direkt (Katze, Pferd, **Lama** — die sind keine `TamableAnimal` und haben deshalb nicht einmal
+    den Owner-Schutz). Zielgruppe ist generisch `OwnableEntity` mit gesetztem Owner, damit auch
+    modded Pets mitkommen.
+  - **Zielgerichtet:** nur der Anger gegenüber dem Werfer verfällt. Ein Wolf, der gleichzeitig auf
+    einen Dritten wütend ist, bleibt es — man kauft sich frei, statt fremde Wachtiere zu befrieden.
+  - Splash **und** Lingering. Die Wolke wird verfolgt und alle 10 Ticks nachgeprüft, damit auch ein
+    Tier beruhigt wird, das erst später hineinläuft. Dafür ein Accessor-Mixin auf
+    `AreaEffectCloud.potionContents` — Vanilla hat dort nur einen Setter.
+  - Danach ein kurzes Gnadenfenster (Default 200 Ticks) über `LivingChangeTargetEvent`. Nötig, weil
+    `HurtByTargetGoal` über einen frischen `lastHurtByMobTimestamp` erneut zünden kann und AI-Mods
+    wie `enhancedai` Ziele an Vanillas Goals vorbei setzen. Bewusst zeitlich begrenzt: schlägt man
+    danach wieder zu, reagiert das Tier normal.
+
+### Fixed
+- **Geworfene Tränke lassen sich endlich auf gezähmte Tiere zielen.** Ursache saß im **Client**:
+  `Wolf.mobInteract` liefert dort `CONSUME`, sobald `isTame()` gilt — bei *jedem* gezähmten Wolf,
+  nicht nur beim eigenen. `Minecraft.startUseItem` bricht daraufhin ab und schickt den Use-Item-Packet
+  nie, obwohl der Server den Wurf (PASS) durchgelassen hätte. Behoben, indem
+  `PlayerInteractEvent.EntityInteract`/`EntityInteractSpecific` für wohlwollende Splash-/Lingering-Tränke
+  mit `InteractionResult.PASS` gecancelt wird. Trinkbare Tränke bleiben ausgenommen, damit man den
+  eigenen Wolf weiterhin hinsetzen kann.
+- **`better_mobs`: Mob-Rüstung ist nicht mehr fabrikneu.** `max_durability` stand auf `100`, und die
+  Formel `max - max * percent / 100` ergab damit Schaden **0** — Zombies liefen mit makelloser
+  Netherite-Rüstung herum. Neuer Config-Key `ARMOR_DURABILITY;min_percent`/`max_percent` je
+  Dimensions-Sektion, Default 5–20 % Resthaltbarkeit, **ein eigener Wurf pro Rüstungsteil**. Dazu der
+  fehlende `maxDamage > 0`-Guard (den nur der Waffen-Zweig hatte), eine Klemmung, die nie ein
+  kaputtes Teil ausgibt, und der Fallback-Bug in `getMaxDurabilityValue()` (`250` statt `100` →
+  negativer Schadenswert). Waffen bleiben unverändert bei `max_durability`.
+- **`better_mobs`: keine illegalen Verzauberungslevel mehr.** `applyArmorEnchantments` rief
+  `stack.enchant(holder, level)` ohne jede Prüfung auf — `getMaxLevel()` kam im ganzen Repo nicht vor.
+  Mit `max_level;4` in `below_zero`/`nether_end` fiel daraus **Unbreaking IV** heraus, ebenso Thorns IV,
+  Depth Strider IV, Frost Walker IV (max II) und Aqua Affinity/Mending/Silk Touch/Flüche ≥ II (max I).
+  Neuer Helper `MobArmorEnchantments.clampLevel(...)`; die Guardian-Module bleiben bewusst
+  unangetastet, um keine Balance-Änderung einzuschleppen.
+
 ## [1.0.0-beta.64] - 2026-08-05
 
 ### Added

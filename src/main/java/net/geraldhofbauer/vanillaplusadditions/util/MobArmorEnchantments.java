@@ -63,6 +63,25 @@ public final class MobArmorEnchantments {
     }
 
     /**
+     * Clamps a level into the range the enchantment actually supports.
+     *
+     * <p>{@link ItemStack#enchant(Holder, int)} writes whatever number it is given — nothing in vanilla
+     * validates it — so a randomised level can produce impossible gear such as Unbreaking IV (max III)
+     * or Frost Walker IV (max II). Anything generating levels from config or randomness should run
+     * them through here first.
+     *
+     * @param holder the enchantment holder the level belongs to
+     * @param level  the requested level
+     * @return the level clamped to {@code 1 .. Enchantment#getMaxLevel()}
+     */
+    public static int clampLevel(Holder<Enchantment> holder, int level) {
+        if (holder == null) {
+            return level;
+        }
+        return Math.max(1, Math.min(level, holder.value().getMaxLevel()));
+    }
+
+    /**
      * Reads the level of a given enchantment directly off the stack's enchantment component,
      * without needing registry access — matching by resource key.
      *

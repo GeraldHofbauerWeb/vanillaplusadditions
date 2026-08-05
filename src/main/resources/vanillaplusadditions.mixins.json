@@ -12,7 +12,8 @@
     "cat_guardian.ChestBlockCatMixin",
     "conduit_attack_range.ConduitBlockEntityMixin",
     "core.EntitySharedFlagInvoker",
-    "free_anvil_repair.AnvilMenuFreeRepairMixin"
+    "free_anvil_repair.AnvilMenuFreeRepairMixin",
+    "pet_potions.AreaEffectCloudAccessor"
   ],
   "client": [
     "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin"
