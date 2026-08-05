@@ -178,8 +178,8 @@ public class CreateWaterWheelUnstuckerModule
                             ctx.getSource().getTextName());
                     int started = stallManager.unstickAll(ctx.getSource().getServer());
                     ctx.getSource().sendSuccess(() -> Component.literal(
-                            "[Water Wheel Unstucker] Re-initialising " + started
-                                    + " stalled water wheel(s) in loaded chunks."), true);
+                            "[Water Wheel Unstucker] Unsticking " + started
+                                    + " stalled water wheel(s) in loaded chunks (see the log for details)."), true);
                     return started == 0 ? Command.SINGLE_SUCCESS : started;
                 }));
     }

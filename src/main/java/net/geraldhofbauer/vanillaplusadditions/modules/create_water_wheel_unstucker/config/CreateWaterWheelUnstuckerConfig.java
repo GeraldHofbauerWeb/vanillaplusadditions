@@ -17,6 +17,7 @@ public class CreateWaterWheelUnstuckerConfig
     private ModConfigSpec.IntValue maxFixAttempts;
     private ModConfigSpec.BooleanValue hardKick;
     private ModConfigSpec.BooleanValue autoFix;
+    private ModConfigSpec.BooleanValue clearPhantomStress;
     private ModConfigSpec.IntValue reinitFloodTicks;
 
     /**
@@ -54,10 +55,23 @@ public class CreateWaterWheelUnstuckerConfig
 
         autoFix = builder
                 .comment("Automatically re-initialise stalled wheels during the periodic sweep.",
-                        "false (default) = detection only; fix on demand via the /vpaunstuck command.",
+                        "false (default) = no block changes; fix on demand via the /vpaunstuck command.",
+                        "Independent of this, the sweep always recomputes the stress of an overstressed",
+                        "wheel's kinetic network - that recalculates Create's own numbers from the live",
+                        "members and changes no blocks.",
                         "The re-init briefly breaks + re-places the wheel (a manual fix, done by code) so",
                         "adjacent water re-flows - the only thing that revives a reload-stalled wheel.")
                 .define("auto_fix", false);
+
+        clearPhantomStress = builder
+                .comment("Let /vpaunstuck cure a phantom \"Overstressed\" network: Create keeps a running",
+                        "stress/capacity tally for members in unloaded chunks, and a member removed while",
+                        "unloaded never subtracts its share again - the network then reports an overload",
+                        "that no existing machine causes. Enabling this lets the command drop that stale",
+                        "unloaded tally and recalculate from the loaded members. Machines that genuinely",
+                        "are unloaded re-register (with their real numbers) as soon as their chunk loads.",
+                        "Command-only - the periodic sweep never does this.")
+                .define("clear_phantom_stress", true);
 
         reinitFloodTicks = builder
                 .comment("Ticks the wheel is removed during a re-init so adjacent water can flood the gap",
@@ -109,6 +123,16 @@ public class CreateWaterWheelUnstuckerConfig
      */
     public boolean isAutoFixEnabled() {
         return autoFix != null && autoFix.get();
+    }
+
+    /**
+     * Whether {@code /vpaunstuck} may drop a stale unloaded-member stress tally to cure a phantom
+     * overload.
+     *
+     * @return true if the command may clear phantom stress
+     */
+    public boolean isClearPhantomStressEnabled() {
+        return clearPhantomStress == null || clearPhantomStress.get();
     }
 
     /**
