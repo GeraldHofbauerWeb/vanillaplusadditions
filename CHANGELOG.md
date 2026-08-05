@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.63] - 2026-08-05
+
+### Changed
+- **Roher Tropenfisch zählt jetzt als `#minecraft:axolotl_food`.** Vanilla listet dort nur den
+  Tropenfisch-*Eimer*, weshalb Creates Attribut-Filter am rohen Fisch kein Axolotl-Futter-Attribut
+  anbot. Damit lässt sich ein Fischstrom per Tag zur Axolotl-Station routen. Nebenwirkung by
+  design: auch nicht-Wächter-Axolotl lassen sich mit rohem Tropenfisch anlocken und züchten.
+  Bewusst **nur** der Tropenfisch — Cod, Salmon und Kugelfisch bleiben draußen, sie sind auch in
+  Vanilla kein Axolotl-Futter. Was die Station annimmt, bleibt unverändert `#minecraft:fishes`.
+
 ## [1.0.0-beta.62] - 2026-08-05
 
 ### Changed
