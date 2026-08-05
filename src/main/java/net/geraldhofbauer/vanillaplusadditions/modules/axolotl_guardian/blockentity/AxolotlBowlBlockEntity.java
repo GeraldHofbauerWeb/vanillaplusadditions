@@ -13,7 +13,7 @@ public class AxolotlBowlBlockEntity extends AbstractAxolotlBowlBlockEntity {
     private final ItemStackHandler fishSlot = new ItemStackHandler(1) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return AxolotlGuardianModule.isAxolotlFood(stack);
+            return AxolotlGuardianModule.isStationFood(stack);
         }
 
         @Override
@@ -40,7 +40,7 @@ public class AxolotlBowlBlockEntity extends AbstractAxolotlBowlBlockEntity {
 
     @Override
     public boolean insertFish(ItemStack stack, boolean simulate) {
-        if (!AxolotlGuardianModule.isAxolotlFood(stack)) {
+        if (!AxolotlGuardianModule.isStationFood(stack)) {
             return false;
         }
         ItemStack remainder = fishSlot.insertItem(0, stack.copy(), simulate);

@@ -27,7 +27,7 @@ Turns tamed cats into active base defenders, with food bowls and an automatable 
 - **Cat Inventory GUI** (modifier + right-click): equip armor, view food/XP/armor bars. Station skins selectable via a deco slot. Fully localized (EN, DE, DE-AT, ES, FR, CS).
 
 #### 🐸 Axolotl Guardian
-The underwater counterpart to Cat Guardian: axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs. Axolotls can be scooped and placed via a bucket round-trip, and stations support decorative skins. Owner is mirrored to the client for overlays.
+The underwater counterpart to Cat Guardian: axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs. Axolotls can be scooped and placed via a bucket round-trip, and stations support decorative skins. Owner is mirrored to the client for overlays. Bowls and stations take anything tagged `#minecraft:fishes` — the same tag the cat feeding station uses, so a single Create attribute filter feeds both — plus buckets of tropical fish, whose empty bucket is handed back after feeding.
 
 #### 🐺 Battle Dogs
 Adds Iron, Gold, Diamond and Netherite **wolf armor**, rendered by the vanilla wolf-armor layer. Each tier increases the wolf's attack damage. Equip by right-click, remove with shears.

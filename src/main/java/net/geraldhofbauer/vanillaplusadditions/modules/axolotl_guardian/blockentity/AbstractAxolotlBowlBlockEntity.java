@@ -9,9 +9,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Containers;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -40,6 +42,30 @@ public abstract class AbstractAxolotlBowlBlockEntity extends BlockEntity {
 
     /** Tries to insert the given fish stack. Returns true if at least one item was inserted. */
     public abstract boolean insertFish(ItemStack stack, boolean simulate);
+
+    /**
+     * Hands the empty bucket back after an axolotl ate a tropical fish bucket out of this
+     * bowl/station — stored if the container has room, dropped on top of the block otherwise.
+     * A bucket is worth more than the fish inside it, so it is never silently voided.
+     */
+    public void returnEmptyBucket() {
+        ItemStack leftover = storeLeftover(new ItemStack(Items.BUCKET));
+        if (!leftover.isEmpty() && level != null) {
+            Containers.dropItemStack(level, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0,
+                    worldPosition.getZ() + 0.5, leftover);
+        }
+    }
+
+    /**
+     * Tries to keep a by-product (currently only the empty bucket) inside this container.
+     * The plain bowl has a single slot reserved for fish, so it stores nothing by default.
+     *
+     * @param stack the stack to store
+     * @return whatever could not be stored
+     */
+    protected ItemStack storeLeftover(ItemStack stack) {
+        return stack;
+    }
 
     // --- Axolotl association ---
 

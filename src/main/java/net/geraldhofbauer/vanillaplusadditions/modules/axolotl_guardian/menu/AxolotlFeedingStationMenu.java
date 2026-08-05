@@ -105,7 +105,7 @@ public class AxolotlFeedingStationMenu extends AbstractContainerMenu {
                 return ItemStack.EMPTY;
             }
         } else {
-            if (AxolotlGuardianModule.isAxolotlFood(stack)) {
+            if (AxolotlGuardianModule.isStationFood(stack)) {
                 if (!moveItemStackTo(stack, 0, FISH_END, false)) {
                     return ItemStack.EMPTY;
                 }

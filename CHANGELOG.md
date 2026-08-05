@@ -4,6 +4,23 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.62] - 2026-08-05
+
+### Changed
+- **Axolotl-Napf und -Station nehmen jetzt `#minecraft:fishes`** statt einer fest verdrahteten
+  Liste (Cod, Salmon, Tropenfisch, Kugelfisch). Das ist derselbe Tag, den die Cat Feeding Station
+  prüft — ein einziger Create-Attribut-Filter („is tagged #minecraft:fishes") versorgt damit beide
+  Stationen. Neu ebenfalls akzeptiert: gekochter Fisch und unsere Flying Fish. Hartkodierte
+  Item-Listen sind für Creates Attribut-Filter unsichtbar, ein Tag dagegen nicht.
+- **Station und Napf nehmen zusätzlich den Tropenfisch-Eimer** — der leere Eimer kommt nach dem
+  Fressen zurück (in die Station, damit Automation ihn abholen kann; beim Napf wird er obendrauf
+  fallen gelassen). Der Eimer bleibt bewusst aus dem Handfüttern heraus, weil dieser Pfad den Stack
+  schrumpft und ihn ersatzlos schlucken würde.
+
+### Fixed
+- Die Station wählt ihren aktiven Slot jetzt nach **Futter** statt „erster nicht-leerer Slot".
+  Sonst hätte ein zurückgegebener Eimer als Mahlzeit gegolten und wäre dabei verschwunden.
+
 ## [1.0.0-beta.61] - 2026-08-05
 
 ### Fixed

@@ -26,7 +26,7 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
     private final ItemStackHandler inventory = new ItemStackHandler(SLOTS) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return AxolotlGuardianModule.isAxolotlFood(stack);
+            return AxolotlGuardianModule.isStationFood(stack);
         }
 
         @Override
@@ -80,10 +80,14 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         station.pruneStaleAssociations();
     }
 
-    /** Returns the index of the first non-empty slot, or -1 if all slots are empty. */
+    /**
+     * Returns the index of the first slot holding actual food, or -1 if there is none. Skips
+     * non-food by-products — a returned empty bucket must never be handed to an axolotl as a meal
+     * (it would be consumed and lost), nor be shown as the station's content.
+     */
     public int getActiveSlot() {
         for (int i = 0; i < inventory.getSlots(); i++) {
-            if (!inventory.getStackInSlot(i).isEmpty()) {
+            if (AxolotlGuardianModule.isStationFood(inventory.getStackInSlot(i))) {
                 return i;
             }
         }
@@ -104,9 +108,35 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
         return inventory.extractItem(active, 1, false);
     }
 
+    /**
+     * Keeps the empty bucket in the station's own inventory so a pipe/funnel can pull it back out;
+     * only a completely full station falls back to dropping it.
+     */
+    @Override
+    protected ItemStack storeLeftover(ItemStack stack) {
+        // setStackInSlot on purpose, NOT insertItem: isItemValid only allows food, and the empty
+        // bucket must stay non-insertable from the outside — it is a by-product, not an input.
+        // Only ever called with a single item, hence the simple merge.
+        for (int i = 0; i < inventory.getSlots(); i++) {
+            ItemStack slot = inventory.getStackInSlot(i);
+            if (slot.isEmpty()) {
+                inventory.setStackInSlot(i, stack);
+                return ItemStack.EMPTY;
+            }
+            if (ItemStack.isSameItemSameComponents(slot, stack)
+                    && slot.getCount() + stack.getCount() <= slot.getMaxStackSize()) {
+                ItemStack merged = slot.copy();
+                merged.grow(stack.getCount());
+                inventory.setStackInSlot(i, merged);
+                return ItemStack.EMPTY;
+            }
+        }
+        return stack;
+    }
+
     @Override
     public boolean insertFish(ItemStack stack, boolean simulate) {
-        if (!AxolotlGuardianModule.isAxolotlFood(stack)) {
+        if (!AxolotlGuardianModule.isStationFood(stack)) {
             return false;
         }
         ItemStack remaining = stack.copy();

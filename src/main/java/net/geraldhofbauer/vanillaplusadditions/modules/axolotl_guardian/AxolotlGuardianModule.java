@@ -38,6 +38,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.Unit;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.InteractionHand;
@@ -382,14 +383,25 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     }
 
     /**
-     * The single food predicate: bowls, station, hand-feeding and taming all accept exactly this.
-     * Covers every edible drop of the vanilla {@code AXOLOTL_HUNT_TARGETS} (cod, salmon, tropical
-     * fish, pufferfish) so a guardian both self-stocks its station from its catch and eats any of
-     * them — squid/tadpole drop no fish item. See {@link #onLivingDrops}.
+     * What an axolotl eats: the {@code #minecraft:fishes} tag — the same one the cat feeding
+     * station uses, so one Create attribute filter serves both pet stations. Covers every edible
+     * drop of the vanilla {@code AXOLOTL_HUNT_TARGETS} (squid/tadpole drop no fish item) plus
+     * cooked variants and modded fish in the tag. Governs bowls, station, hand-feeding, taming and
+     * self-stocking from kills ({@link #onLivingDrops}). Deliberately <b>without</b> the tropical
+     * fish bucket: hand-feeding consumes the stack and would swallow it — see
+     * {@link #isStationFood}.
      */
     public static boolean isAxolotlFood(ItemStack stack) {
-        return !stack.isEmpty() && (stack.is(Items.COD) || stack.is(Items.SALMON)
-                || stack.is(Items.TROPICAL_FISH) || stack.is(Items.PUFFERFISH));
+        return !stack.isEmpty() && stack.is(ItemTags.FISHES);
+    }
+
+    /**
+     * What a bowl or feeding station accepts: any {@link #isAxolotlFood} plus the tropical fish
+     * bucket, so axolotl breeding stock can be piped in by automation. The empty bucket is
+     * returned when the fish is eaten (see {@code returnEmptyBucket}).
+     */
+    public static boolean isStationFood(ItemStack stack) {
+        return isAxolotlFood(stack) || stack.is(Items.TROPICAL_FISH_BUCKET);
     }
 
     /**
@@ -945,6 +957,9 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 axolotl.setData(AXOLOTL_FED_TICKS.get(), config.getFedDurationTicks());
                 axolotl.playSound(SoundEvents.GENERIC_EAT, 0.5F, axolotl.getVoicePitch());
                 axolotl.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 1));
+                if (fish.is(Items.TROPICAL_FISH_BUCKET)) {
+                    bowl.returnEmptyBucket();
+                }
                 if (bowl instanceof AxolotlFeedingStationBlockEntity station) {
                     transferLootToStation(axolotl, station);
                 }

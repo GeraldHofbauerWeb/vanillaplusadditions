@@ -41,7 +41,7 @@ public class AxolotlBowlBlock extends AbstractAxolotlBowlBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
                                               BlockPos pos, Player player, InteractionHand hand,
                                               BlockHitResult hit) {
-        if (!AxolotlGuardianModule.isAxolotlFood(stack)) {
+        if (!AxolotlGuardianModule.isStationFood(stack)) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
         }
         if (!(level.getBlockEntity(pos) instanceof AxolotlBowlBlockEntity bowl)) {
