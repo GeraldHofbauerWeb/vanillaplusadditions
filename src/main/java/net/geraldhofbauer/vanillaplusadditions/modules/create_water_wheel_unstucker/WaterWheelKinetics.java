@@ -94,6 +94,18 @@ final class WaterWheelKinetics {
         }
 
         /**
+         * Whether the unloaded tally is self-contradictory: it charges stress or credits capacity
+         * while claiming zero unloaded members. No machine can possibly be behind those numbers, so
+         * dropping them is provably correct - which is what makes this case safe to automate.
+         *
+         * @return true if the tally is orphaned
+         */
+        boolean hasOrphanedTally() {
+            return unloadedKnown && unloadedMembers == 0
+                    && (unloadedStress != 0.0f || unloadedCapacity != 0.0f);
+        }
+
+        /**
          * Whether the loaded members alone would fit the loaded capacity - i.e. the overload exists
          * only because of the unloaded accounting.
          *

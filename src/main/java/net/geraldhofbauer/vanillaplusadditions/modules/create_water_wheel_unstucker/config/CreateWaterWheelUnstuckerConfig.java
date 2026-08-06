@@ -56,21 +56,26 @@ public class CreateWaterWheelUnstuckerConfig
         autoFix = builder
                 .comment("Automatically re-initialise stalled wheels during the periodic sweep.",
                         "false (default) = no block changes; fix on demand via the /vpaunstuck command.",
-                        "Independent of this, the sweep always recomputes the stress of an overstressed",
-                        "wheel's kinetic network - that recalculates Create's own numbers from the live",
-                        "members and changes no blocks.",
+                        "Independent of this, the sweep always settles the stress bookkeeping of an",
+                        "overstressed wheel (recompute, plus an orphaned tally per clear_phantom_stress) -",
+                        "that only corrects Create's own numbers and changes no blocks.",
                         "The re-init briefly breaks + re-places the wheel (a manual fix, done by code) so",
                         "adjacent water re-flows - the only thing that revives a reload-stalled wheel.")
                 .define("auto_fix", false);
 
         clearPhantomStress = builder
-                .comment("Let /vpaunstuck cure a phantom \"Overstressed\" network: Create keeps a running",
-                        "stress/capacity tally for members in unloaded chunks, and a member removed while",
-                        "unloaded never subtracts its share again - the network then reports an overload",
-                        "that no existing machine causes. Enabling this lets the command drop that stale",
-                        "unloaded tally and recalculate from the loaded members. Machines that genuinely",
-                        "are unloaded re-register (with their real numbers) as soon as their chunk loads.",
-                        "Command-only - the periodic sweep never does this.")
+                .comment("Cure a phantom \"Overstressed\" network: Create keeps a running stress/capacity",
+                        "tally for members in unloaded chunks, and a member removed while unloaded never",
+                        "subtracts its share again - the network then reports an overload that no existing",
+                        "machine causes. Two cases, deliberately treated differently:",
+                        " - orphaned tally (stress charged while the network claims ZERO unloaded members):",
+                        "   nothing can be behind those numbers, so the periodic sweep drops them by itself",
+                        "   and logs one line per revived wheel.",
+                        " - tally with actual unloaded members, where the loaded members alone would fit the",
+                        "   loaded capacity: those might be real machines in unloaded chunks, which Create",
+                        "   counts on purpose - only /vpaunstuck does this, and logs the full numbers.",
+                        "Machines that genuinely are unloaded re-register (with their real numbers) as soon",
+                        "as their chunk loads. false = never touch the tally, command included.")
                 .define("clear_phantom_stress", true);
 
         reinitFloodTicks = builder
@@ -126,10 +131,10 @@ public class CreateWaterWheelUnstuckerConfig
     }
 
     /**
-     * Whether {@code /vpaunstuck} may drop a stale unloaded-member stress tally to cure a phantom
-     * overload.
+     * Whether a stale unloaded-member stress tally may be dropped to cure a phantom overload - by the
+     * sweep when the tally is provably orphaned, by {@code /vpaunstuck} also in the judgement case.
      *
-     * @return true if the command may clear phantom stress
+     * @return true if phantom stress may be cleared
      */
     public boolean isClearPhantomStressEnabled() {
         return clearPhantomStress == null || clearPhantomStress.get();

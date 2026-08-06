@@ -45,8 +45,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *       verdict and the wheel spins again. No blocks touched.</li>
  *   <li><i>phantom unloaded tally</i> — Create keeps a stress/capacity total for members in unloaded
  *       chunks; a member removed while unloaded never subtracts its share, so the network reports an
- *       overload no existing machine causes. Dropped on demand by {@code /vpaunstuck} when the loaded
- *       members alone provably fit the loaded capacity.</li>
+ *       overload no existing machine causes. An <i>orphaned</i> tally (stress charged while the
+ *       network claims zero unloaded members - nothing can be behind it) is dropped by the sweep on
+ *       its own; a tally with actual unloaded members is a judgement call and stays with
+ *       {@code /vpaunstuck}.</li>
  *   <li><i>genuine overload</i> — survives both, with the wheel's own capacity counted in
  *       (generated speed != 0). Never touched; Create's stress mechanics win.</li>
  * </ul>
@@ -60,6 +62,21 @@ class WaterWheelStallManager {
 
     /** Backoff after exhausting the fix attempts: 6000 ticks = ~5 minutes. */
     private static final long STALL_BACKOFF_TICKS = 6000L;
+
+    /** Who is asking for an overstress to be resolved - decides how far the cure may go. */
+    private enum StressMode {
+        /** The periodic sweep: only provably safe cures, one short log line when one lands. */
+        SWEEP,
+        /** {@code /vpaunstuck}: also the judgement call, with the full numbers logged. */
+        COMMAND
+    }
+
+    /** What {@link #resolveOverstress} actually did. */
+    private enum StressAction {
+        NONE,
+        RECOMPUTED,
+        TALLY_DROPPED
+    }
 
     /** Hand-off entry from a (possibly off-thread) chunk-load event. */
     private record PendingCheck(ResourceKey<Level> dimension, BlockPos pos) {
@@ -201,18 +218,26 @@ class WaterWheelStallManager {
             return;
         }
         if (WaterWheelKinetics.isOverStressed(be)) {
-            // Recompute the network's stress/capacity from its live members first. That is not a world
-            // change (auto_fix only gates block mutation) and it settles the common case where the
-            // network still carries numbers from a state its members have left.
-            resolveOverstress(level, pos, be, false);
+            // Settle the stress bookkeeping first - none of this changes a block, so auto_fix (which
+            // gates block mutation) does not apply. Only provably safe cures run here; anything that
+            // needs judgement is left to /vpaunstuck, whose log then carries the full numbers.
+            StressAction action = resolveOverstress(level, pos, be, StressMode.SWEEP);
             if (WaterWheelKinetics.getSpeed(be) != 0.0f) {
+                if (action != StressAction.NONE) {
+                    LOGGER.info("[create_water_wheel_unstucker] Unstuck wheel at {} ({}): {} - now spinning at {}",
+                            pos.toShortString(), level.dimension().location(),
+                            action == StressAction.TALLY_DROPPED
+                                    ? "dropped an orphaned stress tally (charged stress for 0 unloaded members)"
+                                    : "recomputed a stale kinetic network",
+                            WaterWheelKinetics.getSpeed(be));
+                }
                 clearState(level, pos);
                 return;
             }
             if (WaterWheelKinetics.isOverStressed(be) && WaterWheelKinetics.getGeneratedSpeed(be) != 0.0f) {
-                // Genuine overload: the wheel's flow is intact, it still contributes its capacity, the
-                // network simply demands more. Never fight Create's stress mechanics. A phantom tally
-                // left by members removed while unloaded is command-only territory (/vpaunstuck).
+                // Genuine overload, or an unloaded tally that may well be real machines: the wheel's
+                // flow is intact and it still contributes its capacity, the network simply demands
+                // more. Never fight Create's stress mechanics behind the operator's back.
                 clearState(level, pos);
                 return;
             }
@@ -292,7 +317,7 @@ class WaterWheelStallManager {
                 }
                 if (WaterWheelKinetics.isOverStressed(be)) {
                     // Try to talk the network out of its overload before touching a single block.
-                    resolveOverstress(level, pos, be, true);
+                    resolveOverstress(level, pos, be, StressMode.COMMAND);
                     if (WaterWheelKinetics.getSpeed(be) != 0.0f) {
                         stressFixed++;
                         clearState(level, pos);
@@ -344,31 +369,60 @@ class WaterWheelStallManager {
      * @param be                 The wheel block entity
      * @param allowPhantomClear  Whether step 2 may run (command context only)
      */
-    private void resolveOverstress(ServerLevel level, BlockPos pos, BlockEntity be, boolean allowPhantomClear) {
+    private StressAction resolveOverstress(ServerLevel level, BlockPos pos, BlockEntity be, StressMode mode) {
         WaterWheelKinetics.NetworkStats before = WaterWheelKinetics.readNetworkStats(be);
         if (before == null) {
-            return; // no network reflection / no network - nothing to reason about
+            return StressAction.NONE; // no network reflection / no network - nothing to reason about
         }
         WaterWheelKinetics.recomputeNetwork(be);
         if (!WaterWheelKinetics.isOverStressed(be)) {
-            LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}) was stuck on a stale overstressed state;"
-                            + " a network recompute cleared it. Before: {}", pos.toShortString(),
-                    level.dimension().location(), before);
-            return;
+            if (mode == StressMode.COMMAND) {
+                LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}) was stuck on a stale overstressed state;"
+                                + " a network recompute cleared it. Before: {}", pos.toShortString(),
+                        level.dimension().location(), before);
+            }
+            return StressAction.RECOMPUTED;
         }
-        if (!allowPhantomClear || !module.getConfig().isClearPhantomStressEnabled()) {
-            return;
+        if (!module.getConfig().isClearPhantomStressEnabled()) {
+            return StressAction.NONE;
         }
         WaterWheelKinetics.NetworkStats current = WaterWheelKinetics.readNetworkStats(be);
-        if (current == null || !current.hasUnloadedAccounting() || !current.overloadIsUnloadedOnly()) {
-            return; // a real overload of loaded machines - not ours to fix
+        if (current == null || !isTallyClearable(current, mode)) {
+            return StressAction.NONE; // a real overload, or a call only an operator should make
         }
         if (!WaterWheelKinetics.clearUnloadedStressAccounting(be)) {
-            return;
+            return StressAction.NONE;
         }
-        LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}): dropped a phantom unloaded-member stress tally"
-                        + " ({}) - overstressed now {}", pos.toShortString(), level.dimension().location(),
-                current, WaterWheelKinetics.isOverStressed(be));
+        if (mode == StressMode.COMMAND) {
+            LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}): dropped a phantom unloaded-member stress"
+                            + " tally ({}) - overstressed now {}", pos.toShortString(),
+                    level.dimension().location(), current, WaterWheelKinetics.isOverStressed(be));
+        }
+        return StressAction.TALLY_DROPPED;
+    }
+
+    /**
+     * Decides whether the unloaded tally may be dropped, and this is where the two modes genuinely
+     * differ:
+     *
+     * <ul>
+     *   <li><b>Sweep</b> - only a self-contradictory tally: stress charged while the network claims
+     *       zero unloaded members. No machine can be behind those numbers, so dropping them cannot
+     *       take anything away from anyone. Safe without a human in the loop.</li>
+     *   <li><b>Command</b> - also the judgement call: a tally with actual unloaded members, where the
+     *       loaded members alone would fit the loaded capacity. Those members might be real machines
+     *       in unloaded chunks, which Create counts on purpose - so an operator has to ask for it.</li>
+     * </ul>
+     *
+     * @param stats The current network snapshot
+     * @param mode  Who is asking
+     * @return true if the tally may be dropped
+     */
+    private boolean isTallyClearable(WaterWheelKinetics.NetworkStats stats, StressMode mode) {
+        if (stats.hasOrphanedTally()) {
+            return true;
+        }
+        return mode == StressMode.COMMAND && stats.hasUnloadedAccounting() && stats.overloadIsUnloadedOnly();
     }
 
     /**
