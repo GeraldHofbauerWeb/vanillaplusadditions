@@ -4,6 +4,25 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.66] - 2026-08-06
+
+### Changed
+- **Der Phantom-Overstress heilt sich jetzt selbst — aber nur, wo es beweisbar ist.** Der
+  bestätigte Fall auf games2 (Rad bei `-3277, 77, -2137`) zeigte im Netz `unloadedStress=256` bei
+  `unloadedMembers=0`: Stress, der für *null* ungeladene Mitglieder verrechnet wurde. Hinter solchen
+  Zahlen kann keine Maschine stecken, also verwirft der periodische Sweep sie ab sofort selbst und
+  schreibt **eine** Zeile ins Log:
+  `Unstuck wheel at -3277, 77, -2137 (minecraft:overworld): dropped an orphaned stress tally
+  (charged stress for 0 unloaded members) - now spinning at 8.0`.
+- **Der Ermessensfall bleibt beim Befehl.** Meldet das Netz *tatsächlich* ungeladene Mitglieder und
+  passen nur die geladenen unter die Kapazität, können dahinter echte Maschinen in ungeladenen
+  Chunks stecken — die zählt Create absichtlich mit. Das entscheidet weiterhin ein Operator per
+  `/vpaunstuck`, und nur dort steht dann das ausführliche Log mit allen Zahlen (Kapazität, Stress,
+  ungeladener Anteil, Mitgliederzahlen). So bleibt der Befehl genau das Diagnose-Werkzeug für den
+  Fall, dass die Automatik *nicht* greift.
+- `clear_phantom_stress` schaltet beide Wege ab, `auto_fix` bleibt unverändert das Gate für
+  Block-Eingriffe (Break+Replace) — die Stress-Korrektur fasst keinen Block an.
+
 ## [1.0.0-beta.65] - 2026-08-05
 
 ### Added
