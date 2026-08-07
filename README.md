@@ -80,6 +80,9 @@ Adds a **Chunk Loader Track** — a real, connectable **Create train track** var
 #### ⚓ Stationary Chunk Loader
 A **Chunk Anchor** block that force-loads its chunk (plus a configurable radius) while redstone-powered — for redstone clocks and Create contraptions that must keep running in unloaded chunks.
 
+#### 🔗 Inventory Link
+The **Inventory Linker** connects two inventories directly — right-click one, right-click the other, and items move between them on their own, no funnels, chutes or hoppers in between. Built for **Create: Aeronautics** platforms, where vanilla logistics run out: a Docking Connector never pulls from the vault below it, an Auger Cog exposes no inventory at all, and an Auger never pushes into anything at its axial ends. Each end can be set to *input only*, *output only* or *both* (default) in a settings screen opened with **Ctrl + right-click**; when both ends allow both, items flow in the order you clicked. Holding the linker or wearing Engineer's Goggles highlights every link of the block you look at — a vault always as a whole multiblock, and endpoints on a moving platform are drawn where they actually are. Links survive restarts and are dropped automatically when a block is broken. Crafted from a Brass Funnel, a Stock Link and a Chute; comes with a Ponder entry.
+
 #### 💧 Create Water Wheel Unstucker
 Detects Create water wheels that stalled after a chunk reload (a known kinetic/flow desync) and can kick them back into rotation. Ships with the `/vpaunstuck` command to re-initialise stalled wheels on demand; auto-fix is opt-in.
 
@@ -200,6 +203,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
 | `train_chunk_loading` | Create | Module skips initialization entirely (it adds a Create track variant) |
 | `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
+| `inventory_link` | Create + [Create: Aeronautics](https://modrinth.com/mod/create-aeronautics) (`simulated`) | Module skips initialization entirely (it exists to wire Aeronautics augers and docking connectors into Create inventories) |
 | `mob_cart_loader` | Create *(optional)* | Minecart loading/unloading fully functional — train-carriage seats and the goggle stats panel need Create |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
 | `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
@@ -214,9 +218,9 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `haunted_house` | [Alex's Mobs](https://modrinth.com/mod/alexs-mobs) + [Dungeons and Taverns](https://modrinth.com/datapack/dungeons-and-taverns) | Module skips initialization (needs the Murmur entity + witch villa structure) |
 
 **Standalone module jars** (`vpa_<module>.jar` from the releases) additionally require
-`vpa_core.jar`; `vpa_cat_guardian` also needs `vpa_debug_overlay` + `vpa_flying_fish`, and the
-two chunk loaders (`vpa_minecart_chunk_loading`, `vpa_stationary_chunk_loader`) need
-`vpa_debug_overlay`. The all-in-one bundle jar has no such requirements (never install bundle
+`vpa_core.jar`; `vpa_cat_guardian` also needs `vpa_debug_overlay` + `vpa_flying_fish`, and
+`vpa_inventory_link` plus the two chunk loaders (`vpa_minecart_chunk_loading`,
+`vpa_stationary_chunk_loader`) need `vpa_debug_overlay`. The all-in-one bundle jar has no such requirements (never install bundle
 and standalone jars together).
 
 ## 🔨 Development

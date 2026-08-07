@@ -4,6 +4,37 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.67] - 2026-08-07
+
+### Added
+- **Neues Modul `inventory_link` — der Inventar-Verbinder.** Zwei Inventare rechtsklicken, fertig:
+  Items wandern danach von selbst zwischen ihnen, ohne Trichter, Funnel oder Chute dazwischen.
+  Anlass war die Docking-Plattform in der Creative-Welt, an der die Kette Gondel-Vault → Docking
+  Connector → Auger → Vault an drei Stellen gleichzeitig scheiterte: **nichts** befüllt einen
+  Docking Connector aktiv, ein **Auger Cog** hat nach außen überhaupt kein Inventar, und ein Auger
+  legt an seinen **axialen Enden** nie selbst ab. Ein Link umgeht alle drei.
+- **Modi pro Ende: nur Eingang / nur Ausgang / beides** (Standard beides), einstellbar in einem
+  eigenen Menü per **Strg + Rechtsklick** auf einen verbundenen Block. Dürfen beide Enden beides,
+  fließt es in Klick-Reihenfolge — das zuerst geklickte Inventar gibt ab. Dort werden Verbindungen
+  auch wieder gelöst.
+- **Sichtbare Verbindungen.** Mit dem Verbinder in der Hand oder mit Ingenieursbrille zeigt jeder
+  verbundene Block beim Draufschauen all seine Verbindungen: beide Enden umrandet, dazwischen eine
+  Linie. Ein Item Vault wird dabei **als ganzes Multiblock** umrandet, nicht nur der eine geklickte
+  Block — und man kann jeden seiner Blöcke anschauen, um die Verbindungen zu sehen.
+- **Physik-Plattformen inklusive.** Endpunkte auf Sable-/Aeronautics-Contraptions funktionieren
+  ohne Sonderbehandlung (deren Blöcke liegen im selben Level, nur bei Plot-Koordinaten um 20,48
+  Mio.) und werden beim Rendern über die Pose der Plattform dorthin transformiert, wo man sie
+  tatsächlich sieht.
+- **Ponder-Eintrag** (W auf dem Item) und ein Rezept aus **Brass Funnel + Stock Link + Chute**.
+  Das Modul startet nur, wenn **Create *und* Create: Aeronautics** installiert sind.
+
+### Notes
+- Standard-Durchsatz 16 Items alle 8 Ticks (~40 Items/s, gut doppelte Hopper-Geschwindigkeit),
+  Reichweite 32 Blöcke, max. 8 Verbindungen pro Block — alles in der Config änderbar.
+- Verbindungen überleben Neustarts. Wird ein Endpunkt bei geladenem Chunk zerstört, verschwindet
+  die Verbindung mit **einer** Log-Zeile; ist der Chunk ungeladen (Plattform weggeflogen), bleibt
+  sie unangetastet.
+
 ## [1.0.0-beta.66] - 2026-08-06
 
 ### Changed

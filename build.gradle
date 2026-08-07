@@ -411,6 +411,8 @@ def standaloneModules = [
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_zombified_piglins', displayName: 'Vanilla Plus: Hostile Zombified Piglins' ],
     [ moduleId: 'idle_gamerules', displayName: 'Vanilla Plus: Idle Gamerules' ],
+    [ moduleId: 'inventory_link', displayName: 'Vanilla Plus: Inventory Link',
+      moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'item_vault_viewer', displayName: 'Vanilla Plus: Item Vault Viewer' ],
     [ moduleId: 'minecart_chunk_loading', displayName: 'Vanilla Plus: Minecart Chunk Loading',
       dataGlobs: ['data/minecraft/tags/block/rails.json'],

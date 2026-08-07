@@ -102,6 +102,15 @@ config="${mod_id}.mixins.json"
     ordering="NONE"
     side="CLIENT"
 
+# Create: Aeronautics core, shipped jar-in-jar inside create-aeronautics-bundled.
+# The inventory_link module only initializes when it is present.
+[[dependencies.${mod_id}]]
+    modId="simulated"
+    type="optional"
+    versionRange="[1.2.1,)"
+    ordering="AFTER"
+    side="BOTH"
+
 # BlueMap optional server-side dependency (bluemap_signs module integrates via BlueMapAPI)
 [[dependencies.${mod_id}]]
     modId="bluemap"
