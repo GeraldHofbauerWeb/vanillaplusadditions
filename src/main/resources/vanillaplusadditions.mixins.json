@@ -6,6 +6,7 @@
   "mixins": [
     "ChunkStatusTasksMixin",
     "GenerationChunkHolderMixin",
+    "axolotl_guardian.AxolotlBucketRestoreMixin",
     "bluemap_signs.SignBlockEntityTextMixin",
     "cat_guardian.CatGuardianFollowMixin",
     "cat_guardian.CatGuardianTeleportMixin",

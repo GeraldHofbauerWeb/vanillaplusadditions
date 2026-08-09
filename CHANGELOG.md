@@ -4,6 +4,21 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.67] - 2026-08-09
+
+### Fixed
+- **Axolotl-Eimer verlieren ihren Besitzer nicht mehr, wenn ein Dispenser sie ausleert.** Der Eimer
+  trug die Guardian-Daten (Besitzer, Schüssel, Sattzustand, XP, Rüstung) schon immer mit, aber
+  ausgepackt wurden sie nur in `PlayerInteractEvent.RightClickBlock` — und den feuert ein Dispenser
+  nicht. Das Axolotl kam also besitzerlos aus dem Eimer, und weil die Zuordnung zur Futterstation
+  besitzergebunden ist, hat die Station es schlicht ignoriert. Die Wiederherstellung hängt jetzt an
+  `Axolotl.loadFromBucketTag`, dem einen Punkt, durch den *jede* Platzierung läuft: Spieler,
+  Dispenser, Create-Deployer und alles, was `MobBucketItem.checkExtraContent` aufruft. Damit
+  funktioniert die vollautomatische Bestückung einer Axolotl-Station endlich ohne Handarbeit.
+  (Zur Erinnerung: Nur *besessene* Axolotl binden sich an eine Station — ein Eimer aus einer
+  Wildfarm bleibt besitzerlos. Die Zuchtpaare mit gezähmten Tieren ansetzen, dann erben die Babys
+  den Besitzer.)
+
 ## [1.0.0-beta.66] - 2026-08-06
 
 ### Changed

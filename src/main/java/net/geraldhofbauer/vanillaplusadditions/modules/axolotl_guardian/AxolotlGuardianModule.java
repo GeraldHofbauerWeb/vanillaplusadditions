@@ -31,7 +31,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -69,7 +68,6 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -101,7 +99,6 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -336,13 +333,6 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
 
     // Maps dead entity ID → guardian axolotl entity ID; used to redirect XP to the axolotl.
     private final Map<Integer, Integer> pendingXpCapture = new HashMap<>();
-
-    // Guardian payloads captured from a used axolotl bucket, waiting for the spawned entity.
-    private record PendingBucketRestore(CompoundTag payload, ResourceKey<Level> dimension,
-                                        BlockPos pos, long gameTime) {
-    }
-
-    private final List<PendingBucketRestore> pendingBucketRestores = new ArrayList<>();
 
     // ---- Static helpers (config access with fallbacks, ownership) ----
 
@@ -682,10 +672,9 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             return;
         }
 
-        // Guardian payload restore from a just-emptied axolotl bucket. Runs before vanilla's
-        // loadFromBucketTag (MobBucketItem applies that after type.spawn returns), which only
-        // touches Variant/Age/HuntingCooldown — our attachments are untouched by it.
-        applyPendingBucketRestore(axolotl);
+        // Guardian payload restore from a just-emptied bucket happens slightly later, in
+        // Axolotl.loadFromBucketTag (see restoreFromBucketTag) — MobBucketItem calls that right
+        // after type.spawn returns, so it is still the same tick and before the entity ticks.
 
         // Boost follow-range so the A* node budget covers the guard radius (base axolotl: 16)
         var followRangeAttr = axolotl.getAttribute(Attributes.FOLLOW_RANGE);
@@ -1633,62 +1622,29 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     }
 
     /**
-     * Pre-captures the guardian payload when a marked axolotl bucket is about to be emptied.
-     * The spawned entity is matched in {@link #applyPendingBucketRestore} (same dimension,
-     * same tick window, near the clicked position). Dispenser placements bypass this event and
-     * lose the payload — acceptable edge case.
+     * Restores the guardian payload from a just-emptied axolotl bucket. Called from
+     * {@code AxolotlBucketRestoreMixin} at the tail of {@code Axolotl.loadFromBucketTag} — the one
+     * place every placement path funnels through (player right-click, dispenser, Create deployer,
+     * any mod calling {@code MobBucketItem.checkExtraContent}), so ownership survives regardless of
+     * who emptied the bucket.
+     *
+     * @param axolotl   the freshly spawned axolotl
+     * @param bucketTag the bucket's full BUCKET_ENTITY_DATA tag
      */
-    @SubscribeEvent
-    public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (!isModuleEnabled()) {
+    public static void restoreFromBucketTag(Axolotl axolotl, CompoundTag bucketTag) {
+        if (instance == null || !instance.isModuleEnabled()) {
             return;
         }
-        if (event.getLevel().isClientSide()) {
+        if (axolotl.level().isClientSide()) {
             return;
         }
-        ItemStack held = event.getItemStack();
-        if (!held.is(Items.AXOLOTL_BUCKET)) {
+        if (!bucketTag.contains(GUARDIAN_BUCKET_TAG)) {
             return;
         }
-        CustomData data = held.get(DataComponents.BUCKET_ENTITY_DATA);
-        if (data == null) {
-            return;
-        }
-        CompoundTag tag = data.copyTag();
-        if (!tag.contains(GUARDIAN_BUCKET_TAG)) {
-            return;
-        }
-        pendingBucketRestores.add(new PendingBucketRestore(
-                tag.getCompound(GUARDIAN_BUCKET_TAG),
-                event.getLevel().dimension(),
-                event.getPos().relative(event.getFace() != null ? event.getFace() : Direction.UP),
-                event.getLevel().getGameTime()));
+        instance.applyGuardianBucketPayload(axolotl, bucketTag.getCompound(GUARDIAN_BUCKET_TAG));
     }
 
-    private void applyPendingBucketRestore(Axolotl axolotl) {
-        if (pendingBucketRestores.isEmpty()) {
-            return;
-        }
-        long now = axolotl.level().getGameTime();
-        Iterator<PendingBucketRestore> iter = pendingBucketRestores.iterator();
-        CompoundTag payload = null;
-        while (iter.hasNext()) {
-            PendingBucketRestore pending = iter.next();
-            if (now - pending.gameTime() > 1) {
-                iter.remove(); // stale (bucket use failed or was blocked)
-                continue;
-            }
-            if (payload == null
-                    && pending.dimension().equals(axolotl.level().dimension())
-                    && pending.pos().distToCenterSqr(axolotl.getX(), axolotl.getY(), axolotl.getZ()) <= 9.0) {
-                payload = pending.payload();
-                iter.remove();
-            }
-        }
-        if (payload == null) {
-            return;
-        }
-
+    private void applyGuardianBucketPayload(Axolotl axolotl, CompoundTag payload) {
         axolotl.setData(AXOLOTL_OWNER.get(), payload.getString("owner"));
         axolotl.setData(AXOLOTL_FED_TICKS.get(), payload.getInt("fed_ticks"));
         axolotl.setData(AXOLOTL_XP.get(), payload.getInt("xp"));
@@ -1708,8 +1664,12 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             axolotl.setData(AXOLOTL_BOWL_POS.get(), bowlLong);
             bowl.addAxolotl(axolotl.getUUID());
         }
-        // Trackers don't exist yet at join time — PlayerEvent.StartTracking syncs owner/armor/
-        // stats to each player as they start tracking the new entity.
+        // Usually a no-op — the entity has no trackers yet and PlayerEvent.StartTracking sends the
+        // full state as players pick it up. Kept for the case where tracking already started.
+        broadcastOwnerSync(axolotl);
+        if (!armor.isEmpty()) {
+            broadcastArmorSync(axolotl);
+        }
     }
 
     // ---- Petting (empty-hand left-click on an owned axolotl) ----
