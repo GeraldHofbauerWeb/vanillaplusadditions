@@ -43,6 +43,13 @@ the cat eats again automatically when the timer runs out.
 Up to `max_cats_per_station` cats may share one station. There is no explicit limit on the
 number of stations per world.
 
+**Automation** (hoppers, Create funnels, pipes, ...): every face accepts *any* item. Fish is
+routed into the fish input, everything else into the loot output; fish that no longer fits the
+9 fish slots overflows into the loot output instead of backing the pipe up. Shift-clicking in
+the GUI follows the same rule. Extraction is unchanged: a hopper below the station pulls only
+from the loot output (loot and XP bottles), while pipes on the other faces may also pull fish
+back out. The skin/deco slot is never reachable through automation.
+
 ### Cat State Machine
 
 A cat transitions through four exclusive states. Priority from highest to lowest:

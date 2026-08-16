@@ -4,6 +4,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianM
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.CatFeedingStationBlock;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.block.CatStationSkin;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
+import net.geraldhofbauer.vanillaplusadditions.util.StationItemHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -16,6 +17,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity implements MenuProvider {
@@ -69,6 +71,18 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
             applySkinFromSlot();
         }
     };
+
+    /**
+     * Every face except the bottom: automation may push in anything (fish lands in the food
+     * chamber, the rest in the loot storage) and may pull back out of both.
+     */
+    private final IItemHandler externalHandler = new StationItemHandler(inventory, lootInventory, true);
+
+    /**
+     * Bottom face: same insertion routing, but a hopper underneath keeps draining loot and XP
+     * bottles only — it must never suck the cats' meals out of the food chamber.
+     */
+    private final IItemHandler bottomHandler = new StationItemHandler(inventory, lootInventory, false);
 
     public CatFeedingStationBlockEntity(BlockPos pos, BlockState state) {
         super(CatGuardianModule.CAT_FEEDING_STATION_BE.get(), pos, state);
@@ -131,6 +145,16 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
 
     public ItemStackHandler getSkinInventory() {
         return skinInventory;
+    }
+
+    /** Item handler exposed to automation on every face except the bottom. */
+    public IItemHandler getExternalHandler() {
+        return externalHandler;
+    }
+
+    /** Item handler exposed on the bottom face — insertion routes, extraction is loot-only. */
+    public IItemHandler getBottomHandler() {
+        return bottomHandler;
     }
 
     /** Mirrors the skin-slot content into the block's SKIN state (server-side only). */

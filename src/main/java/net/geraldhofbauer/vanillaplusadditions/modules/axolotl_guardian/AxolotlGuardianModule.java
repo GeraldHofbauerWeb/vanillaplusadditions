@@ -563,7 +563,10 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 AXOLOTL_FEEDING_STATION_BE.get(),
-                (be, side) -> side == Direction.DOWN ? be.getLootInventory() : be.getInventory()
+                // Both handlers take any item in (station food -> food chamber, rest -> loot
+                // storage); only the bottom one refuses to hand food back out, so a hopper
+                // underneath keeps collecting loot and XP bottles without emptying the bowl.
+                (be, side) -> side == Direction.DOWN ? be.getBottomHandler() : be.getExternalHandler()
         );
     }
 

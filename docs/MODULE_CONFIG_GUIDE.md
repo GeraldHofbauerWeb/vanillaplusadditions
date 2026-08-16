@@ -57,6 +57,13 @@ Makes zombified piglins always hostile in the Nether.
 
 - **Enabled by default**: Yes
 
+### Hostile Endermen (`hostile_endermen`)
+Makes endermen hostile on sight — only in the End.
+
+- **Enabled by default**: Yes
+- **Extra settings**: `detection_range`, `anger_duration`, `respect_carved_pumpkin`, `suppress_teleport_attack`, `suppress_anticheese_teleport`, `debug_teleport_tracking`
+- Details: [Hostile Endermen](hostile_endermen.md)
+
 ### Wither Skeleton Enforcer (`wither_skeleton_enforcer`)
 Prevents normal skeletons from spawning in the Nether, replacing them with Wither Skeletons.
 

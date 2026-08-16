@@ -20,6 +20,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.waystone_amethyst_repair.
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.hostile_endermen.HostileEndermenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
@@ -139,6 +140,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new TrainChunkLoadingModule());
         moduleManager.registerModule(new StationaryChunkLoaderModule());
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
+        moduleManager.registerModule(new HostileEndermenModule());
         moduleManager.registerModule(new WitherSkeletonModule());
         moduleManager.registerModule(new MobGlowModule());
         moduleManager.registerModule(new BlockGlowModule());

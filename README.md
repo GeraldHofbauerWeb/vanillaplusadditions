@@ -42,6 +42,9 @@ Throw a healing or regeneration potion at an angry tamed animal and it forgives 
 #### 🔥 Hostile Zombified Piglins
 Makes zombified piglins always aggressive towards players in the Nether for a more challenging experience. Configurable detection range and anger duration, with smart targeting and player switching.
 
+#### 🟣 Hostile Endermen
+Makes endermen **in the End** attack on their own — no staring required. Only the persistent anger target is set, so vanilla's own enderman AI does the hunting (including teleporting closer). Endermen in the Overworld and Nether stay neutral, creative/spectator players are ignored, and a carved pumpkin (or modded ender mask) still protects. Includes compat switches for Enderman Overhaul and EnhancedAI so unprovoked endermen can no longer teleport you around in the End — both keep working the moment you hit back. See [docs/hostile_endermen.md](docs/hostile_endermen.md).
+
 #### 💀 Wither Skeleton Enforcer
 Prevents normal skeletons from spawning in the Nether and (optionally) replaces them with Wither Skeletons. Broadcasts messages about blocked spawns in debug mode.
 

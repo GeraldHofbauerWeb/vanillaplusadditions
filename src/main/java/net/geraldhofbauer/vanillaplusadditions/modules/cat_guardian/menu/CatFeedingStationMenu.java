@@ -107,7 +107,13 @@ public class CatFeedingStationMenu extends AbstractContainerMenu {
             }
         } else {
             if (stack.is(ItemTags.FISHES)) {
-                if (!moveItemStackTo(stack, 0, FISH_END, false)) {
+                // Fish fills the food chamber first and overflows into loot storage — same rule
+                // automation follows, so a full bowl never makes shift-clicking a no-op.
+                boolean moved = moveItemStackTo(stack, 0, FISH_END, false);
+                if (!stack.isEmpty()) {
+                    moved |= moveItemStackTo(stack, FISH_END, LOOT_END, false);
+                }
+                if (!moved) {
                     return ItemStack.EMPTY;
                 }
             } else {

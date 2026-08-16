@@ -4,6 +4,62 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.68] - 2026-08-16
+
+### Added
+- **Neues Modul `hostile_endermen` — im End greifen Endermen von selbst an.** Kein Anstarren mehr
+  nötig: Endermen im End werden auf den nächsten Spieler innerhalb `detection_range` (Default **16**
+  Blöcke) wütend, Overworld und Nether bleiben unberührt. Gesetzt wird **nur** der
+  Persistent-Anger-Target — Vanillas `EndermanLookForPlayerGoal` zielt über
+  `isLookingAtMe(player) || isAngryAt(player)` und findet den wütenden Enderman damit selbst,
+  inklusive Nachteleportieren und Freeze-beim-Anstarren. Also keine eigenen AI-Goals, kein Mixin
+  auf die Enderman-KI.
+  - **Der geschnitzte Kürbis schützt weiterhin** (`respect_carved_pumpkin`, Default an) — geprüft
+    über denselben NeoForge-Hook wie Vanilla (`CommonHooks.shouldSuppressEnderManAnger`), damit auch
+    modded Ender-Masken und `EnderManAngerEvent`-Cancels als Gegenmittel funktionieren.
+    Creative/Spectator wird ignoriert.
+  - **Außerhalb der Reichweite ist sofort Schluss:** Wut, Ziel *und* Rache-Gedächtnis
+    (`lastHurtByMob`) werden gelöscht, sonst greifen die Vanilla-Goals (Follow-Range 64) sofort
+    wieder zu und der Aggro-Zug läuft weiter. Jagd auf Endermiten bleibt unangetastet.
+  - Zustandslos umgesetzt (keine UUID-Map wie im Piglin-Modul) und `startPersistentAngerTimer()`
+    wird **vor** dem Setzen der konfigurierten `anger_duration` aufgerufen — sonst überschreibt
+    Vanillas Zufallsdauer den eigenen Config-Wert.
+
+### Changed
+- **Futterstationen (Katze & Axolotl) nehmen jetzt jedes Item von außen an.** Bisher lieferte die
+  Capability an allen Seiten außer unten nur den 9er-Food-Handler, dessen `isItemValid` alles außer
+  Fisch abgeprallt hat; das 15er Loot-Inventar war von außen nur über die Unterseite und nur zum
+  Rausziehen erreichbar. Neuer `util/StationItemHandler` (ein `CombinedInvWrapper`, Food-Slots
+  zuerst) nimmt alles an: Futter geht in die Food-Kammer, alles andere ins Loot-Inventar, und volles
+  Futter läuft ins Loot-Inventar über statt die Pipe zu blockieren. Das Umleiten passiert bewusst in
+  `insertItem`, weil Trichter und `ItemHandlerHelper.insertItemStacked` zuerst Slots mit *gleichem*
+  Stack suchen — liegt schon Fisch als Beute im Loot-Inventar, wäre neuer Fisch sonst dort gelandet.
+  Shift-Klick in der GUI folgt derselben Regel. **Rausziehen unverändert:** unten weiterhin nur Loot
+  und XP-Flaschen, seitlich darf auch Futter raus (so kommt beim Axolotl der leere Eimer zurück).
+
+### Fixed
+- **Endermen verschleppen einen im End nicht mehr grundlos.** Zwei Fremd-Mod-Fähigkeiten wurden
+  durch die neue Dauer-Aggression unerträglich; beide sind jetzt gedeckelt, solange der Spieler
+  **nicht selbst zuschlägt** (Vanilla merkt sich den letzten Angreifer 100 Ticks):
+  - **EnhancedAI „Teleport anti-cheese"** (`TeleportAntiCheeseGoal`) zieht den Spieler zum Enderman,
+    sobald dessen Navigation ihn nicht erreicht — Weglaufen oder ein Höhenunterschied genügte. In
+    einer vermessenen Testsession stammten **29 von 29** ungewollten Teleports von hier. Das Goal
+    wird jetzt schon in `canUse()` vetoed (kein Goal-Start, kein Teleport-Sound), aber nur für
+    Endermen, die im End einen Spieler jagen. Schlägt der Spieler zu, greift es wieder — womit der
+    ursprüngliche Sinn (Cheesing aus der sicheren Ecke bestrafen) erhalten bleibt.
+    Schalter: `suppress_anticheese_teleport`.
+  - **Enderman Overhauls End-Enderman** blinkt sein Opfer bei jedem Treffer mit 50 % Chance
+    zufällig ±12 Blöcke weg (`EndEnderman#doHurtTarget` → `ModUtils.teleportTarget`). Ebenfalls
+    unterdrückt, solange man nicht zurückschlägt (`suppress_teleport_attack`). Der Ender-Bullet des
+    End-Islands-Endermans und die Corrupted-Shield/Blade-Teleports bleiben bewusst erhalten, und die
+    Configs beider Fremd-Mods bleiben unangetastet.
+  - Beide Hooks sind Mixins mit String-Target ohne Compile-Dependency; fehlt die jeweilige Mod, wird
+    der Mixin schlicht deaktiviert (`"required": false`).
+- **Neue Teleport-Diagnose** (`debug_teleport_tracking`, Default aus): loggt jeden In-Dimension-
+  Teleport eines Spielers samt Aufrufer-Stack über einen Hook in `ServerPlayer#teleportTo`. Da
+  Vanillas `randomTeleport` dort durchläuft, taucht jede Mod-Verschiebung mit ihrer verantwortlichen
+  Klasse im Log auf — genau so wurde der Verursacher oben überhaupt erst gefunden.
+
 ## [1.0.0-beta.67] - 2026-08-09
 
 ### Fixed

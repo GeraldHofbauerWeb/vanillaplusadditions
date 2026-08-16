@@ -437,7 +437,10 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 CAT_FEEDING_STATION_BE.get(),
-                (be, side) -> side == Direction.DOWN ? be.getLootInventory() : be.getInventory()
+                // Both handlers take any item in (fish -> food chamber, rest -> loot storage);
+                // only the bottom one refuses to hand food back out, so a hopper underneath keeps
+                // collecting loot and XP bottles without emptying the cats' bowl.
+                (be, side) -> side == Direction.DOWN ? be.getBottomHandler() : be.getExternalHandler()
         );
     }
 
