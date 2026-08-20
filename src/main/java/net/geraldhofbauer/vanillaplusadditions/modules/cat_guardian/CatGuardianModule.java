@@ -392,11 +392,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "X  ", "XXX", "S S");
         ItemStack result = new ItemStack(resultItem);
-        CatGuardianConfig config = getConfig();
-        MobArmorEnchantments.applyDefaults(result, registryAccess,
-                config.getDefaultUnbreakingLevel(),
-                config.getDefaultSharpnessLevel(),
-                config.getDefaultThornsLevel());
         ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }

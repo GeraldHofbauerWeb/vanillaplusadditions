@@ -6,7 +6,6 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
-import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config.BattleDogsConfig;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorRepairs;
 import net.minecraft.resources.ResourceLocation;
@@ -42,13 +41,6 @@ public class BattleDogsJeiPlugin implements IModPlugin {
                 BattleDogsModule.WOLF_ARMOR_NETHERITE.get());
         JeiMobArmorRepairs.register(registration, Items.ARMADILLO_SCUTE, armors);
 
-        if (ModuleManager.getInstance().getModule("battle_dogs")
-                instanceof BattleDogsModule module) {
-            BattleDogsConfig config = module.getConfig();
-            JeiMobArmorEnchantments.register(registration, armors,
-                    config.getDefaultUnbreakingLevel(),
-                    config.getDefaultSharpnessLevel(),
-                    config.getDefaultThornsLevel());
-        }
+        JeiMobArmorEnchantments.register(registration, armors);
     }
 }

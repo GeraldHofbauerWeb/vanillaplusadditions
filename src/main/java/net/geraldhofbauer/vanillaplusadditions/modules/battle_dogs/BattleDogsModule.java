@@ -239,11 +239,6 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
         );
         ShapedRecipePattern pattern = ShapedRecipePattern.of(key, "S  ", "XXX", "X X");
         ItemStack result = new ItemStack(resultItem);
-        BattleDogsConfig config = getConfig();
-        MobArmorEnchantments.applyDefaults(result, registryAccess,
-                config.getDefaultUnbreakingLevel(),
-                config.getDefaultSharpnessLevel(),
-                config.getDefaultThornsLevel());
         ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT, pattern, result);
         recipes.put(id, new RecipeHolder<>(id, recipe));
     }

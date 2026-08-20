@@ -6,7 +6,6 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
-import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.config.AxolotlGuardianConfig;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorRepairs;
 import net.minecraft.resources.ResourceLocation;
@@ -42,13 +41,6 @@ public class AxolotlGuardianJeiPlugin implements IModPlugin {
                 AxolotlGuardianModule.AXOLOTL_ARMOR_NETHERITE.get());
         JeiMobArmorRepairs.register(registration, Items.TURTLE_SCUTE, armors);
 
-        if (ModuleManager.getInstance().getModule("axolotl_guardian")
-                instanceof AxolotlGuardianModule module) {
-            AxolotlGuardianConfig config = module.getConfig();
-            JeiMobArmorEnchantments.register(registration, armors,
-                    config.getDefaultUnbreakingLevel(),
-                    config.getDefaultSharpnessLevel(),
-                    config.getDefaultThornsLevel());
-        }
+        JeiMobArmorEnchantments.register(registration, armors);
     }
 }

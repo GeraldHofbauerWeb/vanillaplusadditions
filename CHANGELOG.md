@@ -4,6 +4,26 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.70] - 2026-08-20
+
+### Removed
+- **Frisch gecraftete Mob-Rüstung kommt nicht mehr vorverzaubert aus dem Craftingtisch.** Katzen-,
+  Axolotl- und Hunde-Rüstung bekamen bisher Unbreaking III, Sharpness II und Thorns II ins
+  Rezept-Ergebnis gebacken. Das Feature ist samt der drei `default_*_level`-Config-Optionen und dem
+  `MobArmorEnchantments.applyDefaults()`-Helper entfernt — nicht bloß auf 0 gestellt, damit auch
+  bestehende `vanillaplusadditions-common.toml`-Dateien mit alten Werten sofort greifen (ein
+  geänderter Config-Default gilt nur für neu angelegte Dateien). Die veralteten Einträge in
+  vorhandenen Configs werden ignoriert.
+- Verzaubern bleibt vollständig möglich: Enchantability der Materialien, die `enchantable/*`-Tags
+  und die Auswertung von Sharpness/Thorns in den Kampf-Handlern sind unverändert. Bereits
+  gecraftete Rüstung behält ihre Verzauberungen.
+
+### Changed
+- **Die JEI-Amboss-Einträge für Mob-Rüstung zeigen jetzt das Maximallevel** (Unbreaking III,
+  Sharpness V, Thorns III) statt der früheren Config-Defaults. Sie hingen an denselben Werten und
+  wären mit dem Ausbau sonst ganz verschwunden — gerade jetzt, wo die Rüstung blank aus dem
+  Craftingtisch kommt, ist das Nachschlagen „so verzauberst du sie" nützlicher als vorher.
+
 ## [1.0.0-beta.69] - 2026-08-20
 
 ### Changed

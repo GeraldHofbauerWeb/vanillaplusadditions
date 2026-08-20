@@ -25,26 +25,6 @@ public final class MobArmorEnchantments {
     }
 
     /**
-     * Stamps the configured default Unbreaking/Sharpness/Thorns levels onto a freshly crafted armor
-     * stack. Levels {@code <= 0} are skipped. A {@code null} registry (no world yet) is ignored.
-     *
-     * @param stack          the crafted result stack to enchant in place
-     * @param registryAccess registry access used to resolve the enchantment holders
-     * @param unbreaking     Unbreaking level to bake (skipped when {@code <= 0})
-     * @param sharpness      Sharpness level to bake (skipped when {@code <= 0})
-     * @param thorns         Thorns level to bake (skipped when {@code <= 0})
-     */
-    public static void applyDefaults(ItemStack stack, RegistryAccess registryAccess,
-                                     int unbreaking, int sharpness, int thorns) {
-        if (stack == null || stack.isEmpty() || registryAccess == null) {
-            return;
-        }
-        enchant(stack, registryAccess, Enchantments.UNBREAKING, unbreaking);
-        enchant(stack, registryAccess, Enchantments.SHARPNESS, sharpness);
-        enchant(stack, registryAccess, Enchantments.THORNS, thorns);
-    }
-
-    /**
      * Resolves an enchantment holder from the registry and applies it to the stack.
      *
      * @param stack          the stack to enchant in place

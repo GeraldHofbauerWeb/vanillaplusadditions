@@ -42,17 +42,13 @@ public final class JeiMobArmorEnchantments {
 
     /**
      * Registers, per armor and per enchantment, an anvil recipe applying the enchanted book at the
-     * configured default level. Levels {@code <= 0} are skipped, as is the whole call when no world
-     * (and therefore no enchantment registry) is available yet.
+     * enchantment's maximum level. The whole call is skipped when no world (and therefore no
+     * enchantment registry) is available yet.
      *
-     * @param registration    JEI's recipe registration
-     * @param armors          the armor items to register enchant recipes for (all tiers)
-     * @param unbreakingLevel default Unbreaking level to display (skipped when {@code <= 0})
-     * @param sharpnessLevel  default Sharpness level to display (skipped when {@code <= 0})
-     * @param thornsLevel     default Thorns level to display (skipped when {@code <= 0})
+     * @param registration JEI's recipe registration
+     * @param armors       the armor items to register enchant recipes for (all tiers)
      */
-    public static void register(IRecipeRegistration registration, List<Item> armors,
-                                int unbreakingLevel, int sharpnessLevel, int thornsLevel) {
+    public static void register(IRecipeRegistration registration, List<Item> armors) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             return; // enchantment registry is unavailable without a joined world — skip gracefully
@@ -62,26 +58,25 @@ public final class JeiMobArmorEnchantments {
         List<IJeiAnvilRecipe> recipes = new ArrayList<>();
 
         addEnchantRecipes(recipes, factory, registryAccess, armors,
-                Enchantments.UNBREAKING, "unbreaking", unbreakingLevel);
+                Enchantments.UNBREAKING, "unbreaking");
         addEnchantRecipes(recipes, factory, registryAccess, armors,
-                Enchantments.SHARPNESS, "sharpness", sharpnessLevel);
+                Enchantments.SHARPNESS, "sharpness");
         addEnchantRecipes(recipes, factory, registryAccess, armors,
-                Enchantments.THORNS, "thorns", thornsLevel);
+                Enchantments.THORNS, "thorns");
 
         registration.addRecipes(RecipeTypes.ANVIL, recipes);
     }
 
     private static void addEnchantRecipes(List<IJeiAnvilRecipe> recipes, IVanillaRecipeFactory factory,
                                           RegistryAccess registryAccess, List<Item> armors,
-                                          ResourceKey<Enchantment> key, String path, int level) {
-        if (level <= 0) {
-            return;
-        }
+                                          ResourceKey<Enchantment> key, String path) {
         Holder<Enchantment> holder = registryAccess.registryOrThrow(Registries.ENCHANTMENT)
                 .getHolder(key).orElse(null);
         if (holder == null) {
             return;
         }
+        // Crafted armor comes plain, so the lookup shows what the anvil can actually reach.
+        int level = holder.value().getMaxLevel();
         for (Item armor : armors) {
             ItemStack base = new ItemStack(armor);
 
