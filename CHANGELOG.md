@@ -4,6 +4,27 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.69] - 2026-08-20
+
+### Changed
+- **Item Vault Viewer zeigt oben den Füllstand des ganzen Multiblock-Vaults in Prozent** — dafür ist
+  die Seitenanzeige (`1-6 / 12`) rechts im Header weggefallen. An ihrer Stelle steht der
+  Prozentwert, eingefärbt nach Füllgrad (grün, ab 70 % gelb, ab 90 % rot), darunter ein schmaler
+  Balken über die volle Panel-Breite. Hover über den Balken zeigt zusätzlich belegte Slots und die
+  Gesamtzahl der Items.
+  - **Gerechnet wird in Stack-Einheiten, nicht in Slots:** pro Slot `count / min(slotLimit,
+    maxStackSize)`. Ein Slot mit 32 Cobblestone zählt damit als halb voll, ein Slot mit einer
+    einzelnen Shulkerbox (Maximalstapel 1) als ganz voll — das trifft „wie viel passt da noch rein"
+    deutlich besser als reines Slot-Zählen. Die Slot-Zahl steht weiterhin im Tooltip.
+  - **Der Wert kommt vom Server** und deckt *alle* Blöcke des Multiblocks ab (beim Contraption-Vault
+    alle gemounteten Storages). Er ist damit unabhängig von Suchfilter und Scrollposition — anders
+    als die Stack-Liste, die für die Anzeige zusammengefasst wird und die Kapazität pro Slot gar
+    nicht mehr kennt.
+  - 0 % und 100 % werden nur angezeigt, wenn der Vault wirklich leer bzw. randvoll ist; dazwischen
+    wird auf 1 % bzw. 99 % gerundet, damit die beiden Zustände eindeutig bleiben.
+  - **Achtung beim Update:** Das Wire-Format des Viewer-Menüs hat sich geändert (Anchor →
+    Füllstandswerte → Stacks). Client und Server müssen dieselbe Version fahren.
+
 ## [1.0.0-beta.68] - 2026-08-16
 
 ### Added

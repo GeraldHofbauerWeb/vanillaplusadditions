@@ -70,17 +70,33 @@ public class ItemVaultViewerMenu extends AbstractContainerMenu {
     private final List<ItemStack> stacks;
     private final int totalRows;
     private final int visibleRows;
+    private final int totalSlots;
+    private final int occupiedSlots;
+    private final float fillFraction;
 
-    public ItemVaultViewerMenu(int id, Inventory playerInventory, Anchor anchor, List<ItemStack> stacks) {
+    public ItemVaultViewerMenu(int id, Inventory playerInventory, Anchor anchor, List<ItemStack> stacks,
+                               int totalSlots, int occupiedSlots, float fillFraction) {
         super(ItemVaultViewerModule.ITEM_VAULT_VIEWER_MENU.get(), id);
         this.anchor = anchor;
         this.stacks = List.copyOf(stacks.stream().map(ItemStack::copy).toList());
         this.totalRows = Math.max(1, (this.stacks.size() + 8) / 9);
         this.visibleRows = Math.min(totalRows, 6);
+        this.totalSlots = totalSlots;
+        this.occupiedSlots = occupiedSlots;
+        this.fillFraction = fillFraction;
     }
 
     public ItemVaultViewerMenu(int id, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
-        this(id, playerInventory, readAnchor(buf), readStacks(buf));
+        this(id, playerInventory, readAnchor(buf), buf.readVarInt(), buf.readVarInt(), buf.readFloat(), buf);
+    }
+
+    /**
+     * Decoding helper: the wire order is anchor, fill-level numbers, stacks — but the canonical
+     * constructor takes the stacks first, so they have to be read in a later evaluation step.
+     */
+    private ItemVaultViewerMenu(int id, Inventory playerInventory, Anchor anchor, int totalSlots,
+                                int occupiedSlots, float fillFraction, RegistryFriendlyByteBuf buf) {
+        this(id, playerInventory, anchor, readStacks(buf), totalSlots, occupiedSlots, fillFraction);
     }
 
     private static Anchor readAnchor(RegistryFriendlyByteBuf buf) {
@@ -113,6 +129,21 @@ public class ItemVaultViewerMenu extends AbstractContainerMenu {
 
     public int getScrollMax() {
         return Math.max(0, totalRows - visibleRows);
+    }
+
+    /** Total number of item slots across every block of the vault multiblock. */
+    public int getTotalSlots() {
+        return totalSlots;
+    }
+
+    /** Slots that hold at least one item, across every block of the vault multiblock. */
+    public int getOccupiedSlots() {
+        return occupiedSlots;
+    }
+
+    /** How full the whole multiblock is, in stack units, clamped to 0..1. */
+    public float getFillFraction() {
+        return fillFraction;
     }
 
     @Override

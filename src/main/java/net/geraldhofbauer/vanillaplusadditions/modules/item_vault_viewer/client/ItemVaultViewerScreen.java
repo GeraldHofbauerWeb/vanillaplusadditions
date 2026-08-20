@@ -1,6 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.client;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.menu.ItemVaultViewerMenu;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -28,6 +29,8 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
     private static final int SCROLL_BAR_WIDTH = 6;
     private static final int SORT_BUTTON_WIDTH = 32;
     private static final int SORT_BUTTON_HEIGHT = 14;
+    private static final int FILL_BAR_TOP = 17;
+    private static final int FILL_BAR_HEIGHT = 4;
 
     private final List<Integer> filteredIndices = new ArrayList<>();
 
@@ -101,6 +104,8 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
         guiGraphics.fill(left, top, left + 1, top + this.imageHeight, 0xFF000000);
         guiGraphics.fill(left + this.imageWidth - 1, top, left + this.imageWidth, top + this.imageHeight, 0xFF000000);
 
+        renderFillBar(guiGraphics, left, top);
+
         int startIndex = this.scrollRow * 9;
         int endIndex = Math.min(filteredIndices.size(), startIndex + visibleRows * 9);
         for (int displayIndex = startIndex; displayIndex < endIndex; displayIndex++) {
@@ -163,14 +168,11 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         guiGraphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0xE0E0E0, false);
-        int totalRows = getDisplayedTotalRows();
-        if (totalRows > this.menu.getVisibleRows()) {
-            int startRow = this.scrollRow + 1;
-            int endRow = Math.min(totalRows, this.scrollRow + this.menu.getVisibleRows());
-            Component rangeLabel = Component.literal(startRow + "-" + endRow + " / " + totalRows);
-            int rangeLabelX = this.imageWidth - 8 - this.font.width(rangeLabel);
-            guiGraphics.drawString(this.font, rangeLabel, rangeLabelX, this.titleLabelY, 0x909090, false);
-        }
+
+        Component fillLabel = Component.literal(formatPercent(this.menu.getFillFraction()));
+        int fillLabelX = this.imageWidth - 8 - this.font.width(fillLabel);
+        guiGraphics.drawString(this.font, fillLabel, fillLabelX, this.titleLabelY,
+                fillTextColor(this.menu.getFillFraction()), false);
     }
 
     @Override
@@ -191,6 +193,93 @@ public class ItemVaultViewerScreen extends AbstractContainerScreen<ItemVaultView
                 return;
             }
         }
+
+        renderFillBarTooltip(guiGraphics, mouseX, mouseY);
+    }
+
+    private void renderFillBarTooltip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int barLeft = this.leftPos + PANEL_LEFT;
+        int barRight = this.leftPos + this.imageWidth - 8;
+        int barTop = this.topPos + FILL_BAR_TOP;
+        if (mouseX < barLeft || mouseX >= barRight || mouseY < barTop || mouseY >= barTop + FILL_BAR_HEIGHT) {
+            return;
+        }
+
+        long items = 0L;
+        for (ItemStack stack : this.menu.getStacks()) {
+            items += stack.getCount();
+        }
+
+        List<Component> lines = List.of(
+                Component.literal("Vault " + formatPercent(this.menu.getFillFraction()) + " full"),
+                Component.literal(this.menu.getOccupiedSlots() + " / " + this.menu.getTotalSlots()
+                        + " slots used").withStyle(ChatFormatting.GRAY),
+                Component.literal(items + " items").withStyle(ChatFormatting.GRAY)
+        );
+        guiGraphics.renderComponentTooltip(this.font, lines, mouseX, mouseY);
+    }
+
+    /**
+     * Fill level of the whole multiblock vault, drawn as a slim bar between header and slots.
+     * The value is computed server-side over every vault block, so it does not change with the
+     * search filter or the scroll position.
+     */
+    private void renderFillBar(GuiGraphics guiGraphics, int left, int top) {
+        int barLeft = left + PANEL_LEFT;
+        int barRight = left + this.imageWidth - 8;
+        int barTop = top + FILL_BAR_TOP;
+        int barBottom = barTop + FILL_BAR_HEIGHT;
+
+        guiGraphics.fill(barLeft, barTop, barRight, barBottom, 0xFF1B1B1B);
+        guiGraphics.fill(barLeft, barTop, barRight, barTop + 1, 0xFF141414);
+
+        float fill = Mth.clamp(this.menu.getFillFraction(), 0.0f, 1.0f);
+        if (fill <= 0.0f) {
+            return;
+        }
+
+        // Anything above zero keeps at least a sliver visible, so "almost empty" never reads "empty".
+        int width = Math.max(1, Math.round((barRight - barLeft) * fill));
+        int color = fillBarColor(fill);
+        guiGraphics.fill(barLeft, barTop, barLeft + width, barBottom, color);
+        guiGraphics.fill(barLeft, barTop, barLeft + width, barTop + 1, lighten(color));
+    }
+
+    private static int fillBarColor(float fill) {
+        if (fill >= 0.9f) {
+            return 0xFFD65C4A;
+        }
+        if (fill >= 0.7f) {
+            return 0xFFD6B24A;
+        }
+        return 0xFF63B25A;
+    }
+
+    private static int fillTextColor(float fill) {
+        return fillBarColor(fill) & 0x00FFFFFF;
+    }
+
+    private static int lighten(int argb) {
+        int r = Math.min(255, ((argb >> 16) & 0xFF) + 40);
+        int g = Math.min(255, ((argb >> 8) & 0xFF) + 40);
+        int b = Math.min(255, (argb & 0xFF) + 40);
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
+    }
+
+    /**
+     * Rounds towards the nearest percent but never reports 0% or 100% unless the vault really is
+     * empty or completely full — the two states players act on.
+     */
+    private static String formatPercent(float fill) {
+        float clamped = Mth.clamp(fill, 0.0f, 1.0f);
+        int percent = Math.round(clamped * 100.0f);
+        if (percent == 0 && clamped > 0.0f) {
+            percent = 1;
+        }
+        if (percent == 100 && clamped < 1.0f) {
+            percent = 99;
+        }
+        return percent + "%";
     }
 
     private void rebuildFilteredIndices() {

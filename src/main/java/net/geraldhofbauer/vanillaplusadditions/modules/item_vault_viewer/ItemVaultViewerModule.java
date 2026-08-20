@@ -99,8 +99,8 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
                     }
 
                     BlockPos controllerPos = controller.getBlockPos();
-                    List<ItemStack> stacks = aggregateStacks(inventory);
-                    openViewer(player, new ItemVaultViewerMenu.BlockAnchor(controllerPos), stacks);
+                    VaultContents contents = readContents(List.of(inventory));
+                    openViewer(player, new ItemVaultViewerMenu.BlockAnchor(controllerPos), contents);
                 }));
 
         event.registrar("1").playToServer(OpenContraptionVaultViewerPacket.TYPE,
@@ -147,44 +147,72 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
                         return;
                     }
 
-                    List<ItemStack> stacks = aggregateStacks(inventories);
+                    VaultContents contents = readContents(inventories);
                     getLogger().debug("[IVV/contraption] opening viewer with {} stacks "
-                            + "({} vault blocks)", stacks.size(), inventories.size());
+                            + "({} vault blocks)", contents.stacks().size(), inventories.size());
                     openViewer(player,
-                            new ItemVaultViewerMenu.ContraptionAnchor(contraption.getId(), localPos), stacks);
+                            new ItemVaultViewerMenu.ContraptionAnchor(contraption.getId(), localPos), contents);
                 }));
     }
 
-    private void openViewer(ServerPlayer player, ItemVaultViewerMenu.Anchor anchor, List<ItemStack> stacks) {
+    private void openViewer(ServerPlayer player, ItemVaultViewerMenu.Anchor anchor, VaultContents contents) {
         player.openMenu(
                 new SimpleMenuProvider(
-                        (id, inventory, ignored) -> new ItemVaultViewerMenu(id, inventory, anchor, stacks),
+                        (id, inventory, ignored) -> new ItemVaultViewerMenu(id, inventory, anchor, contents.stacks(),
+                                contents.totalSlots(), contents.occupiedSlots(), contents.fillFraction()),
                         Component.literal("Item Vault Viewer")
                 ),
                 buf -> {
                     anchor.write(buf);
-                    buf.writeVarInt(stacks.size());
-                    for (ItemStack stack : stacks) {
+                    buf.writeVarInt(contents.totalSlots());
+                    buf.writeVarInt(contents.occupiedSlots());
+                    buf.writeFloat(contents.fillFraction());
+                    buf.writeVarInt(contents.stacks().size());
+                    for (ItemStack stack : contents.stacks()) {
                         ItemStack.STREAM_CODEC.encode(buf, stack);
                     }
                 }
         );
     }
 
-    private static List<ItemStack> aggregateStacks(IItemHandler handler) {
-        return aggregateStacks(List.of(handler));
+    /**
+     * Everything the viewer shows about a vault: the merged stacks plus how full the multiblock is.
+     *
+     * <p>{@code fillFraction} counts capacity in stack units, so a slot holding 32 cobblestone is
+     * half full while a slot holding a single shulker box (max stack 1) is completely full. That
+     * matches what a player means by "how much still fits in there" better than a plain slot count,
+     * which is reported separately via {@code occupiedSlots}.
+     */
+    private record VaultContents(List<ItemStack> stacks, int totalSlots, int occupiedSlots, float fillFraction) {
     }
 
     /**
-     * Merges equal stacks across one or more handlers. A multiblock vault on a contraption is
-     * mounted as one storage per block, so its contents only add up when all of them are read.
+     * Merges equal stacks across one or more handlers and measures the fill level. A multiblock
+     * vault on a contraption is mounted as one storage per block, so its contents only add up when
+     * all of them are read.
      */
-    private static List<ItemStack> aggregateStacks(List<IItemHandler> handlers) {
+    private static VaultContents readContents(List<IItemHandler> handlers) {
         List<ItemStack> stacks = new ArrayList<>();
+        int totalSlots = 0;
+        int occupiedSlots = 0;
+        float usedStackUnits = 0.0f;
+
         for (IItemHandler handler : handlers) {
             collectStacks(handler, stacks);
+            for (int slot = 0; slot < handler.getSlots(); slot++) {
+                totalSlots++;
+                ItemStack stack = handler.getStackInSlot(slot);
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                occupiedSlots++;
+                int limit = Math.max(1, Math.min(handler.getSlotLimit(slot), stack.getMaxStackSize()));
+                usedStackUnits += Math.min(1.0f, stack.getCount() / (float) limit);
+            }
         }
-        return stacks;
+
+        float fillFraction = totalSlots == 0 ? 0.0f : usedStackUnits / totalSlots;
+        return new VaultContents(stacks, totalSlots, occupiedSlots, Math.min(1.0f, fillFraction));
     }
 
     private static void collectStacks(IItemHandler handler, List<ItemStack> stacks) {
