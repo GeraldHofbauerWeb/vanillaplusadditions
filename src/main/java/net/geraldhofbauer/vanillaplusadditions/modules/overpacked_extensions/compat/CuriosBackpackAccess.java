@@ -6,7 +6,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.fml.ModList;
 import top.theillusivec4.curios.api.CuriosApi;
 import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 
@@ -18,11 +17,10 @@ import java.util.Optional;
  * an updated stack back into the same Curios slot.
  *
  * <p>All Curios types are referenced only inside method bodies and are only reached when Curios is
- * present (Overpacked hard-requires Curios, and callers gate on {@link OverpackedGuiBridge#isAvailable()}).
+ * present (Overpacked hard-requires Curios, and callers gate on
+ * {@link OverpackedCompat#isAvailable()}).
  */
 public final class CuriosBackpackAccess {
-
-    static final boolean CURIOS_LOADED = ModList.get().isLoaded("curios");
 
     private static final TagKey<Item> GIANT_BACKPACKS = TagKey.create(
             Registries.ITEM, ResourceLocation.fromNamespaceAndPath("overpacked", "giant_backpacks"));
@@ -45,7 +43,7 @@ public final class CuriosBackpackAccess {
      * The first worn giant backpack, or empty if the player wears none (or Curios is absent).
      */
     public static Optional<Worn> findWorn(ServerPlayer player) {
-        if (!CURIOS_LOADED) {
+        if (!OverpackedCompat.CURIOS_LOADED) {
             return Optional.empty();
         }
         return CuriosApi.getCuriosInventory(player)
@@ -61,7 +59,7 @@ public final class CuriosBackpackAccess {
      * swapped the slot out while the GUI was open).
      */
     public static boolean isGiantBackpackInSlot(ServerPlayer player, String identifier, int index) {
-        if (!CURIOS_LOADED) {
+        if (!OverpackedCompat.CURIOS_LOADED) {
             return false;
         }
         Optional<ICuriosItemHandler> inv = CuriosApi.getCuriosInventory(player);
@@ -76,7 +74,7 @@ public final class CuriosBackpackAccess {
      * Writes {@code stack} into the given Curios slot (syncs to the client).
      */
     public static void setWorn(ServerPlayer player, String identifier, int index, ItemStack stack) {
-        if (!CURIOS_LOADED) {
+        if (!OverpackedCompat.CURIOS_LOADED) {
             return;
         }
         CuriosApi.getCuriosInventory(player)

@@ -14,7 +14,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.nycto_team.overpacked.entity.GiantBackpack;
@@ -36,12 +35,12 @@ import java.util.UUID;
  *
  * <p>Overpacked's GUI is entity-bound (its client menu factory resolves the backpack by entity id),
  * so there is no worn-item-only open path; a transient entity is required. All Overpacked references
- * live inside method bodies and are reached only when {@link #isAvailable()} holds — the module never
- * registers this class's event handlers otherwise (mirrors {@code end_oxygen} / Create compat).
+ * live inside method bodies and are reached only when {@link OverpackedCompat#isAvailable()} holds —
+ * the module never registers this class's event handlers otherwise (mirrors {@code end_oxygen} /
+ * Create compat). Note the gate deliberately lives in {@link OverpackedCompat}: merely resolving a
+ * static member of <em>this</em> class links it, and the verifier then loads Overpacked's types.
  */
 public final class OverpackedGuiBridge {
-
-    private static final boolean OVERPACKED_LOADED = ModList.get().isLoaded("overpacked");
 
     /** Transient backpack entities we spawned, keyed by entity id → the slot to write back to. */
     private static final Map<Integer, Session> SESSIONS = new HashMap<>();
@@ -50,11 +49,6 @@ public final class OverpackedGuiBridge {
     }
 
     private OverpackedGuiBridge() {
-    }
-
-    /** True when both Overpacked and Curios are present (Overpacked hard-requires Curios). */
-    public static boolean isAvailable() {
-        return OVERPACKED_LOADED && CuriosBackpackAccess.CURIOS_LOADED;
     }
 
     /**

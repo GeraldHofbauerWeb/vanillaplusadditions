@@ -4,6 +4,20 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.71] - 2026-08-26
+
+### Fixed
+- **Der Mod stürzt nicht mehr beim Laden ab, wenn Overpacked/Curios im Pack fehlen.** Das Modul
+  `overpacked_extensions` fragte seinen Verfügbarkeits-Gate über `OverpackedGuiBridge.isAvailable()`
+  ab — genau die Klasse, in der die Overpacked-Typen stecken. Ein statischer Aufruf linkt und
+  verifiziert die deklarierende Klasse, und der JVM-Verifier lädt dabei die in den Methodenrümpfen
+  benutzten Overpacked-Typen. Ohne Overpacked flog deshalb beim Mod-Konstruieren
+  `NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu` — und riss den ganzen Mod
+  mit (FML: „Failed to create mod instance"). Der Gate sitzt jetzt in der eigenen, Overpacked-freien
+  Klasse `OverpackedCompat` (gleiches Muster wie `bluemap_signs`); die Backpack-Features sind ohne
+  Overpacked/Curios wieder einfach inert. Betrifft alle Packs ohne Overpacked, unabhängig von der
+  NeoForge-Version.
+
 ## [1.0.0-beta.70] - 2026-08-20
 
 ### Removed

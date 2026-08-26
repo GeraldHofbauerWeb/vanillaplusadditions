@@ -1,6 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.OverpackedCompat;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.OverpackedGuiBridge;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.config.OverpackedExtensionsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network.OpenBackpackCompartmentPacket;
@@ -25,8 +26,9 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
  * in Quark's {@code "Allowed Screens"} config (see {@code docs/overpacked_extensions.md}).
  *
  * <p>The backpack features are no-ops when Overpacked/Curios are absent: all references to those mods
- * live inside {@link OverpackedGuiBridge} / {@code CuriosBackpackAccess}, reached only after an
- * {@code isAvailable()} gate.
+ * live inside {@link OverpackedGuiBridge} / {@code CuriosBackpackAccess}, reached only after the
+ * {@link OverpackedCompat#isAvailable()} gate — which is a separate, Overpacked-free class on purpose
+ * (asking the bridge itself would link it and blow up with NoClassDefFoundError).
  */
 public class OverpackedExtensionsModule
         extends AbstractModule<OverpackedExtensionsModule, OverpackedExtensionsConfig> {
@@ -49,14 +51,15 @@ public class OverpackedExtensionsModule
         getModEventBus().addListener(this::onRegisterPayloadHandlers);
 
         // The bridge references Overpacked types, so only register its event handlers when Overpacked
-        // (and Curios) are present. isAvailable() reads cached ModList booleans and links no Overpacked
-        // classes.
-        if (OverpackedGuiBridge.isAvailable()) {
+        // (and Curios) are present. The gate lives in OverpackedCompat, which links no Overpacked
+        // classes — touching OverpackedGuiBridge for the check would already trigger the verifier to
+        // load Overpacked's types and crash mod construction on packs without Overpacked.
+        if (OverpackedCompat.isAvailable()) {
             NeoForge.EVENT_BUS.register(OverpackedGuiBridge.class);
         }
 
         getLogger().info("Overpacked Extensions module initialized (overpacked+curios present: {})",
-                OverpackedGuiBridge.isAvailable());
+                OverpackedCompat.isAvailable());
     }
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
@@ -74,7 +77,7 @@ public class OverpackedExtensionsModule
                     if (compartment < 0 || compartment > 2) {
                         return;
                     }
-                    if (!OverpackedGuiBridge.isAvailable()) {
+                    if (!OverpackedCompat.isAvailable()) {
                         player.displayClientMessage(Component.translatable(
                                 "message.vanillaplusadditions.overpacked_extensions.unavailable"), true);
                         return;

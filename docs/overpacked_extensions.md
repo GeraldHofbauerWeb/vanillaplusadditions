@@ -73,9 +73,15 @@ item. Ship this line in the modpack's config so every client gets it (it's a cli
 
 ## Implementation notes
 - All Overpacked/Curios references are isolated in `modules/overpacked_extensions/compat/` and only
-  reached when both mods are present (`OverpackedGuiBridge.isAvailable()` gate). The sort screen hook
+  reached when both mods are present (`OverpackedCompat.isAvailable()` gate). The sort screen hook
   is registered manually on the client only when Overpacked is present, so its `GiantBackpackMenu`
   reference never links otherwise.
+- **The gate must live in its own Overpacked-free class** (`OverpackedCompat`), never on
+  `OverpackedGuiBridge` itself. Calling a static method resolves — and therefore links and verifies —
+  its declaring class, and the JVM verifier eagerly loads the Overpacked types used in that class's
+  method bodies. With the gate on the bridge, a pack without Overpacked crashed mod construction with
+  `NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu` (beta.70). Same rule as
+  `bluemap_signs`: gate in the module/helper, optional-mod code in an isolated class.
 - Because the GUI is entity-bound, a helper backpack entity exists at the player's position while the
   worn-backpack GUI is open; it is non-colliding and removed on close. Other players may briefly see it.
 - A hard crash while the GUI is open can leave edited items on the transient entity (recoverable
