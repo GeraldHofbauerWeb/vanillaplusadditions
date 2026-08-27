@@ -22,6 +22,7 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
@@ -100,6 +101,9 @@ public class CustomCraftingRecipesModule
     private List<RecipeHolder<?>> parseConfiguredRecipes() {
         List<RecipeHolder<?>> parsedRecipes = new ArrayList<>();
         Set<ResourceLocation> seenRecipeIds = new LinkedHashSet<>();
+        // Namespaces we skipped because their mod is not installed — summarized as one INFO line at
+        // the end, so a typo'd namespace stays visible without an ERROR per absent-mod recipe.
+        Set<String> skippedMods = new LinkedHashSet<>();
 
         // Parse shaped recipes
         for (String entry : getConfig().getRecipeDefinitions()) {
@@ -113,6 +117,11 @@ public class CustomCraftingRecipesModule
 
                 parsedRecipes.removeIf(existing -> existing.id().equals(definition.recipeId()));
                 parsedRecipes.add(recipeHolder);
+            } catch (MissingModException exception) {
+                // A recipe extension for a mod this pack does not have — expected, not a defect.
+                skippedMods.add(exception.namespace());
+                getLogger().debug("Skipping custom crafting recipe (shaped), {}: {}",
+                        exception.getMessage(), entry);
             } catch (IllegalArgumentException exception) {
                 getLogger().error("Invalid custom crafting recipe definition (shaped): {}", entry);
                 getLogger().error("Reason: {}", exception.getMessage());
@@ -133,6 +142,10 @@ public class CustomCraftingRecipesModule
 
                 parsedRecipes.removeIf(existing -> existing.id().equals(definition.recipeId()));
                 parsedRecipes.add(recipeHolder);
+            } catch (MissingModException exception) {
+                skippedMods.add(exception.namespace());
+                getLogger().debug("Skipping custom crafting recipe (shapeless), {}: {}",
+                        exception.getMessage(), entry);
             } catch (IllegalArgumentException exception) {
                 getLogger().error("Invalid custom crafting recipe definition (shapeless): {}", entry);
                 getLogger().error("Reason: {}", exception.getMessage());
@@ -141,13 +154,18 @@ public class CustomCraftingRecipesModule
             }
         }
 
+        if (!skippedMods.isEmpty()) {
+            getLogger().info("Skipped custom crafting recipes for mods that are not installed: {}",
+                    String.join(", ", skippedMods));
+        }
+
         return parsedRecipes;
     }
 
     private RecipeHolder<ShapedRecipe> createShapedRecipe(CustomRecipeDefinition definition) {
         Item resultItem = BuiltInRegistries.ITEM.get(definition.resultItemId());
         if (resultItem == Items.AIR) {
-            throw new IllegalArgumentException("Unknown result item: " + definition.resultItemId());
+            throw unknownItem("result item", definition.resultItemId());
         }
 
         Map<Character, Ingredient> key = new LinkedHashMap<>();
@@ -164,7 +182,7 @@ public class CustomCraftingRecipesModule
     private RecipeHolder<ShapelessRecipe> createShapelessRecipe(ShapelessRecipeDefinition definition) {
         Item resultItem = BuiltInRegistries.ITEM.get(definition.resultItemId());
         if (resultItem == Items.AIR) {
-            throw new IllegalArgumentException("Unknown result item: " + definition.resultItemId());
+            throw unknownItem("result item", definition.resultItemId());
         }
 
         NonNullList<Ingredient> ingredients = NonNullList.create();
@@ -186,10 +204,48 @@ public class CustomCraftingRecipesModule
         ResourceLocation itemId = ResourceLocation.parse(ingredientString);
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (item == Items.AIR) {
-            throw new IllegalArgumentException("Unknown ingredient item: " + itemId);
+            throw unknownItem("ingredient item", itemId);
         }
 
         return Ingredient.of(item);
+    }
+
+    /**
+     * An unknown item id: a {@link MissingModException} when it belongs to a mod that simply is not
+     * installed (the pack dropped Overpacked, Create, …), a plain {@link IllegalArgumentException}
+     * when the mod IS there and the id is genuinely wrong. Only the latter deserves an ERROR — the
+     * former is the documented way recipe extensions for other mods go inert.
+     */
+    private static IllegalArgumentException unknownItem(String what, ResourceLocation itemId) {
+        if (isModAbsent(itemId)) {
+            return new MissingModException(itemId.getNamespace());
+        }
+        return new IllegalArgumentException("Unknown " + what + ": " + itemId);
+    }
+
+    /** True when the id's namespace names a mod that is not loaded. */
+    private static boolean isModAbsent(ResourceLocation itemId) {
+        String namespace = itemId.getNamespace();
+        if ("minecraft".equals(namespace) || "neoforge".equals(namespace)) {
+            return false;
+        }
+        return !ModList.get().isLoaded(namespace);
+    }
+
+    /** Marks a recipe that references a mod this installation does not have. */
+    private static final class MissingModException extends IllegalArgumentException {
+        private static final long serialVersionUID = 1L;
+
+        private final String namespace;
+
+        private MissingModException(String namespace) {
+            super("mod '" + namespace + "' not installed");
+            this.namespace = namespace;
+        }
+
+        private String namespace() {
+            return namespace;
+        }
     }
 
     private final class CustomRecipeReloadListener implements PreparableReloadListener {

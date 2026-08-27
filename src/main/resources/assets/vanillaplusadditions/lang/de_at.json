@@ -56,6 +56,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_main": "Rucksack aufmachen (Hauptfach)",
   "key.vanillaplusadditions.overpacked_extensions.open_right": "Rucksack aufmachen (rechtes Fach)",
   "key.vanillaplusadditions.overpacked_extensions.open_left": "Rucksack aufmachen (linkes Fach)",
+  "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Des Rucksackfach is no ned freigschoit.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Du hast kan großen Rucksack auf.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) is ned verfügbar.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Kotz-Ovalays umschoitn",

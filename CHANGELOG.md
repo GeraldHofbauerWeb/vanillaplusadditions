@@ -4,6 +4,64 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.72] - 2026-08-27
+
+### Fixed
+- **Die Create-Gates von `end_oxygen` und `mob_cart_loader` liegen jetzt in eigenen, Create-freien
+  Klassen** (`compat/CreateCompat`) — dieselbe Isolation wie bei `overpacked_extensions` in beta.71.
+  Vorher fragten die Aufrufer die Verfügbarkeit über genau die Klasse ab, in der die Create-Typen
+  stecken (`CreateBacktankCompat`, `CreateTrainAccess`); das linkt und verifiziert sie, und der
+  JVM-Verifier lädt dabei die Create-Typen aus den Methodenrümpfen. Bei `mob_cart_loader` betraf das
+  auch `isTrack()` — reiner Vanilla-Tag-Lookup, der trotzdem die ganze Create-Klasse mitzog. Das Ganze
+  ist Härtung: Create war in beiden betroffenen Verteilwegen bisher immer vorhanden (das Bundle-Jar
+  braucht Create ohnehin für `train_chunk_loading`), aber das Standalone-Jar `vpa_end_oxygen` läuft
+  jetzt nachweislich auch ohne Create.
+- **Overpacked 2.x: die Backpack-Keybinds zerstörten die Seitentaschen-Upgrades.** Overpacked 2.0
+  führt craftbare `backpack_pocket`-Upgrades ein, die als `RightCell`/`LeftCell` in den `CUSTOM_DATA`
+  des Rucksack-Items stecken. Unsere Brücke stellte am Hilfs-Entity nur `SleepingBagColor` + `Items`
+  wieder her — beim Schließen schrieb `getPickResult()` dann `RightCell=0`/`LeftCell=0` zurück auf den
+  getragenen Rucksack und löschte die gekauften Taschen dauerhaft. Das Entity wird jetzt exakt wie in
+  Overpackeds eigenem `Utils.PlaceBackpack()` aufgebaut: `SetColor` + `GiantBackpack.Load(tag)` (deckt
+  SleepingBagColor, beide Cells und Items ab) + `SetName` aus `CUSTOM_NAME`, womit auch der GUI-Titel
+  eines umbenannten Rucksacks stimmt.
+
+- **Die Keybinds öffneten Seitenfächer, die gar nicht freigeschaltet waren.** Overpacked 2.x verkauft
+  die beiden Seitenfächer als `backpack_pocket`-Upgrade; unser Hilfs-Entity baut aber immer alle drei
+  Container, also standen die Slots einfach da und der Inhalt landete beim Zurückschreiben auch noch
+  im Item — das Upgrade war geschenkt. Die Brücke prüft jetzt vor dem Öffnen `RightCell`/`LeftCell`
+  in den `CUSTOM_DATA` des getragenen Rucksacks und meldet „Dieses Rucksackfach ist noch nicht
+  freigeschaltet", statt das Fach zu erzeugen. Betrifft nur 2.x — in 1.x gibt es alle Fächer immer.
+  Wichtig für künftige Änderungen: Overpacked kodiert die Freischaltung als **Vorhandensein** des
+  Schlüssels, der Wert ist bedeutungslos — `Save` schreibt eine fest verdrahtete `0` und nur dann,
+  wenn die Zelle gesetzt ist, `Load` antwortet auf jeden vorhandenen Schlüssel mit `SetRightCell(1)`.
+  Also `contains()` prüfen, nie den Wert.
+
+- **Die Todesmeldung zeigte die Dimension doppelt an**: `location.toString() + location.getNamespace()`
+  ergab `minecraft:overworldminecraft`. Der angehängte Namespace war schlicht zu viel.
+
+### Changed
+- **Die Todesmeldung nennt die Dimension im Klartext** — „… in the Overworld" / „the Nether" /
+  „the End" statt `minecraft:overworld`. Dimensionen haben in Vanilla keinen Anzeigenamen
+  (`DimensionType` trägt nur Mechanik, 1.21.1 kennt keinen einzigen `dimension.*`-Lang-Key), darum
+  benennen wir die drei Vanilla-Dimensionen selbst und fragen zusätzlich über
+  `Component.translatableWithFallback` die verbreitete Mod-Konvention `dimension.<namespace>.<pfad>`
+  ab: eine Dimensions-Mod, die einen Namen mitliefert, wird automatisch verwendet. Alles andere
+  fällt weiterhin auf die ID zurück. Der Teleport-Klick benutzt unverändert die rohe ID, weil
+  `/execute in` genau die braucht.
+
+- **Die Backpack-Features unterstützen Overpacked 1.x und 2.x nebeneinander.** `OverpackedCompat`
+  liest die Major-Version, und die Brücke wählt den Restore-Pfad danach: 2.x über `Load`/`SetName`
+  (beides gibt es erst ab 2.0), 1.x per Hand wie bisher. Beide Zweige stehen in derselben Methode,
+  kompiliert gegen 2.x — unbedenklich, weil eine Methodenreferenz erst beim **Ausführen** aufgelöst
+  wird, nicht bei der Verifikation, und der 2.x-Zweig auf 1.x nie erreicht wird. Compile-/Runtime-
+  Classpath zeigt jetzt auf `libs/overpacked-2.0.1-1.21.1-neoforge.jar` plus Overpackeds neue
+  Pflicht-Dependency `libs/bobo_lib-1.1-1.21.1-neoforge.jar`.
+- **Rezepte für nicht installierte Mods sind kein `ERROR` mehr im Log, sondern `DEBUG`.** Das
+  Standard-Rezept für `overpacked:giant_backpack` warf in Packs ohne Overpacked zwei ERROR-Zeilen
+  („Unknown result item"), obwohl das Überspringen genau das gewollte Verhalten ist. Es steht jetzt
+  als `Skipping custom crafting recipe (shaped), mod 'overpacked' not installed: …` im Debug-Log.
+  Ein wirklich falscher Item-Name — Namespace vorhanden, ID Unsinn — bleibt unverändert ein ERROR.
+
 ## [1.0.0-beta.71] - 2026-08-26
 
 ### Fixed

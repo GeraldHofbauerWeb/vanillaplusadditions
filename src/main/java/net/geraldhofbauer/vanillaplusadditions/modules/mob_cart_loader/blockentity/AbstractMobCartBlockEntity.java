@@ -2,7 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.blockent
 
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.block.AbstractMobCartBlock;
-import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.compat.CreateTrainAccess;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.compat.CreateCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -39,8 +39,9 @@ import java.util.List;
  * whole block is disabled while redstone-powered (inverse control). Breaking the block releases the
  * stored mob so it is never lost.
  *
- * <p>Create is only ever reached through {@link CreateTrainAccess} (train-carriage seats) and the
- * separate client handler for the goggle panel that reads {@link #getDisplayType()} — both optional.</p>
+ * <p>Create is only ever reached through {@link CreateCompat} and, behind its gate,
+ * {@code CreateTrainAccess} (train-carriage seats), plus the separate client handler for the goggle
+ * panel that reads {@link #getDisplayType()} — both optional.</p>
  */
 public abstract class AbstractMobCartBlockEntity extends BlockEntity {
 
@@ -104,7 +105,7 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
     protected boolean outputBlocked(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         // Create tracks do have a collision shape, but they are a valid target rather than a gate.
-        if (CreateTrainAccess.isTrack(state)) {
+        if (CreateCompat.isTrack(state)) {
             return false;
         }
         return !state.getCollisionShape(level, pos).isEmpty();
@@ -121,14 +122,14 @@ public abstract class AbstractMobCartBlockEntity extends BlockEntity {
      */
     @Nullable
     protected BlockPos findTrackTarget(Level level, BlockPos from, Direction dir) {
-        if (!CreateTrainAccess.isCreateLoaded() || !MobCartLoaderModule.isTrainSupportEnabled()) {
+        if (!CreateCompat.isLoaded() || !MobCartLoaderModule.isTrainSupportEnabled()) {
             return null;
         }
         int distance = MobCartLoaderModule.getTrackSearchDistance();
         for (int i = 0; i < distance; i++) {
             BlockPos pos = from.relative(dir, i);
             BlockState state = level.getBlockState(pos);
-            if (CreateTrainAccess.isTrack(state)) {
+            if (CreateCompat.isTrack(state)) {
                 return pos;
             }
             if (!state.getCollisionShape(level, pos).isEmpty()) {

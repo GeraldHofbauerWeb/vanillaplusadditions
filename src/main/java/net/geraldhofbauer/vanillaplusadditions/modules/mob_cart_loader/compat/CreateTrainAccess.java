@@ -6,17 +6,11 @@ import com.simibubi.create.content.contraptions.Contraption;
 import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
 import com.simibubi.create.content.trains.entity.Train;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -26,8 +20,10 @@ import java.util.UUID;
 
 /**
  * Optional Create integration for the Mob Cart Loader: the only class that touches Create's train
- * API, guarded by a cached {@code isLoaded("create")} check. Without Create every lookup returns
- * "nothing found" and the loader/unloader keep working on plain minecarts.
+ * API. Callers gate on {@link CreateCompat#isLoaded()} first — that gate lives in a deliberately
+ * Create-free class, because resolving any static member of THIS one links and verifies it, and the
+ * verifier then eagerly loads the {@code CarriageContraptionEntity} types below. Without Create
+ * every lookup returns "nothing found" and the loader/unloader keep working on plain minecarts.
  *
  * <p>A train carriage cannot be ridden like a minecart — it is a {@link CarriageContraptionEntity}
  * whose passengers occupy <b>Create Seat blocks</b> addressed by index inside the contraption
@@ -46,12 +42,6 @@ import java.util.UUID;
  */
 public final class CreateTrainAccess {
 
-    private static final boolean CREATE_LOADED = ModList.get().isLoaded("create");
-
-    /** Create's block tag covering every track material (vanilla lookup — no Create classes). */
-    private static final TagKey<Block> TRACKS =
-            BlockTags.create(ResourceLocation.fromNamespaceAndPath("create", "tracks"));
-
     /** A train is considered standing below this absolute speed. */
     private static final double STANDING_EPSILON = 1.0E-3;
 
@@ -69,26 +59,6 @@ public final class CreateTrainAccess {
     }
 
     /**
-     * Whether Create is present at all.
-     *
-     * @return true if the {@code create} mod is loaded
-     */
-    public static boolean isCreateLoaded() {
-        return CREATE_LOADED;
-    }
-
-    /**
-     * Whether the given block is one of Create's train tracks. Safe (and simply {@code false})
-     * without Create, because the tag then does not exist.
-     *
-     * @param state the block state to test
-     * @return true if the block is tagged {@code create:tracks}
-     */
-    public static boolean isTrack(BlockState state) {
-        return state.is(TRACKS);
-    }
-
-    /**
      * Finds the free carriage seat closest to the given track block.
      *
      * @param level    the server level
@@ -98,7 +68,7 @@ public final class CreateTrainAccess {
      */
     @Nullable
     public static TrainSeat findFreeSeat(ServerLevel level, BlockPos trackPos, double radius) {
-        if (!CREATE_LOADED) {
+        if (!CreateCompat.isLoaded()) {
             return null;
         }
         Vec3 center = Vec3.atCenterOf(trackPos);
@@ -137,7 +107,7 @@ public final class CreateTrainAccess {
      */
     @Nullable
     public static Mob findSeatedMob(ServerLevel level, BlockPos trackPos, double radius) {
-        if (!CREATE_LOADED) {
+        if (!CreateCompat.isLoaded()) {
             return null;
         }
         Vec3 center = Vec3.atCenterOf(trackPos);
@@ -177,7 +147,7 @@ public final class CreateTrainAccess {
      * @return true if the entity was seated
      */
     public static boolean seat(TrainSeat seat, Entity entity) {
-        if (!CREATE_LOADED || !(seat.carriage() instanceof AbstractContraptionEntity contraption)) {
+        if (!CreateCompat.isLoaded() || !(seat.carriage() instanceof AbstractContraptionEntity contraption)) {
             return false;
         }
         contraption.addSittingPassenger(entity, seat.seatIndex());

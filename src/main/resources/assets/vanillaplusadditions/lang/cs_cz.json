@@ -57,6 +57,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_main": "Otevřít batoh (hlavní přihrádka)",
   "key.vanillaplusadditions.overpacked_extensions.open_right": "Otevřít batoh (pravá přihrádka)",
   "key.vanillaplusadditions.overpacked_extensions.open_left": "Otevřít batoh (levá přihrádka)",
+  "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Tato přihrádka batohu ještě není odemčená.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Nemáš na sobě velký batoh.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Přístup k batohu Overpacked není dostupný.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Přepnout překryvy Kočičího strážce",

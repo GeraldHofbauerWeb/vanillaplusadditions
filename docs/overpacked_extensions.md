@@ -9,8 +9,26 @@ reimplemented here.)
 ## Requirements
 - The **slowdown override** works with **Overpacked** installed (nothing to override otherwise).
 - The **backpack keybinds** and **sort button** additionally need Overpacked's dependency
-  **Curios** (`curios`). Without Overpacked/Curios those two features are inert (the keybinds report
+  **Curios** (`curios`) — and, on Overpacked 2.x, its new dependency **Bobo Lib** (`bobo_lib`, shipped
+  alongside it). Without Overpacked/Curios those two features are inert (the keybinds report
   "unavailable"; no sort button is shown).
+- **Both Overpacked 1.x and 2.x are supported.** The bridge picks its restore path from the installed
+  major version: 2.x goes through `GiantBackpack.Load` + `SetName`, 1.x (which has neither method) is
+  restored by hand. Compiled against 2.x — safe on 1.x because a method reference resolves when it
+  first *executes*, not at class verification, and the 2.x branch is never reached there.
+
+> **Side compartments must be unlocked first (Overpacked 2.x):** the right and left compartments are
+> `overpacked:backpack_pocket` upgrades. Pressing their keybind on a backpack that has not bought them
+> reports "That backpack compartment isn't unlocked yet." rather than opening — the helper entity
+> builds all three containers regardless of the unlock, so opening would hand out the upgrade for free.
+> Overpacked 1.x has no such concept; there every compartment always exists.
+>
+> The unlock is encoded as the **presence** of `RightCell`/`LeftCell` in the item's `CUSTOM_DATA`; the
+> stored value is always `0` and means nothing. Check with `contains()`, never by reading the value.
+
+> **Keybind clash:** Overpacked 2.x added its own `key.overpacked.take_off_backpack` bound to **B** —
+> the same default as this module's "open main compartment". A fresh profile fires both. Rebind one of
+> them in Controls (ours is under *Vanilla Plus Additions*).
 
 ## Configuration
 
@@ -82,6 +100,12 @@ item. Ship this line in the modpack's config so every client gets it (it's a cli
   method bodies. With the gate on the bridge, a pack without Overpacked crashed mod construction with
   `NoClassDefFoundError: net/nycto_team/overpacked/menu/GiantBackpackMenu` (beta.70). Same rule as
   `bluemap_signs`: gate in the module/helper, optional-mod code in an isolated class.
+- The transient entity is initialized exactly like Overpacked's own `Utils.PlaceBackpack()`:
+  `SetColor` from the item, then `GiantBackpack.Load(customData)` and `SetName` from `CUSTOM_NAME`.
+  Going through `Load` is not optional — since 2.x the item's `CUSTOM_DATA` also carries the
+  `RightCell` / `LeftCell` side-pocket unlocks (bought with `overpacked:backpack_pocket`), and the
+  write-back stores `getPickResult()`'s `CUSTOM_DATA` on the worn item. An entity that only got
+  `Items` + `SleepingBagColor` would persist both pockets as locked and destroy the upgrade.
 - Because the GUI is entity-bound, a helper backpack entity exists at the player's position while the
   worn-backpack GUI is open; it is non-colliding and removed on close. Other players may briefly see it.
 - A hard crash while the GUI is open can leave edited items on the transient entity (recoverable

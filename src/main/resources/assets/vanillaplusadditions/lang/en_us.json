@@ -170,6 +170,7 @@
   "message.vanillaplusadditions.options.restored_keys": "Options backup '%s' restored (%s keybinds applied).",
   "message.vanillaplusadditions.options.scope_full": "full options",
   "message.vanillaplusadditions.options.scope_keys": "keybinds only",
+  "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "That backpack compartment isn't unlocked yet.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "You aren't wearing a giant backpack.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Overpacked backpack access is unavailable.",
   "message.vpa.death_coords": "Player %s died at coordinates: X=%d, Y=%d, Z=%d in dimension %s",

@@ -170,6 +170,7 @@
   "message.vanillaplusadditions.options.restored_keys": "Options-Backup '%s' wiederhergestellt (%s Tastenbelegungen angewendet).",
   "message.vanillaplusadditions.options.scope_full": "alle Optionen",
   "message.vanillaplusadditions.options.scope_keys": "nur Tastenbelegung",
+  "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Dieses Rucksackfach ist noch nicht freigeschaltet.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Du trägst keinen großen Rucksack.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
   "message.vpa.death_coords": "Spieler %s ist an folgenden Koordinaten gestorben: X=%d, Y=%d, Z=%d in Dimension %s",

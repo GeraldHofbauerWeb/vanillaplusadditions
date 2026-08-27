@@ -2,6 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateBacktankCompat;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateCompat;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.config.EndOxygenConfig;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -80,7 +81,10 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
                     player.setAirSupply(1);
                 }
 
-                List<ItemStack> backtanks = CreateBacktankCompat.getBacktanksWithAir(player);
+                // Gate on the Create-free CreateCompat: touching CreateBacktankCompat at all links it.
+                List<ItemStack> backtanks = CreateCompat.isLoaded()
+                        ? CreateBacktankCompat.getBacktanksWithAir(player)
+                        : List.<ItemStack>of();
                 boolean hasDivingHelmet = player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).is(DIVING_HELMETS);
 
                 if (!backtanks.isEmpty() && (!getConfig().requiresFullSet() || hasDivingHelmet)) {

@@ -59,6 +59,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_main": "Abrir mochila (compartimento principal)",
   "key.vanillaplusadditions.overpacked_extensions.open_right": "Abrir mochila (compartimento derecho)",
   "key.vanillaplusadditions.overpacked_extensions.open_left": "Abrir mochila (compartimento izquierdo)",
+  "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Ese compartimento de la mochila aún no está desbloqueado.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "No llevas puesta una mochila gigante.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "El acceso a la mochila de Overpacked no está disponible.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Alternar superposiciones del Gato Guardián",

@@ -5,6 +5,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +44,37 @@ public class DeathCoordinatesModule extends AbstractModule<
         }
     }
 
+    /**
+     * A readable name for the level's dimension, e.g. "the Overworld" instead of
+     * {@code minecraft:overworld}.
+     *
+     * <p>Dimensions have no display name in vanilla — {@code DimensionType} carries only mechanical
+     * settings, and 1.21.1 ships no {@code dimension.*} translation keys at all. So we
+     * name the three vanilla ones ourselves and ask for the widely used modded convention
+     * {@code dimension.<namespace>.<path>} on top: a dimension mod that does provide a name gets used
+     * automatically (and localized), and anything else falls back to the plain id, which at least stays
+     * actionable.
+     *
+     * <p>Display only. The teleport click event keeps using the raw id — that is what
+     * {@code /execute in} expects.
+     */
+    private static MutableComponent dimensionName(Level level) {
+        ResourceKey<Level> dimension = level.dimension();
+        ResourceLocation id = dimension.location();
+        String fallback;
+        if (Level.OVERWORLD.equals(dimension)) {
+            fallback = "the Overworld";
+        } else if (Level.NETHER.equals(dimension)) {
+            fallback = "the Nether";
+        } else if (Level.END.equals(dimension)) {
+            fallback = "the End";
+        } else {
+            fallback = id.toString();
+        }
+        return Component.translatableWithFallback(
+                "dimension." + id.getNamespace() + "." + id.getPath(), fallback);
+    }
+
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public void onPlayerDeath(LivingDeathEvent event) {
         if (!isModuleEnabled()) {
@@ -67,8 +99,8 @@ public class DeathCoordinatesModule extends AbstractModule<
                     .append(Component.literal(String.format("X=%d, Y=%d, Z=%d",
                                     deathPos.getX(), deathPos.getY(), deathPos.getZ()))
                             .withStyle(net.minecraft.ChatFormatting.AQUA))
-                    .append(Component.literal(" in dimension "))
-                    .append(Component.literal(location.toString() + location.getNamespace())
+                    .append(Component.literal(" in "))
+                    .append(dimensionName(level)
                             .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
             // TODO: Make the permission level configurable aka make it a config option to enable for spectators
             //  (and/or ops) or all players

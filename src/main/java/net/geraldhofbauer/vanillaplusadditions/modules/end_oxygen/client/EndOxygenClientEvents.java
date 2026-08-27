@@ -4,6 +4,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.Module;
 import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateBacktankCompat;
+import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateCompat;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -64,6 +65,10 @@ public final class EndOxygenClientEvents {
             return;
         }
 
+        // Gate on the Create-free CreateCompat: touching CreateBacktankCompat at all links it.
+        if (!CreateCompat.isLoaded()) {
+            return;
+        }
         List<ItemStack> backtanks = CreateBacktankCompat.getBacktanksWithAir(player);
         if (backtanks.isEmpty()) {
             return;

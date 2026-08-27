@@ -51,6 +51,30 @@ public final class OverpackedGuiBridge {
     private OverpackedGuiBridge() {
     }
 
+    /** Overpacked's inv_id for the two side compartments, and the NBT key holding each unlock. */
+    private static final Map<Integer, String> SIDE_CELL_KEYS = Map.of(1, "RightCell", 2, "LeftCell");
+
+    /**
+     * True when the requested compartment is a side pocket the backpack has not unlocked.
+     *
+     * <p>Overpacked 2.x encodes the unlock as the mere <b>presence</b> of {@code RightCell} /
+     * {@code LeftCell} in the item's {@code CUSTOM_DATA} — the stored value is meaningless. Its
+     * {@code Save} writes the key with a hardcoded {@code 0} payload and only when the cell is
+     * non-zero, and its {@code Load} answers with {@code SetRightCell(1)} whenever the key exists.
+     * So read the key, never its value: {@code getByte(key) == 0} is true for every backpack, locked
+     * or not, and would reject them all.
+     *
+     * <p>Overpacked 1.x has no such concept — every compartment always exists there — so nothing is
+     * ever locked.
+     */
+    private static boolean isCompartmentLocked(CompoundTag wornTag, int compartment) {
+        if (!OverpackedCompat.isV2()) {
+            return false;
+        }
+        String cellKey = SIDE_CELL_KEYS.get(compartment);
+        return cellKey != null && !wornTag.contains(cellKey);
+    }
+
     /**
      * Opens the given compartment (0 = center/main, 1 = right, 2 = left) of the player's worn giant
      * backpack, reusing Overpacked's own menu + screen.
@@ -63,10 +87,24 @@ public final class OverpackedGuiBridge {
             return;
         }
         Worn worn = wornOpt.get();
+        CustomData wornData = worn.stack().get(DataComponents.CUSTOM_DATA);
+        CompoundTag tag = wornData != null ? wornData.copyTag() : new CompoundTag();
+        if (isCompartmentLocked(tag, compartment)) {
+            // Overpacked 2.x sells the side compartments as backpack_pocket upgrades. Opening one the
+            // player never bought would hand it to them for free — our helper entity builds all three
+            // containers regardless of the unlock, so the slots would simply be there and the contents
+            // would persist on write-back. Overpacked's own right-click falls back to the center
+            // compartment here; a keybind is explicit, so say why nothing opened instead.
+            player.displayClientMessage(Component.translatable(
+                    "message.vanillaplusadditions.overpacked_extensions.compartment_locked"), true);
+            return;
+        }
         ServerLevel level = player.serverLevel();
 
-        // Recreate the entity exactly as GiantBackpackItem.use() does: colour from the item, sleeping
-        // bag colour + inventory from the item's CUSTOM_DATA (LoadInventory takes the "Items" subtag).
+        // Recreate the entity exactly as Overpacked's own place-a-backpack code does: colour from the
+        // item, everything else from the item's CUSTOM_DATA. On 2.x that is one GiantBackpack.Load()
+        // call plus the custom name (Utils.PlaceBackpack); 1.x has no such helper and is restored by
+        // hand. Hand-restoring on 2.x would silently drop whatever Load() covers — see below.
         GiantBackpack entity = new GiantBackpack(ModEntities.giant_backpack.get(), level);
         // Place the helper a bit in front of the player along their (horizontal) look direction — not
         // inside the player — and rotate it to face the player (yRot + 180), exactly like Overpacked's
@@ -98,12 +136,28 @@ public final class OverpackedGuiBridge {
         if (worn.stack().getItem() instanceof GiantBackpackItem backpackItem) {
             entity.SetColor(backpackItem.color);
         }
-        CustomData data = worn.stack().get(DataComponents.CUSTOM_DATA);
-        CompoundTag tag = data != null ? data.copyTag() : new CompoundTag();
-        if (tag.contains("SleepingBagColor")) {
-            entity.SetSleepingBagColor(tag.getInt("SleepingBagColor"));
+        if (OverpackedCompat.isV2()) {
+            // Load() restores sleeping-bag colour, BOTH side-pocket unlocks (RightCell/LeftCell —
+            // bought with Overpacked 2.x's backpack_pocket item) and the inventory. The pocket unlocks
+            // matter beyond the GUI: on close we write getPickResult()'s CUSTOM_DATA back onto the
+            // worn item, so an entity that never learned about them would persist "locked" and
+            // destroy the upgrade.
+            entity.Load(tag);
+            Component customName = worn.stack().get(DataComponents.CUSTOM_NAME);
+            if (customName != null) {
+                // Keeps the GUI title on a renamed backpack; get_stack() re-attaches it to the
+                // written-back stack, matching what a placed-and-picked-up backpack does.
+                entity.SetName(customName.getString());
+            }
+        } else {
+            // Overpacked 1.x: no Load()/SetName() and no pocket unlocks on the item, so the hand
+            // restore is complete. Never reached on 2.x, and never resolved on 1.x — see
+            // OverpackedCompat#OVERPACKED_V2 on why both branches can share this method.
+            if (tag.contains("SleepingBagColor")) {
+                entity.SetSleepingBagColor(tag.getInt("SleepingBagColor"));
+            }
+            entity.LoadInventory(tag.getCompound("Items"));
         }
-        entity.LoadInventory(tag.getCompound("Items"));
         level.addFreshEntity(entity);
 
         SESSIONS.put(entity.getId(),

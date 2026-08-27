@@ -58,8 +58,8 @@ public class OverpackedExtensionsModule
             NeoForge.EVENT_BUS.register(OverpackedGuiBridge.class);
         }
 
-        getLogger().info("Overpacked Extensions module initialized (overpacked+curios present: {})",
-                OverpackedCompat.isAvailable());
+        getLogger().info("Overpacked Extensions module initialized (overpacked+curios present: {}, "
+                + "overpacked 2.x: {})", OverpackedCompat.isAvailable(), OverpackedCompat.isV2());
     }
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
