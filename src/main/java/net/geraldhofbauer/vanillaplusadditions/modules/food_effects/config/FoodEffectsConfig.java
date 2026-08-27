@@ -42,7 +42,6 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
     );
 
     private static final List<String> DEFAULT_THIRST_EFFECTS = List.of(
-            "create:builders_tea;2;",
             "minecraft:beetroot_soup;6;",
             "minecraft:mushroom_stew;2;",
             "minecraft:rabbit_stew;2;",
@@ -102,8 +101,8 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
 
         thirstEffects = builder
                 .comment("List of thirst effects. Format: item_id;thirst_amount;chance\n"
-                        + "Example: create:builders_tea;2;1.0")
-                .defineList("thirst_effects", DEFAULT_THIRST_EFFECTS, () -> "create:builders_tea;2;1.0", o -> {
+                        + "Example: minecraft:beetroot_soup;6;1.0")
+                .defineList("thirst_effects", DEFAULT_THIRST_EFFECTS, () -> "minecraft:beetroot_soup;6;1.0", o -> {
                     if (!(o instanceof String s)) {
                         return false;
                     }
