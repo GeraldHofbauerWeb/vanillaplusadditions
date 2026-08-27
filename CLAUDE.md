@@ -17,6 +17,25 @@ Es gibt kein `staging`, kein PR-Flow — direkt auf `master`.
 - Nach jedem Client-Deploy: Gerry erinnern, MC **frisch** zu starten (nie ins laufende Spiel
   hot-swappen — korrumpiert das Jar).
 
+### Nur auf Sebis PC (Windows / Git Bash) — `scripts/deploy-win.sh` (2026-08-27)
+`scripts/deploy.sh` ist Linux-only (Prism-Instanzpfad, `pgrep`) und defaultet auf Server+Client —
+auf diesem PC **nicht** verwenden. Stattdessen `scripts/deploy-win.sh`:
+- **Standard ist IMMER OHNE `--client`:** `bash scripts/deploy-win.sh [--no-build]` kopiert das Jar
+  nur nach `~/ClaudeProjekte/MinecraftModpack/mods/` (Staging, folgenlos).
+- **`--client` nur auf Sebis ausdrückliche Ansage** — das tauscht das Jar im echten Client
+  (`.minecraft\mods`) und zwingt ihn, MC frisch zu starten. Nicht ungefragt anhängen, nicht anbieten.
+- Der Running-Game-Check läuft dort über PowerShell und **bricht ab, wenn er den Spielzustand nicht
+  ermitteln kann** (bei `pgrep` in Git Bash würde die Prüfung still durchwinken und das Jar
+  korrumpieren). `--force` umgeht ihn — nur als letzte Instanz.
+- Ziel-Ordner überschreibbar via `VPA_MODPACK_MODS` / `VPA_CLIENT_MODS`.
+- Server-Deploy kann das Script bewusst nicht; games2 bleibt Gerrys Box + Gerrys Kommando.
+
+### Build-Voraussetzung: zwei JARs in `libs/`
+`libs/sable-neoforge-1.21.1-1.2.2.jar` und `libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` sind
+gitignored. Fehlen sie, bricht der Build mit ~34 Compile-Fehlern ab (`dev.ryanhcode.sable.api`,
+`toughasnails.api.thirst`). Die CI lädt sie in `.github/workflows/build.yml` nach — lokal von dort
+die URLs nehmen oder aus einem Mods-Ordner kopieren.
+
 ## Recipes & block loot: ALWAYS via code, never JSON
 JSON-Datapack-Dateien laden in diesem Mod **nicht zuverlässig** (mehrfach bestätigt — auch im
 korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **zwei Fälle**:
