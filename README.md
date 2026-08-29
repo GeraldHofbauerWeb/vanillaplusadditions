@@ -60,6 +60,9 @@ Creates an atmospheric, spooky experience in configured structures (default: Wit
 - **Atmospheric fog** (darkness effect) inside the structure, with configurable intensity, dissipating on exit.
 - **Disabled by default**; auto-enables when Alex's Mobs (`alexsmobs`) and Dungeons and Taverns (`mr_dungeons_andtaverns`) are both present.
 
+#### 🏳️ Enhanced AI Leader Loot
+Adds bonus loot to Enhanced AI's banner-carrying "leader" mobs on death — golden carrots, golden apples, or (1% by default) an enchanted golden apple, on top of their normal loot. Configurable weights and counts. Inert without Enhanced AI.
+
 ---
 
 ### 🧱 Blocks, Rails & Create Companions
@@ -101,12 +104,18 @@ A new aquatic mob with spawn egg, bucket and cooked food variant, woven into van
 
 #### 📦 Stackables
 Makes normally-unstackable items stackable and raises stack sizes for configured items:
-- Potions / splash / lingering (default 16); stews & soups (default 64).
+- Potions / splash / lingering (default 16); stews & soups, ender pearls, eggs (default 64).
 - Auto-detects Tough As Nails items (juices, water bottles, ice cream, empty canteens, …).
 - Note: filled canteens with durability can't be stacked (Minecraft limitation).
 
+#### 🏹 Tipped Arrows from Potions
+Craft tipped arrows with a **normal potion** instead of a lingering potion — no more Dragon's Breath grind. Lingering potions still work too; only the recipe's center ingredient is widened, no new tipped arrow types are added.
+
 #### 🧰 Custom Crafting Recipes
-Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator). The place to add your own vanilla/cross-mod recipes without a datapack.
+Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator) and a reworked Netherite Ingot recipe that trades gold for Create's Powdered Obsidian (replaces the vanilla scrap+gold recipe; inert without Create). The place to add your own vanilla/cross-mod recipes without a datapack.
+
+#### 🗺️ Pathfinder Quills
+Craft Quark's Pathfinder's Quill (normally trade-only) with a Feather + an Eye of Ender + a block matching the target biome (e.g. Sand for Desert, Podzol for Old Growth Pine Taiga) — all 15 quill variants Quark supports. Inert without Quark.
 
 #### 🔨 Free Anvil Repair
 Pure anvil repairs cost **no XP levels** — only plain repairing is free; combining enchanted items, applying books and renaming keep vanilla costs.
