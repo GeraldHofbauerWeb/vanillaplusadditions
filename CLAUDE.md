@@ -1,9 +1,20 @@
 # VanillaPlusAdditions — Claude instructions
 
 ## Branching / Workflow
-Gerry hat für dieses Projekt explizit festgelegt: **direkt auf `master` arbeiten, kein PR-Flow.**
-Es gibt kein `staging`, kein PR-Flow — direkt auf `master`.
-(Eigene Feature-PRs schreibe ich generell nicht mehr; ich merge nur Mac-Claudes PRs.)
+Es gibt **kein `staging`**. Basis-Branch ist immer `master`. Welcher Weg dorthin gilt, hängt
+davon ab, auf wessen Rechner ich laufe — im Zweifel `git config user.email` prüfen:
+
+- **Auf Gerrys Rechnern (Linux-Box, Mac):** direkt auf `master` committen, kein PR-Flow.
+- **Auf Sebis PC (Windows / Git Bash):** **kein Direkt-Commit auf `master`.** Stattdessen
+  Feature-Branch + **PR gegen `master`** — das ist seit 2026-08-29 ausdrücklich erlaubt und
+  der vorgesehene Weg (siehe PR #1 als Vorlage: eigenes Modul-Verzeichnis, Doku unter `docs/`,
+  ausgefüllter Test-Plan mit ehrlichen offenen Punkten).
+  Branch-Namen nach dem eingeführten Muster `feature/…` bzw. `fix/…`.
+- **Gemergt wird nur von Gerry** (bzw. von einem Claude auf Gerrys Kommando) — nach Style- und
+  Build-Check. Sebis Claude merged seine eigenen PRs nicht selbst.
+
+Vor jedem PR lokal `./gradlew build` grün haben: der Task fährt Checkstyle
+(`config/checkstyle/checkstyle.xml`) und SpotBugs mit, Unit-Tests gibt es in diesem Repo keine.
 
 ## Deploy / Commit / Push — nur auf Gerrys Kommando (WICHTIG, 2026-07-23)
 - **Niemals ohne Gerrys ausdrückliches Kommando:** committen, taggen, pushen ODER auf den
