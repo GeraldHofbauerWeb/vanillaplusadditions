@@ -149,6 +149,16 @@ dependencies {
     // Tough As Nails dependency
     implementation files("libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar")
 
+    // Quark — compile-time only (pathfinder_quills module calls PathfindersQuillItem.forBiome()
+    // directly), gated at runtime via ModList.isLoaded in that module. Zeta is also needed on the
+    // compile classpath: PathfindersQuillItem extends Zeta's ZetaItem, so javac must resolve that
+    // supertype even though our code never references Zeta directly (Quark's own "biolith" dep
+    // IS jar-in-jar bundled and needs nothing extra here). Deliberately no localRuntime for
+    // either: getting this pair to actually load in runClient would need matching real mod
+    // versions plus Quark's other required/optional deps sorted out, so this module isn't
+    // runClient-testable in dev — verify via the real deployed jar instead.
+    compileOnly files("libs/Quark-4.1-482.jar", "libs/Zeta-1.1-40.jar")
+
     // BlueMap — compile-time only (optional runtime dependency, gated via ModList in bluemap_signs).
     // flow-math is BlueMap's jar-in-jar (Vector2i/Vector3d in the marker API) and must be on the
     // compile classpath separately. localRuntime loads the full BlueMap mod for dev testing.

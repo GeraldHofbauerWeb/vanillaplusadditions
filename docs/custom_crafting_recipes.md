@@ -32,6 +32,14 @@ Example (default):
 vanillaplusadditions:giant_backpack;overpacked:giant_backpack;1;CDC|ABA|AAA;A=minecraft:leather,B=create:item_vault,C=minecraft:string,D=create:andesite_alloy
 ```
 
+Using a vanilla recipe ID as `recipe_id` **replaces** that vanilla recipe outright instead of
+adding an alternative — that's how the default `netherite_ingot` entry swaps the vanilla
+scrap+gold shapeless recipe for a shaped one that trades gold for Create's Powdered Obsidian
+(inert without Create installed, see "Behaviour notes" below):
+```
+minecraft:netherite_ingot;minecraft:netherite_ingot;1;PSP|SGS|PSP;P=create:powdered_obsidian,S=minecraft:netherite_scrap,G=minecraft:gold_ingot
+```
+
 ---
 
 ## Shapeless recipes (`shapeless_recipes`)
@@ -55,6 +63,9 @@ minecraft:leather,minecraft:string->minecraft:bundle;1
 ## Behaviour notes
 
 - Invalid entries are skipped (logged, not fatal) — a typo in one recipe won't break the rest.
+- An entry that references an item from a mod that isn't installed is skipped the same way
+  (debug log + one summary INFO line naming the missing mod) — no error, no crash. This is how
+  recipe extensions for optional mods (e.g. Create) stay inert when that mod is absent.
 - Custom recipes are merged into the recipe manager alongside vanilla/datapack recipes on
   every reload.
 - Enable [debug logging](DEBUG_LOGGING_CONFIG.md) for this module to see every recipe that

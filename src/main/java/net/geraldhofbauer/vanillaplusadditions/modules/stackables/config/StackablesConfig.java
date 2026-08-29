@@ -14,6 +14,7 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             "minecraft:beetroot_soup:64",
             "minecraft:suspicious_stew:64",
             "minecraft:ender_pearl:64",
+            "minecraft:egg:64",
             // tough as nails water bottles (keep as 64 by default)
             "toughasnails:dirty_water_bottle:64",
             "toughasnails:purified_water_bottle:64",

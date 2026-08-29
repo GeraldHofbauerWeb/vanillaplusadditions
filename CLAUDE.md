@@ -30,15 +30,19 @@ auf diesem PC **nicht** verwenden. Stattdessen `scripts/deploy-win.sh`:
 - Ziel-Ordner überschreibbar via `VPA_MODPACK_MODS` / `VPA_CLIENT_MODS`.
 - Server-Deploy kann das Script bewusst nicht; games2 bleibt Gerrys Box + Gerrys Kommando.
 
-### Build-Voraussetzung: zwei JARs in `libs/`
-`libs/sable-neoforge-1.21.1-1.2.2.jar` und `libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` sind
-gitignored. Fehlen sie, bricht der Build mit ~34 Compile-Fehlern ab (`dev.ryanhcode.sable.api`,
-`toughasnails.api.thirst`). Die CI lädt sie in `.github/workflows/build.yml` nach — lokal von dort
-die URLs nehmen oder aus einem Mods-Ordner kopieren.
+### Build-Voraussetzung: vier JARs in `libs/`
+`libs/sable-neoforge-1.21.1-1.2.2.jar`, `libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar`,
+`libs/Quark-4.1-482.jar` und `libs/Zeta-1.1-40.jar` sind gitignored. Fehlen sie, bricht der Build
+mit Compile-Fehlern ab (`dev.ryanhcode.sable.api`, `toughasnails.api.thirst`, bzw.
+`org.violetmoon.quark.content.tools.item.PathfindersQuillItem` für `pathfinder_quills` — Zeta
+wird zusätzlich gebraucht, weil Quarks `PathfindersQuillItem` von Zetas `ZetaItem` erbt und javac
+die Supertyp-Hierarchie auflösen muss, auch wenn unser Code Zeta nie direkt referenziert). Die CI
+lädt sie in `.github/workflows/build.yml` nach — lokal von dort die URLs nehmen oder aus einem
+Mods-Ordner kopieren.
 
 ## Recipes & block loot: ALWAYS via code, never JSON
 JSON-Datapack-Dateien laden in diesem Mod **nicht zuverlässig** (mehrfach bestätigt — auch im
-korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **zwei Fälle**:
+korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **vier Fälle**:
 - **Eigene Rezepte (für unsere Items/Blöcke)** → **im jeweiligen Modul selbst** registrieren,
   per `RecipeManager`-Injection im `AddReloadListenerEvent`, gegated auf `isModuleEnabled()`.
   So ist das Item craftbar, solange das Modul aktiv ist. Vorlage: `MinecartChunkLoadingModule`
@@ -48,8 +52,13 @@ korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **
   (z.B. die fairen Rail-Upgrades). Dieses Modul ist auch für user-konfigurierbare Rezepte da.
 - **Block-Drops** → `getDrops(BlockState, LootParams.Builder)` am Block überschreiben
   (siehe `ChunkLoaderRailBlock`), nicht per Loot-Table-JSON.
+- **Loot-Tables einer fremden Mod** (deren eigener Erweiterungspunkt, z.B. eine bewusst leer
+  ausgelieferte Tabelle) → per Code über `LootTableLoadEvent` abfangen (Name-Vergleich per
+  `ResourceLocation`) und `event.setTable(...)` ersetzen — kein Compile-Dependency auf die
+  fremde Mod nötig, nur `ModList.isLoaded(...)` zur Laufzeit. Vorlage:
+  `EnhancedAiLeaderLootModule` (`onLootTableLoad` + `buildLeaderLootTable`).
 - **Keine** `data/.../recipe/`- oder `loot_table/`-JSONs mehr anlegen. Keine Migration zu JSON geplant.
-Details: `docs/custom_crafting_recipes.md`.
+Details: `docs/custom_crafting_recipes.md`, `docs/enhanced_ai_leader_loot.md`.
 
 ## Worktrees
 Do NOT use worktrees for this project. Edit files directly in the repository working copy.

@@ -32,11 +32,19 @@ public class CustomCraftingRecipesConfig
             "vanillaplusadditions:activator_rail_from_rails;minecraft:activator_rail;6;RSR|RTR|RSR;"
                     + "R=minecraft:rail,S=minecraft:stick,T=minecraft:redstone_torch";
 
+    // Netherite Ingot: swaps the vanilla scrap+gold shapeless recipe for a shaped one that trades
+    // gold for Create's Powdered Obsidian. Same recipe id as vanilla ("minecraft:netherite_ingot")
+    // so this replaces it outright, gated implicitly on Create being loaded (see unknownItem()).
+    private static final String NETHERITE_INGOT_FROM_POWDERED_OBSIDIAN =
+            "minecraft:netherite_ingot;minecraft:netherite_ingot;1;PSP|SGS|PSP;"
+                    + "P=create:powdered_obsidian,S=minecraft:netherite_scrap,G=minecraft:gold_ingot";
+
     private static final List<String> DEFAULT_RECIPES = List.of(
             SAMPLE_RECIPE,
             POWERED_RAIL_FROM_RAILS,
             DETECTOR_RAIL_FROM_RAILS,
-            ACTIVATOR_RAIL_FROM_RAILS);
+            ACTIVATOR_RAIL_FROM_RAILS,
+            NETHERITE_INGOT_FROM_POWDERED_OBSIDIAN);
 
     private static final List<String> DEFAULT_SHAPELESS_RECIPES = List.of(SAMPLE_SHAPELESS_RECIPE);
 
