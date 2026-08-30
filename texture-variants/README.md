@@ -50,6 +50,10 @@ Entity-Texturen (Vanilla-UV-Layout), je 4 Tiers (iron/gold/diamond/netherite):
 | `I-kragen` | Ring um den vorderen Körper/Hals + Brustplatte |
 | `J-schwanzpanzer` | Geschuppter Schwanz bzw. Schwanzflosse + Hinterteil |
 | `K-volle-montur` | Alles zusammen (Körper, Helm, Beine, Schwanz, Gem) |
+| `W1-riemen` (**neu**) | Nur der Bauchgurt mit Schnalle — Ruecken, Kopf, Beine, Schwanz frei |
+| `W2-sattel` (**neu**) | Die direkte Wolf-Uebersetzung: Mail-Sattel, Flanken 2/3 herunter, ein Bauchgurt |
+| `W3-sattel-kragen` (**neu**) | Wie W2 + Brustkragen + die kleinen Beinmanschetten des Wolfs |
+| `W4-ritter` (**neu**) | Wie W3 + Helmdecke und Stirnband; Gesicht, Ohren, Kiemen, Augen ausgespart |
 | `original` | bisheriger Stand (Snapshot) |
 
 ### cat-armor-icons / axolotl-armor-icons
@@ -63,11 +67,54 @@ Vorschau: `preview/armor-icons.png`.
 | `V3-…` | Schuppen: Brustplatte mit Schuppenreihen | Flossenpanzer: Platte mit rosa Rückenkamm + Schwanzflosse |
 | `original` | bisheriger Stand (live) | bisheriger alter Stand (war fälschlich der Cat-Look) |
 
+## Der Wolf ist die Referenz (2026-08-30)
+Die Wolfsruestung (`textures/entity/wolf/wolf_armor_*.png`) wird **nicht angefasst** —
+sie ist die Design-Basis fuer Katze und Axolotl. Ausgemessen ergibt sie ein sehr
+diszipliniertes System:
+- **11 Farbstufen**, und alle vier Tiers haben *identische* Pixelzahlen je Stufe
+  (7/43/53/10/34/51/49/11/33/40/37) — eine Zeichnung, vier ausgetauschte Rampen.
+- **17 % Deckung.** Schwanz, Ohren und Schnauze komplett frei; Beine nur eine kleine
+  Manschette (12 von 64 Pixeln); Rueckenplatte voll; Flanken zu zwei Dritteln; Bauch
+  offen bis auf **genau einen** Gurt.
+
+Die `W*`-Varianten uebernehmen dieses Vokabular. Sie malen in *Rampen-Indizes* statt in
+Farben — dadurch ist strukturell garantiert, dass alle vier Tiers dieselben
+Stufenhistogramme haben wie der Wolf.
+
+## Fresh-Animations-Regeln
+Der Pack faehrt FreshAnimations + Entity Model Features + Entity Texture Features. FA
+behaelt das Vanilla-UV-Layout bei (alle `textureOffset` decken sich), eine
+Textur-Ueberarbeitung ist also FA-sicher. **Aber:** FA fuegt eigene Augen-Quads mit
+eigenen `uv*`-Rechtecken hinzu, und weil `CatArmorLayer`/`AxolotlArmorLayer` das
+komplette Parent-Modell mit der Ruestungstextur rendern, wuerden deckende Pixel dort
+dem Tier auf dem Auge landen. Diese Pixel muessen transparent bleiben:
+- Katze: (0,4) (1,3) (1,4) (3,3) (3,4) (4,4)
+- Axolotl: (0,4) (1,4) (3,4) (4,4)
+
+`texgen/fa_reserved.py` raeumt sie und prueft jeden Lauf. Die alten Live-Texturen
+halten die Regel bereits ein (0 Treffer in allen Tiers).
+
+Aus demselben Grund **kein** eigener Model-Layer mit `CubeDeformation` fuer Cat/Axolotl:
+der waere Vanilla-Geometrie, die EMF nicht ersetzt — die Ruestung wuerde als starre
+Huelle um ein FA-animiertes Tier haengen. Beim Wolf geht das nur, weil FA selbst ein
+`wolf_armor.jem` mitliefert.
+
 ## Technik-Notizen
 - Die Varianten-Stationsmodelle referenzieren `<block>_trim.png` — diese Datei
   ist NEU; das `original`-Set braucht sie nicht (altes Modell). Übrig gebliebene
   Trim-PNGs stören nicht.
 - `*_feeding_station_filled.json` ist ungenutzt (Blockstate zeigt für
   filled=true auf das normale Modell) und bleibt unangetastet.
-- Generator-Skripte: Session-Scratchpad `texgen/` (gen_stations.py, gen_armor.py,
-  gen_armor_icons.py, render_*.py, iso.py) — bei Bedarf wieder herholbar.
+- **Generator liegt jetzt im Repo:** `texture-variants/texgen/` — reine
+  Python-Standardbibliothek (kein Pillow, kein venv, kein Setup):
+
+      python3 texture-variants/texgen/build_variants.py
+
+  Module: `png.py` (PNG-IO), `geometry.py` (Modellboxen + Vanilla-UV-Konvention),
+  `wolfref.py`/`wolfswatch.py` (Wolf als Referenz auslesen), `paint.py` (Zeichnen in
+  Rampen-Indizes), `variants.py` (die W*-Varianten), `iso.py` (isometrischer
+  Renderer), `icons.py`, `fa_reserved.py`, `baseskins.py`.
+  Der Lauf prueft selbst: FA-Sperrpixel frei, nur Wolf-Rampenfarben, Alpha sauber 0/255.
+- Die alten Generatoren der Stations-Sets lagen nur im Session-Scratchpad und sind weg.
+- `scripts/cat-armor-gen/` (SVG-basiert, v1-v7) ist der ueberholte Vorgaenger und die
+  Ursache dafuer, dass die alte Cat-Ruestung 179 Farben hat (Antialiasing statt Pixelart).

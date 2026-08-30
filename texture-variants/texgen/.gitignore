@@ -1,0 +1,4 @@
+# Aus dem Minecraft-Client-Jar extrahierte Vanilla-Grundhaeute — werden bei Bedarf
+# automatisch neu gezogen (baseskins.py) und gehoeren nicht ins Repo.
+_cache/
+__pycache__/
