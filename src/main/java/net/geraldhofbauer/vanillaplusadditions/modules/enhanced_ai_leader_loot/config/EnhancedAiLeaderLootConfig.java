@@ -12,8 +12,8 @@ public class EnhancedAiLeaderLootConfig
         extends AbstractModuleConfig<EnhancedAiLeaderLootModule, EnhancedAiLeaderLootConfig> {
 
     private static final List<String> DEFAULT_LEADER_BONUS_LOOT = List.of(
-            "minecraft:golden_carrot;50;3;9",
-            "minecraft:golden_apple;49;1;3",
+            "minecraft:golden_carrot;50;6;12",
+            "minecraft:golden_apple;49;3;9",
             "minecraft:enchanted_golden_apple;1;1;1"
     );
 

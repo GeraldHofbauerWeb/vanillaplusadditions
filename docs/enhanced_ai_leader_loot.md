@@ -42,8 +42,8 @@ required to sum to 100):
 
 | Item | Weight | Count | Effective chance (default) |
 |------|--------|-------|------------------------------|
-| Golden Carrot | 50 | 3–9 | 50% |
-| Golden Apple | 49 | 1–3 | 49% |
+| Golden Carrot | 50 | 6–12 | 50% |
+| Golden Apple | 49 | 3–9 | 49% |
 | Enchanted Golden Apple | 1 | 1 | 1% |
 
 Format: `item_id;weight;min_count;max_count`. Invalid entries are skipped and logged, not fatal
