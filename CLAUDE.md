@@ -13,8 +13,30 @@ davon ab, auf wessen Rechner ich laufe — im Zweifel `git config user.email` pr
 - **Gemergt wird nur von Gerry** (bzw. von einem Claude auf Gerrys Kommando) — nach Style- und
   Build-Check. Sebis Claude merged seine eigenen PRs nicht selbst.
 
-Vor jedem PR lokal `./gradlew build` grün haben: der Task fährt Checkstyle
-(`config/checkstyle/checkstyle.xml`) und SpotBugs mit, Unit-Tests gibt es in diesem Repo keine.
+### ⚠️ PFLICHT vor jedem PR: Checkstyle lokal laufen lassen
+**Kein PR ohne diesen Befehl — und zwar bevor du ihn aufmachst, nicht danach:**
+
+```bash
+./gradlew build                      # enthält Checkstyle + SpotBugs
+# oder gezielt, wenn es schnell gehen soll:
+./gradlew checkstyleMain spotbugsMain
+```
+
+Das ist **exakt** das, was der CI-Workflow `Code Quality` ausführt — was hier durchgeht, geht
+auch dort durch. Wichtig zu wissen:
+
+- **Checkstyle ist hart** (`ignoreFailures = false`, `maxWarnings = 0`): schon **eine einzige**
+  Warnung lässt den Build und damit den PR-Check scheitern. Die häufigsten Stolpersteine:
+  Zeilenlänge > 140 Zeichen, Tabs statt Leerzeichen, unbenutzte Imports, fehlende geschweifte
+  Klammern, public non-final Felder, Utility-Klasse ohne privaten Konstruktor.
+  Regelwerk: `config/checkstyle/checkstyle.xml`.
+- **SpotBugs ist nur beratend** (`ignoreFailures = true`) — seine Funde brechen nichts ab.
+  Aber Achtung: der SpotBugs-Job kompiliert zuerst, ein **Compile-Fehler** lässt ihn trotzdem
+  rot werden. Rot heißt also nicht automatisch „SpotBugs meckert".
+- **Unit-Tests gibt es in diesem Repo keine** — `./gradlew test` ist verdrahtet, aber leer. Die
+  echte Verifikation ist der manuelle Test im Spiel; der Test-Plan im PR gehört ehrlich ausgefüllt.
+- Läuft der Build **lokal** nicht, liegt es fast immer an den vier fehlenden JARs in `libs/`
+  (siehe „Build-Voraussetzung" weiter unten) — das ist **kein** Grund, den PR trotzdem aufzumachen.
 
 ## Deploy / Commit / Push — nur auf Gerrys Kommando (WICHTIG, 2026-07-23)
 - **Niemals ohne Gerrys ausdrückliches Kommando:** committen, taggen, pushen ODER auf den
