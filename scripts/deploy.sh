@@ -4,7 +4,7 @@
 #
 # Two-target deploy in one shot:
 #   1. games2 server (AMP/Docker, container AMP_SebsModpackv401) — docker cp + restart
-#   2. local client (~/.minecraft-instances/sebsmodpack4/mods/) — jar swap
+#   2. local client (the instance ~/.minecraft points at) — jar swap
 #
 # Why a script and not inline commands:
 #   The running-game check MUST live in a file. When the same pgrep pattern is
@@ -32,7 +32,17 @@ SERVER_SSH="gerry@82.165.95.152"
 CONTAINER="AMP_SebsModpackv401"
 SERVER_MODS="/AMP/Minecraft/mods"
 SERVER_OWNER="amp:amp"
-CLIENT_DIR="$HOME/.minecraft-instances/sebsmodpack4"
+# Follow the ~/.minecraft symlink — the instance manager flips it when switching
+# instances, so hardcoding a name silently deploys into an inactive instance
+# (bit us on the v4 -> v5 switch). Fall back to the symlink target only if it
+# actually resolves into the instances dir.
+if [ -L "$HOME/.minecraft" ] && CLIENT_DIR="$(readlink -f "$HOME/.minecraft")" \
+   && [ -d "$CLIENT_DIR/mods" ]; then
+  :
+else
+  echo "!! ~/.minecraft is not a symlink to a usable instance" >&2
+  exit 1
+fi
 CLIENT_MODS="$CLIENT_DIR/mods"
 
 DO_SERVER=1; DO_CLIENT=1; DO_BUILD=1; DO_RESTART=1
