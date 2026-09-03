@@ -35,6 +35,12 @@ jobs:
           curl -fL --retry 3 --retry-delay 2 \
             -o libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar \
             https://mediafilez.forgecdn.net/files/5833/252/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/Quark-4.1-482.jar \
+            https://cdn.modrinth.com/data/qnQsVE2z/versions/yvp3Jbmk/Quark-4.1-482.jar
+          curl -fL --retry 3 --retry-delay 2 \
+            -o libs/Zeta-1.1-40.jar \
+            https://cdn.modrinth.com/data/MVARlG2f/versions/9GjNW2Gf/Zeta-1.1-40.jar
 
       - name: Build with Gradle
         run: ./gradlew build --no-daemon
