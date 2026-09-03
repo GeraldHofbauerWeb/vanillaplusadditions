@@ -288,6 +288,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Extensions](docs/overpacked_extensions.md)
 - [Texture Kill](docs/texture_kill.md)
+- [Wolf Mount](docs/wolf_mount.md)
 
 ## 🐛 Debug Logging
 

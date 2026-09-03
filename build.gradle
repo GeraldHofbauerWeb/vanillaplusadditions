@@ -450,6 +450,8 @@ def standaloneModules = [
                   'data/create/tags/block/girdable_tracks.json'],
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'wither_skeleton', displayName: 'Vanilla Plus: Wither Skeleton' ],
+    [ moduleId: 'wolf_mount', displayName: 'Vanilla Plus: Wolf Mount',
+      mixins: ['wolf_mount.WolfMountMixin'] ],
 ]
 standaloneModules.each {
     it.modId = "vpa_${it.moduleId}"

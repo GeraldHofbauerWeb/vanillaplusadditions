@@ -17,7 +17,8 @@
     "hostile_endermen.EndEndermanTeleportMixin",
     "hostile_endermen.PlayerTeleportDebugMixin",
     "hostile_endermen.TeleportAntiCheeseMixin",
-    "pet_potions.AreaEffectCloudAccessor"
+    "pet_potions.AreaEffectCloudAccessor",
+    "wolf_mount.WolfMountMixin"
   ],
   "client": [
     "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin"
@@ -26,4 +27,3 @@
     "defaultRequire": 1
   }
 }
-

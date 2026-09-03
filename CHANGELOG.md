@@ -4,6 +4,50 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Neues Modul `wolf_mount`: grosse, geruestete, gezaehmte Woelfe lassen sich reiten.** Gebaut fuer
+  Sif aus *Grim Kingdoms* — der sich beim Nachsehen als ganz normaler `minecraft:wolf` mit
+  `generic.scale = 3.25` entpuppt hat, in einem unsichtbaren Item-Frame als Spawn-Ei ausgeliefert.
+  Das Modul haengt daher an keiner Fremd-Mod.
+  - Aufsteigen mit **Strg + Rechtsklick** (rebindbar), dieselbe Geste wie bei den Cat-/Axolotl-
+    Inventaren. Ohne Modifier bleibt der Vanilla-Rechtsklick vollstaendig erhalten — Fuettern,
+    Faerben, Ruestung an/aus, Reparieren, Zaehmen und der Sitz-Befehl funktionieren unveraendert.
+  - Steuerung wie beim Pferd inklusive Sprung-Ladebalken; die Wolfs-KI muss dafuer **nicht**
+    abgeschaltet werden, weil Vanillas `travelRidden` ihre Ausgabe ohnehin verwirft.
+  - Sprungkraft und Ladebalken sind eigens getunt: ein Wolf hat `generic.jump_strength = 0.42`,
+    also Spielerniveau, und Vanillas Pferdeformel bildet den Ladebalken nur auf 0.4-1.0 ab. Beides
+    zusammen ergab einen Ein-Block-Huepfer, bei dem Halten kaum etwas brachte (`jump_strength`,
+    `min_jump_charge`).
+  - Das Reittier **schwimmt**, statt abzusinken. Noetig, weil das Vanilla-`FloatGoal` nur
+    serverseitig laeuft, die Bewegung eines gerittenen Mobs aber vom Client getrieben wird
+    (`float_in_water`). Das Sprung-Flag muss dabei an Land auch wieder **geloescht** werden —
+    zurueckgesetzt wird es sonst nur von `JumpControl.tick()`, die ebenfalls serverseitig laeuft;
+    ein stehengebliebenes Flag laesst `LivingEntity.aiStep` jeden Tick `jumpFromGround()` rufen,
+    das Reittier huepfte nach dem ersten Schwimmen endlos weiter.
+  - **Immunitaet gegen den eigenen Besitzer**, ausdruecklich inklusive Sweeping-Edge-Splash. Der
+    Abbruch sitzt in `LivingIncomingDamageEvent`, also vor i-Frames, vor `setLastHurtByMob` und vor
+    der Ruestungsabsorption — der Wolf wendet sich dadurch nicht gegen den Besitzer und Thorns
+    schlaegt nicht auf ihn zurueck. Knockback wird beim gerittenen Wolf separat unterdrueckt, weil
+    Vanilla ihn *vor* dem Schaden anwendet.
+  - Das Reittier kaempft mit: es greift an, was den Reiter angreift, und uebernimmt dessen Ziel.
+    Der Biss selbst bleibt Vanilla-`MeleeAttackGoal`, `battle_dogs` bringt seinen Sharpness-Bonus
+    also weiterhin ein.
+  - Die Ruestungspruefung ist strukturell (`AnimalArmorItem` mit `BodyType.CANINE`) und akzeptiert
+    damit Vanilla-`wolf_armor` **und** unsere vier Battle-Dogs-Stufen, ohne eine einzige
+    `battle_dogs`-Klasse zu importieren — `vpa_wolf_mount` laeuft auch ohne dieses Modul.
+  - Doku: `docs/wolf_mount.md`.
+
+### Fixed
+- **`code-quality.yml` lud Quark und Zeta nicht.** Seit `pathfinder_quills` in `master` liegt,
+  scheiterten Checkstyle und SpotBugs schon in `compileJava`, waehrend `build.yml` (das alle vier
+  optionalen Jars zieht) gruen blieb.
+- **`scripts/deploy.sh` deployte in die falsche Instanz.** Der Client-Pfad war fest auf
+  `sebsmodpack4` verdrahtet; seit dem Wechsel auf `sebsmodpack5` landete das Jar in der inaktiven
+  Instanz und das `rm -f` des Skripts raeumte dabei deren eigenes Jar weg. Folgt jetzt dem
+  `~/.minecraft`-Symlink.
+
 ## [1.0.0-beta.72] - 2026-08-27
 
 ### Fixed

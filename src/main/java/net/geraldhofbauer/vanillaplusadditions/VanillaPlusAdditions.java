@@ -48,6 +48,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.stationary_chunk_loader.S
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.wither_skeleton.WitherSkeletonModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.wolf_mount.WolfMountModule;
 import net.geraldhofbauer.vanillaplusadditions.util.WorldgenDiagnostics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.ChatFormatting;
@@ -178,6 +179,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new TippedArrowsModule());
         moduleManager.registerModule(new PathfinderQuillsModule());
         moduleManager.registerModule(new EnhancedAiLeaderLootModule());
+        moduleManager.registerModule(new WolfMountModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }

@@ -63,6 +63,7 @@
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "No llevas puesta una mochila gigante.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "El acceso a la mochila de Overpacked no está disponible.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Alternar superposiciones del Gato Guardián",
+  "key.vanillaplusadditions.wolf_mount.mount_modifier": "Montar lobo (mantener + clic derecho en un lobo grande con armadura)",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Superposiciones del Gato Guardián: ACTIVADO",
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Superposiciones del Gato Guardián: DESACTIVADO",
   "message.vanillaplusadditions.cat_guardian.station_full": "No se pudieron asociar %s gato(s) porque el cuenco está lleno.",
