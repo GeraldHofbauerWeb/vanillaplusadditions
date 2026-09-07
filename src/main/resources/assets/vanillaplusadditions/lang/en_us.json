@@ -146,6 +146,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_main": "Open Backpack (main compartment)",
   "key.vanillaplusadditions.overpacked_extensions.open_right": "Open Backpack (right compartment)",
   "key.vanillaplusadditions.wolf_mount.mount_modifier": "Mount Wolf (hold + right-click a big armored wolf)",
+  "message.vanillaplusadditions.wolf_mount.armor_low": "§c%s§r's armor is nearly gone",
   "message.action_bar.low_oxygen_alert": "§cLOW OXYGEN ALERT",
   "message.action_bar.remaining_oxygen": "Remaining Oxygen: %s %s",
   "message.vanillaplusadditions.axolotl_guardian.associated": "Associated %s axolotl(s) with this bowl.",

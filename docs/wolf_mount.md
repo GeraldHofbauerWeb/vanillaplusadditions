@@ -102,12 +102,71 @@ on a scale-3.25 wolf raises your eyes roughly 2.7 blocks, mounted players get a 
 reach. It is a transient modifier, removed on dismount and self-healed every recheck tick.
 
 The mount fights alongside you: it attacks whatever attacks you, and takes over your target when
-you strike something. It will not abandon a living target it is already busy with, and vanilla's
-own exclusions stay intact — it still refuses to attack creepers, ghasts and the owner's other
-pets, because the decision routes through `Wolf.wantsToAttack`.
+you strike something. Vanilla's own exclusions stay intact — it still refuses to attack creepers,
+ghasts and the owner's other pets, because the decision routes through `Wolf.wantsToAttack`.
+
+**It always goes for the nearest threat** (`combat.target_nearest`, on by default). Vanilla's target
+goals only ever fire on an *empty* target slot, so without this the first mob to hit you owns the
+mount for the whole fight — it keeps snapping at an archer 25 blocks away while a zombie stands in
+its face. Every `combat.target_recheck_ticks` (10) the mount re-picks the closest threat around it
+and drops a target that has died, become off-limits or left `combat.defend_rider_radius`. A switch
+needs `combat.retarget_margin` (3.0) blocks of daylight between old and new target, otherwise two
+mobs at roughly the same range would make it flip-flop every recheck and bite neither.
+
+The sweep looks for two kinds of threat, each with its own reach:
+
+- **Aggressors** — anything already targeting you or the mount — out to `combat.defend_rider_radius`
+  (32). That includes neutrals you picked a fight with.
+- **Hostiles that have not done anything yet**, out to `combat.hostile_scan_radius` (16). This is
+  the half that actually matters: a tamed vanilla wolf attacks *skeletons* unprompted and nothing
+  else (goal 7 of its target selector), so without it the mount stares right past the zombie
+  standing in its face. Set the radius to 0 to make the mount purely retaliatory.
+
+Passive and neutral bystanders are never picked up, however close they stand — the local cows are
+safe. Neither are bosses (Warden, Wither, Ender Dragon) attacked unprovoked; once one of them
+attacks first it becomes a normal aggressor, because at that point the fight is happening anyway.
+
+**Creepers are the one vanilla exclusion this module overrides** (`combat.attack_creepers`, on by
+default). `Wolf.wantsToAttack` refuses them outright, which is right for a pet that dies to the
+blast and wrong for an armored mount that one-shots them — and since the creeper is walking at the
+rider regardless, ignoring it does not avoid the explosion, it only guarantees it. This is also why
+**modded creepers were being ignored**: Creeper Overhaul's whole family (`BaseCreeper`,
+`NeutralCreeper`, `PassiveCreeper`, `WaterCreeper`) extends vanilla `Creeper`, so a single
+`instanceof` was rejecting all of them. Ghasts stay excluded — a melee mount cannot reach one.
 
 The biting itself is entirely vanilla `MeleeAttackGoal`. One nice side effect: `battle_dogs` still
 applies its Sharpness bonus to bites made from under a rider.
+
+## What the rider sees
+
+Riding shows two bars on the right, above the hotbar.
+
+**The armor bar is the important one.** With `battle_dogs` installed, canine body armor absorbs
+**100 %** of incoming damage and drains one durability point per damage point — so the mount's
+*health never moves* until the armor breaks. Durability is the real health pool, and when it hits
+zero the armor breaks, `dismount_when_armor_removed` fires and the rider is dropped mid-fight. Ten
+icons, tinted by tier (an explicit dye wins over the tier colour). Below
+`hud.armor_warning_threshold` (25 %) the row pulses red and the rider gets one action bar line —
+once per damage run, not once per frame.
+
+The tier colour is read off the **item id**, not an `instanceof WolfArmorItem` test, so the HUD
+keeps the module's independence from `battle_dogs` and gives third-party canine armor a sane colour
+for free.
+
+The armor row fills **left to right**, the heart row above it right to left — that mismatch is
+vanilla's, not ours: `Gui.renderVehicleHealth` counts `l - i * 8 - 9` while `Gui.renderArmor` counts
+`x + i * 8`, and the `armor_half` sprite is filled on its *left* half. Give the armor row the heart
+geometry and the half icon's filled side points away from the full icons beside it, which reads as a
+hole in the bar.
+
+**The health row is collapsed.** Vanilla draws one heart per 2 HP capped at 30 hearts, so a 350 HP
+Sif fills three rows that never visibly move — 30 px of screen spent on a constant.
+`hud.compact_mount_health` replaces them with a single ten-heart row showing health as a fraction.
+Turn it off and vanilla's rows come back with the armor bar stacked on top.
+
+No packet is involved: body armor reaches the client as a complete `ItemStack` through
+`ClientboundSetEquipmentPacket`, damage component included. The `hud` config section is read
+client-side only, so it may safely differ between client and server.
 
 ## Configuration
 
@@ -134,9 +193,46 @@ Section `[modules.wolf_mount]` in `config/vanillaplusadditions-common.toml`.
 | `protection.suppress_ridden_knockback` | `true` | — | no knockback while ridden |
 | `combat.defend_rider` | `true` | — | mount fights alongside the rider |
 | `combat.defend_rider_radius` | `32.0` | 0.0–128.0 | max mount↔attacker distance |
+| `combat.target_nearest` | `true` | — | keep the mount on the nearest threat |
+| `combat.retarget_margin` | `3.0` | 0.0–32.0 | how much closer a new threat must be to win |
+| `combat.target_recheck_ticks` | `10` | 1–100 | how often the nearest threat is re-picked |
+| `combat.hostile_scan_radius` | `16.0` | 0.0–64.0 | reach for hostiles that have not attacked yet |
+| `combat.attack_creepers` | `true` | — | override vanilla's creeper exclusion for the mount |
 | `combat.rider_reach_bonus` | `2.0` | 0.0–8.0 | extra reach while mounted |
+| `hud.show_armor_bar` | `true` | — | show the mount's armor durability |
+| `hud.compact_mount_health` | `true` | — | one heart row instead of vanilla's three |
+| `hud.armor_warning_threshold` | `0.25` | 0.0–1.0 | when the bar pulses and warns |
 | `dismount_when_armor_removed` | `true` | — | eject when the armor comes off |
 | `eligibility_recheck_ticks` | `20` | 1–200 | how often an ongoing ride is re-validated |
+
+## Summoning a test Sif
+
+Sif is a plain `minecraft:wolf` with tuned attributes, so he can be rebuilt from a command. Handy
+for testing the module without hunting down a Grim Kingdoms ruin. Swap the `Owner` array for your
+own UUID — a plain `Owner:"PlayerName"` also works on a server that has seen that player, because
+`OldUsersConverter` resolves it against the profile cache.
+
+```mcfunction
+summon minecraft:wolf ~ ~ ~ {CustomName:'{"text":"Sif"}',CustomNameVisible:1b,PersistenceRequired:1b,Owner:"Gerre01",Sitting:0b,CollarColor:14b,Health:350f,attributes:[{id:"minecraft:generic.scale",base:3.25},{id:"minecraft:generic.max_health",base:350},{id:"minecraft:generic.attack_damage",base:25},{id:"minecraft:generic.armor",base:12}],active_effects:[{id:"minecraft:resistance",amplifier:3,duration:-1,show_particles:0b,ambient:1b}],body_armor_item:{id:"vanillaplusadditions:wolf_armor_netherite",count:1}}
+```
+
+Two things are load-bearing:
+
+- **`Owner` alone tames him.** `TamableAnimal.readAdditionalSaveData` calls `setTame(true, false)` —
+  the `false` skips vanilla's taming side effects, which would otherwise stomp max health back down
+  to 40 and attack damage to 4. The attributes are read before that, so they survive.
+- **`Health:350f` has to be set explicitly.** The `max_health` attribute raises the ceiling but not
+  the current value; without it Sif spawns at a wolf's default 8 HP.
+
+He is 3.25 blocks of wolf — summon him outdoors, not in a 2-block corridor.
+
+For a portable version, put the same data on a spawn egg:
+
+```mcfunction
+give @s minecraft:wolf_spawn_egg[minecraft:entity_data={id:"minecraft:wolf",CustomName:'{"text":"Sif"}',PersistenceRequired:1b,Owner:"Gerre01",Health:350f,attributes:[{id:"minecraft:generic.scale",base:3.25},{id:"minecraft:generic.max_health",base:350},{id:"minecraft:generic.attack_damage",base:25},{id:"minecraft:generic.armor",base:12}],body_armor_item:{id:"vanillaplusadditions:wolf_armor_netherite",count:1}}]
+```
+
+That is exactly how Grim Kingdoms ships him: a spawn egg in an invisible item frame.
 
 ## Implementation notes
 

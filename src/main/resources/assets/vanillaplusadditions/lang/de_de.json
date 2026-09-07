@@ -146,6 +146,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_main": "Rucksack öffnen (Hauptfach)",
   "key.vanillaplusadditions.overpacked_extensions.open_right": "Rucksack öffnen (rechtes Fach)",
   "key.vanillaplusadditions.wolf_mount.mount_modifier": "Wolf besteigen (halten + Rechtsklick auf großen gerüsteten Wolf)",
+  "message.vanillaplusadditions.wolf_mount.armor_low": "§c%s§r: Rüstung hält nicht mehr lange",
   "message.action_bar.low_oxygen_alert": "§cWARNUNG: WENIG SAUERSTOFF",
   "message.action_bar.remaining_oxygen": "Verbleibender Sauerstoff: %s %s",
   "message.vanillaplusadditions.axolotl_guardian.associated": "%s Axolotl(s) mit diesem Napf assoziiert.",

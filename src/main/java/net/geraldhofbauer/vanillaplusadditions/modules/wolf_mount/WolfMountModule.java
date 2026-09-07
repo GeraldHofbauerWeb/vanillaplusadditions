@@ -8,12 +8,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -163,6 +167,33 @@ public class WolfMountModule extends AbstractModule<WolfMountModule, WolfMountCo
         return instance == null || instance.getConfig().isFloatInWater();
     }
 
+    /**
+     * Whether the rider's HUD should show the mount's body armor durability.
+     *
+     * @return true if the armor bar is enabled
+     */
+    public static boolean isShowArmorBar() {
+        return instance == null || instance.getConfig().isShowArmorBar();
+    }
+
+    /**
+     * Whether vanilla's multi-row mount health bar should be collapsed into a single row.
+     *
+     * @return true if the compact bar is enabled
+     */
+    public static boolean isCompactMountHealth() {
+        return instance == null || instance.getConfig().isCompactMountHealth();
+    }
+
+    /**
+     * Remaining-durability fraction below which the armor bar warns the rider.
+     *
+     * @return the configured threshold, 0 to disable
+     */
+    public static double getArmorWarningThreshold() {
+        return instance != null ? instance.getConfig().getArmorWarningThreshold() : 0.25D;
+    }
+
     // ---- Networking --------------------------------------------------------------------------
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
@@ -244,8 +275,12 @@ public class WolfMountModule extends AbstractModule<WolfMountModule, WolfMountCo
     }
 
     /**
-     * Periodic upkeep: ends a ride whose preconditions no longer hold, and heals a leaked reach
-     * modifier (logout while mounted, dimension change, death, a crash mid-ride).
+     * Periodic upkeep: keeps the mount on the nearest threat, ends a ride whose preconditions no
+     * longer hold, and heals a leaked reach modifier (logout while mounted, dimension change,
+     * death, a crash mid-ride).
+     *
+     * <p>The target sweep runs on its own, faster interval than the eligibility recheck: a fight
+     * changes shape far quicker than a ride becomes illegitimate.
      */
     @SubscribeEvent
     public void onPlayerTick(PlayerTickEvent.Post event) {
@@ -254,6 +289,13 @@ public class WolfMountModule extends AbstractModule<WolfMountModule, WolfMountCo
         }
         if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
+        }
+        if (player.getVehicle() instanceof Wolf mount
+                && mount.getControllingPassenger() == player
+                && getConfig().isDefendRider()
+                && getConfig().isTargetNearest()
+                && player.tickCount % getConfig().getTargetRecheckTicks() == 0) {
+            retargetNearest(mount, player);
         }
         if (player.tickCount % getConfig().getEligibilityRecheckTicks() != 0) {
             return;
@@ -428,15 +470,15 @@ public class WolfMountModule extends AbstractModule<WolfMountModule, WolfMountCo
     }
 
     /**
-     * Points the mount at a new target, keeping vanilla's own exclusions intact and never yanking
-     * it off a still-living target it is already busy with.
+     * Points the mount at a new target, keeping vanilla's own exclusions intact.
+     *
+     * <p>A live target is no longer sacred: with {@code target_nearest} on, a closer threat takes
+     * over, because the mount can only bite what is actually within its reach. The switch needs
+     * {@code retarget_margin} blocks of daylight between the two so that two mobs at roughly the
+     * same distance cannot make it flip-flop.
      */
     private void retarget(Wolf wolf, Player rider, LivingEntity target) {
-        if (target == rider || target == wolf || !target.isAlive()) {
-            return;
-        }
-        // Wolf.wantsToAttack keeps creepers, ghasts and the owner's other pets off the list.
-        if (!wolf.wantsToAttack(target, rider)) {
+        if (!isAttackable(wolf, rider, target)) {
             return;
         }
         double radius = getConfig().getDefendRiderRadius();
@@ -444,8 +486,118 @@ public class WolfMountModule extends AbstractModule<WolfMountModule, WolfMountCo
             return;
         }
         LivingEntity current = wolf.getTarget();
-        if (current == null || !current.isAlive()) {
+        if (current == null || !isAttackable(wolf, rider, current)) {
+            wolf.setTarget(target);
+            return;
+        }
+        if (getConfig().isTargetNearest()
+                && wolf.distanceTo(target) < wolf.distanceTo(current) - getConfig().getRetargetMargin()) {
             wolf.setTarget(target);
         }
+    }
+
+    /**
+     * Re-picks the nearest threat around the mount, and drops a target that has died, become
+     * off-limits or wandered out of the defend radius.
+     *
+     * <p>This is the half vanilla cannot do. Its target goals only ever fire on an <em>empty</em>
+     * target slot, so the first mob to hit the rider owns the mount for the rest of the fight —
+     * which is exactly the "bites at the archer 25 blocks away while a zombie stands in its face"
+     * complaint. Candidates are restricted to mobs already hostile towards rider or mount, so the
+     * sweep never starts a fight with the local wildlife.
+     */
+    private void retargetNearest(Wolf wolf, Player rider) {
+        double scanRadius = Math.max(getConfig().getDefendRiderRadius(), getConfig().getHostileScanRadius());
+        if (scanRadius <= 0.0D) {
+            return;
+        }
+        LivingEntity current = wolf.getTarget();
+        if (current != null
+                && (!isAttackable(wolf, rider, current) || wolf.distanceToSqr(current) > scanRadius * scanRadius)) {
+            wolf.setTarget(null);
+            current = null;
+        }
+        double margin = getConfig().getRetargetMargin();
+        double best = current != null ? wolf.distanceTo(current) - margin : Double.MAX_VALUE;
+        LivingEntity nearest = null;
+        for (LivingEntity candidate : wolf.level().getEntitiesOfClass(LivingEntity.class,
+                wolf.getBoundingBox().inflate(scanRadius), e -> isThreatTo(wolf, rider, e))) {
+            double distance = wolf.distanceTo(candidate);
+            if (distance < best) {
+                best = distance;
+                nearest = candidate;
+            }
+        }
+        if (nearest != null && nearest != current) {
+            wolf.setTarget(nearest);
+            if (getConfig().shouldDebugLog()) {
+                getLogger().debug("Mount {} switched to nearest threat {} at {} blocks",
+                        wolf.getId(), nearest.getName().getString(), String.format("%.1f", best));
+            }
+        }
+    }
+
+    /**
+     * Whether the mount may hold this entity as a target at all.
+     *
+     * <p>{@code Wolf.wantsToAttack} carries vanilla's own exclusions: creepers, ghasts and the
+     * owner's other pets stay off the list.
+     *
+     * <p>Creepers are the one exclusion worth overriding, because vanilla's reasoning does not
+     * survive contact with an armored mount. A pet wolf dies to the blast; a ridden one has the
+     * armor pool to eat it and the damage to one-shot the creeper first — and the creeper is
+     * walking at the rider anyway, so ignoring it does not avoid the explosion, it only guarantees
+     * it. This covers modded creepers for free: Creeper Overhaul's whole family extends vanilla
+     * {@code Creeper}, which is exactly why {@code wantsToAttack} rejected them.
+     */
+    private boolean isAttackable(Wolf wolf, Player rider, LivingEntity candidate) {
+        if (candidate == rider || candidate == wolf || !candidate.isAlive()) {
+            return false;
+        }
+        if (candidate instanceof Creeper) {
+            return getConfig().isAttackCreepers();
+        }
+        return wolf.wantsToAttack(candidate, rider);
+    }
+
+    /**
+     * Whether this entity counts as a threat worth sweeping for.
+     *
+     * <p>Two ways in, each with its own reach:
+     * <ul>
+     *   <li><b>Aggressors</b> — anything already targeting rider or mount — out to
+     *       {@code defend_rider_radius}. That covers neutrals the rider picked a fight with.</li>
+     *   <li><b>Hostiles that have not done anything yet</b>, out to {@code hostile_scan_radius}.
+     *       This is the half that matters in practice: a tamed vanilla wolf only ever attacks
+     *       skeletons unprompted (goal 7 of its target selector), so without this the mount stares
+     *       right past the zombie standing in its face.</li>
+     * </ul>
+     *
+     * <p>Passive and neutral bystanders are ignored no matter how close they stand, and bosses are
+     * never picked up unprovoked — starting a fight with a Warden because it was the nearest thing
+     * around is not a favour to the rider.
+     */
+    private boolean isThreatTo(Wolf wolf, Player rider, LivingEntity candidate) {
+        if (!isAttackable(wolf, rider, candidate)) {
+            return false;
+        }
+        if (candidate instanceof Mob mob && (mob.getTarget() == rider || mob.getTarget() == wolf)) {
+            double defendRadius = getConfig().getDefendRiderRadius();
+            return wolf.distanceToSqr(candidate) <= defendRadius * defendRadius;
+        }
+        if (!(candidate instanceof Enemy) || isBoss(candidate)) {
+            return false;
+        }
+        double hostileRadius = getConfig().getHostileScanRadius();
+        return hostileRadius > 0.0D && wolf.distanceToSqr(candidate) <= hostileRadius * hostileRadius;
+    }
+
+    /**
+     * Bosses the mount must not pick a fight with on its own. They stay attackable once they have
+     * attacked first — at that point the fight is happening either way.
+     */
+    private boolean isBoss(LivingEntity candidate) {
+        EntityType<?> type = candidate.getType();
+        return type == EntityType.WARDEN || type == EntityType.WITHER || type == EntityType.ENDER_DRAGON;
     }
 }

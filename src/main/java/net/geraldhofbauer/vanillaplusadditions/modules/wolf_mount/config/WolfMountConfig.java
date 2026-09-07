@@ -23,6 +23,10 @@ public class WolfMountConfig extends AbstractModuleConfig<WolfMountModule, WolfM
     private static final double DEFAULT_MIN_JUMP_CHARGE = 0.15D;
     private static final double DEFAULT_DEFEND_RADIUS = 32.0D;
     private static final double DEFAULT_REACH_BONUS = 2.0D;
+    private static final double DEFAULT_RETARGET_MARGIN = 3.0D;
+    private static final int DEFAULT_TARGET_RECHECK_TICKS = 10;
+    private static final double DEFAULT_HOSTILE_SCAN_RADIUS = 16.0D;
+    private static final double DEFAULT_ARMOR_WARNING_THRESHOLD = 0.25D;
     private static final int DEFAULT_RECHECK_TICKS = 20;
 
     private ModConfigSpec.BooleanValue requireLargeScale;
@@ -45,6 +49,15 @@ public class WolfMountConfig extends AbstractModuleConfig<WolfMountModule, WolfM
 
     private ModConfigSpec.BooleanValue defendRider;
     private ModConfigSpec.DoubleValue defendRiderRadius;
+    private ModConfigSpec.BooleanValue targetNearest;
+    private ModConfigSpec.DoubleValue retargetMargin;
+    private ModConfigSpec.IntValue targetRecheckTicks;
+    private ModConfigSpec.DoubleValue hostileScanRadius;
+    private ModConfigSpec.BooleanValue attackCreepers;
+
+    private ModConfigSpec.BooleanValue showArmorBar;
+    private ModConfigSpec.BooleanValue compactMountHealth;
+    private ModConfigSpec.DoubleValue armorWarningThreshold;
 
     private ModConfigSpec.DoubleValue riderReachBonus;
     private ModConfigSpec.BooleanValue dismountWhenArmorRemoved;
@@ -136,11 +149,59 @@ public class WolfMountConfig extends AbstractModuleConfig<WolfMountModule, WolfM
                         "Vanilla's own owner-defence goal is capped at follow range (16), which is",
                         "why a separate radius exists here.")
                 .defineInRange("defend_rider_radius", DEFAULT_DEFEND_RADIUS, 0.0D, 128.0D);
+        targetNearest = builder
+                .comment("Keep the mount on the NEAREST threat instead of the first one it locked",
+                        "onto. Without this the mount stays on a distant archer while a zombie is",
+                        "chewing on the rider's leg, because vanilla never re-picks a live target.",
+                        "Only mobs that are already hostile towards rider or mount count as threats,",
+                        "so the mount still never picks a fight with the local cows.")
+                .define("target_nearest", true);
+        retargetMargin = builder
+                .comment("How much closer (in blocks) a new threat has to be before the mount",
+                        "switches to it. Pure hysteresis: without a margin two mobs at nearly the",
+                        "same distance would make it flip-flop every recheck and bite neither.")
+                .defineInRange("retarget_margin", DEFAULT_RETARGET_MARGIN, 0.0D, 32.0D);
+        targetRecheckTicks = builder
+                .comment("How often (in ticks) the mount re-picks the nearest threat while ridden.")
+                .defineInRange("target_recheck_ticks", DEFAULT_TARGET_RECHECK_TICKS, 1, 100);
+        hostileScanRadius = builder
+                .comment("How far the mount looks for hostile mobs that have NOT attacked yet.",
+                        "A tamed vanilla wolf only ever picks fights with skeletons, so without this",
+                        "the mount ignores the zombie standing in its face. Aggressors that already",
+                        "target rider or mount are picked up out to defend_rider_radius instead.",
+                        "Set to 0 to only ever retaliate. Bosses are never attacked unprovoked.")
+                .defineInRange("hostile_scan_radius", DEFAULT_HOSTILE_SCAN_RADIUS, 0.0D, 64.0D);
+        attackCreepers = builder
+                .comment("Let the mount attack creepers. Vanilla's Wolf.wantsToAttack refuses them",
+                        "outright -- sensible for a pet that dies to the blast, silly for an armored",
+                        "mount that one-shots them. Covers modded creepers too (Creeper Overhaul's",
+                        "all extend vanilla Creeper). Applies only to a wolf being ridden; loose pets",
+                        "keep vanilla's caution. Turn off if you would rather not risk the blast.")
+                .define("attack_creepers", true);
         riderReachBonus = builder
                 .comment("Extra entity interaction range while mounted. Sitting on a scale-3.25 wolf",
                         "raises your eyes about 2.7 blocks, so the vanilla 3-block reach no longer",
                         "gets you to the ground.")
                 .defineInRange("rider_reach_bonus", DEFAULT_REACH_BONUS, 0.0D, 8.0D);
+        builder.pop();
+
+        builder.comment("What the rider sees on screen. Read client-side only, so this section",
+                        "may safely differ between client and server.").push("hud");
+        showArmorBar = builder
+                .comment("Show the mount's body armor durability while riding. This is the number",
+                        "that actually matters: the armor absorbs 100% of the damage, so the wolf's",
+                        "health does not move at all until the armor breaks -- and when it does, the",
+                        "rider is thrown off (see dismount_when_armor_removed).")
+                .define("show_armor_bar", true);
+        compactMountHealth = builder
+                .comment("Replace vanilla's mount health bar with a single ten-heart row showing the",
+                        "mount's health as a fraction. Vanilla draws one heart per 2 HP capped at 30",
+                        "hearts, so a 350 HP wolf fills three rows that never visibly move.")
+                .define("compact_mount_health", true);
+        armorWarningThreshold = builder
+                .comment("Below this fraction of remaining armor durability the bar pulses red and",
+                        "the rider gets a one-off action bar warning. 0 disables the warning.")
+                .defineInRange("armor_warning_threshold", DEFAULT_ARMOR_WARNING_THRESHOLD, 0.0D, 1.0D);
         builder.pop();
 
         dismountWhenArmorRemoved = builder
@@ -217,6 +278,38 @@ public class WolfMountConfig extends AbstractModuleConfig<WolfMountModule, WolfM
 
     public double getDefendRiderRadius() {
         return defendRiderRadius != null ? defendRiderRadius.get() : DEFAULT_DEFEND_RADIUS;
+    }
+
+    public boolean isTargetNearest() {
+        return targetNearest == null || targetNearest.get();
+    }
+
+    public double getRetargetMargin() {
+        return retargetMargin != null ? retargetMargin.get() : DEFAULT_RETARGET_MARGIN;
+    }
+
+    public boolean isAttackCreepers() {
+        return attackCreepers == null || attackCreepers.get();
+    }
+
+    public double getHostileScanRadius() {
+        return hostileScanRadius != null ? hostileScanRadius.get() : DEFAULT_HOSTILE_SCAN_RADIUS;
+    }
+
+    public int getTargetRecheckTicks() {
+        return targetRecheckTicks != null ? targetRecheckTicks.get() : DEFAULT_TARGET_RECHECK_TICKS;
+    }
+
+    public boolean isShowArmorBar() {
+        return showArmorBar == null || showArmorBar.get();
+    }
+
+    public boolean isCompactMountHealth() {
+        return compactMountHealth == null || compactMountHealth.get();
+    }
+
+    public double getArmorWarningThreshold() {
+        return armorWarningThreshold != null ? armorWarningThreshold.get() : DEFAULT_ARMOR_WARNING_THRESHOLD;
     }
 
     public double getRiderReachBonus() {
