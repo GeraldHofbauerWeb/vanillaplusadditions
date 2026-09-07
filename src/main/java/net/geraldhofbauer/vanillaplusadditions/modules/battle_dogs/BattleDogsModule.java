@@ -46,6 +46,8 @@ import java.util.concurrent.Executor;
 
 public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDogsConfig> {
 
+    private static BattleDogsModule instance;
+
     private static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(VanillaPlusAdditions.MODID);
 
@@ -79,6 +81,7 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
 
     @Override
     protected void onInitialize() {
+        instance = this;
         ITEMS.register(getModEventBus());
 
         VanillaPlusCreativeTabs.addAllToMainTab(
@@ -87,6 +90,46 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
         NeoForge.EVENT_BUS.register(this);
 
         getLogger().info("Battle Dogs module initialized");
+    }
+
+    // ---- Static accessors for the client-side bite animation mixin ----------------------------
+    // WolfBiteAnimationMixin is merged into net.minecraft.client.model.WolfModel and has no other
+    // way to reach module state.
+
+    /**
+     * Whether the module is loaded and enabled.
+     *
+     * @return true if the module is active
+     */
+    public static boolean isModuleActive() {
+        return instance != null && instance.isModuleEnabled();
+    }
+
+    /**
+     * Whether a biting wolf should visibly snap its head.
+     *
+     * @return true if the bite animation is enabled
+     */
+    public static boolean isBiteAnimation() {
+        return instance != null && instance.getConfig().isBiteAnimation();
+    }
+
+    /**
+     * Whether the bite animation is restricted to a ridden wolf.
+     *
+     * @return true if only mounts animate
+     */
+    public static boolean isBiteAnimationOnlyWhenRidden() {
+        return instance != null && instance.getConfig().isBiteAnimationOnlyWhenRidden();
+    }
+
+    /**
+     * How far the head swings, 1.0 being roughly 50 degrees.
+     *
+     * @return the configured strength multiplier
+     */
+    public static double getBiteAnimationStrength() {
+        return instance != null ? instance.getConfig().getBiteAnimationStrength() : 1.0D;
     }
 
     @SubscribeEvent

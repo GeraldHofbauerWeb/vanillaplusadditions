@@ -21,6 +21,9 @@ The Battle Dogs module provides tiered armor for tamed wolves.
 
 - **Damage Absorption**: Similar to vanilla armadillo wolf armor, all tiered wolf armor in this mod absorbs **100%** of incoming damage to the wolf, losing 1 durability point for every point of damage absorbed. This makes wolves invincible until the armor breaks.
 - **Attack Bonus**: Equipping armor increases the wolf's attack damage based on the tier (see table above).
+- **Bite Animation**: Vanilla wolves have **no** attack animation at all — `WolfModel` never reads `attackAnim`, so an attacking wolf deals its damage without moving a pixel. Battle Dogs adds one: the head snaps down on every landed bite, with a small shoulder lean behind it. Barely noticeable on a pet trotting behind you, very noticeable while riding one (`wolf_mount`), where the head fills the lower half of the screen.
+  - Nothing is sent for this. `MeleeAttackGoal` already calls `swing()` on every landed hit, the server already broadcasts it as a `ClientboundAnimatePacket`, and `getAttackAnim` turns it into a 0→1 ramp; the client-side mixin `mixin/battle_dogs/WolfBiteAnimationMixin` only reads that and adds to `head.xRot` / `upperBody.xRot`. Both are re-assigned every frame before the injection point, so the offsets cannot accumulate — which is why the animation rotates rather than translating.
+  - Config under `[modules.battle_dogs.bite_animation]`: `enabled` (default `true`), `only_when_ridden` (default `false` — a dog that only bites visibly while carrying someone looks stranger than one that always does), `strength` (default `1.0`, roughly 50° of head swing).
 
 ## Cat Guardian Systems
 

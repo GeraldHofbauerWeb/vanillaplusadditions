@@ -21,6 +21,7 @@
     "wolf_mount.WolfMountMixin"
   ],
   "client": [
+    "battle_dogs.WolfBiteAnimationMixin",
     "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin"
   ],
   "injectors": {
