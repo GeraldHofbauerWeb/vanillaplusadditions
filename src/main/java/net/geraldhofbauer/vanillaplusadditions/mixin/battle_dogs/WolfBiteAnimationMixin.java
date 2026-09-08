@@ -38,6 +38,9 @@ public abstract class WolfBiteAnimationMixin {
     /** A much smaller forward lean of the shoulders, to stop the head moving on its own. */
     private static final float BITE_LEAN = 0.12F;
 
+    /** Diagnostic latch: says once whether this mixin reaches the rendered model at all. */
+    private static boolean announced;
+
     @Shadow
     @Final
     private ModelPart head;
@@ -54,6 +57,10 @@ public abstract class WolfBiteAnimationMixin {
         }
         if (BattleDogsModule.isBiteAnimationOnlyWhenRidden() && !entity.isVehicle()) {
             return;
+        }
+        if (!announced) {
+            announced = true;
+            BattleDogsModule.debug("[bite] WolfModel.setupAnim reached, mixin is live");
         }
         float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
         float swing = entity.getAttackAnim(partialTick);

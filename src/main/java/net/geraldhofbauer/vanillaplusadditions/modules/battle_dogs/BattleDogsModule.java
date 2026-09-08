@@ -6,6 +6,8 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config.BattleDogsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.item.WolfArmorItem;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
+import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.BiteDirections;
+import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.WolfBiteDirectionPacket;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -28,6 +30,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Mth;
 import net.minecraft.util.Unit;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Items;
@@ -38,6 +41,8 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -82,6 +87,7 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
     @Override
     protected void onInitialize() {
         instance = this;
+        getModEventBus().addListener(this::onRegisterPayloadHandlers);
         ITEMS.register(getModEventBus());
 
         VanillaPlusCreativeTabs.addAllToMainTab(
@@ -103,6 +109,22 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
      */
     public static boolean isModuleActive() {
         return instance != null && instance.isModuleEnabled();
+    }
+
+    /**
+     * Diagnostic channel for the bite animation, active only with debug_logging = ON.
+     *
+     * <p>The animation spans a client mixin, a common mixin and vanilla's swing timer; when it
+     * stays invisible there is no way to tell from the outside which of the three is the one not
+     * firing. This makes each of them say so.
+     *
+     * @param message the log message
+     * @param args    message arguments
+     */
+    public static void debug(String message, Object... args) {
+        if (instance != null && instance.getConfig().shouldDebugLog()) {
+            instance.getLogger().info(message, args);
+        }
     }
 
     /**
@@ -174,6 +196,51 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.sidedSuccess(isClient));
         }
+    }
+
+    /**
+     * Tells nearby clients which way a wolf just bit, so the lunge can aim at the victim.
+     *
+     * <p>Separate from {@link #onMobDamagedByWolf} on purpose: that one bails out on a wolf without
+     * our armor, while the animation belongs to every wolf. Sent per landed bite rather than held
+     * in synced data — a bite is an instant, and an instant is what a packet is for.
+     *
+     * @param event the damage event for the entity the wolf is biting
+     */
+    @SubscribeEvent
+    public void onWolfBiteDirection(LivingDamageEvent.Pre event) {
+        if (!isModuleEnabled() || !getConfig().isBiteAnimation()) {
+            return;
+        }
+        if (!(event.getSource().getDirectEntity() instanceof Wolf wolf) || wolf.level().isClientSide()) {
+            return;
+        }
+        double dx = event.getEntity().getX() - wolf.getX();
+        double dz = event.getEntity().getZ() - wolf.getZ();
+        if (dx * dx + dz * dz < 1.0E-4D) {
+            return;
+        }
+        float yaw = (float) (Mth.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F;
+        PacketDistributor.sendToPlayersTrackingEntity(wolf, new WolfBiteDirectionPacket(wolf.getId(), yaw));
+    }
+
+    /**
+     * Registers the bite direction channel as <b>optional</b>.
+     *
+     * <p>Deliberate: {@code NetworkComponentNegotiator} fails the whole handshake when one side has
+     * a non-optional channel the other lacks, and the client is then disconnected as incompatible.
+     * Locking a player out of a server over a cosmetic animation hint would be absurd. Optional
+     * means a mismatched pair simply drops the channel — the wolf then lunges along its head yaw,
+     * which is what it did before this packet existed.
+     *
+     * @param event the payload registration event
+     */
+    private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        event.registrar("1").optional().playToClient(
+                WolfBiteDirectionPacket.TYPE,
+                WolfBiteDirectionPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(
+                        () -> BiteDirections.record(packet.wolfId(), packet.yaw())));
     }
 
     @SubscribeEvent

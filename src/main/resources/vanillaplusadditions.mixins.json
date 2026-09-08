@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ChunkStatusTasksMixin",
+    "battle_dogs.WolfSwingTimeMixin",
     "GenerationChunkHolderMixin",
     "axolotl_guardian.AxolotlBucketRestoreMixin",
     "bluemap_signs.SignBlockEntityTextMixin",
