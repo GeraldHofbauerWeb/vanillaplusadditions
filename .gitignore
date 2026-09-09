@@ -78,3 +78,6 @@ unused_assets/
 .claude/memory/
 .claude/plans/
 .claude/jobs/
+
+# NeoForge installer logs land next to the installer jar you ran (<name>.jar.log)
+/*.jar.log
