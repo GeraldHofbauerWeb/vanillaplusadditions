@@ -4,6 +4,58 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.77] - 2026-09-16
+
+### Added
+- **Neues Modul `copycat_pathfinding`: Mobs laufen wieder durch Create-Copycat-Panels.** Create
+  ueberschreibt in `CopycatPanelBlock` und `CopycatStepBlock` den Vanilla-Default mit einem harten
+  `isPathfindable -> false`, ohne Ruecksicht auf Shape, Material oder `PathComputationType`.
+  Vanilla macht daraus `PathType.BLOCKED` fuer den ganzen Block — auf Land wie im Wasser. Katzen
+  und Axolotl weigerten sich deshalb, einen Durchgang zu benutzen, dessen Wand oder Decke lediglich
+  mit einem 3px-Panel verkleidet ist; kein Pathfinding-Malus und keine `STEP_HEIGHT`-Schraube half.
+  - **Richtungsabhaengig statt pauschal.** Ein Panel blockiert nur noch die Bewegungen, die seine
+    Plattenebene tatsaechlich kreuzen. Laengs an einer panelverkleideten Wand entlang, unter einem
+    Deckenpanel hindurch oder ueber eine aufliegende Bodenplatte funktioniert wieder; ein Panel
+    quer im Durchgang bleibt eine Wand. Noetig, weil Pathfinding und Kollision getrennt sind —
+    ohne die Pruefung schickt das A* die Mobs in die Platte, wo sie dann anstehen.
+  - **Die Platte klebt an `FACING.getOpposite()`, nicht an `FACING`.** `AllShapes.CASING_3PX` ist
+    eine Bodenplatte, per `forDirectional()` auf `Direction.UP` verankert, und
+    `getStateForPlacement` setzt `FACING` auf die Gegenrichtung des Blicks. Ohne dieses
+    `getOpposite()` waere die Logik um 180 Grad verdreht. `CopycatBlocks` prueft die Konvention
+    beim Aufloesen einmal selbst nach und deaktiviert das Modul bei Abweichung, statt Mobs falsch
+    herum einzusperren.
+  - **Bodenplatten und `copycat_step` behalten Creates `false`** — das ist exakt das Verhalten von
+    `SlabBlock`, und nur dadurch wird die Zelle *darueber* begehbar (so laufen Mobs ueber
+    Panel-Boeden und freischwebende Panel-Bruecken). Ein pauschaler Fix haette die zu Loechern
+    gemacht. Stattdessen wertet ein Hook in `getPathTypeStatic` eine Bodenplatte *mit Auflage* zu
+    `WALKABLE` auf, nach Vanillas eigener Regel — das behebt Durchgaenge von nur einem Block Hoehe,
+    ohne die Bruecken zu brechen.
+  - **Waterlogged Panels und Stufen zaehlen wieder als Wasser**, wie bei einem Vanilla-Slab; Create
+    sperrte schwimmende Mobs dort komplett aus.
+  - Axolotl sind mit abgedeckt, weil `AmphibiousNodeEvaluator` von `WalkNodeEvaluator` erbt und
+    seine vertikalen Nachbarn ebenfalls durch `isNeighborValid` schickt. Reine Wasser-Mobs
+    (`SwimNodeEvaluator`) und fliegende Mobs (`FlyNodeEvaluator`) bekommen nur den pauschalen Teil,
+    weil ihre Nachbarpruefungen keinen Quell-Knoten kennen.
+  - Kein einziger Create-Typ wird referenziert — die Bloecke kommen per `ResourceLocation` aus der
+    Registry, das Modul ist ohne Create link-safe und meldet sich als uebersprungen. Doku:
+    `docs/copycat_pathfinding.md`.
+
+### Fixed
+- **`scripts/deploy.sh` startete gar nicht mehr — und sein Schutz gegen laufende Clients war
+  blind.** Gleich zwei Nachwehen des Instanz-Umbaus aus beta.74:
+  - `~/.minecraft` ist seit 2026-09-15 kein Symlink mehr, sondern das eigene Verzeichnis des
+    Launchers. Die Symlink-Pruefung lief unbedingt im Header, also brach auch `--server` und
+    `--modpack` ab, obwohl die den Client gar nicht anfassen. Die Instanz wird jetzt **lazy** und
+    aus einer autoritativen Quelle aufgeloest: `$VPA_CLIENT_DIR`, sonst der Symlink (alte Layouts
+    bleiben heil), sonst `instances_path` + `last_instance` aus der Launcher-Config. Scheitert das,
+    listet das Skript die vorhandenen Instanzen auf, statt einfach eine zu raten.
+  - Der `pgrep`-Guard, der den Jar-Tausch im **laufenden** Spiel verhindert, war noch auf
+    `sebsmodpack4` verdrahtet — beta.74 hatte nur `CLIENT_DIR` umgestellt, das Muster aber
+    vergessen. Er matchte seit dem Wechsel auf `sebsmodpack5` nichts mehr und haette die Jar unter
+    dem laufenden Client getauscht; genau die Korruption (`ZipException`, fehlende Texturen), gegen
+    die er da steht. Das Muster folgt jetzt der aufgeloesten Instanz.
+  - `MODPACK_DIR` haengt ebenfalls an der aufgeloesten Instanz statt an `~/.minecraft`.
+
 ## [1.0.0-beta.74] - 2026-09-03
 
 ### Added
