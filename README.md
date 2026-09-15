@@ -89,6 +89,9 @@ A **Chunk Anchor** block that force-loads its chunk (plus a configurable radius)
 #### 💧 Create Water Wheel Unstucker
 Detects Create water wheels that stalled after a chunk reload (a known kinetic/flow desync) and can kick them back into rotation. Ships with the `/vpaunstuck` command to re-initialise stalled wheels on demand; auto-fix is opt-in.
 
+#### 🧱 Copycat Pathfinding
+Create marks every **Copycat Panel** as unwalkable, so mobs treat a 3-pixel plate like a solid wall — a cat won't use a passage whose ceiling carries a panel, an axolotl won't swim past a waterlogged one. This makes panels block only the movements that actually cross the plate: walking along a panel-lined wall, under a ceiling panel or over a supported floor panel works again, while a panel standing across the way still stops mobs. Free-standing panel bridges and `copycat_step` keep their vanilla-slab behaviour. See [docs/copycat_pathfinding.md](docs/copycat_pathfinding.md).
+
 #### 🔱 Conduit Attack Range
 Makes vanilla conduits **attack hostile mobs at every active tier** (not just at full size), within half the Conduit Power radius, and fixes the client-side attack beam so the animation shows correctly.
 
@@ -212,6 +215,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
 | `train_chunk_loading` | Create | Module skips initialization entirely (it adds a Create track variant) |
 | `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
+| `copycat_pathfinding` | Create | Module skips initialization (it fixes Create's copycat panels) |
 | `mob_cart_loader` | Create *(optional)* | Minecart loading/unloading fully functional — train-carriage seats and the goggle stats panel need Create |
 | `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
 | `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
@@ -284,6 +288,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Block Glow](docs/block_glow.md)
 - [Chunk Reset Command](docs/chunk_reset.md)
 - [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
+- [Copycat Pathfinding](docs/copycat_pathfinding.md)
 - [End Oxygen](docs/end_oxygen.md)
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Extensions](docs/overpacked_extensions.md)
