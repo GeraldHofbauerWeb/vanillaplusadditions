@@ -4,7 +4,7 @@
 #
 # Three-target deploy in one shot:
 #   1. games2 server (AMP/Docker, container AMP_SebsModpackv401) — docker cp + restart
-#   2. local client (the instance ~/.minecraft points at) — jar swap
+#   2. local client (the launcher's active instance) — jar swap
 #   3. the public modpack archive on geraldhofbauer.net — rebuild the zip and
 #      replace the Craft asset behind /files/sebs-modpack-v5
 #
@@ -44,7 +44,7 @@ SERVER_MODS="/AMP/Minecraft/mods"
 SERVER_OWNER="amp:amp"
 
 # Modpack archive. The web root and the game server share one box.
-MODPACK_DIR="$HOME/.minecraft/meincraft"
+MODPACK_SUBDIR="meincraft"   # lives inside the active instance; resolved with it
 MODPACK_ZIP="$HOME/Downloads/sebsmodpack-v5.zip"
 WEB_TMP="/var/www/geraldhofbauer.net/storage"
 WEB_FILE="sebsmodpack-v5.zip"
@@ -52,18 +52,53 @@ CRAFT_MCP="https://geraldhofbauer.net/mcp/"
 CRAFT_ENTRY=1317          # staticFiles entry "Sebs Modpack v5"
 CRAFT_FOLDER=4            # staticFiles volume root folder
 PUBLIC_URL="https://geraldhofbauer.net/static-files/$WEB_FILE"
-# Follow the ~/.minecraft symlink — the instance manager flips it when switching
-# instances, so hardcoding a name silently deploys into an inactive instance
-# (bit us on the v4 -> v5 switch). Fall back to the symlink target only if it
-# actually resolves into the instances dir.
-if [ -L "$HOME/.minecraft" ] && CLIENT_DIR="$(readlink -f "$HOME/.minecraft")" \
-   && [ -d "$CLIENT_DIR/mods" ]; then
-  :
-else
-  echo "!! ~/.minecraft is not a symlink to a usable instance" >&2
-  exit 1
-fi
-CLIENT_MODS="$CLIENT_DIR/mods"
+# Which instance is the live one? NEVER hardcode a name — deploying into an
+# inactive instance looks like a success and changes nothing (bit us on the
+# v4 -> v5 switch). Ask an authoritative source, in this order:
+#
+#   1. $VPA_CLIENT_DIR          — explicit override, wins over everything
+#   2. ~/.minecraft symlink     — the old layout, kept working
+#   3. instant-launcher config  — instances_path + last_instance (current layout;
+#                                 since 2026-09-15 ~/.minecraft is the launcher's
+#                                 own directory, not a symlink to an instance)
+#
+# Resolved lazily: --server and --modpack must not die because the client side
+# is in a state they never touch.
+CLIENT_DIR=""; CLIENT_MODS=""; MODPACK_DIR=""; CLIENT_INSTANCE=""
+LAUNCHER_CFG="$HOME/.config/instant-launcher/config.json"
+
+resolve_client_dir() {
+  [[ -n "$CLIENT_DIR" ]] && return 0
+
+  if [[ -n "${VPA_CLIENT_DIR:-}" ]]; then
+    CLIENT_DIR="$VPA_CLIENT_DIR"
+  elif [ -L "$HOME/.minecraft" ] && [ -d "$(readlink -f "$HOME/.minecraft")/mods" ]; then
+    CLIENT_DIR="$(readlink -f "$HOME/.minecraft")"
+  elif [[ -f "$LAUNCHER_CFG" ]]; then
+    CLIENT_DIR="$(python3 -c "
+import json, os, sys
+c = json.load(open(os.path.expanduser('$LAUNCHER_CFG')))
+root, name = c.get('instances_path'), c.get('last_instance')
+print(os.path.join(root, name) if root and name else '')
+" 2>/dev/null || true)"
+  fi
+
+  if [[ -z "$CLIENT_DIR" || ! -d "$CLIENT_DIR/mods" ]]; then
+    echo "!! cannot determine the active client instance." >&2
+    echo "!! tried: \$VPA_CLIENT_DIR, the ~/.minecraft symlink, $LAUNCHER_CFG" >&2
+    if [[ -d "$HOME/.minecraft-instances" ]]; then
+      echo "!! instances available:" >&2
+      ls -1 "$HOME/.minecraft-instances" | sed 's/^/!!   /' >&2
+    fi
+    echo "!! pick one explicitly: VPA_CLIENT_DIR=~/.minecraft-instances/<name> $0 --client" >&2
+    exit 1
+  fi
+
+  CLIENT_INSTANCE="$(basename "$CLIENT_DIR")"
+  CLIENT_MODS="$CLIENT_DIR/mods"
+  MODPACK_DIR="$CLIENT_DIR/$MODPACK_SUBDIR"
+  echo "    client instance: $CLIENT_INSTANCE ($CLIENT_DIR)"
+}
 
 # Empty means "not named". Naming any target switches the unnamed ones off, so
 # --server --client works as a combination instead of the last flag winning.
@@ -86,6 +121,9 @@ if [[ -z "${DO_SERVER}${DO_CLIENT}${DO_MODPACK}" ]]; then
   DO_SERVER=1; DO_CLIENT=1; DO_MODPACK=1
 fi
 DO_SERVER=${DO_SERVER:-0}; DO_CLIENT=${DO_CLIENT:-0}; DO_MODPACK=${DO_MODPACK:-0}
+
+# Only the client and modpack targets care where the instance lives.
+if [[ "$DO_CLIENT" == 1 || "$DO_MODPACK" == 1 ]]; then resolve_client_dir; fi
 
 cd "$REPO_ROOT"
 VERSION="$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)"
@@ -131,10 +169,14 @@ fi
 # ---- local client -----------------------------------------------------------
 if [[ "$DO_CLIENT" == 1 ]]; then
   echo "==> Deploying to local client ..."
-  # Match ONLY the running game java process for this instance. --launchTarget
+  # Match ONLY the running game java process for THIS instance. --launchTarget
   # forgeclient is unique to the game (the CEF launcher does not have it).
+  # The instance name is resolved, never hardcoded: it used to say sebsmodpack4
+  # while the live instance was already sebsmodpack5, so the guard matched
+  # nothing and would have swapped the jar under a running game — exactly the
+  # corruption this check exists to prevent.
   # Pattern lives in this file, so pgrep cannot self-match (see header).
-  if pgrep -f "sebsmodpack4.*--launchTarget forgeclient" >/dev/null 2>&1; then
+  if pgrep -f "$CLIENT_INSTANCE.*--launchTarget forgeclient" >/dev/null 2>&1; then
     echo "!! Minecraft client is RUNNING — refusing to swap the jar (would corrupt it)."
     echo "!! Close the game fully, then re-run: scripts/deploy.sh --client"
     exit 1
