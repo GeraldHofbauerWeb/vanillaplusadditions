@@ -4,6 +4,39 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.78] - 2026-09-16
+
+### Fixed
+- **Waechter-Katzen und -Axolotl heilten nie — verletzte Tiere blieben fuer immer kampfunfaehig.**
+  Ab unter 20 % HP geht ein Waechter in den absoluten Rueckzug, sitzt an seiner Station und
+  ignoriert per Design jedes Monster, bis er ueber 40 % HP erholt ist. Diese Erholung fand nie
+  statt: die Station gab `Regeneration I` mit 60 Ticks Dauer und erneuerte den Effekt alle 10
+  Ticks. Vanilla fuehrt einen Regenerations-Tick aber nur aus, wenn `duration % 50 == 0` — und
+  prueft das **vor** dem Herunterzaehlen (`MobEffectInstance.tick`). Die Pruefung sah dadurch nur
+  die Dauern 60 bis 51; die 50 wurde jedes Mal einen Tick zu frueh ueberschrieben. Kein einziger
+  Heilpunkt, niemals. Geheilt wird jetzt direkt, mit exakt der Rate von Regeneration I
+  (1 HP pro 2,5 Sekunden), unabhaengig von Vanillas Effekt-Interna.
+  - **Betroffen waren immer nur ungepanzerte Tiere** — die Katzenruestung schluckt 100 % des
+    eingehenden Schadens, gepanzerte Katzen verlieren also ueberhaupt keine HP.
+  - **Geheilt wird jetzt generell an der Station**, nicht nur auf der Flucht: jeder Waechter ohne
+    Kampfziel innerhalb von etwa 4 Bloecken um den eigenen Napf regeneriert. Ohne das sammelten
+    sich ueber Wochen dauerhaft angeschlagene Tiere an, von denen jedes beim naechsten Treffer in
+    die Flucht-Sackgasse fiel.
+  - Bereits verletzte Tiere heilen sich nach dem Update von selbst hoch, sobald ihr Chunk tickt.
+- **Katzen sprangen an der Station zwischen zwei Positionen hin und her.** Die Stuck-Erkennung
+  zaehlte eine Katze, die absichtlich an ihrer Station sitzt (Fluchtmodus), als festgefahren:
+  jeder Strike loeste einen Repath aus, ab dem zweiten einen aktiven Sprung und ab dem fuenften
+  einen Notfall-Teleport neben den Napf. Bei einer dauerhaft fliehenden Katze lief das endlos —
+  alle 2 Sekunden ein Huepfer, alle 10 Sekunden ein Teleport zurueck auf denselben Punkt. Strikes
+  zaehlen jetzt nur noch, solange die Heimreise wirklich laeuft; dieselbe Bedingung schuetzt auch
+  die Sprunghilfe (`assistLedgeJump`) vor einer parkenden Katze.
+
+### Changed
+- `docs/cat_guardian.md`: die Erholungsschwelle stand faelschlich bei 20 % (richtig sind 40 %,
+  Hysterese gegen Yo-Yo-Verhalten am Rand), dazu die neue Heilregel dokumentiert.
+- Die beiden toten Debug-Log-Helfer im `cat_guardian` (`logCatHungerReturn`, `logCatHungerState`)
+  sind entfernt — alle Aufrufstellen waren seit jeher auskommentiert.
+
 ## [1.0.0-beta.77] - 2026-09-16
 
 ### Added
