@@ -69,7 +69,13 @@ FLEEING > RETURNING > FED (combat/idle) > UNFED
 are not all full. A cat with a full inventory finishes the return trip and deposits first.
 
 **FLEEING** is absolute — the cat ignores all mobs until it reaches the station, sits next to
-it, and regenerates above 20 % HP.
+it, and only resumes duty above 40 % HP (the 20 % entry / 40 % exit hysteresis keeps it from
+yo-yoing in and out of combat).
+
+**Healing happens at the station**, at the rate of Regeneration I (1 HP per 2.5 s), whenever a
+guardian is within ~4 blocks of its own bowl and has no target — fleeing or not. This is the only
+way a guardian recovers hit points: vanilla mobs have no natural regeneration, and cat armour
+absorbs 100 % of incoming damage, so only unarmoured cats ever take any.
 
 The fed timer (`fed_duration_ticks`) ticks down even while fleeing or returning.
 

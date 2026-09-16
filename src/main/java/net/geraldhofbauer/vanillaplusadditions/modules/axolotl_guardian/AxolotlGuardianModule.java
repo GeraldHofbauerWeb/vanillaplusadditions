@@ -777,6 +777,29 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         tickAxolotl(axolotl);
     }
 
+    /**
+     * Health a resting guardian regains per {@code tickAxolotl} pass (every 10 ticks): the rate
+     * of Regeneration I, which heals 1 HP per 50 ticks.
+     */
+    private static final float STATION_HEAL_PER_PASS = 10.0f / 50.0f;
+
+    /**
+     * Heals a guardian resting at its station, one {@code tickAxolotl} pass (10 ticks) worth of
+     * Regeneration I.
+     *
+     * <p>This replaces the former {@code MobEffectInstance(REGENERATION, 60, 0)} that was
+     * re-applied every 10 ticks — which never healed a single point. Vanilla only runs a
+     * regeneration tick when {@code duration % 50 == 0}, and it checks that BEFORE decrementing
+     * the duration ({@code MobEffectInstance.tick}). A 60-tick effect refreshed every 10 ticks is
+     * therefore only ever seen at durations 60…51: the 50 mark is overwritten one tick before it
+     * would have fired. Healing directly is both correct and independent of vanilla's internals.
+     */
+    private static void healAtStation(Axolotl axolotl) {
+        if (axolotl.getHealth() < axolotl.getMaxHealth()) {
+            axolotl.heal(STATION_HEAL_PER_PASS);
+        }
+    }
+
     private void tickAxolotl(Axolotl axolotl) {
         AxolotlGuardianConfig config = getConfig();
 
@@ -839,7 +862,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
             if (atBase) {
                 axolotl.getNavigation().resetMaxVisitedNodesMultiplier();
                 // Heal at base; resume duty once safely recovered
-                axolotl.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                healAtStation(axolotl);
                 AbstractAxolotlBowlBlockEntity fleeingBowl = getBowlEntity(axolotl, bowlPos);
                 if (fleeingBowl instanceof AxolotlFeedingStationBlockEntity fleeingStation) {
                     transferLootToStation(axolotl, fleeingStation);
@@ -914,9 +937,8 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 } else if (idleDistSq <= 16.0) {
                     // Near home and out of combat: gently regenerate up to the recovery target so
                     // an axolotl that returned for any reason tops back up to (near) full health.
-                    // Short, refreshed, particle-free effect mirrors the emergency flee-heal.
                     if (healthPct < (float) config.getHealRecoveryTarget()) {
-                        axolotl.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                        healAtStation(axolotl);
                     }
                     AbstractAxolotlBowlBlockEntity idleBowl = getBowlEntity(axolotl, bowlPos);
                     if (idleBowl instanceof AxolotlFeedingStationBlockEntity idleStation) {

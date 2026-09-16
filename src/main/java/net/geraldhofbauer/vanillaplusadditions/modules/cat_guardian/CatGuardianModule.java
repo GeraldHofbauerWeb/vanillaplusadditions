@@ -798,10 +798,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         if (!cat.onGround() || !cat.horizontalCollision || cat.isInWater()) {
             return;
         }
+        // RETURNING/FLEEING stay set while a cat rests at its station — only treat them as
+        // "wants to move" while the trip is still running, so a parked cat is never bounced.
         boolean wantsToMove = cat.getTarget() != null
-                || cat.getData(CAT_RETURNING.get())
-                || cat.getData(CAT_FLEEING.get())
-                || !cat.getNavigation().isDone();
+                || !cat.getNavigation().isDone()
+                || ((cat.getData(CAT_RETURNING.get()) || cat.getData(CAT_FLEEING.get()))
+                    && !isAtStation(cat));
         if (!wantsToMove) {
             return;
         }
@@ -863,6 +865,16 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         cat.setDeltaMovement(towardBowl.x, vm.y, towardBowl.z);
     }
 
+    /** True if the cat has arrived at its station (~4 blocks); false without a bowl. */
+    private static boolean isAtStation(Cat cat) {
+        long bowlLong = cat.getData(CAT_BOWL_POS.get());
+        if (bowlLong == Long.MIN_VALUE) {
+            return false;
+        }
+        BlockPos bowl = BlockPos.of(bowlLong);
+        return cat.distanceToSqr(bowl.getX() + 0.5, bowl.getY(), bowl.getZ() + 0.5) <= 16.0;
+    }
+
     /**
      * Stuck detection (guardians with an active movement goal — combat target, returning or
      * fleeing): samples the position every 40 ticks; too little progress adds a strike. The
@@ -882,9 +894,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
         UUID uid = cat.getUUID();
+        // A guardian that has ARRIVED is stationary on purpose — a fleeing cat sits there while
+        // it heals. Counting that as "stuck" turned the escalation against it: a hop every 40
+        // ticks and a teleport every ~200 — the cat visibly jumping between two spots.
         boolean wantsToMove = cat.getTarget() != null
-                || cat.getData(CAT_RETURNING.get())
-                || cat.getData(CAT_FLEEING.get());
+                || ((cat.getData(CAT_RETURNING.get()) || cat.getData(CAT_FLEEING.get()))
+                    && !isAtStation(cat));
         if (!wantsToMove) {
             stuckSample.remove(uid);
             stuckStrikes.remove(uid);
@@ -996,6 +1011,23 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 || item == FlyingFishModule.COOKED_FLYING_FISH.get();
     }
 
+    /** Health a resting guardian regains per {@code tickCat} pass: the rate of Regeneration I. */
+    private static final float STATION_HEAL_PER_PASS = 10.0f / 50.0f;
+
+    /**
+     * Heals a guardian resting at its station, 10 ticks worth of Regeneration I.
+     *
+     * <p>Replaces a {@code MobEffectInstance(REGENERATION, 60, 0)} that was re-applied every 10
+     * ticks and never healed a single point: vanilla runs a regeneration tick only when
+     * {@code duration % 50 == 0} and checks that BEFORE decrementing, so the refreshed effect was
+     * only ever seen at durations 60…51 — the 50 mark was overwritten one tick too early.
+     */
+    private static void healAtStation(Cat cat) {
+        if (cat.getHealth() < cat.getMaxHealth()) {
+            cat.heal(STATION_HEAL_PER_PASS);
+        }
+    }
+
     private void tickCat(Cat cat) {
         CatGuardianConfig config = getConfig();
 
@@ -1057,7 +1089,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (atBase) {
                 cat.getNavigation().resetMaxVisitedNodesMultiplier();
                 // Heal at base; resume duty once safely recovered
-                cat.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 0, false, false));
+                healAtStation(cat);
                 AbstractCatBowlBlockEntity fleeingBowl = getBowlEntity(cat, bowlPos);
                 if (fleeingBowl instanceof CatFeedingStationBlockEntity fleeingStation) {
                     transferLootToStation(cat, fleeingStation);
@@ -1113,6 +1145,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             catReturningAge.remove(uid);
         }
 
+        // Resting at the station heals — the ONLY way a guardian recovers hit points (mobs have
+        // no natural regeneration). Without it a cat stayed damaged forever and eventually sat
+        // below the flee threshold for good, passive while mobs walked past.
+        if (cat.getTarget() == null
+                && cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5) <= 16.0) {
+            healAtStation(cat);
+        }
+
         // Decrement fed ticks regardless of other state
         int fedTicks = cat.getData(CAT_FED_TICKS.get());
         if (fedTicks > 0) {
@@ -1140,23 +1180,19 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                     }
                 }
             }
-//            logCatHungerReturn(cat, bowlPos, "fed_ticks_active", null, fedTicks);
             return;
         }
 
         // Try to eat when unfed
         AbstractCatBowlBlockEntity bowl = getBowlEntity(cat, bowlPos);
         if (bowl == null) {
-//            logCatHungerReturn(cat, bowlPos, "bowl_missing", null, fedTicks);
             return;
         }
         if (!bowl.hasFish()) {
-//            logCatHungerReturn(cat, bowlPos, "bowl_empty", bowl, fedTicks);
             return;
         }
 
         double distSq = cat.distanceToSqr(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5);
-//        logCatHungerState(cat, bowlPos, bowl, "pre_eat_check", distSq, fedTicks);
 
         if (cat.isOrderedToSit()) {
             // A hungry cat must be able to get up again even if it was previously sitting at the station.
@@ -1166,7 +1202,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             if (cat.getNavigation().isDone()) {
                 cat.getNavigation().moveTo(bowlPos.getX() + 0.5, bowlPos.getY(), bowlPos.getZ() + 0.5, 0.8);
             }
-//            logCatHungerReturn(cat, bowlPos, "moving_toward_station", bowl, fedTicks);
         } else if (distSq <= 4.0) {
             var fish = bowl.takeFish();
             if (!fish.isEmpty()) {
@@ -1176,36 +1211,8 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 if (bowl instanceof CatFeedingStationBlockEntity station) {
                     transferLootToStation(cat, station);
                 }
-//                logCatHungerState(cat, bowlPos, bowl, "ate_fish", distSq, fedTicks);
             }
         }
-    }
-
-    private void logCatHungerReturn(Cat cat, BlockPos bowlPos, String reason,
-                                    AbstractCatBowlBlockEntity bowl, Integer fedTicks) {
-        if (!getConfig().shouldDebugLog()) {
-            return;
-        }
-        String targetName = cat.getTarget() != null ? cat.getTarget().getType().toShortString() : "none";
-        getLogger().debug(
-                "[cat_guardian] hunger return reason={} cat={} bowl={} fedTicks={} orderedToSit={} returning={} hasFish={} target={}",
-                reason, cat.getUUID(), bowlPos, fedTicks, cat.isOrderedToSit(),
-                cat.getData(CAT_RETURNING.get()), bowl != null && bowl.hasFish(), targetName);
-    }
-
-    private void logCatHungerState(Cat cat, BlockPos bowlPos, AbstractCatBowlBlockEntity bowl,
-                                   String state, Double distSq, Integer fedTicks) {
-        if (!getConfig().shouldDebugLog()) {
-            return;
-        }
-        String distText = distSq == null ? "n/a" : String.format(Locale.ROOT, "%.3f", distSq);
-        String targetName = cat.getTarget() != null ? cat.getTarget().getType().toShortString() : "none";
-        getLogger().debug(
-                "[cat_guardian] hunger state={} cat={} bowl={} distSq={} fedTicks={} orderedToSit={} "
-                        + "returning={} hasFish={} target={} navDone={}",
-                state, cat.getUUID(), bowlPos, distText, fedTicks, cat.isOrderedToSit(),
-                cat.getData(CAT_RETURNING.get()), bowl != null && bowl.hasFish(),
-                targetName, cat.getNavigation().isDone());
     }
 
     private void transferLootToStation(Cat cat, CatFeedingStationBlockEntity station) {
