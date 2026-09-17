@@ -114,6 +114,9 @@ Makes normally-unstackable items stackable and raises stack sizes for configured
 #### 🏹 Tipped Arrows from Potions
 Craft tipped arrows with a **normal potion** instead of a lingering potion — no more Dragon's Breath grind. Lingering potions still work too; only the recipe's center ingredient is widened, no new tipped arrow types are added.
 
+#### 🪣 Dispenser Bucket Guard
+A dispenser that can't use its bucket **throws it on the floor** — an empty bucket with no fluid in front of it, a water bucket aimed at a solid block. One misfire and an automated water door has lost its bucket. This keeps the bucket in the dispenser instead and turns the failed attempt into a no-op (with vanilla's "dispenser failed" click). Successful pickups and placements are byte-for-byte unchanged, and anything that isn't a bucket is untouched. See [docs/dispenser_bucket_guard.md](docs/dispenser_bucket_guard.md).
+
 #### 🧰 Custom Crafting Recipes
 Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator) and a reworked Netherite Ingot recipe that trades gold for Create's Powdered Obsidian (replaces the vanilla scrap+gold recipe; inert without Create). The place to add your own vanilla/cross-mod recipes without a datapack.
 
@@ -289,6 +292,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Chunk Reset Command](docs/chunk_reset.md)
 - [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
 - [Copycat Pathfinding](docs/copycat_pathfinding.md)
+- [Dispenser Bucket Guard](docs/dispenser_bucket_guard.md)
 - [End Oxygen](docs/end_oxygen.md)
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Extensions](docs/overpacked_extensions.md)

@@ -43,6 +43,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLo
 import net.geraldhofbauer.vanillaplusadditions.modules.copycat_pathfinding.CopycatPathfindingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.dispenser_bucket_guard.DispenserBucketGuardModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.minecart_chunk_loading.MinecartChunkLoadingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.train_chunk_loading.TrainChunkLoadingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stationary_chunk_loader.StationaryChunkLoaderModule;
@@ -175,6 +176,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new CopycatPathfindingModule());
+        moduleManager.registerModule(new DispenserBucketGuardModule());
         moduleManager.registerModule(new MobCartLoaderModule());
         moduleManager.registerModule(new MobSpawnOverlayModule());
         moduleManager.registerModule(new PetPotionsModule());
