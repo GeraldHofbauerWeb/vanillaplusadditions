@@ -4,6 +4,40 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.79] - 2026-09-17
+
+### Added
+- **Neues Modul `dispenser_bucket_guard`: Dispenser werfen ihren Kuebel nicht mehr weg.** Scheitert
+  die eigentliche Kuebel-Aktion, faellt Vanilla in beiden Richtungen auf denselben Fallback zurueck
+  — `DefaultDispenseItemBehavior`, also "Item als Entity ausspucken". Ein leerer Kuebel vor einem
+  Block ohne Fluessigkeit fliegt raus, ein Wassereimer vor einem nicht ersetzbaren Block ebenso.
+  Fuer eine automatische Wasserschleuse ist das toedlich: ein Impuls zu viel und der Kuebel liegt
+  am Meeresgrund, die Maschine steht. Mit dem Modul bleibt der Kuebel im Dispenser und der
+  Fehlversuch wird zum Nichts-Tun, mit Vanillas "Dispenser fehlgeschlagen"-Klicken als Rueckmeldung.
+  - **Kein Mixin, kein Access Transformer.** `DispenserBlock.DISPENSER_REGISTRY` ist public. Beim
+    Common Setup — auf den Haupt-Thread eingereiht, weil die Registry eine simple Map aus der
+    Klasseninitialisierung ist — wird jeder Eintrag mit `BucketItem` oder `SolidBucketItem` in
+    einen `BucketDispenseGuard` gewickelt. Umwickeln statt Ersetzen erhaelt, was eine andere Mod
+    fuer dasselbe Item registriert hat; bereits gewickelte Eintraege werden uebersprungen.
+  - **Der Fehlschlag wird lesend vorhergesagt.** Vanillas eigene Pruefungen taugen nicht als
+    Vorschau: `pickupBlock` leert den Block als Nebeneffekt des Erfolgs, `emptyContents` platziert
+    die Fluessigkeit. Der Guard spiegelt beide ohne Weltzugriff — fuer den leeren Kuebel eine
+    Fluessigkeitsquelle (bzw. Pulverschnee, der als einziger Block immer hergibt), fuer den vollen
+    die Platzierungspruefung vom Kopf des `BucketItem.emptyContents`. `Items.BUCKET` ist selbst ein
+    `BucketItem` mit `Fluids.EMPTY`, und `Fluids.EMPTY` ist kein `FlowingFluid` — diese eine
+    Abfrage trennt Aufsammeln von Platzieren, auch fuer Kuebel fremder Mods.
+  - **Alles Unbekannte wird durchgereicht.** Was der Guard nicht modellieren kann, meldet "wuerde
+    klappen" und landet unveraendert beim urspruenglichen Verhalten. Er kann ein Auswerfen also
+    nur verhindern, nie verursachen.
+  - **A/B auf einem Wegwerf-Server gemessen**, sechs Faelle, gleiches Befehlsskript einmal ohne und
+    einmal mit dem Modul: die drei auswerfenden Faelle kippen auf "bleibt drin", die zwei
+    funktionierenden liefern einen identischen Dispenser-Inhalt (`water_bucket` nach dem
+    Aufsammeln, `bucket` nach dem Platzieren), und ein Schneeball verlaesst den Dispenser weiterhin.
+  - Neuer Config-Schalter `play_fail_sound` (Standard `true`): auf `false` bleibt ein wiederholt
+    ausgeloester Dispenser vollkommen still. Die Enabled-Pruefung sitzt im Dispense-Vorgang, das
+    Modul laesst sich also im laufenden Betrieb umschalten.
+  - Doku: `docs/dispenser_bucket_guard.md`.
+
 ## [1.0.0-beta.78] - 2026-09-16
 
 ### Fixed
