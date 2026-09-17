@@ -4,6 +4,32 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.80] - 2026-09-17
+
+### Fixed
+- **Stationen verloren stillschweigend ihre Waechter — angezeigt wurde z.B. "Associated Cats: 1/8",
+  obwohl zwei Katzen davorstanden, und die zweite leuchtete nicht mehr auf.** Die Zuordnung liegt
+  doppelt: als UUID-Liste im BlockEntity der Station und als `CAT_BOWL_POS` an der Katze.
+  `pruneStaleAssociations()` raeumte die Stationsseite alle 200 Ticks auf und benutzte dafuer
+  `ServerLevel.getEntity(UUID)` — das findet aber **nur geladene** Entities. Eine Katze in einem
+  nicht geladenen Chunk ist davon nicht zu unterscheiden von einer, die es nicht mehr gibt, und
+  wurde deshalb dauerhaft aus der Liste geworfen. Ihr eigener Zeiger blieb stehen: die Katze
+  bewachte weiter, zaehlte aber nicht mehr mit und leuchtete nicht mehr, weil beide Anzeigen aus
+  derselben Liste kommen.
+  - **Geloescht wird nur noch bei echtem Beweis.** Eine Katze, die wir nicht sehen koennen, bleibt
+    unangetastet; entfernt wird nur, wer geladen und dabei tot ist oder auf eine andere Station
+    zeigt.
+  - **Die Gegenrichtung heilt jetzt auch.** `reclaimOwnCats()` laeuft im selben Stationstick und
+    holt Katzen in Reichweite zurueck in die Liste, deren eigener Zeiger auf diese Station zeigt.
+    Bestehende kaputte Zuordnungen reparieren sich dadurch von selbst — niemand muss neu zuordnen.
+  - **Ist die Station voll**, wird stattdessen der Zeiger der Katze geloescht. Eine Zuordnung, die
+    eine Seite verweigert, ist keine; die Katze darf sich danach woanders binden.
+  - **Dasselbe Muster steckte im `axolotl_guardian`** und ist dort mitrepariert.
+  - Nachgewiesen mit einem Wegwerf-Server, gleiches Skript gegen den Release-Stand und gegen den
+    Fix. Ausgangslage: Liste mit A (geladen, zeigt hierher), C (geladen, zeigt woanders hin),
+    D (nicht geladen), dazu B (geladen, zeigt hierher, fehlt in der Liste). Vorher blieb `[A]`
+    uebrig, nachher `[A, D, B]`.
+
 ## [1.0.0-beta.79] - 2026-09-17
 
 ### Added
