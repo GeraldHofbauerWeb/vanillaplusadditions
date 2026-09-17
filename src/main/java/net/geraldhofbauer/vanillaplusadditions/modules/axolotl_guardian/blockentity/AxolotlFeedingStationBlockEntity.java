@@ -93,6 +93,7 @@ public class AxolotlFeedingStationBlockEntity extends AbstractAxolotlBowlBlockEn
             return;
         }
         station.pruneStaleAssociations();
+        station.reclaimOwnAxolotls();
     }
 
     /**

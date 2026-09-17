@@ -93,6 +93,7 @@ public class CatFeedingStationBlockEntity extends AbstractCatBowlBlockEntity imp
             return;
         }
         station.pruneStaleAssociations();
+        station.reclaimOwnCats();
     }
 
     private boolean isValidFishType(ItemStack stack) {

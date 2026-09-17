@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,7 +77,15 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
     }
 
     /**
-     * Removes stale associations (missing/dead cats or cats bound to another bowl/station).
+     * Removes stale associations — but only on positive evidence.
+     * <p>
+     * {@code ServerLevel.getEntity(UUID)} finds loaded entities only, so a cat in an unloaded
+     * chunk is indistinguishable from a cat that no longer exists. Treating that as "gone" used
+     * to delete the association permanently while the cat itself kept pointing at this bowl, and
+     * nothing ever restored it: the station silently lost guardians, showing e.g. 1/8 with two
+     * cats sitting on it. A cat we cannot see is therefore left alone; only a cat we can actually
+     * inspect — and that is dead or bound elsewhere — is dropped. The reverse direction is
+     * repaired by {@code CatGuardianModule.reconcileBowlAssociation}.
      */
     public void pruneStaleAssociations() {
         if (!(level instanceof ServerLevel serverLevel) || associatedCats.isEmpty()) {
@@ -88,6 +97,9 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
         while (iter.hasNext()) {
             UUID catUUID = iter.next();
             Entity entity = serverLevel.getEntity(catUUID);
+            if (entity == null) {
+                continue; // not loaded right now — no evidence either way, keep the association
+            }
             if (!(entity instanceof Cat cat)
                     || !cat.isAlive()
                     || cat.getData(CatGuardianModule.CAT_BOWL_POS.get()) != thisBowl) {
@@ -98,6 +110,38 @@ public abstract class AbstractCatBowlBlockEntity extends BlockEntity {
         if (changed) {
             setChanged();
             syncToClient();
+        }
+    }
+
+    /**
+     * Re-adds cats in range that still point at this bowl but are missing from its list.
+     * <p>
+     * Counterpart to {@link #pruneStaleAssociations()}, which can only ever remove entries. The
+     * association is stored twice — as a UUID list here and as {@code CAT_BOWL_POS} on the cat —
+     * and only this side used to be repaired. A cat that was unloaded during a prune was dropped
+     * for good while it went on pointing at this bowl: it kept guarding, but the station no
+     * longer counted it and it no longer glowed. The cat's own pointer is the authority.
+     * <p>
+     * If the station is meanwhile full, the cat's pointer is cleared instead, because an
+     * association one side refuses is not an association; the cat is then free to bind elsewhere.
+     */
+    public void reclaimOwnCats() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        long thisBowl = worldPosition.asLong();
+        double range = CatGuardianModule.getGuardRadius() + 16.0;
+        AABB box = new AABB(worldPosition).inflate(range);
+        for (Cat cat : serverLevel.getEntitiesOfClass(Cat.class, box,
+                c -> c.isAlive() && c.getData(CatGuardianModule.CAT_BOWL_POS.get()) == thisBowl)) {
+            if (associatedCats.contains(cat.getUUID())) {
+                continue;
+            }
+            if (associatedCats.size() < CatGuardianModule.getMaxCatsPerStation()) {
+                addCat(cat.getUUID());
+            } else {
+                cat.setData(CatGuardianModule.CAT_BOWL_POS.get(), Long.MIN_VALUE);
+            }
         }
     }
 

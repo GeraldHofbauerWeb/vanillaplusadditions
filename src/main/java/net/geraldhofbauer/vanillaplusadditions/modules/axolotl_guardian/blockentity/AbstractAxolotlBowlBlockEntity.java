@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,7 +103,13 @@ public abstract class AbstractAxolotlBowlBlockEntity extends BlockEntity {
     }
 
     /**
-     * Removes stale associations (missing/dead axolotls or axolotls bound to another bowl/station).
+     * Removes stale associations — but only on positive evidence.
+     * <p>
+     * {@code ServerLevel.getEntity(UUID)} finds loaded entities only, so an axolotl in an
+     * unloaded chunk is indistinguishable from one that no longer exists. Treating that as "gone"
+     * deleted the association permanently while the axolotl kept pointing at this bowl, and
+     * nothing ever restored it. An axolotl we cannot see is therefore left alone; the reverse
+     * direction is repaired by {@code AxolotlGuardianModule.reconcileBowlAssociation}.
      */
     public void pruneStaleAssociations() {
         if (!(level instanceof ServerLevel serverLevel) || associatedAxolotls.isEmpty()) {
@@ -114,6 +121,9 @@ public abstract class AbstractAxolotlBowlBlockEntity extends BlockEntity {
         while (iter.hasNext()) {
             UUID axolotlUUID = iter.next();
             Entity entity = serverLevel.getEntity(axolotlUUID);
+            if (entity == null) {
+                continue; // not loaded right now — no evidence either way, keep the association
+            }
             if (!(entity instanceof Axolotl axolotl)
                     || !axolotl.isAlive()
                     || axolotl.getData(AxolotlGuardianModule.AXOLOTL_BOWL_POS.get()) != thisBowl) {
@@ -124,6 +134,34 @@ public abstract class AbstractAxolotlBowlBlockEntity extends BlockEntity {
         if (changed) {
             setChanged();
             syncToClient();
+        }
+    }
+
+    /**
+     * Re-adds axolotls in range that still point at this bowl but are missing from its list.
+     * Counterpart to {@link #pruneStaleAssociations()}, which can only ever remove entries — an
+     * axolotl unloaded during a prune used to be dropped for good while it went on pointing here.
+     * If the station is meanwhile full, the axolotl's pointer is cleared instead, so both sides
+     * always agree.
+     */
+    public void reclaimOwnAxolotls() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        long thisBowl = worldPosition.asLong();
+        double range = AxolotlGuardianModule.getGuardRadius() + 16.0;
+        AABB box = new AABB(worldPosition).inflate(range);
+        for (Axolotl axolotl : serverLevel.getEntitiesOfClass(Axolotl.class, box,
+                a -> a.isAlive()
+                        && a.getData(AxolotlGuardianModule.AXOLOTL_BOWL_POS.get()) == thisBowl)) {
+            if (associatedAxolotls.contains(axolotl.getUUID())) {
+                continue;
+            }
+            if (associatedAxolotls.size() < AxolotlGuardianModule.getMaxAxolotlsPerStation()) {
+                addAxolotl(axolotl.getUUID());
+            } else {
+                axolotl.setData(AxolotlGuardianModule.AXOLOTL_BOWL_POS.get(), Long.MIN_VALUE);
+            }
         }
     }
 
