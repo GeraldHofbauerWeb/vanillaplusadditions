@@ -10,6 +10,8 @@ import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.BiteD
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.WolfBiteDirectionPacket;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
@@ -221,7 +223,41 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
             return;
         }
         float yaw = (float) (Mth.atan2(dz, dx) * (180.0D / Math.PI)) - 90.0F;
-        PacketDistributor.sendToPlayersTrackingEntity(wolf, new WolfBiteDirectionPacket(wolf.getId(), yaw));
+        sendBiteDirection(wolf, yaw);
+    }
+
+    /**
+     * Sends the bite direction to every nearby player <b>whose connection actually negotiated the
+     * channel</b>.
+     * <p>
+     * The channel is registered {@code optional()} so a client without it is not kicked during the
+     * handshake — but that only covers the handshake. {@code NetworkRegistry.checkPacket} still
+     * refuses the send itself, and since this runs inside {@code Wolf.aiStep}, the resulting
+     * {@code UnsupportedOperationException} is a ticking-entity crash that takes the whole server
+     * down. {@code PacketDistributor.sendToPlayersTrackingEntity} sends to every tracker
+     * unconditionally, so one player on an older build was enough to crash-loop the server
+     * (games2, 2026-09-18).
+     * <p>
+     * Tracking is approximated by the entity type's own client tracking range instead of reaching
+     * into {@code ChunkMap}: for a cosmetic head turn, a player just outside the real tracking
+     * distance costs one dropped packet, never a wrong animation.
+     *
+     * @param wolf the biting wolf
+     * @param yaw  the direction to snap the head towards
+     */
+    private static void sendBiteDirection(Wolf wolf, float yaw) {
+        if (!(wolf.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        double range = wolf.getType().clientTrackingRange() * 16.0;
+        double rangeSq = range * range;
+        WolfBiteDirectionPacket packet = new WolfBiteDirectionPacket(wolf.getId(), yaw);
+        for (ServerPlayer player : serverLevel.players()) {
+            if (player.distanceToSqr(wolf) <= rangeSq
+                    && player.connection.hasChannel(WolfBiteDirectionPacket.TYPE)) {
+                PacketDistributor.sendToPlayer(player, packet);
+            }
+        }
     }
 
     /**
