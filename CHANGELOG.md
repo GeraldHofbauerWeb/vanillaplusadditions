@@ -4,6 +4,108 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.85] - 2026-09-18
+
+### Fixed
+- **Beide Kompasse zeigten an Bord eines Schiffs um die Drehung des Schiffs verkehrt** — bei einem
+  rueckwaerts liegenden Schiff also eine halbe Umdrehung. Ursache war eine Zeile in unserer eigenen
+  Sublevel-Korrektur: sie hat das Kompassziel auch dann in den Schiffsraum gerechnet, wenn der
+  Betrachter gar nicht im Plot steht.
+  - Sable schiebt eine Entitaet, die im Plot steht, mitsamt Position **und** Gierung in den
+    Plot-Raum. Wer dagegen auf einem Rumpf steht, der an Weltkoordinaten gezeichnet wird, behaelt
+    Weltkoordinaten und Weltgierung. Die Peilung im Schiffsraum mit einer Gierung im Weltraum zu
+    verrechnen, ergibt einen Fehler in Hoehe der Schiffsdrehung.
+  - Wir hatten das absichtlich eingebaut: `getTrackingOrVehicleSubLevel` sollte auch den Spieler
+    erfassen, der auf einem Sitz mitfaehrt. Genau der steht aber ausserhalb des Plots — die
+    vermeintliche Verbesserung gegenueber Sable war der Fehler. Umgerechnet wird jetzt nur noch
+    fuer einen Betrachter, der wirklich im Plot steht.
+  - Den Lodestone-Kompass hat es erst ab beta.83 getroffen: davor lief er nie durch diese Funktion,
+    weil Quark sie ersetzt: erst unser Quark-Mixin aus beta.83 hat ihn dort hineingeleitet.
+
+## [1.0.0-beta.84] - 2026-09-18
+
+### Fixed
+- **Die Nadel des Weltkompasses zeigte eine halbe Umdrehung verkehrt**, also nach Sueden statt nach
+  Norden. Die Winkelrechnung war von Hand hergeleitet: fuer ein unendlich weit noerdliches Ziel
+  kuerzt sich Vanillas `0.5 - (Gierung - 0.25 - Peilung)` auf `0.5 - Gierung` zusammen, und genau das
+  stand im Code. Nachgerechnet stimmte es, im Spiel nicht — der Fehler liess sich analytisch nicht
+  finden.
+  - Die Handrechnung ist deshalb ersatzlos raus. Der Weltkompass reicht jetzt **Vanillas eigener
+    `CompassItemPropertyFunction`** ein Ziel vier Millionen Bloecke noerdlich des Betrachters. Damit
+    rechnet exakt der Code, der auch einen Lodestone-Kompass treibt — er kann also gar nicht mehr
+    anders zeigen als der Kompass daneben im Hotbar.
+  - Vier Millionen Bloecke sind von jedem Punkt der Welt aus Norden auf unter ein Zehntelgrad genau,
+    ein Bruchteil eines der 32 Frames, und bleiben klar innerhalb der Weltgrenze.
+  - Nebeneffekt: die Sublevel-Korrektur aus Teil B greift jetzt auch fuer den Weltkompass, weil das
+    Ziel den normalen Vanilla-Pfad nimmt. Nether und End funktionieren weiterhin, weil Vanilla nur
+    Ziele aus einer *anderen* Dimension verwirft.
+
+## [1.0.0-beta.83] - 2026-09-18
+
+### Fixed
+- **Die Kompassnadel zeigte auf die nordwestliche Ecke des Lodestones statt auf dessen Mitte.**
+  Schuld ist Quarks Modul *Compasses Work Everywhere*: es ersetzt beim Client-Start die komplette
+  Nadelfunktion des Kompasses (`ItemProperties.register(Items.COMPASS, "angle", ...)`) und zielt
+  darin auf die rohen Blockkoordinaten statt auf `Vec3.atCenterOf` — und die rohe Blockposition ist
+  per Definition die Ecke mit dem kleinsten X und Z, also Westen und Norden. Einen halben Block
+  daneben, in beiden Achsen.
+  - **Nebenwirkung, die schwerer wiegt als der halbe Block:** weil die Karte der Item-Properties
+    pro Item gefuehrt wird, erreicht ein normaler Kompass ab diesem Moment `CompassItemPropertyFunction`
+    nie wieder — weder Vanilla noch Sables Sublevel-Drehung noch unsere Korrektur aus beta.82. An
+    Bord eines Luftschiffs zeigte die Nadel deshalb weiter auf "Schiffsnorden".
+  - Quarks Rahmen-Drehung laesst ausserdem die acht Drehstufen eines Item-Frames weg
+    (`180 + direction.toYRot()`, ohne `getRotation() * 45`), ein gedrehter Rahmen zeigte also um
+    denselben Betrag verdreht.
+  - Alle drei Punkte werden jetzt an Ort und Stelle korrigiert
+    (`mixin/compass_overhaul/QuarkCompassAngleMixin`, Ziel als String, ohne Compile-Bezug auf Quark).
+    Quarks Nether- und End-Kompass bleibt dabei erhalten. Abschaltbar ueber
+    `[modules.compass_overhaul] fix_quark_compass = false`.
+
+## [1.0.0-beta.82] - 2026-09-18
+
+### Added
+- **Modul `compass_overhaul` — Weltkompass.** Ein zweiter Kompass, der immer nach Norden zeigt,
+  statt auf ein Ziel: auch im Nether und im End, wo ein normaler Kompass nur kreiselt, und auch an
+  Bord eines Aeronautics-Luftschiffs, das sich unter einem wegdreht. Damit taugt er in einem
+  (Glas-)Item-Frame als fester Richtungsanzeiger. Rezept: Kompass mittig, drei Enderaugen links,
+  rechts und unten, oben ein Amethystsplitter.
+  - Die Nadelmathematik kuerzt sich auf `0.5 - Weltgierung` zusammen — kein Ziel, keine
+    Dimensionspruefung, deshalb funktioniert er ueberall.
+  - Item-Frames brauchen keine Sonderbehandlung: `ItemFrame.getVisualRotationYInDegrees()` liefert
+    genau die Drehung, die der Renderer anschliessend wieder herausrechnet. Quarks Glas-Rahmen
+    erben das unveraendert.
+  - Die 32 Frames sind die Vanilla-Frames, nur umgefaerbt — Nadel in Amethyst, Zifferblatt in
+    Enderperlen-Tuerkis, Nadelfuss in Ender-Auge-Gruen, Innenrand in einem tieferen Gruen. Das
+    Gehaeuse bleibt Pixel fuer Pixel unangetastet. Erzeugt von
+    `scripts/gen_world_compass_textures.py`.
+- **Modul `glider_lightning_guard`.** Ein Blitz kostet den Paragleiter des Gliders-Mods jetzt
+  Haltbarkeit (ein Viertel der Leiste), statt ihn zu zerstoeren. Vorher setzte der Mod ohne
+  Kupfer-Upgrade das `broken`-Flag: Icon verkohlt, Gleiten gesperrt, und zurueck ging es nur ueber
+  einen Amboss mit dem Reinforced Paper der exakt passenden Stufe. Der Blitz selbst — Schaden,
+  Feuer, Schreck — bleibt unangetastet. Kein Compile-Bezug zum Gliders-Mod, Curios-Slots werden
+  mitdurchsucht.
+
+### Fixed
+- **Der Lodestone-Kompass verlor seine Bindung, typischerweise nach einem Waystones-Teleport.**
+  Waystones ist unschuldig: weder dort noch in `waystonessable` oder `sable` kommt `lodestone`,
+  `PoiManager` oder `LODESTONE_TRACKER` auch nur vor. Der Ausloeser ist Vanillas
+  `LodestoneTracker.tick`, das jeden Tick den POI-Index befragt, **ohne zu pruefen, ob der Chunk
+  ueberhaupt geladen ist**. `PoiManager.exists` macht aus "keine Daten" per `orElse(false)` ein
+  "kein Lodestone da", und `SectionStorage` legt eine fehlende oder unlesbare POI-Spalte dauerhaft
+  als leer im Cache ab — eine Verdraengung gibt es in 1.21.1 nicht. Damit sind die Koordinaten weg,
+  waehrend das Item weiter glaenzt und weiter "Lodestone Compass" heisst.
+  - Zeigt das Ziel in eine **andere Dimension**, prueft Vanilla gar nicht erst. Die Bindung
+    ueberlebt also, bis man zurueckkommt, und stirbt im selben Moment — was sich wie ein
+    Teleport-Fehler anfuehlt.
+  - Die Bindung wird jetzt am Block entschieden statt am POI-Index: Chunk nicht geladen oder
+    Lodestone steht noch → bleibt. Erst wenn der Chunk geladen ist und dort nachweislich etwas
+    anderes steht, darf sie fallen. Abbauen loest weiterhin sofort.
+- **Die Kompassnadel zitterte an Bord eines Luftschiffs.** Sable dreht sie bereits mit, rechnet
+  dabei aber mit der Pose vom *letzten* Tick und findet das Schiff nur ueber die Chunk-Position des
+  Betrachters — wer auf einem Sitz mitfaehrt, faellt durch. Jetzt mit interpolierter
+  `renderPose(partialTick)` und ueber das getrackte Sublevel. Notausstieg bei Mixin-Konflikten:
+  `[modules.compass_overhaul] fix_sublevel_needle = false`.
+
 ## [1.0.0-beta.81] - 2026-09-18
 
 ### Fixed
