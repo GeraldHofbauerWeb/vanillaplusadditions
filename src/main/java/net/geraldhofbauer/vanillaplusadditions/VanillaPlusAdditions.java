@@ -20,7 +20,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.waystone_amethyst_repair.
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
-import net.geraldhofbauer.vanillaplusadditions.modules.glider_lightning_guard.GliderLightningGuardModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.glider_water_repair.GliderWaterRepairModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_endermen.HostileEndermenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
@@ -179,7 +179,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new CopycatPathfindingModule());
         moduleManager.registerModule(new CompassOverhaulModule());
-        moduleManager.registerModule(new GliderLightningGuardModule());
+        moduleManager.registerModule(new GliderWaterRepairModule());
         moduleManager.registerModule(new DispenserBucketGuardModule());
         moduleManager.registerModule(new MobCartLoaderModule());
         moduleManager.registerModule(new MobSpawnOverlayModule());

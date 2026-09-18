@@ -147,8 +147,8 @@ Enhances food items with additional potion effects and thirst restoration.
 - **Tough As Nails** support (optional): thirst restoration and heating/cooling tooltips.
 - Ships with extensive defaults for Vanilla, Create and Tough As Nails items.
 
-#### 🪂 Glider Lightning Guard
-Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you. Without the copper upgrade that **destroys the paraglider**: the icon turns into the charred `damaged_glider` sprite, gliding is off, and the only way back is an anvil with the Reinforced Paper of that exact tier — which nobody carries. This charges the strike to the durability bar instead (a quarter of it by default), always stopping one point short of breaking. The bolt itself — damage, fire, fright — is untouched. See [docs/glider_lightning_guard.md](docs/glider_lightning_guard.md).
+#### 🪂 Glider Water Repair
+Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you, which without the copper upgrade **wrecks the paraglider** — and that part stays exactly as the mod intends. What changes is the way back: the only cure the mod offers is an anvil plus the Reinforced Paper of that glider's exact tier (for an iron one: 5 leather + 4 paper + 8 iron ingots), while the broken glider wears a charred sprite and looks for all the world like it is on fire. So here, dunking it works — a broken glider lying in water becomes usable again, with a hiss and a puff of steam. Only the broken flag clears; the durability the strike cost stays gone, so the anvil repair keeps its purpose. See [docs/glider_water_repair.md](docs/glider_water_repair.md).
 
 #### 🌙 Idle Gamerule Pause
 Pauses day / weather / season cycles while the server is empty and resumes them on the first join — the world doesn't drift while nobody is online.
@@ -234,7 +234,7 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `axolotl_guardian` | Sable *(optional)* | Axolotl bowl / feeding station use plain block variants |
 | `compass_overhaul` | Sable *(optional)* | Lodestone guard and World Compass work fully; only the sub-level needle correction is skipped (there are no ships without Sable) |
 | `block_glow` | Sable *(optional)* | No difference — the integration only additionally highlights blocks *inside* Sable sub-levels (ships), which don't exist without Sable |
-| `glider_lightning_guard` | [Gliders](https://modrinth.com/mod/gliders) + Curios *(optional)* | Module skips initialization without Gliders; without Curios only a glider in the chest armor slot is protected |
+| `glider_water_repair` | [Gliders](https://modrinth.com/mod/gliders) | Module skips initialization entirely (it frees that mod's broken paraglider) |
 | `food_effects` | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) *(optional)* | Thirst-related food effects are skipped |
 | `stackables` | Tough As Nails *(optional)* | Only vanilla items are made stackable |
 | `bluemap_signs` | [BlueMap](https://modrinth.com/plugin/bluemap) (server) | Module stays inert (`[bm]` signs do nothing) |
@@ -303,7 +303,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Copycat Pathfinding](docs/copycat_pathfinding.md)
 - [Dispenser Bucket Guard](docs/dispenser_bucket_guard.md)
 - [End Oxygen](docs/end_oxygen.md)
-- [Glider Lightning Guard](docs/glider_lightning_guard.md)
+- [Glider Water Repair](docs/glider_water_repair.md)
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Extensions](docs/overpacked_extensions.md)
 - [Texture Kill](docs/texture_kill.md)

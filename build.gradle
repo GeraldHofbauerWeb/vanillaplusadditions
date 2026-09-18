@@ -432,7 +432,7 @@ def standaloneModules = [
     [ moduleId: 'food_effects', displayName: 'Vanilla Plus: Food Effects' ],
     [ moduleId: 'free_anvil_repair', displayName: 'Vanilla Plus: Free Anvil Repair',
       mixins: ['free_anvil_repair.AnvilMenuFreeRepairMixin'] ],
-    [ moduleId: 'glider_lightning_guard', displayName: 'Vanilla Plus: Glider Lightning Guard' ],
+    [ moduleId: 'glider_water_repair', displayName: 'Vanilla Plus: Glider Water Repair' ],
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_endermen', displayName: 'Vanilla Plus: Hostile Endermen',
       mixins: ['hostile_endermen.EndEndermanTeleportMixin',
