@@ -23,6 +23,9 @@ run
 runs
 run-data
 
+# stray log dir from Gradle run tasks (only ever holds a local latest.log)
+logs/
+
 # test server (ignore runtime files but keep configuration)
 test-server/world/
 test-server/logs/
