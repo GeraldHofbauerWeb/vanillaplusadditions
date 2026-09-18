@@ -1,0 +1,22 @@
+{
+  "replace": true,
+  "values": [
+    { "id": "immersiveengineering:connector_lv", "required": false },
+    { "id": "immersiveengineering:connector_lv_relay", "required": false },
+    { "id": "immersiveengineering:connector_mv", "required": false },
+    { "id": "immersiveengineering:connector_mv_relay", "required": false },
+    { "id": "immersiveengineering:connector_hv", "required": false },
+    { "id": "immersiveengineering:connector_hv_relay", "required": false },
+    { "id": "immersiveengineering:connector_bundled", "required": false },
+    { "id": "immersiveengineering:connector_structural", "required": false },
+    { "id": "immersiveengineering:connector_redstone", "required": false },
+    { "id": "immersiveengineering:connector_probe", "required": false },
+    { "id": "immersiveengineering:breaker_switch", "required": false },
+    { "id": "simulated:swivel_bearing", "required": false },
+    { "id": "simulated:swivel_bearing_link_block", "required": false },
+    { "id": "simulated:rope_winch", "required": false },
+    { "id": "simulated:rope_connector", "required": false },
+    { "id": "simulated:paired_docking_connector", "required": false },
+    { "id": "simulated:spring", "required": false }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "type": "minecraft:mul",
+  "argument1": 0.2,
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:add",
+      "argument1": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:add",
+          "argument1": {
+            "type": "lithostitched:shift",
+            "input": {
+              "type": "lithostitched:wrapped_marker"
+            },
+            "shift_x": 384.0,
+            "shift_y": 0.0,
+            "shift_z": 0.0
+          },
+          "argument2": {
+            "type": "lithostitched:shift",
+            "input": {
+              "type": "lithostitched:wrapped_marker"
+            },
+            "shift_x": -384.0,
+            "shift_y": 0.0,
+            "shift_z": 0.0
+          }
+        },
+        "argument2": {
+          "type": "lithostitched:shift",
+          "input": {
+            "type": "lithostitched:wrapped_marker"
+          },
+          "shift_x": 0.0,
+          "shift_y": 0.0,
+          "shift_z": 384.0
+        }
+      },
+      "argument2": {
+        "type": "lithostitched:shift",
+        "input": {
+          "type": "lithostitched:wrapped_marker"
+        },
+        "shift_x": 0.0,
+        "shift_y": 0.0,
+        "shift_z": -384.0
+      }
+    },
+    "argument2": {
+      "type": "lithostitched:wrapped_marker"
+    }
+  }
+}

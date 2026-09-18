@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "minecraft:mul",
+    "argument1": 4.0,
+    "argument2": {
+      "type": "minecraft:clamp",
+      "input": {
+        "type": "minecraft:mul",
+        "argument1": 0.000125,
+        "argument2": {
+          "type": "minecraft:add",
+          "argument1": "vpa_mountains:spawn_distance",
+          "argument2": -10000.0
+        }
+      },
+      "min": 0.0,
+      "max": 1.0
+    }
+  }
+}

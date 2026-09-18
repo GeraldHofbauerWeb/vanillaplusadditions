@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:clamp",
+  "input": {
+    "type": "lithostitched:axis",
+    "axis": "x"
+  },
+  "min": -1000000.0,
+  "max": 1000000.0
+}

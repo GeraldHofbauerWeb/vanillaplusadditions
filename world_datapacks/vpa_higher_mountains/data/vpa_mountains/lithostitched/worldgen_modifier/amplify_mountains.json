@@ -1,0 +1,5 @@
+{
+  "type": "lithostitched:wrap_density_function",
+  "target_function": "minecraft:overworld_large_biomes/offset",
+  "wrapper_function": "vpa_mountains:amplified_offset"
+}

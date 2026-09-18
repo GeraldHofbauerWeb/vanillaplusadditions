@@ -1,0 +1,16 @@
+{
+  "type": "lithostitched:sqrt",
+  "argument": {
+    "type": "minecraft:add",
+    "argument1": {
+      "type": "minecraft:mul",
+      "argument1": "vpa_mountains:pos_x",
+      "argument2": "vpa_mountains:pos_x"
+    },
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": "vpa_mountains:pos_z",
+      "argument2": "vpa_mountains:pos_z"
+    }
+  }
+}
