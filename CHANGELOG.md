@@ -4,6 +4,28 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.81] - 2026-09-18
+
+### Fixed
+- **Ein Spieler mit aelterem Client legte den ganzen Server lahm, sobald in seiner Naehe ein Wolf
+  zubiss.** Der Kanal `wolf_bite_direction` ist bewusst als `optional()` registriert, damit ein
+  Client ohne diesen Kanal beim Handshake nicht rausfliegt. Das deckt aber **nur den Handshake**:
+  beim Senden prueft `NetworkRegistry.checkPacket` erneut pro Verbindung und wirft
+  `UnsupportedOperationException`, wenn der Kanal dort nie ausgehandelt wurde.
+  `PacketDistributor.sendToPlayersTrackingEntity` schickt an **jeden** Tracker, ungeprueft — und
+  weil der Aufruf in `Wolf.aiStep` sitzt, war das ein Ticking-Entity-Crash, der den Server mitnimmt.
+  Auf games2 lief das am 18.09. als Absturzschleife: Server hoch, Spieler rein, drei Sekunden
+  spaeter wieder aus.
+  - **Gesendet wird jetzt pro Spieler und nur, wenn dessen Verbindung den Kanal wirklich hat**
+    (`player.connection.hasChannel(...)` — dieselbe Pruefung, an der `checkPacket` sonst scheitert).
+  - Die Trackerliste wird ueber `clientTrackingRange` des Entity-Typs angenaehert, statt in
+    `ChunkMap` zu greifen: fuer eine kosmetische Kopfbewegung kostet ein Spieler knapp ausserhalb
+    der echten Trackingdistanz genau ein verworfenes Paket, nie eine falsche Animation.
+  - Der Fehler steckte seit beta.76 drin und brauchte nur das Zusammentreffen von beissendem Wolf
+    und einem Mitspieler auf aelterem Stand. Als Sofortmassnahme liess sich
+    `[modules.battle_dogs.bite_animation] enabled = false` setzen; das ist mit diesem Release
+    nicht mehr noetig.
+
 ## [1.0.0-beta.80] - 2026-09-17
 
 ### Fixed
