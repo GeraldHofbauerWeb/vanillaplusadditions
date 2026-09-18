@@ -20,6 +20,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.waystone_amethyst_repair.
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.glider_lightning_guard.GliderLightningGuardModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_endermen.HostileEndermenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
@@ -38,6 +39,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlG
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.compass_overhaul.CompassOverhaulModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.conduit_attack_range.ConduitAttackRangeModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.copycat_pathfinding.CopycatPathfindingModule;
@@ -176,6 +178,8 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new CopycatPathfindingModule());
+        moduleManager.registerModule(new CompassOverhaulModule());
+        moduleManager.registerModule(new GliderLightningGuardModule());
         moduleManager.registerModule(new DispenserBucketGuardModule());
         moduleManager.registerModule(new MobCartLoaderModule());
         moduleManager.registerModule(new MobSpawnOverlayModule());

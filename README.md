@@ -117,6 +117,9 @@ Craft tipped arrows with a **normal potion** instead of a lingering potion — n
 #### 🪣 Dispenser Bucket Guard
 A dispenser that can't use its bucket **throws it on the floor** — an empty bucket with no fluid in front of it, a water bucket aimed at a solid block. One misfire and an automated water door has lost its bucket. This keeps the bucket in the dispenser instead and turns the failed attempt into a no-op (with vanilla's "dispenser failed" click). Successful pickups and placements are byte-for-byte unchanged, and anything that isn't a bucket is untouched. See [docs/dispenser_bucket_guard.md](docs/dispenser_bucket_guard.md).
 
+#### 🧭 Compass Overhaul
+Three repairs around the compass. **A lodestone compass no longer forgets where it was bound** — vanilla drops the binding whenever its POI lookup comes back empty, which also happens for an unloaded chunk or an unreadable POI file, and the coordinates are then gone while the item keeps its glint and its name (it typically shows up right after a Waystone warp, but Waystones is not at fault). We answer that question from the block instead, so the binding only clears when the chunk is loaded and the lodestone is provably gone. **The needle stops jittering aboard a Create Aeronautics airship** — Sable already rotates it, but from the previous tick's pose and only for a viewer found by chunk position. And it adds the **World Compass**: a second compass that always points north — in the Nether and the End too, and while a ship turns underneath it, which makes it a proper direction sign in a (glass) item frame. Craft it from a Compass, three Eyes of Ender and an Amethyst Shard. And it repairs the needle where **Quark's *Compasses Work Everywhere* takes it over** — that replacement aims at the raw block position, i.e. the block's north-west corner rather than its centre, ignores airships entirely and drops an item frame's rotation steps. See [docs/compass_overhaul.md](docs/compass_overhaul.md).
+
 #### 🧰 Custom Crafting Recipes
 Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator) and a reworked Netherite Ingot recipe that trades gold for Create's Powdered Obsidian (replaces the vanilla scrap+gold recipe; inert without Create). The place to add your own vanilla/cross-mod recipes without a datapack.
 
@@ -143,6 +146,9 @@ Enhances food items with additional potion effects and thirst restoration.
 - Add any potion effect to any item via config, with an optional probability per effect; configured items become **always edible**.
 - **Tough As Nails** support (optional): thirst restoration and heating/cooling tooltips.
 - Ships with extensive defaults for Vanilla, Create and Tough As Nails items.
+
+#### 🪂 Glider Lightning Guard
+Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you. Without the copper upgrade that **destroys the paraglider**: the icon turns into the charred `damaged_glider` sprite, gliding is off, and the only way back is an anvil with the Reinforced Paper of that exact tier — which nobody carries. This charges the strike to the durability bar instead (a quarter of it by default), always stopping one point short of breaking. The bolt itself — damage, fire, fright — is untouched. See [docs/glider_lightning_guard.md](docs/glider_lightning_guard.md).
 
 #### 🌙 Idle Gamerule Pause
 Pauses day / weather / season cycles while the server is empty and resumes them on the first join — the world doesn't drift while nobody is online.
@@ -226,7 +232,9 @@ and degrade gracefully when it is missing. All modules not listed here are pure 
 | `waystone_amethyst_repair` | [Waystones](https://modrinth.com/mod/waystones) | Module inactive (needs the Warp Stone) |
 | `cat_guardian` | [Sable](https://modrinth.com/mod/sable) *(optional)* | Cat bowl / feeding station use plain block variants (no ship-assembly awareness) |
 | `axolotl_guardian` | Sable *(optional)* | Axolotl bowl / feeding station use plain block variants |
+| `compass_overhaul` | Sable *(optional)* | Lodestone guard and World Compass work fully; only the sub-level needle correction is skipped (there are no ships without Sable) |
 | `block_glow` | Sable *(optional)* | No difference — the integration only additionally highlights blocks *inside* Sable sub-levels (ships), which don't exist without Sable |
+| `glider_lightning_guard` | [Gliders](https://modrinth.com/mod/gliders) + Curios *(optional)* | Module skips initialization without Gliders; without Curios only a glider in the chest armor slot is protected |
 | `food_effects` | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) *(optional)* | Thirst-related food effects are skipped |
 | `stackables` | Tough As Nails *(optional)* | Only vanilla items are made stackable |
 | `bluemap_signs` | [BlueMap](https://modrinth.com/plugin/bluemap) (server) | Module stays inert (`[bm]` signs do nothing) |
@@ -291,9 +299,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Block Glow](docs/block_glow.md)
 - [Chunk Reset Command](docs/chunk_reset.md)
 - [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
+- [Compass Overhaul](docs/compass_overhaul.md)
 - [Copycat Pathfinding](docs/copycat_pathfinding.md)
 - [Dispenser Bucket Guard](docs/dispenser_bucket_guard.md)
 - [End Oxygen](docs/end_oxygen.md)
+- [Glider Lightning Guard](docs/glider_lightning_guard.md)
 - [Mob Drops](docs/mob_drops.md)
 - [Overpacked Extensions](docs/overpacked_extensions.md)
 - [Texture Kill](docs/texture_kill.md)

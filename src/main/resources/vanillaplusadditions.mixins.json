@@ -12,6 +12,7 @@
     "cat_guardian.CatGuardianFollowMixin",
     "cat_guardian.CatGuardianTeleportMixin",
     "cat_guardian.ChestBlockCatMixin",
+    "compass_overhaul.LodestoneTrackerMixin",
     "conduit_attack_range.ConduitBlockEntityMixin",
     "copycat_pathfinding.BlockStateBaseCopycatMixin",
     "copycat_pathfinding.NodeEvaluatorContextAccessor",
@@ -26,6 +27,8 @@
   ],
   "client": [
     "battle_dogs.WolfBiteAnimationMixin",
+    "compass_overhaul.CompassAngleSubLevelMixin",
+    "compass_overhaul.QuarkCompassAngleMixin",
     "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin"
   ],
   "injectors": {

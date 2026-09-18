@@ -69,5 +69,6 @@
   "message.vanillaplusadditions.cat_guardian.overlay_off": "Superposiciones del Gato Guardián: DESACTIVADO",
   "message.vanillaplusadditions.cat_guardian.station_full": "No se pudieron asociar %s gato(s) porque el cuenco está lleno.",
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Superposición de generación: DESACTIVADA",
-  "message.vanillaplusadditions.mob_spawn_overlay.on": "Superposición de generación: ACTIVADA"
+  "message.vanillaplusadditions.mob_spawn_overlay.on": "Superposición de generación: ACTIVADA",
+  "item.vanillaplusadditions.world_compass": "Brújula del mundo"
 }
