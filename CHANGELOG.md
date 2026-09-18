@@ -4,6 +4,22 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.86] - 2026-09-18
+
+### Changed
+- **Blitze zerstoeren den Paragleiter wieder** — auf Gerrys ausdruecklichen Wunsch. Der Blitzschutz
+  aus beta.82 ist ersatzlos entfallen, die Gefahr im Gewitter ist der Sinn der Mechanik.
+- **Dafuer hilft jetzt Wasser.** Ein kaputter Gleiter, der im Wasser liegt, verliert sein
+  `broken`-Flag und gleitet wieder — mit Zischen und Dampfwolke. Die Haltbarkeit bleibt, wo der
+  Blitz sie gelassen hat: der Schlag kostet also weiterhin etwas, und die Amboss-Reparatur mit dem
+  Reinforced Paper der passenden Stufe behaelt ihren Zweck. Sie ist weiterhin der einzige Weg, die
+  Leiste zurueckzubekommen.
+  - Hintergrund: das verkohlte `damaged_glider`-Icon sieht aus, als brenne der Gleiter — ins Wasser
+    werfen ist also das Erste, was jeder probiert. Genau das tut jetzt etwas.
+  - Das Modul heisst deshalb nicht mehr `glider_lightning_guard`, sondern `glider_water_repair`.
+    Ein Modul, das nicht mehr vor Blitzen schuetzt, sollte auch nicht so heissen. Die Config-Sektion
+    wandert entsprechend mit; `durability_cost` entfaellt.
+
 ## [1.0.0-beta.85] - 2026-09-18
 
 ### Fixed
