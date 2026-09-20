@@ -46,3 +46,31 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   zuerst geprüft: `PendingReset` merkt sich die Dimension nicht (die Bestätigung könnte im
   falschen Level zuschlagen), und die Löschung wird weder entladen noch geflusht, könnte also
   von `ChunkMap.save` überschrieben werden. Jeden Befund vor dem Umsetzen selbst verifizieren.
+
+- [ ] **ModuleManager-Lookup laeuft in Standalone-Jars ins Leere** (gefunden 2026-09-20 bei der
+  Machbarkeitsanalyse der sechs Bundle-only-Module, Mechanismus von mir am Quelltext bestaetigt,
+  Auswirkung je Modul **noch nicht** einzeln geprueft):
+  `ModuleManager.registeredModules` wird ausschliesslich von `VanillaPlusAdditions.registerModules()`
+  befuellt, also nur im Bundle. `StandaloneModuleBootstrap.boot()` umgeht den `ModuleManager`
+  **absichtlich** (Javadoc dort, Zeilen 12-24: das Singleton hat einen Einmal-Lebenszyklus, zwei
+  Modul-Jars wuerden sich gegenseitig zerlegen) — der Bypass ist also richtig, aber
+  `ModuleManager.getInstance().getModule("<id>")` liefert im Standalone-Jar `null`.
+  Acht Module mit eigenem Jar tun genau das: `arm_target_overlay`, `block_glow`, `cat_guardian`,
+  `end_oxygen`, `freecam_sublevel_noclip`, `item_vault_viewer`, `options`, `texture_kill`.
+  Fuer `static_fov` (nur Bundle) hat die Analyse durchgerechnet, dass der Handler dadurch bei jedem
+  Event vorzeitig zurueckkehrt, das Modul also vollstaendig wirkungslos waere.
+  **Vorgeschlagener Fix:** das Muster aus `MobSpawnOverlayModule` uebernehmen — ein modul-lokales
+  `private static X instance`, in `onInitialize()` gesetzt, plus `getInstance()`. Drei Zeilen je
+  Modul, kein Eingriff in den gemeinsamen Lebenszyklus. Die Alternative (registrieren im
+  Bootstrap) wuerde genau das aufweichen, was das Javadoc bewusst vermeidet.
+  **Zuerst pruefen:** je Modul, was der Null-Lookup tatsaechlich kostet — manche Pfade sind
+  unkritisch, andere legen das ganze Modul still.
+
+- [ ] **Standalone-Entrypoints fuer fuenf Module vorbereitet, aber nicht verdrahtet**
+  (2026-09-20): `standalone/{enhanced_ai_leader_loot,mob_cart_loader,pathfinder_quills,
+  tipped_arrows,waystone_amethyst_repair}/` liegen im Baum, es fehlt je ein Eintrag in
+  `standaloneModules` (`build.gradle`) — ohne den wird kein Jar gebaut und es aendert sich nichts.
+  Analysen dazu: `build/standalone-analysis/` (nicht versioniert). Offen: `pathfinder_quills`
+  braucht moeglicherweise Quark als harte Dependency, und `renderModuleToml` kann bisher **keine**
+  Fremd-Mod-Abhaengigkeit in die erzeugte `mods.toml` schreiben. `static_fov` hat bewusst keinen
+  Entrypoint bekommen, weil dort erst der Lookup-Fix oben noetig ist.
