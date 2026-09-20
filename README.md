@@ -224,7 +224,7 @@ therefore derived Mojang assets; they are not covered by the MIT licence above.
 ## 🌟 Credits
 
 **Developer**: Gerald Hofbauer · **Framework**: [NeoForge](https://neoforged.net/) ·
-**Built with**: AI pair programming
+**Built with**: [Claude Code](https://claude.com/claude-code) as a pair programmer
 
 ## 🔗 Links
 
