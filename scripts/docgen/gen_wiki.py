@@ -106,6 +106,12 @@ def sidebar(pages: dict[Path, str]) -> str:
     import json
     categories = json.loads((REPO / "scripts/docgen/data/categories.json").read_text())
     by_module = {p.stem: name for p, name in pages.items() if p.parent == DOCS / "modules"}
+    # The page NAME has to survive a URL, so punctuation is stripped from it. The LABEL does not,
+    # and must not be reconstructed from the name: that turns "Mo' Arrows" into "Mo Arrows" and
+    # "Freecam Sub-Level Noclip" into "Freecam Sub Level Noclip". Take it from the fact sheet.
+    titles = {}
+    for sheet in sorted((REPO / "scripts/docgen/data/modules").glob("*.json")):
+        titles[sheet.stem] = json.loads(sheet.read_text())["displayName"]
 
     def link(rel_path: str, label: str) -> str:
         """Link a guide by its file, never by a guessed page name."""
@@ -125,7 +131,8 @@ def sidebar(pages: dict[Path, str]) -> str:
             continue
         lines.append(f"**{category}**")
         lines.append("")
-        lines += [f"* [{by_module[m].replace('-', ' ')}]({by_module[m]})" for m in members]
+        lines += [f"* [{titles.get(m, by_module[m].replace('-', ' '))}]({by_module[m]})"
+                  for m in members]
         lines.append("")
     lines += ["**For contributors**", "",
               link("docs/guides/module-system.md", "Module system"),
