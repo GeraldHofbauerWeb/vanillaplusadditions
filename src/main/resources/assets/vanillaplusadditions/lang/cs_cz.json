@@ -68,5 +68,6 @@
   "message.vanillaplusadditions.cat_guardian.no_cats": "V okolí nebyly nalezeny žádné tvé ochočené kočky.",
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Překryv míst spawnu: VYPNUTO",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Překryv míst spawnu: ZAPNUTO",
-  "item.vanillaplusadditions.world_compass": "Světový kompas"
+  "item.vanillaplusadditions.world_compass": "Světový kompas",
+  "item.vanillaplusadditions.fire_arrow": "Ohnivý šíp"
 }

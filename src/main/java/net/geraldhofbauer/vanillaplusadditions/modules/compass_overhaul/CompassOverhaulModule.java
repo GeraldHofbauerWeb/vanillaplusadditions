@@ -106,13 +106,12 @@ public class CompassOverhaulModule
         event.addListener(new WorldCompassRecipeReloadListener(event.getServerResources().getRecipeManager()));
     }
 
-    /** A compass ringed by three ender eyes with an amethyst shard on top → one World Compass. */
+    /** Vanilla's compass with an amethyst shard where the redstone goes → one World Compass. */
     private void applyWorldCompassRecipe(RecipeManager recipeManager) {
         Map<Character, Ingredient> key = new LinkedHashMap<>();
         key.put('A', Ingredient.of(Items.AMETHYST_SHARD));
-        key.put('E', Ingredient.of(Items.ENDER_EYE));
-        key.put('C', Ingredient.of(Items.COMPASS));
-        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, List.of(" A ", "ECE", " E "));
+        key.put('I', Ingredient.of(Items.IRON_INGOT));
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(key, List.of(" I ", "IAI", " I "));
         ItemStack result = new ItemStack(WORLD_COMPASS.get());
         ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.MISC, pattern, result);
         RecipeHolder<ShapedRecipe> holder = new RecipeHolder<>(

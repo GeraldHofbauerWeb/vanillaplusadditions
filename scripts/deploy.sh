@@ -46,7 +46,18 @@ SERVER_OWNER="amp:amp"
 # Modpack archive. The web root and the game server share one box.
 MODPACK_SUBDIR="meincraft"   # lives inside the active instance; resolved with it
 MODPACK_ZIP="$HOME/Downloads/sebsmodpack-v5.zip"
-WEB_TMP="/var/www/geraldhofbauer.net/storage"
+# Zwischenspeicher fuer das Modpack-ZIP, bis Craft es als Asset uebernimmt. An diesen Ort muessen
+# ZWEI schreiben duerfen, und beide Haelften sind schon schiefgegangen:
+#   * gerry legt die Datei per scp ab. Der Craft-Webroot gehoert seit dem Rechte-Fix vom 2026-09-18
+#     deploy:www-data; gerry ist in keiner der Gruppen und kam deshalb nicht hinein.
+#   * Craft VERSCHIEBT die Datei von hier in sein Asset-Volume - das braucht Schreibrecht auf dem
+#     VERZEICHNIS, nicht nur Lesbarkeit der Datei. /tmp und /var/tmp scheiden deshalb aus: dort
+#     sitzt das Sticky-Bit, und dann darf nur der Eigentuemer verschieben. Craft meldet dann
+#     "Fehler beim Verschieben der Datei".
+# Loesung: ein eigener Ordner, der dem Webserver gehoert, mit einer ACL fuer gerry:
+#   sudo install -d -o deploy -g www-data -m 775 .../storage/drop
+#   sudo apt-get install -y acl && sudo setfacl -m u:gerry:rwx .../storage/drop
+WEB_TMP="/var/www/geraldhofbauer.net/storage/drop"
 WEB_FILE="sebsmodpack-v5.zip"
 CRAFT_MCP="https://geraldhofbauer.net/mcp/"
 CRAFT_ENTRY=1317          # staticFiles entry "Sebs Modpack v5"
@@ -245,8 +256,25 @@ print(f[0]['id'] if f else 0)
   if [[ "$OLD_ASSET" != 0 ]]; then
     mcp delete_asset "{\"id\":$OLD_ASSET}" >/dev/null
   fi
-  NEW_ASSET="$(mcp upload_asset "{\"folderId\":$CRAFT_FOLDER,\"filename\":\"$WEB_FILE\",\"tempFilePath\":\"$WEB_TMP/$WEB_FILE\"}" \
-    | python3 -c "import sys,json;print(json.loads(json.load(sys.stdin)['result']['content'][0]['text'])['id'])")"
+  # Der alte Asset ist an dieser Stelle schon geloescht - absichtlich, damit der neue denselben
+  # Dateinamen und damit dieselbe oeffentliche URL bekommt. Schlaegt der Upload fehl, steht der
+  # Eintrag ohne Datei da und die Download-Seite ist leer. Deshalb hier eine klare Fehlermeldung
+  # statt eines Tracebacks (passiert am 2026-09-20, Ursache war das Sticky-Bit in $WEB_TMP).
+  UPLOAD_RESPONSE="$(mcp upload_asset "{\"folderId\":$CRAFT_FOLDER,\"filename\":\"$WEB_FILE\",\"tempFilePath\":\"$WEB_TMP/$WEB_FILE\"}")"
+  NEW_ASSET="$(printf '%s' "$UPLOAD_RESPONSE" \
+    | python3 -c "import sys,json
+try:
+    r = json.load(sys.stdin)
+    print(json.loads(r['result']['content'][0]['text'])['id'])
+except Exception:
+    print(0)" 2>/dev/null)"
+  if [[ -z "$NEW_ASSET" || "$NEW_ASSET" == 0 ]]; then
+    echo "!! upload_asset fehlgeschlagen - Eintrag $CRAFT_ENTRY hat jetzt KEINE Datei." >&2
+    echo "!! Antwort: $(printf '%s' "$UPLOAD_RESPONSE" | head -c 300)" >&2
+    echo "!! Die Datei liegt noch unter $WEB_TMP/$WEB_FILE. Nach dem Beheben der Ursache genuegt" >&2
+    echo "!! ein erneutes '$0 --modpack-only', um Upload und Verknuepfung nachzuholen." >&2
+    exit 1
+  fi
   echo "    asset $OLD_ASSET -> $NEW_ASSET (same filename, so the public URL is unchanged)"
 
   # Keep the version named in the description honest.

@@ -433,6 +433,8 @@ def standaloneModules = [
     [ moduleId: 'free_anvil_repair', displayName: 'Vanilla Plus: Free Anvil Repair',
       mixins: ['free_anvil_repair.AnvilMenuFreeRepairMixin'] ],
     [ moduleId: 'glider_water_repair', displayName: 'Vanilla Plus: Glider Water Repair' ],
+    [ moduleId: 'freecam_sublevel_noclip', displayName: 'Vanilla Plus: Freecam Sub-Level Noclip',
+      clientMixins: ['freecam_sublevel_noclip.EntityMoveFreecamMixin'] ],
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_endermen', displayName: 'Vanilla Plus: Hostile Endermen',
       mixins: ['hostile_endermen.EndEndermanTeleportMixin',
@@ -445,6 +447,8 @@ def standaloneModules = [
       dataGlobs: ['data/minecraft/tags/block/rails.json'],
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'mob_drops', displayName: 'Vanilla Plus: Mob Drops' ],
+    [ moduleId: 'mo_arrows', displayName: "Vanilla Plus: Mo' Arrows",
+      dataGlobs: ['data/minecraft/tags/item/arrows.json'] ],
     [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
     [ moduleId: 'mob_spawn_overlay', displayName: 'Vanilla Plus: Mob Spawn Overlay',
       clientMixins: ['mob_spawn_overlay.KeyboardHandlerDebugKeyMixin'] ],
@@ -618,6 +622,10 @@ tasks.register('coreJar', Jar) {
         include 'assets/vanillaplusadditions/**'  // cosmetic resources for every module (safe if unused)
         include 'logo.png'
     }
+    // Third-party compat tags that belong to no single module: they repair how ANOTHER pair of mods
+    // gets along and are inert unless both are installed (every entry is required:false). Own
+    // from-block on purpose — see the note on the module jars below.
+    from(sourceSets.main.output) { include 'data/sable/**' }
     // Shared mixins (see coreMixins): owned by core so no two module jars split the mixin package.
     coreMixins.each { mx ->
         from(sourceSets.main.output) { include "${basePkg}/mixin/${mx.replace('.', '/')}*.class" }

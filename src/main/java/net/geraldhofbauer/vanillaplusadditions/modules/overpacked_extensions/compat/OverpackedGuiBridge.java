@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.nycto_team.overpacked.entity.GiantBackpack;
@@ -43,6 +44,12 @@ import java.util.UUID;
 public final class OverpackedGuiBridge {
 
     /** Transient backpack entities we spawned, keyed by entity id → the slot to write back to. */
+    /**
+     * Markiert die Helfer-Entity im NBT, damit eine liegengebliebene beim Laden erkannt wird.
+     * {@link Entity#addTag} landet in den {@code Tags} und ueberlebt Speichern und Neustart.
+     */
+    private static final String HELPER_TAG = "vpa_backpack_helper";
+
     private static final Map<Integer, Session> SESSIONS = new HashMap<>();
 
     private record Session(UUID playerUUID, String identifier, int index, ItemStack originalWorn) {
@@ -158,6 +165,13 @@ public final class OverpackedGuiBridge {
             }
             entity.LoadInventory(tag.getCompound("Items"));
         }
+        // Markieren, BEVOR sie in der Welt landet: stuerzt der Server ab oder wird er neu gestartet,
+        // waehrend das GUI offen ist, wird die Entity mitgespeichert - SESSIONS ist danach aber leer,
+        // und onContainerClose laesst sie deshalb in Ruhe. Sie bliebe als echter, abgestellter
+        // Rucksack liegen: sie steckt im Spieler (siehe Fallback oben) und Overpackeds
+        // place_predicate verwirft dann jedes Platzieren aus der Hand stumm - und ihr Inhalt ist eine
+        // Kopie des getragenen, also ein Duplikationsweg. Der Tag macht sie beim Laden auffindbar.
+        entity.addTag(HELPER_TAG);
         level.addFreshEntity(entity);
 
         SESSIONS.put(entity.getId(),
@@ -209,6 +223,19 @@ public final class OverpackedGuiBridge {
             writeBack(player, session, entity);
         }
         entity.discard();
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        // Nur was von der Platte kommt: frisch gespawnte Helfer tragen den Tag auch, haben aber eine
+        // lebende Session. loadedFromDisk() trennt beide Faelle, ohne auf die Reihenfolge von
+        // addFreshEntity und SESSIONS.put angewiesen zu sein.
+        if (!event.loadedFromDisk() || event.getLevel().isClientSide()) {
+            return;
+        }
+        if (event.getEntity() instanceof GiantBackpack backpack && backpack.getTags().contains(HELPER_TAG)) {
+            backpack.discard();
+        }
     }
 
     @SubscribeEvent

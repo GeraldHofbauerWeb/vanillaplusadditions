@@ -68,5 +68,6 @@
   "gui.vanillaplusadditions.cat_guardian.cats_short": "Kotzn: %s/%s",
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Spawn-Ovalay: AUS",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Spawn-Ovalay: AN",
-  "item.vanillaplusadditions.world_compass": "Weltkompass"
+  "item.vanillaplusadditions.world_compass": "Weltkompass",
+  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil"
 }

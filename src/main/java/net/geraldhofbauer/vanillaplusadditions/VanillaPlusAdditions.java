@@ -42,7 +42,9 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianM
 import net.geraldhofbauer.vanillaplusadditions.modules.chunk_reset.ChunkResetModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.compass_overhaul.CompassOverhaulModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.conduit_attack_range.ConduitAttackRangeModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.freecam_sublevel_noclip.FreecamSublevelNoclipModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.MoArrowsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.copycat_pathfinding.CopycatPathfindingModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
@@ -182,11 +184,13 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new CopycatPathfindingModule());
         moduleManager.registerModule(new CompassOverhaulModule());
         moduleManager.registerModule(new GliderWaterRepairModule());
+        moduleManager.registerModule(new FreecamSublevelNoclipModule());
         moduleManager.registerModule(new DispenserBucketGuardModule());
         moduleManager.registerModule(new MobCartLoaderModule());
         moduleManager.registerModule(new MobSpawnOverlayModule());
         moduleManager.registerModule(new PetPotionsModule());
         moduleManager.registerModule(new TippedArrowsModule());
+        moduleManager.registerModule(new MoArrowsModule());
         moduleManager.registerModule(new PathfinderQuillsModule());
         moduleManager.registerModule(new EnhancedAiLeaderLootModule());
         moduleManager.registerModule(new WolfMountModule());

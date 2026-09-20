@@ -1,0 +1,6 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "overpacked:giant_backpack", "required": false }
+  ]
+}

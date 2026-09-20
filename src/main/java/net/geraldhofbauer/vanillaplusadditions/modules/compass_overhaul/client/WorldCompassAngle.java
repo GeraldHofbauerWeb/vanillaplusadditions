@@ -1,9 +1,14 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.compass_overhaul.client;
 
+import net.geraldhofbauer.vanillaplusadditions.modules.compass_overhaul.compat.SableGate;
+import net.geraldhofbauer.vanillaplusadditions.modules.compass_overhaul.compat.SableOrientation;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ClampedItemPropertyFunction;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The needle of the World Compass: it points at world north, always.
@@ -23,6 +28,13 @@ import net.minecraft.core.GlobalPos;
  * dimension. And since this goes through the ordinary vanilla path, the sub-level correction from
  * {@code CompassAngleSubLevelMixin} applies here too: aboard a turning airship the needle keeps
  * pointing at world north.
+ *
+ * <p><strong>The target is measured from the parent level, never from a plot.</strong> A viewer that
+ * really sits inside a Sable plot — an item frame on a ship — has coordinates around twenty million
+ * blocks out, and "four million north of that" is a point the sub-level correction then maps back to
+ * a direction dominated by the plot offset rather than by north. Starting from
+ * {@link SableOrientation#parentPosition} instead makes the ship's own translation cancel exactly
+ * against the correction, and what is left is precisely north turned into the ship's space.
  */
 public final class WorldCompassAngle {
 
@@ -38,8 +50,24 @@ public final class WorldCompassAngle {
      * @return a property function whose needle points at world north
      */
     public static ClampedItemPropertyFunction create() {
-        return new CompassItemPropertyFunction((level, stack, entity) -> GlobalPos.of(
-                level.dimension(),
-                BlockPos.containing(entity.getX(), entity.getY(), entity.getZ() - NORTH_DISTANCE)));
+        return new CompassItemPropertyFunction((level, stack, entity) -> {
+            Vec3 origin = originOf(entity);
+            return GlobalPos.of(level.dimension(),
+                    BlockPos.containing(origin.x, origin.y, origin.z - NORTH_DISTANCE));
+        });
+    }
+
+    /**
+     * Where to measure the four million blocks from: the viewer's position in the parent level.
+     *
+     * @param viewer the entity the needle is drawn for
+     * @return the viewer's position, projected out of a Sable plot if it sits in one
+     */
+    private static Vec3 originOf(Entity viewer) {
+        if (!SableGate.isLoaded()) {
+            return viewer.position();
+        }
+        float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+        return SableOrientation.parentPosition(viewer, partialTick);
     }
 }

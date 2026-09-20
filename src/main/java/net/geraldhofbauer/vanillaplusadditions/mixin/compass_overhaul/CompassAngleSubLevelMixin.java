@@ -17,11 +17,13 @@ import java.util.OptionalDouble;
 /**
  * Steadies the ordinary compass needle aboard a Sable sub-level.
  *
- * <p>Sable already handles this case — it overwrites the same method and rotates the target into the
- * ship's space — but with two weak spots: it reads {@code lastPose()}, the pose from the previous
- * tick, so the needle jitters and lags while the ship turns; and it locates the ship purely by the
- * viewer's chunk position, falling back only to the vehicle, so it gives up on a player riding a
- * seat that is tracked to the sub-level without sitting inside its plot.
+ * <p>Sable already handles this case — it overwrites the same method, rotates the target into the
+ * ship's space and covers both the viewer sitting in the plot and the viewer riding something that
+ * does. Its weak spot is the pose it reads: {@code lastPose()}, the pose from the previous tick, so
+ * the needle jitters and lags while the ship turns. This injection does the same arithmetic from
+ * {@code renderPose(partialTick)} instead. It also matters for a second reason — with Quark
+ * installed the ordinary compass never reaches this method at all, and
+ * {@code QuarkCompassAngleMixin} has nothing to fall back on but the shared helper this calls.
  *
  * <p>Injecting at HEAD and returning our own value leaves Sable's body in place but unreached.
  * Two mods writing to one method is inherently fragile, hence {@code require = 0} (a missed binding

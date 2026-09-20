@@ -177,5 +177,6 @@
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
   "message.vpa.death_coords": "Spieler %s ist an folgenden Koordinaten gestorben: X=%d, Y=%d, Z=%d in Dimension %s",
   "message.vpa.death_coords.hover": "Klicken, um zum Todesort zu teleportieren",
-  "item.vanillaplusadditions.world_compass": "Weltkompass"
+  "item.vanillaplusadditions.world_compass": "Weltkompass",
+  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil"
 }
