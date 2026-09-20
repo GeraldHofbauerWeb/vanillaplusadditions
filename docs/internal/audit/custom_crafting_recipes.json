@@ -1,0 +1,44 @@
+{
+ "moduleId": "custom_crafting_recipes",
+ "claimsChecked": 61,
+ "problems": [
+  {
+   "quote": "Shaped grids are validated by vanilla's `ShapedRecipePattern`, so an oversized one is dropped with an error instead.",
+   "issue": "False. `ShapedRecipePattern.of(key, rows)` (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/item/crafting/ShapedRecipePattern.java:83-86) goes straight to `unpack()`, and `unpack()` (lines 88-113) checks only for an undefined symbol and for key symbols unused by the pattern. The size limits ('too many rows', 'too many columns', 'each row must be the same width') live exclusively in `Data.PATTERN_CODEC` (lines 239-259), which is only used when decoding a recipe from JSON — `of()` never touches it. `ShapedRecipe`'s constructor (ShapedRecipe.java:21-30) validates nothing either. A pattern like `AAAA|AAAA|AAAA|AAAA` therefore builds a 4x4 ShapedRecipePattern without any error, is registered, and is exactly as silently unmatchable as the oversized shapeless recipe the row is contrasting it with. (Ragged rows are a different case: they die in `shrink()`'s `substring` with a StringIndexOutOfBoundsException, not in a size check.)",
+   "correction": "The shaped side is no better off: nothing checks the grid size either. A pattern wider or taller than 3 is built and registered without a word and simply never matches a crafting table. Only ragged rows and undefined symbols are caught.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| Grid malformed — ragged rows, more than 3×3, a symbol used but not defined |",
+   "issue": "The 'more than 3×3' item does not belong in the dropped-entry table — see above, `ShapedRecipePattern.of` applies no size limit, so an oversized grid is never dropped and never logs anything. The other two items in the cell (ragged rows, undefined symbol) are correct.",
+   "correction": "Drop 'more than 3×3' from the cell, leaving 'ragged rows, a symbol used but not defined' (and optionally 'a key symbol the pattern never uses', which vanilla also rejects).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Twelve other modules use the same injection — `flying_fish`, `cat_guardian`, `battle_dogs`, `end_conduit`, `minecart_chunk_loading`, `pathfinder_quills`, `tipped_arrows` and the rest.",
+   "issue": "Off by one. `grep -rl replaceRecipes src/main/java/` returns 14 files, and all 14 also contain `AddReloadListenerEvent`: axolotl_guardian, battle_dogs, cat_guardian, compass_overhaul, custom_crafting_recipes, end_conduit, flying_fish, minecart_chunk_loading, mo_arrows, mob_cart_loader, pathfinder_quills, stationary_chunk_loader, tipped_arrows, train_chunk_loading. Excluding this module that is thirteen, not twelve.",
+   "correction": "Thirteen other modules use the same injection.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "\"Adds configurable shaped crafting recipes from the module config.\" (CustomCraftingRecipesModule.java:49)",
+   "issue": "JAVA SOURCE, not a doc error — reported separately as asked. The module description passed to the AbstractModule constructor says 'shaped' only, but the module has handled shapeless recipes since the `shapeless_recipes` key exists; the string is also what the fact sheet's shortDescription mirrors.",
+   "correction": "No doc change needed. In the Java: widen the description to cover shaped and shapeless recipes.",
+   "severity": "style"
+  },
+  {
+   "quote": "// TODO: Migrate from code-injected recipes to proper JSON datapack recipes … See docs/custom_crafting_recipes.md (\"TODO / Roadmap\") for the correct format. (CustomCraftingRecipesModule.java:58-61)",
+   "issue": "JAVA SOURCE, not a doc error. Wrong comment, three ways: it contradicts the repo convention in CLAUDE.md ('Keine Migration zu JSON geplant'), the referenced 'TODO / Roadmap' section does not exist in any version of the page, and the path it names (docs/custom_crafting_recipes.md) is stale — the page now lives at docs/modules/custom_crafting_recipes.md. The doc page already calls this out correctly under 'A dead TODO'.",
+   "correction": "No doc change needed. In the Java: delete the comment or replace it with a pointer to the 'recipes in code' convention.",
+   "severity": "style"
+  },
+  {
+   "quote": "String[] resultParts = resultPart.split(\";\", 2);\\nif (resultParts.length < 1) { throw new IllegalArgumentException(…); } (CustomCraftingRecipesModule.java:377-380)",
+   "issue": "JAVA SOURCE, not a doc error. Dead code: `String.split` with a positive limit never returns a zero-length array, so this guard can never fire. (The sibling guard `if (ingredients.isEmpty())` at line 405 IS reachable, because the zero-limit split drops trailing empties — so do not remove that one.)",
+   "correction": "No doc change needed. In the Java: the length<1 branch can be deleted.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

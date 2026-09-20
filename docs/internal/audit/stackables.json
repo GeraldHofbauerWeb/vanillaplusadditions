@@ -1,0 +1,38 @@
+{
+ "moduleId": "stackables",
+ "claimsChecked": 71,
+ "problems": [
+  {
+   "quote": "**Logging.** Almost every line in the module is gated on `shouldDebugLog()`. Three are not: the two failure paths (`Failed to patch potion default components` at WARN, `✗ Failed to patch {}` at ERROR) and, in `StackablesConfig.onConfigLoad`, an unconditional INFO line",
+   "issue": "Miscount. There are four ungated log statements, not three: `StackablesModule.onInitialize` (StackablesModule.java:39-43) also logs `getLogger().warn(\"Mod event bus not available during module initialization, falling back to global event bus: {}\", ...)` with no `shouldDebugLog()` gate. The page even quotes that exact call two paragraphs earlier (\"one warning line as the only clue\"), so it contradicts itself. (Strictly there are two more ungated calls at DEBUG level in the two config getters, StackablesConfig.java:90 and :103, which the page acknowledges in the next sentence.)",
+   "correction": "\"Four are not: the three failure paths (the mod-event-bus fallback warn in `onInitialize` and `Failed to patch potion default components`, both WARN, and `✗ Failed to patch {}` at ERROR) and, in `StackablesConfig.onConfigLoad`, an unconditional INFO line.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "What NeoForge does with an element its spec rejects — drop that entry or reset the whole list to the default — is not visible from this repository.",
+   "issue": "Presented as unknowable, but it is answerable from exactly the source this page already quotes elsewhere (the `modifyComponents()` snippet and `ModifyDefaultComponentsEvent implements IModBusEvent` both come from build/neoForm/…/unzipSources). `ModConfigSpec.Builder.defineList` (ModConfigSpec.java:612-629) wraps the spec in an anonymous `ListValueSpec` whose `correct(Object)` does `list.removeIf(elementValidator.negate())` and returns `getDefault()` only if the value is not a List, fails the size range, or ends up empty. The 4-arg overload used by `StackablesConfig` routes through :488, which passes `ListValueSpec.NON_EMPTY` as the size range.",
+   "correction": "\"NeoForge drops the rejected entries individually — `defineList`'s `correct()` runs `list.removeIf(elementValidator.negate())` — and only falls back to the whole default list if that leaves the list empty (ModConfigSpec.java:614-628, size range `NON_EMPTY` via :488). So one bad line costs you that line; a file where every line is bad costs you the file.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| **Works with** | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) <sub>tested 10.1.0.13</sub>, [Create](https://modrinth.com/mod/create) <sub>tested 6.0.10</sub> |",
+   "issue": "Internal tension a reader will trip over: the generated meta block says Create *tested 6.0.10* (from scripts/docgen/data/tested-versions.json, the live games2 pack), while the body says the numbers were \"read out of the jars this pack is built against — … `libs/create-1.21.1-6.0.9.jar`\". Both statements are individually true (libs/ really holds 6.0.9; the played pack really runs 6.0.10), and I re-read `create:builders_tea` out of the 6.0.9 jar myself — `AllItems.lambda$static$6` calls `stacksTo(16)`, so the table row is correct. But the two numbers sit unexplained on one page, and neighbouring pages (waystone_amethyst_repair.md, glider_water_repair.md) cite a jar whose version matches tested-versions.json.",
+   "correction": "Add half a sentence where the jar is named, e.g. \"… and `libs/create-1.21.1-6.0.9.jar` (the compile-time jar; the pack itself runs Create 6.0.10, where `builders_tea` is unchanged at 16)\".",
+   "severity": "style"
+  },
+  {
+   "quote": "The handler subscribes at `EventPriority.LOWEST`, the priority NeoForge's own javadoc on this event recommends for a listener that cares what the other mods did.",
+   "issue": "Imprecise attribution. The recommendation in `ModifyDefaultComponentsEvent` is attached to `modifyMatching(Predicate, Consumer)` and is conditioned on it: \"If this method is used to modify components based on the item's current default components, the event listener should use the lowest priority so that other mods' modifications are already applied.\" This module calls `modify(ItemLike, Consumer)` and sets an absolute value, so it is not the case that javadoc addresses. (The rest of the paragraph is correct: `modify` -> `Item.modifyDefaultComponentsFrom` rebuilds and replaces `components` in place, so a later listener does overwrite an earlier one's MAX_STACK_SIZE.)",
+   "correction": "\"… at `EventPriority.LOWEST`. NeoForge's javadoc attaches that recommendation to `modifyMatching`, for listeners that read an item's current components; this module does not, but the priority still buys it the last word.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "// NOTE: The toughasnails item IDs below are assumed/guessed; please verify actual IDs in your mod if necessary.",
+   "issue": "JAVA SOURCE, not a doc defect — reported because the task asks for wrong comments. This comment at StackablesConfig.java:51 is stale. All eleven toughasnails ids in `DEFAULT_STACKABLES` resolve against libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar (verified by javap on toughasnails/init/ModItems and by the item model files), as does create:builders_tea. The guesswork it warns about was fixed years of commits ago; the page quotes the comment correctly and correctly says the ids all resolve, so the page is fine — the comment is not.",
+   "correction": "No doc change needed. In the Java, the comment could be replaced with something like \"// Verified against Tough As Nails 10.1.0.13\" — but per the task I did not edit it.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

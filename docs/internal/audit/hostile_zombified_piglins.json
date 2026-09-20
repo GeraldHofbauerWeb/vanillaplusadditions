@@ -1,0 +1,68 @@
+{
+ "moduleId": "hostile_zombified_piglins",
+ "claimsChecked": 82,
+ "problems": [
+  {
+   "quote": "`target_switch_threshold` (5.0 s) is how long the current grudge must have been held before another player can take it over.",
+   "issue": "The threshold is not measured against how long the grudge has been held. The timestamp is refreshed on EVERY once-per-second pass in which the same player is still first in the query (HostileZombifiedPiglinsModule.java:214-218), so it never ages past ~1 s while the holder keeps coming back first. What the threshold really measures is how long the current holder has been *displaced* as first-in-query. A reader taking the sentence literally would conclude that a ten-minute-old grudge can be taken over instantly, which is the opposite of what happens: it still takes a full 5 s of the other player being first.",
+   "correction": "Something like: \"`target_switch_threshold` (5.0 s) is how long another player must have been coming back first in the query before the grudge moves to them. The current holder's timestamp is refreshed every pass it is still first, so the clock only starts once somebody else takes the front of the list — an old grudge is no easier to displace than a fresh one.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "it recruits piglins within `FOLLOW_RANGE` that have **no target of their own**",
+   "issue": "`ZombifiedPiglin.alertOthers` (ZombifiedPiglin.java:142-152) uses `AABB.unitCubeFromLowerCorner(this.position()).inflate(d0, 10.0, d0)` — FOLLOW_RANGE (35) horizontally but only 10 blocks vertically (the `ALERT_RANGE_Y` constant at L56). \"Within FOLLOW_RANGE\" implies a 35-block reach on all three axes. The two other filters are also omitted: it skips piglins allied to the current target, and `maybeAlertOthers` only actually calls it every 4-6 s (`ALERT_INTERVAL`, L57/L131-139).",
+   "correction": "\"...it recruits piglins that have no target of their own, in a box FOLLOW_RANGE wide but only 10 blocks tall, and at most once every 4-6 seconds.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Everything that matters happens server-side: the player lookup returns `null` on a client level, which stops the tick handler dead.",
+   "issue": "Right outcome, wrong mechanism. `maintainHostility` bails on its own explicit guard `if (zombifiedPiglin.level().isClientSide) { return; }` at HostileZombifiedPiglinsModule.java:174-176, before `getNearbyPlayers` is ever called, so the null lookup never comes into play on the tick path. (The null return at L155 is what makes the *join* handler inert on the client — which the next sentence then describes.)",
+   "correction": "\"Everything that matters happens server-side: `maintainHostility` returns immediately on a client level.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "Vanilla keys three things off the anger flag, and the module simply holds that flag down:",
+   "issue": "Undercount, presented as an enumeration. `customServerAiStep` gates a fourth call on `isAngry()`: `maybePlayFirstAngerSound()` (ZombifiedPiglin.java:99-104). It is harmless here (it only fires when `playFirstAngerSoundIn > 0`, which `setTarget` sets), but the flat \"three things\" reads as exhaustive.",
+   "correction": "Either say \"three things worth knowing about\" / \"three things you will notice\", or add the first-anger sound as a fourth bullet.",
+   "severity": "style"
+  },
+  {
+   "quote": "Three files, 381 lines, no mixins, no registry entries, no assets, no data files and no lang keys",
+   "issue": "The table directly underneath lists four files (the standalone entrypoint is the fourth, 19 lines). The 381 is the `wc -l` total of the three module files only (249 + 121 + 11); the fact sheet is explicit about this with a \"plus the standalone entrypoint\" clause that the page drops.",
+   "correction": "\"Three files, 381 lines, plus a nineteen-line standalone entrypoint — no mixins, no registry entries, ...\"",
+   "severity": "style"
+  },
+  {
+   "quote": "`onInitialize` does one thing, `NeoForge.EVENT_BUS.register(this)`",
+   "issue": "It does two: the register call and a `getLogger().info(\"Hostile Zombified Piglins module initialized - Nether just got more dangerous!\")` at HostileZombifiedPiglinsModule.java:57. Trivial, but the page elsewhere is scrupulous about this kind of thing.",
+   "correction": "\"`onInitialize` does nothing but `NeoForge.EVENT_BUS.register(this)` and a log line\".",
+   "severity": "style"
+  },
+  {
+   "quote": "JAVA SOURCE, NOT THE DOC — HostileZombifiedPiglinsModule.java:26: \" * - Zombified piglins spawn already angry at all players\"",
+   "issue": "Wrong class javadoc. A piglin carries exactly one persistent anger target (`setPersistentAngerTarget(targetPlayer.getUUID())`, L138), and the module never enables the universal-anger path — the page's own limits table notes `isAngryAtAllPlayers` can never fire while the module holds a target. The mod is angry at ONE player, not all.",
+   "correction": "Report only — the doc is right and the comment is wrong. Suggested wording for the javadoc: \"spawn already angry at one nearby player\".",
+   "severity": "wrong"
+  },
+  {
+   "quote": "JAVA SOURCE, NOT THE DOC — HostileZombifiedPiglinsModule.java:108-109: \"Makes a zombified piglin hostile to all players in the area and returns the nearest player (the one that was targeted).\"",
+   "issue": "Wrong on both counts. It makes the piglin hostile to exactly one player, and that player is `nearbyPlayers.getFirst()` (L133) from an unsorted `getEntitiesOfClass` result — not the nearest. The local variable name `nearestPlayer` (L184) carries the same false claim.",
+   "correction": "Report only. Honest wording: \"Points the piglin's persistent anger at one player — the first the level query returned, or the given one — and returns it with a timestamp.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "JAVA SOURCE, NOT THE DOC — HostileZombifiedPiglinsModule.java:231-240: \"} else { // No players nearby, clear anger  angryPiglins.remove(...)\"",
+   "issue": "Dead branch. It is reached only from L224, `makeHostileToPlayer(zombifiedPiglin, newTarget)`, and `newTarget` can never be null there (L199 falls back to `nearestPlayer`, which L185 has already proven non-null; a null map VALUE yields `currentTarget == null` and takes the same fallback). With a non-null `specificPlayer`, `makeHostileToPlayer` skips the whole L116-131 block and always returns `new NearestPlayerTime(...)` at L151 — it cannot return null. So the else block and its debug log can never execute.",
+   "correction": "Report only. The page's neutral phrasing (\"the same three lines appear twice in the file\") is not wrong, but the second copy is unreachable.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "JAVA SOURCE, NOT THE DOC — HostileZombifiedPiglinsModule.java:27: \" * - Removes the \\\"forgiveness\\\" mechanic where they calm down over time\"",
+   "issue": "Half-wrong javadoc, and the half it gets wrong is the harsher one. While a player is in range the grudge never expires, but the moment a pass finds nobody in the detection cube the module zeroes the timer and nulls the target (L187-189) — an instant reset, harsher than vanilla's 20-39 s hold. The module does not remove forgiveness; it replaces a timed forgiveness with a range-gated one.",
+   "correction": "Report only. The page already describes the real behaviour correctly in \"Leaving ends it\".",
+   "severity": "wrong"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "clean"
+}

@@ -1,0 +1,325 @@
+{
+  "moduleId": "haunted_house",
+  "displayName": "Haunted House",
+  "shortDescription": "Replaces configured mob spawns with an invisible replacement entity in haunted structures",
+  "oneLiner": "Inside Witch Villas, part of the mob spawning is taken over: spawns are swapped for an invisible stalker that only fades into view once you look straight at it, while a creeping darkness follows you from room to room.",
+  "side": "server",
+  "enabledByDefault": false,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "sinceVersion": "v0.5.0",
+  "sinceCommit": "5603e46",
+  "requiredMods": [
+    {
+      "modId": "mr_dungeons_andtaverns",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/haunted_house/HauntedHouseModule.java:121-130 - shouldInitialize() returns ModList.get().isLoaded(\"mr_dungeons_andtaverns\"); when false, AbstractModule.initialize() (core/AbstractModule.java:96-99) returns before onInitialize(), so NeoForge.EVENT_BUS.register(this) (Module.java:135) never runs and the module is fully inert. Note the standalone jar vpa_haunted_house declares NO hard dependency on it (build.gradle renderModuleToml only emits vpa_core + the common deps), so the jar loads fine without D&T - the module just does nothing."
+    }
+  ],
+  "optionalMods": [
+    {
+      "modId": "alexsmobs",
+      "whatItAdds": "Not integrated in code at all - ModList is only ever queried for mr_dungeons_andtaverns (Module.java:123); \"alexsmobs\" never reaches ModList anywhere in the module. It appears only as a suggested value for replacement_entity_id ('alexsmobs:murmur') in a config comment and as the dead null-fallback of getReplacementEntityId(). Without Alex's Mobs nothing is lost; the shipped default replacement entity is minecraft:witch. If a user sets replacement_entity_id to alexsmobs:murmur without the mod installed, BuiltInRegistries.ENTITY_TYPE.getOptional() comes back empty, the module logs 'Failed to find configured replacement entity type' and silently spawns nothing (the original spawn is already cancelled at that point, so the spot just stays empty).",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/haunted_house/config/HauntedHouseConfig.java:110 and :556; spawn failure path HauntedHouseModule.java:452-457"
+    },
+    {
+      "modId": "nova_structures",
+      "whatItAdds": "Shipped as the first default entry in target_structures ('nova_structures:witch_villa') and as the list's element supplier. Nothing checks whether that mod is loaded; if the namespace does not exist the entry simply never matches any structure id and only the dungeons_and_taverns entry does any work.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/haunted_house/config/HauntedHouseConfig.java:100-106"
+    }
+  ],
+  "items": [],
+  "blocks": [],
+  "entities": [],
+  "recipes": [],
+  "keybinds": [],
+  "mixins": [],
+  "commands": [
+    "/hauntedhouse whereami"
+  ],
+  "events": [
+    "net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent - handler onBoostWitchSpawns at EventPriority.HIGHEST (HauntedHouseModule.java:152-153)",
+    "net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent - handler onShouldSpawnHauntedEntity at EventPriority.HIGH (HauntedHouseModule.java:282-283)",
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Pre - handler onEntityTick, default priority, the invisibility reveal check (HauntedHouseModule.java:1094-1095)",
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Pre - handler onPlayerTick, default priority, fog + cache refresh + direct area spawning (HauntedHouseModule.java:1195-1196)",
+    "All four are registered on the NeoForge game bus from onInitialize() via NeoForge.EVENT_BUS.register(this) (HauntedHouseModule.java:135), i.e. only when shouldInitialize() passed.",
+    "net.neoforged.neoforge.event.RegisterCommandsEvent - NOT in the module; /hauntedhouse whereami is registered by the bundle class VanillaPlusAdditions.java (handler onRegisterCommands:229-235, builder registerHauntedHouseDebugCommand:271-277, executor executeHauntedHouseWhereAmI:433-461)"
+  ],
+  "configKeys": [
+    {
+      "key": "target_mobs",
+      "type": "list",
+      "defaultValue": "List.of(\"minecraft:witch:10\")",
+      "range": "",
+      "effect": "List of mobs to replace with the replacement entity in the format 'namespace:mob_id:replacement_rate' (e.g. 'minecraft:witch:10' = 10% of witches get replaced). Entries with a rate outside 0-100 or without exactly three colon-separated parts are rejected by the validator."
+    },
+    {
+      "key": "target_structures",
+      "type": "list",
+      "defaultValue": "List.of(\"nova_structures:witch_villa\", \"dungeons_and_taverns:witch_villa\")",
+      "range": "",
+      "effect": "List of structure IDs where mob replacements should occur. Matching is a substring test, not equality (see notes)."
+    },
+    {
+      "key": "replacement_entity_id",
+      "type": "string",
+      "defaultValue": "\"minecraft:witch\"",
+      "range": "",
+      "effect": "Entity ID spawned as invisible replacement in target structures (e.g. 'alexsmobs:murmur' or 'minecraft:witch'). Only LivingEntity types get the invisibility effect; anything else spawns visible and logs a warning."
+    },
+    {
+      "key": "spawn_preset",
+      "type": "string",
+      "defaultValue": "\"structure_focused\"",
+      "range": "custom | balanced | structure_focused | courtyard",
+      "effect": "Spawn tuning preset for haunted structures. Only 'custom' makes the seven tuning values below take effect; every other preset hardcodes them (see notes). An unparsable value falls back to structure_focused."
+    },
+    {
+      "key": "witch_spawn_boost_chance",
+      "type": "double",
+      "defaultValue": "50.0",
+      "range": "0.0 ~ 100.0",
+      "effect": "Chance that a non-witch mob spawn in target structures is replaced with a witch, so more witches exist to be replaced; 0 disables the boost. IGNORED unless spawn_preset = custom (default preset structure_focused forces 78%)."
+    },
+    {
+      "key": "enable_fog_effect",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Enable the fog (Darkness) effect for players inside target structures. Careful: this also gates the whole per-player tick pipeline - setting it to false disables the spawn-spot cache refresh AND direct area spawning too (HauntedHouseModule.java:1218 returns before both)."
+    },
+    {
+      "key": "fog_effect_amplifier",
+      "type": "int",
+      "defaultValue": "0",
+      "range": "0 ~ 5",
+      "effect": "Amplifier for the Darkness effect (0 = light fog, 1 = medium, 2+ = heavy)."
+    },
+    {
+      "key": "cave_depth_tolerance",
+      "type": "int",
+      "defaultValue": "6",
+      "range": "0 ~ 64",
+      "effect": "How far below the terrain surface (max of MOTION_BLOCKING_NO_LEAVES and WORLD_SURFACE) a spawn is treated as cave-like and blocked. IGNORED unless spawn_preset = custom (default preset forces 8)."
+    },
+    {
+      "key": "sky_access_near_building_radius",
+      "type": "int",
+      "defaultValue": "5",
+      "range": "1 ~ 24",
+      "effect": "Horizontal search radius in blocks used by isNearStructureGarden() to detect nearby covered building areas (vertical radius is hardcoded 2, threshold is structure_material_threshold * 2). IGNORED unless spawn_preset = custom (default preset forces 7)."
+    },
+    {
+      "key": "sky_access_around_building_chance",
+      "type": "double",
+      "defaultValue": "15.0",
+      "range": "0.0 ~ 100.0",
+      "effect": "Chance to allow haunted spawns in open-sky spots next to a covered area. IGNORED unless spawn_preset = custom (default preset forces 6%)."
+    },
+    {
+      "key": "distribution_attempts",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 64",
+      "effect": "How many attempts are made to spread haunted spawns away from clusters. IGNORED unless spawn_preset = custom (default preset forces 16)."
+    },
+    {
+      "key": "distribution_radius",
+      "type": "int",
+      "defaultValue": "4",
+      "range": "0 ~ 24",
+      "effect": "Horizontal offset radius in blocks used when distributing haunted spawns (grows adaptively up to 3x over the attempts). IGNORED unless spawn_preset = custom (default preset forces 8). Note the code clamps it to at least 1, so 0 behaves like 1."
+    },
+    {
+      "key": "min_distance_to_other_mobs",
+      "type": "int",
+      "defaultValue": "6",
+      "range": "0 ~ 64",
+      "effect": "Minimum distance to other living mobs when selecting a distributed spawn position. IGNORED unless spawn_preset = custom (default preset forces 8)."
+    },
+    {
+      "key": "material_scan_horizontal_radius",
+      "type": "int",
+      "defaultValue": "2",
+      "range": "1 ~ 8",
+      "effect": "Horizontal scan radius for the block-material based cave/structure detection."
+    },
+    {
+      "key": "material_scan_vertical_radius",
+      "type": "int",
+      "defaultValue": "1",
+      "range": "0 ~ 4",
+      "effect": "Vertical scan radius for the block-material based cave/structure detection."
+    },
+    {
+      "key": "cave_material_threshold",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 128",
+      "effect": "Minimum number of cave-like blocks near a position to treat it as a likely cave. A structure-material hit at or above structure_material_threshold always wins over this."
+    },
+    {
+      "key": "structure_material_threshold",
+      "type": "int",
+      "defaultValue": "4",
+      "range": "1 ~ 128",
+      "effect": "Minimum number of structure-like blocks near a position to treat it as a house/garden area."
+    },
+    {
+      "key": "structure_material_blocks",
+      "type": "list",
+      "defaultValue": "List.of(\"minecraft:cobblestone_stairs\", \"minecraft:cobblestone_slab\", \"minecraft:mossy_cobblestone_stairs\", \"minecraft:mossy_cobblestone_slab\", \"minecraft:stone_bricks\", \"minecraft:cracked_stone_bricks\", \"minecraft:mossy_stone_bricks\", \"minecraft:chiseled_stone_bricks\", \"minecraft:stone_brick_stairs\", \"minecraft:stone_brick_slab\", \"minecraft:stone_brick_wall\", \"minecraft:mossy_stone_brick_stairs\", \"minecraft:mossy_stone_brick_slab\", \"minecraft:mossy_stone_brick_wall\", \"minecraft:grass_block\", \"minecraft:dirt_path\", \"minecraft:podzol\", \"minecraft:coarse_dirt\", \"minecraft:moss_block\")",
+      "range": "",
+      "effect": "Explicit structure material blocks used for house/garden detection. On top of this list the code always counts the block tags LOGS, PLANKS, WOODEN_STAIRS, WOODEN_SLABS, FENCES and FENCE_GATES (HauntedHouseModule.java:669-677), so removing entries here cannot switch wood off. Entries are validated against BuiltInRegistries.BLOCK and unknown ids are rejected."
+    },
+    {
+      "key": "underground_material_blocks",
+      "type": "list",
+      "defaultValue": "List.of(\"minecraft:stone\", \"minecraft:deepslate\", \"minecraft:cobbled_deepslate\", \"minecraft:andesite\", \"minecraft:diorite\", \"minecraft:granite\", \"minecraft:tuff\")",
+      "range": "",
+      "effect": "Explicit underground/cave material blocks used for cave detection. Validated against BuiltInRegistries.BLOCK."
+    },
+    {
+      "key": "enable_direct_area_spawning",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Enable direct haunted spawns from cached indoor/garden areas, independent of the vanilla spawn generator. Only runs while enable_fog_effect is also true."
+    },
+    {
+      "key": "direct_spawn_attempt_chance",
+      "type": "double",
+      "defaultValue": "35.0",
+      "range": "0.0 ~ 100.0",
+      "effect": "Chance per interval to attempt a direct haunted spawn for a player standing in a haunted area."
+    },
+    {
+      "key": "direct_spawn_interval_ticks",
+      "type": "int",
+      "defaultValue": "40",
+      "range": "20 ~ 1200",
+      "effect": "Tick interval between direct spawn attempts (20 ticks = 1 second). Checked as player.tickCount % interval == 0, and the player tick handler itself only runs every 20 ticks, so values that are not multiples of 20 effectively never fire."
+    },
+    {
+      "key": "direct_spawn_replacement_chance",
+      "type": "double",
+      "defaultValue": "85.0",
+      "range": "0.0 ~ 100.0",
+      "effect": "Chance that a direct haunted spawn becomes the configured replacement entity (invisible) instead of a plain, fully visible witch."
+    },
+    {
+      "key": "direct_spawn_candidate_samples",
+      "type": "int",
+      "defaultValue": "10",
+      "range": "1 ~ 64",
+      "effect": "How many cached spawn spots are sampled when picking a direct haunted spawn (at most one spawn per attempt)."
+    },
+    {
+      "key": "area_scan_radius",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "2 ~ 48",
+      "effect": "Horizontal scan radius around players used to discover and cache indoor/garden spawn spots (scanned 5 Y-levels deep, dy -2..+2)."
+    },
+    {
+      "key": "cache_scan_step",
+      "type": "int",
+      "defaultValue": "3",
+      "range": "1 ~ 8",
+      "effect": "Step size for cache area scans; higher means less CPU and less precision."
+    },
+    {
+      "key": "cache_query_chunk_radius",
+      "type": "int",
+      "defaultValue": "1",
+      "range": "0 ~ 4",
+      "effect": "Chunk radius used when querying cached spots around players."
+    },
+    {
+      "key": "movement_interpolation_max_steps",
+      "type": "int",
+      "defaultValue": "10",
+      "range": "1 ~ 64",
+      "effect": "Maximum interpolation steps for movement-based cache updates (clamps cost on teleports and lag spikes). Each step can trigger its own full area scan, so this multiplies the scan cost."
+    },
+    {
+      "key": "cache_refresh_interval_ticks",
+      "type": "int",
+      "defaultValue": "20",
+      "range": "1 ~ 400",
+      "effect": "Minimum ticks between movement-driven cache refresh passes per player. Values below 20 change nothing because the player tick handler itself is throttled to every 20 ticks."
+    },
+    {
+      "key": "cache_ttl_seconds",
+      "type": "int",
+      "defaultValue": "180",
+      "range": "30 ~ 1800",
+      "effect": "How long cached spawn spots stay valid before being dropped."
+    },
+    {
+      "key": "direct_spot_validation_interval_ticks",
+      "type": "int",
+      "defaultValue": "60",
+      "range": "1 ~ 1200",
+      "effect": "Ticks a direct-spot validation is reused before the expensive cave/material/mob checks run again."
+    },
+    {
+      "key": "direct_spawn_min_player_distance",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "0 ~ 64",
+      "effect": "Minimum distance to the player for direct haunted spawns."
+    },
+    {
+      "key": "direct_spawn_max_player_distance",
+      "type": "int",
+      "defaultValue": "36",
+      "range": "4 ~ 128",
+      "effect": "Maximum distance to the player for direct haunted spawns (forced to at least min + 2)."
+    },
+    {
+      "key": "max_cached_spawn_spots_per_level",
+      "type": "int",
+      "defaultValue": "600",
+      "range": "100 ~ 10000",
+      "effect": "Maximum number of cached haunted spawn spots kept per dimension; the oldest-expiring entries are evicted above this."
+    },
+    {
+      "key": "fog_cache_proximity_radius",
+      "type": "int",
+      "defaultValue": "3",
+      "range": "1 ~ 16",
+      "effect": "Radius used to inspect cached spots around the player for indoor-vs-garden fog zone detection."
+    },
+    {
+      "key": "fog_indoor_base_duration_ticks",
+      "type": "int",
+      "defaultValue": "120",
+      "range": "20 ~ 1200",
+      "effect": "Base Darkness duration in ticks for indoor haunted zones."
+    },
+    {
+      "key": "fog_garden_base_duration_ticks",
+      "type": "int",
+      "defaultValue": "50",
+      "range": "10 ~ 600",
+      "effect": "Base Darkness duration in ticks for garden/open haunted zones."
+    },
+    {
+      "key": "fog_trail_max_ticks",
+      "type": "int",
+      "defaultValue": "160",
+      "range": "20 ~ 2400",
+      "effect": "Maximum lingering fog trail duration in ticks built up by indoor exposure (+50 per indoor second)."
+    },
+    {
+      "key": "fog_trail_decay_ticks",
+      "type": "int",
+      "defaultValue": "20",
+      "range": "1 ~ 1200",
+      "effect": "How many trail ticks are lost per update while the player is outside an indoor zone."
+    }
+  ],
+  "notes": "DOC-WRITER WARNINGS - several things in the current README are contradicted by the code:\n\n1. README:61 says \"Disabled by default; auto-enables when Alex's Mobs (alexsmobs) and Dungeons and Taverns (mr_dungeons_andtaverns) are both present.\" WRONG on both counts. (a) isEnabledByDefault() returns false (HauntedHouseModule.java:115-118) and AbstractModuleConfig builds the 'enabled' key from exactly that value (core/AbstractModuleConfig.java:60), so the module is OFF until the user sets enabled = true in the config (or uses /vpa module enable haunted_house as a runtime override). shouldInitialize() only decides whether the module wires up at all; it never enables it. (b) shouldInitialize() checks ONLY ModList.get().isLoaded(\"mr_dungeons_andtaverns\") (line 123). \"alexsmobs\" is never passed to ModList anywhere in the module. The compat table at README.md:241 repeats the same wrong claim (\"Alex's Mobs + Dungeons and Taverns ... needs the Murmur entity\") and needs the same fix.\n\n2. README:59 says \"invisible entity replacement (Alex's Mobs Murmurs)\". The shipped default for replacement_entity_id is \"minecraft:witch\" (HauntedHouseConfig.java:111). Murmurs only appear if the user configures them. \"alexsmobs:murmur\" occurs exactly twice in the module: as a comment example (Config:110) and as the null-fallback return of getReplacementEntityId() (Config:556) - dead code, since the ConfigValue is always built by buildModuleSpecificConfig. That fallback also disagrees with the real define() default.\n\n3. SPAWN PRESET OVERRIDES SEVEN CONFIG KEYS. spawn_preset defaults to \"structure_focused\", and for any preset other than \"custom\" the getters ignore the user's value entirely (switch expressions, HauntedHouseConfig.java:564-661). Affected keys: witch_spawn_boost_chance, cave_depth_tolerance, sky_access_near_building_radius, sky_access_around_building_chance, distribution_attempts, distribution_radius, min_distance_to_other_mobs. Out of the box the effective witch boost is 78%, NOT the 50.0 shown in the config file. Document this loudly or users will edit dead knobs. Preset values (boost / caveDepth / skyRadius / skyChance / attempts / distRadius / minMobDist): BALANCED 0.55/6/5/0.15/8/4/6, STRUCTURE_FOCUSED 0.78/8/7/0.06/16/8/8, COURTYARD 0.60/5/8/0.28/12/6/6. An unrecognised preset string silently falls back to STRUCTURE_FOCUSED (Config:475-484).\n\n4. isTargetStructure() uses structureId.contains(configuredEntry), not equals (HauntedHouseConfig.java:537-548). Any structure whose id merely CONTAINS a configured entry counts as a target - e.g. \"…:witch_villa_annex\" would match \"dungeons_and_taverns:witch_villa\". Document as \"substring match\".\n\n5. Namespace vs mod-id mismatch worth calling out: the required mod-id is mr_dungeons_andtaverns, but its structures live under the namespace dungeons_and_taverns. The other default target, nova_structures:witch_villa, is inert unless that structure namespace exists; nothing checks for it.\n\n6. NO PERSISTENCE. All state lives in plain in-memory HashMaps/HashSets on the module instance (pendingInvisibleReplacementEntities, nextRevealCheckTick, playersInStructure, lastTrackedPlayerPositions, lastCacheRefreshTickByPlayer, playerFogTrailTicks, and the three per-dimension caches). The invisibility itself is a MobEffectInstance(INVISIBILITY, Integer.MAX_VALUE, 0, false, false) written onto the entity (HauntedHouseModule.java:472) - a normal mob effect, which is saved in the entity's NBT. Consequence: after a server restart every already-spawned replacement entity stays permanently invisible - it is no longer in the reveal set, so looking at it never removes the effect. This is the single most likely \"bug report\" a player will file.\n\n7. Related leak: the reveal set is only cleaned inside onEntityTick, i.e. when the entity actually ticks (Module.java:1116-1120, 1180-1181). There is no PlayerLoggedOut / EntityLeaveLevel / level-unload handler anywhere in the module, so an entity that unloads while still invisible leaves its UUID in pendingInvisibleReplacementEntities/nextRevealCheckTick for the rest of the server's uptime. Same for the per-player fog/position maps of players who log out.\n\n8. PERFORMANCE. onEntityTick subscribes to EntityTickEvent.Pre for EVERY entity in the world and does isModuleEnabled() plus a `tickCount % 10` plus instanceof plus a HashSet lookup before bailing. On top of that come the per-player block scans: countNearbyMatchingBlocks is a triple loop, and refreshSpawnSpotCacheAround walks a (2*area_scan_radius)^2 grid at cache_scan_step, 5 Y-levels deep (dy -2..+2), calling getBlockState and canSeeSky per candidate - at most once per second per player inside a structure, but updateCacheFromPlayerMovement can call it up to movement_interpolation_max_steps+1 times in one pass when the player moved far.\n\n9. Double-processing hazard with non-witch target mobs: FinalizeSpawnEvent.setSpawnCancelled() does NOT cancel the event. Verified in the decompiled NeoForge source (~/.gradle/caches/ng_execute/.../net/neoforged/neoforge/event/entity/living/FinalizeSpawnEvent.java:134-136): the class implements ICancellableEvent but setSpawnCancelled only delegates to getEntity().setSpawnCancelled(cancel) and setCanceled is never touched, so lower-priority listeners still run. The HIGH handler therefore still runs after the HIGHEST one and does not check isSpawnCancelled(). Today this is harmless because the HIGHEST handler skips minecraft:witch (Module.java:181-183) and target_mobs defaults to witches only. But if a user adds e.g. \"minecraft:zombie:50\" to target_mobs, one cancelled zombie spawn can produce BOTH a boosted witch and a replacement entity. (Evidence lives in the Gradle cache, not in this repo.)\n\n10. Direct area spawning (enable_direct_area_spawning, ON by default) bypasses the vanilla spawn pipeline completely - no mob cap, no light-level check, no difficulty check, no FinalizeSpawnEvent for other mods. Witches created by tryDirectAreaSpawn via spawnWitch() are NOT made invisible; only spawnReplacementEntity() applies the invisibility effect (Module.java:986-990).\n\n11. HIDDEN COUPLING: onPlayerTick returns early if enable_fog_effect is false (Module.java:1217-1220) - BEFORE the cache refresh (1293) and tryDirectAreaSpawn (1296-1298). Turning the fog off therefore also turns off the whole spawn-spot cache and direct area spawning. Same for creative and spectator players: the structure detection is skipped for them (Module.java:1234), so they get no fog, no cache refresh and no direct spawns - which makes testing in creative mode look like the module is broken.\n\n12. Debug logging is loud in a bad way: MessageBroadcaster.broadcastDebug/broadcastDebugWithLocation push a grey italic [DEBUG] chat line to EVERY player on the server (util/MessageBroadcaster.java:106-116 -> broadcast() iterates the whole player list), not just the admin - and \"Step 1: Detected mob spawn\" fires on literally every mob spawn in the world. Tell users to leave debug_logging off on a live server.\n\n13. /hauntedhouse whereami has NO permission gate (VanillaPlusAdditions.java:271-277 - no .requires(...), unlike /vpa which requires permission level 2), so any player can run it. It is also registered only by the BUNDLE mod class; core/StandaloneModuleBootstrap.java registers no commands at all, so the command does NOT exist in the vpa_haunted_house standalone jar. It reports one of three states (inside / outside (inside structure area) / outside structure) from getPlayerLocationState().\n\n14. Minor dead code / inconsistencies: playersInStructure stores System.currentTimeMillis() but the value is never read (only containsKey/put/remove, Module.java:1326-1327 and 1357). getDirectSpawnMinPlayerDistance()'s null fallback returns 6 (Config:748) while the define default is 8 (Config:270). Both null fallbacks are unreachable in practice because the ConfigValues are always built.\n\n15. There is no docs/modules/haunted_house.md yet and no lang keys (grep for \"haunted\" in assets/vanillaplusadditions/lang/en_us.json returns nothing) - all player-facing text is hardcoded English literals in the module and in the command. CHANGELOG [0.11.1] - 2026-05-09 claims \"Modul standardmaessig aktiviert\"; that was later reverted and is no longer true. Existing test notes: docs/guides/testing.md:48-51.",
+  "moduleDeps": [],
+  "relatedModules": []
+}

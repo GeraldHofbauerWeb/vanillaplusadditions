@@ -1,0 +1,28 @@
+{
+ "moduleId": "flying_fish",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "All of the boots movement is server-authoritative: the handler returns immediately on the client, and each change sets `hasImpulse` and `hurtMarked` so the server pushes the new velocity to the client itself.",
+   "issue": "\"each change\" is false. Of the three velocity changes, only applyWaterSkimBoost (FlyingFishModule.java:339-345) and launchPlayer (:347-367) set hasImpulse/hurtMarked. applyGlide (:369-376) calls player.setDeltaMovement(...) and zeroes fallDistance and sets neither flag, so the glide's fall-speed clamp is not force-synced to the client the way the boost and the leap are.",
+   "correction": "Say that the boost and the leap set `hasImpulse` and `hurtMarked`, while the glide clamp changes the velocity server-side without forcing a sync (only `fallDistance` is reset).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "**The leap** needs the same sprint-and-water condition, an expired cooldown, a leap mode other than `REALISTIC`, and — in `DEFAULT` — **no** water 0.6 blocks above you, i.e. you have to be at the surface rather than under it.",
+   "issue": "Only half of the DEFAULT check is stated. isNearWaterSurface() (FlyingFishModule.java:385-390) is `!isWaterAt(+0.6) && (isWaterAt(-0.1) || isWaterAt(-0.6) || isWaterAt(-1.0))` — it additionally requires water at one of the three probes *below* the player. The sprint-and-water gate does not guarantee that, because isTouchingWater() (:378-383) is also satisfied by isInWaterOrBubble() alone (e.g. a player on the shore whose hitbox merely touches an adjacent water block). In that case DEFAULT still refuses the leap although nothing is 0.6 above.",
+   "correction": "State both halves: in DEFAULT the leap needs no water 0.6 blocks above you AND water at your feet minus 0.1, 0.6 or 1.0 — the bubble/hitbox-only form of \"touching water\" does not qualify.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "It mirrors only half of what vanilla's cod table does: that table smelts the drop for a burning fish *or* for a killer whose weapon carries a `#minecraft:smelts_loot` enchantment, so a Fire Aspect sword that kills a flying fish underwater — where the fire goes out at once — still gives you the raw item.",
+   "issue": "Every literal statement here is correct (verified against data/minecraft/loot_table/entities/cod.json in the 1.21.1 jar: any_of[is_on_fire, direct_attacker mainhand #minecraft:smelts_loot] → furnace_smelt), but the comparison is presented as if the smelt condition were the whole difference. Vanilla's cod table has a *second* pool — random_chance 0.05 → minecraft:bone_meal — which the LivingDropsEvent fallback has no analogue to, so a flying fish never drops bone meal.",
+   "correction": "Add the second difference: vanilla's cod table also has a 5 % bone-meal pool, which the fallback handler does not reproduce.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [
+  "docs/modules/flying_fish.md line 187: leftover TODO comment in the \"Module disabled, datapack not\" row — `<!-- TODO: not verified at runtime — no test in this repository covers the disabled-module start. -->`. The repo's own template check reports it: `python3 scripts/docgen/check_docs.py --no-delegate` → \"~ docs/modules/flying_fish.md: still contains a TODO marker\" (warning, does not fail CI). The honest caveat itself is right; it should be plain text, not a TODO marker."
+ ],
+ "verdict": "needs-repair"
+}

@@ -1,323 +1,233 @@
 # VanillaPlusAdditions
 
-![Banner](docs/github_banner.png)
+![Banner](docs/img/github_banner.png)
 
-A Minecraft NeoForge mod (1.21.1) that enhances vanilla gameplay with useful additions while maintaining the original feel.
+[![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-brightgreen)](https://www.minecraft.net/)
+[![NeoForge](https://img.shields.io/badge/NeoForge-21.1-orange)](https://neoforged.net/)
+[![Modules](https://img.shields.io/badge/modules-48-blue)](#-modules)
+[![Release](https://img.shields.io/github/v/release/GeraldHofbauerWeb/vanillaplusadditions?include_prereleases&label=release)](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest)
+[![Code Quality](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/actions/workflows/code-quality.yml/badge.svg)](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/actions/workflows/code-quality.yml)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-> 🤖 **AI Collaboration Notice**: This project was developed in collaboration with AI coding assistants. The AI helped with code implementation, documentation, and project structure. While the core ideas and direction came from human creativity, the AI's assistance made this project more robust and feature-complete. We believe in transparency about AI usage while celebrating the potential of human-AI collaboration in software development.
+**48 small fixes and additions that keep Minecraft feeling like Minecraft.** Nothing here adds a
+new dimension or a tech tree. Each module scratches one itch — a compass that stops forgetting its
+lodestone, cats that actually guard your base, a rail that keeps the chunks loaded while your
+minecart is somewhere else.
 
-## 🎯 Features
+**Every module can be switched off, and most can be installed on their own.** Take the all-in-one
+jar and disable what you do not want, or take just the two module jars you came for.
 
-VanillaPlusAdditions is **modular**: every feature below is a self-contained module that can be
-enabled/disabled and configured independently (`config/vanillaplusadditions-common.toml`, hot-reloaded
-on save). Runtime toggling is also possible with `/vpa module enable|disable <id>`. All integrations
-with other mods are **optional** — modules detect them at runtime and degrade gracefully.
+> 🤖 **AI collaboration notice**: this project was built together with AI coding assistants. The
+> ideas and direction are human; the AI helped with implementation, documentation and structure.
+> We would rather say so than not.
 
----
+## 🚀 Install
 
-### 🐾 Companions & Guardians
+1. Install **NeoForge for Minecraft 1.21.1**.
+2. Take **either** the all-in-one jar **or** the individual module jars you want — never both.
+   They are declared incompatible on purpose, because installing both registers everything twice.
+3. Drop the jars into `mods/` and start the game. A config file appears on first launch; see the
+   [Configuration Guide](docs/guides/configuration.md).
 
-#### 🐱 Cat Guardian
-Turns tamed cats into active base defenders, with food bowls and an automatable feeding station.
-- **Cat Bowls & Feeding Station**: Associate tamed cats with a bowl (shift-right-click). Fed cats (fish) actively guard the area and attack hostile mobs within the guard radius (default 32 blocks XZ / 16 Y, configurable).
-- **Cat Armor**: Iron, Gold, Diamond and Netherite — increase attack damage and absorb incoming damage; repairable at the anvil (scute or the tier's ingot).
-- **Loot & XP Collection**: Cats gather drops from kills into an internal inventory; XP from their kills is buffered and, at a feeding station, converted into Bottles o' Enchanting (hopper/Create-automatable).
-- **Smart Guard AI**: returns to base after combat, low-health cats flee home to heal, dives after underwater mobs with water breathing, climbs ledges/fences, one-shots point-blank creepers (no explosion), never teleports while on guard duty.
-- **Engineering Goggles overlay** (Create): hold the cat keybind (default Left Ctrl) and look at a guardian cat to peek its stats popup (HP / armor / XP / owner); 3D boxes (outlines, guard radius, path) on a separate toggle (default Numpad +).
-- **Cat Inventory GUI** (modifier + right-click): equip armor, view food/XP/armor bars. Station skins selectable via a deco slot. Fully localized (EN, DE, DE-AT, ES, FR, CS).
+Every module jar also needs [`vpa_core.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_core.jar),
+and a few need one more module jar — the table says which.
 
-#### 🐸 Axolotl Guardian
-The underwater counterpart to Cat Guardian: axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs. Axolotls can be scooped and placed via a bucket round-trip, and stations support decorative skins. Owner is mirrored to the client for overlays. Bowls and stations take anything tagged `#minecraft:fishes` — the same tag the cat feeding station uses, so a single Create attribute filter feeds both — plus buckets of tropical fish, whose empty bucket is handed back after feeding.
+## 🧩 Modules
 
-#### 🐺 Battle Dogs
-Adds Iron, Gold, Diamond and Netherite **wolf armor**, rendered by the vanilla wolf-armor layer. Each tier increases the wolf's attack damage. Equip by right-click, remove with shears.
+Pick a row. **Requires** is what the module cannot work without; anything under *better with* is
+optional and the module degrades gracefully without it.
 
----
+<!-- vpa:table:start -->
+| Module | Docs | Download | Requires |
+|---|---|---|---|
+| **Vanilla Plus Additions** — every module in one jar | [All modules](#-modules) | [`vanillaplusadditions.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vanillaplusadditions.jar) | NeoForge 21.1+ · Minecraft 1.21.1 |
+| **🐾 Companions & Guardians** | | | |
+| **Axolotl Guardian**<br><sub>`axolotl_guardian`</sub> | [Docs](docs/modules/axolotl_guardian.md) | [`vpa_axolotl_guardian.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_axolotl_guardian.jar)<br><sub>+ `vpa_debug_overlay`</sub> | —<br><sub>better with: [Sable](https://modrinth.com/mod/sable), [JEI](https://modrinth.com/mod/jei), [Create](https://modrinth.com/mod/create)</sub> |
+| **Battle Dogs**<br><sub>`battle_dogs`</sub> | [Docs](docs/modules/battle_dogs.md) | [`vpa_battle_dogs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_battle_dogs.jar) | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei)</sub> |
+| **Cat Guardian**<br><sub>`cat_guardian`</sub> | [Docs](docs/modules/cat_guardian.md) | [`vpa_cat_guardian.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_cat_guardian.jar)<br><sub>+ `vpa_debug_overlay`, `vpa_flying_fish`</sub> | —<br><sub>better with: [Sable](https://modrinth.com/mod/sable), [Create](https://modrinth.com/mod/create), [JEI](https://modrinth.com/mod/jei)</sub> |
+| **Pet Potions**<br><sub>`pet_potions`</sub> | [Docs](docs/modules/pet_potions.md) | [`vpa_pet_potions.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_pet_potions.jar) | — |
+| **Wolf Mount**<br><sub>`wolf_mount`</sub> | [Docs](docs/modules/wolf_mount.md) | [`vpa_wolf_mount.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_wolf_mount.jar) | —<br><sub>better with: Grim Kingdoms: structures & ruins, Creeper Overhaul</sub> |
+| **👹 Mobs & Spawning** | | | |
+| **Better Mobs**<br><sub>`better_mobs`</sub> | [Docs](docs/modules/better_mobs.md) | [`vpa_better_mobs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_better_mobs.jar) | — |
+| **Enhanced AI Leader Loot**<br><sub>`enhanced_ai_leader_loot`</sub> | [Docs](docs/modules/enhanced_ai_leader_loot.md) | *bundle only* | **[Enhanced AI](https://modrinth.com/mod/enhanced-ai)** |
+| **Haunted House**<br><sub>`haunted_house`</sub> | [Docs](docs/modules/haunted_house.md) | [`vpa_haunted_house.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_haunted_house.jar) | **[Dungeons and Taverns](https://modrinth.com/mod/dungeons-and-taverns)**<br><sub>better with: [Alex's Mobs](https://modrinth.com/mod/alexs-mobs), nova_structures</sub> |
+| **Hostile Endermen**<br><sub>`hostile_endermen`</sub> | [Docs](docs/modules/hostile_endermen.md) | [`vpa_hostile_endermen.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_hostile_endermen.jar) | —<br><sub>better with: [Enderman Overhaul](https://modrinth.com/mod/enderman-overhaul), [Enhanced AI](https://modrinth.com/mod/enhanced-ai)</sub> |
+| **Hostile Zombified Piglins**<br><sub>`hostile_zombified_piglins`</sub> | [Docs](docs/modules/hostile_zombified_piglins.md) | [`vpa_hostile_zombified_piglins.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_hostile_zombified_piglins.jar) | — |
+| **Mob Drops**<br><sub>`mob_drops`</sub> | [Docs](docs/modules/mob_drops.md) | [`vpa_mob_drops.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mob_drops.jar) | — |
+| **Mob Glow Command**<br><sub>`mob_glow`</sub> | [Docs](docs/modules/mob_glow.md) | [`vpa_mob_glow.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mob_glow.jar) | — |
+| **Wither Skeleton Enforcer**<br><sub>`wither_skeleton`</sub> | [Docs](docs/modules/wither_skeleton.md) | [`vpa_wither_skeleton.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_wither_skeleton.jar) | —<br><sub>better with: [YUNG's Better Nether Fortresses](https://modrinth.com/mod/yungs-better-nether-fortresses)</sub> |
+| **🧱 Blocks, Rails & Create Companions** | | | |
+| **Conduit Attack Range**<br><sub>`conduit_attack_range`</sub> | [Docs](docs/modules/conduit_attack_range.md) | [`vpa_conduit_attack_range.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_conduit_attack_range.jar) | — |
+| **Copycat Pathfinding**<br><sub>`copycat_pathfinding`</sub> | [Docs](docs/modules/copycat_pathfinding.md) | [`vpa_copycat_pathfinding.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_copycat_pathfinding.jar) | **[Create](https://modrinth.com/mod/create)** 6.0+ |
+| **Create Water Wheel Unstucker**<br><sub>`create_water_wheel_unstucker`</sub> | [Docs](docs/modules/create_water_wheel_unstucker.md) | [`vpa_create_water_wheel_unstucker.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_create_water_wheel_unstucker.jar) | **[Create](https://modrinth.com/mod/create)** 6.0+ |
+| **End Conduit**<br><sub>`end_conduit`</sub> | [Docs](docs/modules/end_conduit.md) | [`vpa_end_conduit.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_end_conduit.jar) | — |
+| **Minecart Chunk Loading**<br><sub>`minecart_chunk_loading`</sub> | [Docs](docs/modules/minecart_chunk_loading.md) | [`vpa_minecart_chunk_loading.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_minecart_chunk_loading.jar)<br><sub>+ `vpa_debug_overlay`</sub> | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Create Aeronautics](https://modrinth.com/mod/create-aeronautics)</sub> |
+| **Mob Cart Loader**<br><sub>`mob_cart_loader`</sub> | [Docs](docs/modules/mob_cart_loader.md) | *bundle only* | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Create Aeronautics](https://modrinth.com/mod/create-aeronautics)</sub> |
+| **Stationary Chunk Loader**<br><sub>`stationary_chunk_loader`</sub> | [Docs](docs/modules/stationary_chunk_loader.md) | [`vpa_stationary_chunk_loader.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_stationary_chunk_loader.jar)<br><sub>+ `vpa_debug_overlay`</sub> | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Create Aeronautics](https://modrinth.com/mod/create-aeronautics)</sub> |
+| **Train Chunk Loading**<br><sub>`train_chunk_loading`</sub> | [Docs](docs/modules/train_chunk_loading.md) | [`vpa_train_chunk_loading.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_train_chunk_loading.jar)<br><sub>+ `vpa_debug_overlay`</sub> | **[Create](https://modrinth.com/mod/create)** 6.0+ |
+| **🛠️ Items & Crafting** | | | |
+| **Compass Overhaul**<br><sub>`compass_overhaul`</sub> | [Docs](docs/modules/compass_overhaul.md) | [`vpa_compass_overhaul.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_compass_overhaul.jar) | —<br><sub>better with: [Sable](https://modrinth.com/mod/sable), [Quark](https://modrinth.com/mod/quark)</sub> |
+| **Custom Crafting Recipes**<br><sub>`custom_crafting_recipes`</sub> | [Docs](docs/modules/custom_crafting_recipes.md) | [`vpa_custom_crafting_recipes.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_custom_crafting_recipes.jar) | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Overpacked](https://modrinth.com/mod/overpacked)</sub> |
+| **Dispenser Bucket Guard**<br><sub>`dispenser_bucket_guard`</sub> | [Docs](docs/modules/dispenser_bucket_guard.md) | [`vpa_dispenser_bucket_guard.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_dispenser_bucket_guard.jar) | — |
+| **Flying Fish**<br><sub>`flying_fish`</sub> | [Docs](docs/modules/flying_fish.md) | [`vpa_flying_fish.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_flying_fish.jar) | — |
+| **Free Anvil Repair**<br><sub>`free_anvil_repair`</sub> | [Docs](docs/modules/free_anvil_repair.md) | [`vpa_free_anvil_repair.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_free_anvil_repair.jar) | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei), [Create](https://modrinth.com/mod/create), [Quark](https://modrinth.com/mod/quark)</sub> |
+| **Mo' Arrows**<br><sub>`mo_arrows`</sub> | [Docs](docs/modules/mo_arrows.md) | [`vpa_mo_arrows.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mo_arrows.jar) | — |
+| **Pathfinder Quills**<br><sub>`pathfinder_quills`</sub> | [Docs](docs/modules/pathfinder_quills.md) | *bundle only* | **[Quark](https://modrinth.com/mod/quark)** 4.1-482+ |
+| **Stackables**<br><sub>`stackables`</sub> | [Docs](docs/modules/stackables.md) | [`vpa_stackables.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_stackables.jar) | —<br><sub>better with: [Tough As Nails](https://modrinth.com/mod/tough-as-nails), [Create](https://modrinth.com/mod/create)</sub> |
+| **Tipped Arrows from Potions**<br><sub>`tipped_arrows`</sub> | [Docs](docs/modules/tipped_arrows.md) | *bundle only* | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei)</sub> |
+| **Waystone Amethyst Repair**<br><sub>`waystone_amethyst_repair`</sub> | [Docs](docs/modules/waystone_amethyst_repair.md) | *bundle only* | —<br><sub>better with: [Waystones](https://modrinth.com/mod/waystones)</sub> |
+| **🌍 World & Environment** | | | |
+| **Chunk Reset Command**<br><sub>`chunk_reset`</sub> | [Docs](docs/modules/chunk_reset.md) | [`vpa_chunk_reset.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_chunk_reset.jar) | — |
+| **End Oxygen**<br><sub>`end_oxygen`</sub> | [Docs](docs/modules/end_oxygen.md) | [`vpa_end_oxygen.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_end_oxygen.jar) | —<br><sub>better with: [Create](https://modrinth.com/mod/create)</sub> |
+| **Food Effects**<br><sub>`food_effects`</sub> | [Docs](docs/modules/food_effects.md) | [`vpa_food_effects.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_food_effects.jar) | —<br><sub>better with: [Tough As Nails](https://modrinth.com/mod/tough-as-nails), [Create](https://modrinth.com/mod/create), rottencreatures</sub> |
+| **Glider Water Repair**<br><sub>`glider_water_repair`</sub> | [Docs](docs/modules/glider_water_repair.md) | [`vpa_glider_water_repair.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_glider_water_repair.jar) | **[Gliders](https://modrinth.com/mod/gliders)** |
+| **Idle Gamerule Pause**<br><sub>`idle_gamerules`</sub> | [Docs](docs/modules/idle_gamerules.md) | [`vpa_idle_gamerules.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_idle_gamerules.jar) | — |
+| **🥽 Overlays, HUD & Quality-of-Life** | | | |
+| **Arm Target Overlay**<br><sub>`arm_target_overlay`</sub> | [Docs](docs/modules/arm_target_overlay.md) | [`vpa_arm_target_overlay.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_arm_target_overlay.jar) | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Create Aeronautics](https://modrinth.com/mod/create-aeronautics), [Curios API](https://modrinth.com/mod/curios)</sub> |
+| **Block Glow**<br><sub>`block_glow`</sub> | [Docs](docs/modules/block_glow.md) | [`vpa_block_glow.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_block_glow.jar) | —<br><sub>better with: [Sable](https://modrinth.com/mod/sable)</sub> |
+| **Death Coordinates Announcer**<br><sub>`death_coordinates`</sub> | [Docs](docs/modules/death_coordinates.md) | [`vpa_death_coordinates.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_death_coordinates.jar) | — |
+| **Debug Overlay**<br><sub>`debug_overlay`</sub> | [Docs](docs/modules/debug_overlay.md) | [`vpa_debug_overlay.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_debug_overlay.jar) | —<br><sub>better with: [Create](https://modrinth.com/mod/create), [Create Aeronautics](https://modrinth.com/mod/create-aeronautics)</sub> |
+| **Item Vault Viewer**<br><sub>`item_vault_viewer`</sub> | [Docs](docs/modules/item_vault_viewer.md) | [`vpa_item_vault_viewer.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_item_vault_viewer.jar) | **[Create](https://modrinth.com/mod/create)** 6.0+ |
+| **Mob Spawn Overlay**<br><sub>`mob_spawn_overlay`</sub> | [Docs](docs/modules/mob_spawn_overlay.md) | [`vpa_mob_spawn_overlay.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mob_spawn_overlay.jar) | — |
+| **VPA Options**<br><sub>`options`</sub> | [Docs](docs/modules/options.md) | [`vpa_options.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_options.jar) | — |
+| **Overpacked Extensions**<br><sub>`overpacked_extensions`</sub> | [Docs](docs/modules/overpacked_extensions.md) | [`vpa_overpacked_extensions.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_overpacked_extensions.jar) | —<br><sub>better with: [Overpacked](https://modrinth.com/mod/overpacked), [Curios API](https://modrinth.com/mod/curios), [Quark](https://modrinth.com/mod/quark)</sub> |
+| **Static FOV**<br><sub>`static_fov`</sub> | [Docs](docs/modules/static_fov.md) | *bundle only* | — |
+| **🔌 Integrations & Utility** | | | |
+| **BlueMap Signs**<br><sub>`bluemap_signs`</sub> | [Docs](docs/modules/bluemap_signs.md) | [`vpa_bluemap_signs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_bluemap_signs.jar) | —<br><sub>better with: [BlueMap](https://modrinth.com/plugin/bluemap)</sub> |
+| **Freecam Sub-Level Noclip**<br><sub>`freecam_sublevel_noclip`</sub> | [Docs](docs/modules/freecam_sublevel_noclip.md) | [`vpa_freecam_sublevel_noclip.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_freecam_sublevel_noclip.jar) | —<br><sub>better with: freecam, [Sable](https://modrinth.com/mod/sable)</sub> |
+| **Texture Kill**<br><sub>`texture_kill`</sub> | [Docs](docs/modules/texture_kill.md) | [`vpa_texture_kill.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_texture_kill.jar) | — |
+<!-- vpa:table:end -->
 
-#### 🧪 Pet Potions
-Throw a healing or regeneration potion at an angry tamed animal and it forgives you. Hitting somebody else's wolf normally leaves you with no way out — vanilla only exempts an animal's *own* owner from being targeted, and the sole appeasement it offers is dying. Splash and lingering potions both work, and the pardon is aimed: the animal stays angry at everyone else. It also fixes the reason the throw usually fails — vanilla swallows the right-click for *any* tamed animal, so the potion never left your hand.
+<!-- vpa:tested:start -->
+<details>
+<summary><b>The exact combination this is played on</b> — “compatible” means tested, and this is what was tested</summary>
 
-### 👹 Mobs & Spawning
+Minecraft **1.21.1** · NeoForge **21.1.248** · Java **21**
 
-#### 🔥 Hostile Zombified Piglins
-Makes zombified piglins always aggressive towards players in the Nether for a more challenging experience. Configurable detection range and anger duration, with smart targeting and player switching.
+| Mod | Version |
+|---|---|
+| [BlueMap](https://modrinth.com/plugin/bluemap) | `5.7` |
+| [Bobo Lib](https://modrinth.com/mod/bobo-lib) | `1.1` |
+| [Create](https://modrinth.com/mod/create) | `6.0.10` |
+| create-aeronautics-bundled | `1.3.1` |
+| [Curios API](https://modrinth.com/mod/curios) | `9.5.1` |
+| [Enderman Overhaul](https://modrinth.com/mod/enderman-overhaul) | `2.0.3` |
+| [Enhanced AI](https://modrinth.com/mod/enhanced-ai) | `4.2.2.1` |
+| [Dungeons and Taverns](https://modrinth.com/mod/dungeons-and-taverns) | `4.4.4` |
+| [Overpacked](https://modrinth.com/mod/overpacked) | `2.0.1` |
+| [Quark](https://modrinth.com/mod/quark) | `4.1-482` |
+| [Sable](https://modrinth.com/mod/sable) | `2.0.5` |
+| [Tough As Nails](https://modrinth.com/mod/tough-as-nails) | `10.1.0.13` |
+| [Gliders](https://modrinth.com/mod/gliders) | `1.1.8` |
+| [Waystones](https://modrinth.com/mod/waystones) | `21.1.41` |
+| waystonessable | `1.0.7` |
+| zeta | `1.1-40` |
 
-#### 🟣 Hostile Endermen
-Makes endermen **in the End** attack on their own — no staring required. Only the persistent anger target is set, so vanilla's own enderman AI does the hunting (including teleporting closer). Endermen in the Overworld and Nether stay neutral, creative/spectator players are ignored, and a carved pumpkin (or modded ender mask) still protects. Includes compat switches for Enderman Overhaul and EnhancedAI so unprovoked endermen can no longer teleport you around in the End — both keep working the moment you hit back. See [docs/hostile_endermen.md](docs/hostile_endermen.md).
+Recipe viewer: **EMI 1.1.24** with **TooManyRecipeViewers 0.9.0**. There is no JEI in this pack — the JEI integrations are compiled against the JEI API and reach the screen through that bridge, so JEI itself is supported but untested here.
 
-#### 💀 Wither Skeleton Enforcer
-Prevents normal skeletons from spawning in the Nether and (optionally) replaces them with Wither Skeletons. Broadcasts messages about blocked spawns in debug mode.
+Anything older than the floors in the table above is simply unknown, not known to be broken. If you run a different combination and it works, say so in an issue and it goes in this list.
+</details>
+<!-- vpa:tested:end -->
 
-#### 🐦‍🔥 Better Mobs
-Enhances mob variety and challenge: mobs can spawn with customizable armor and potion effects. Configurable spawn chances and equipment tiers, with different settings per Y-level or Nether/End dimension. Armor comes battle-worn — each piece rolls its own remaining durability (5–20 % by default, configurable per dimension), and enchantment levels are clamped to what each enchantment actually allows, so no more Unbreaking IV on netherite leggings.
+## ✨ A few highlights
 
-#### ✨ Mob Glow (command)
-`/mobglow` makes all mobs of a specified type glow (configurable duration, including infinite) for easier tracking. Clear by type or all at once — handy for server administration and debugging.
-
-#### 👻 Haunted House
-Creates an atmospheric, spooky experience in configured structures (default: Witch Villas).
-- **Witch Spawn Boosting** in target structures, then **invisible entity replacement** (Alex's Mobs Murmurs) that stay invisible until a player looks directly at them (raycast line-of-sight).
-- **Atmospheric fog** (darkness effect) inside the structure, with configurable intensity, dissipating on exit.
-- **Disabled by default**; auto-enables when Alex's Mobs (`alexsmobs`) and Dungeons and Taverns (`mr_dungeons_andtaverns`) are both present.
-
-#### 🏳️ Enhanced AI Leader Loot
-Adds bonus loot to Enhanced AI's banner-carrying "leader" mobs on death — golden carrots, golden apples, or (1% by default) an enchanted golden apple, on top of their normal loot. Configurable weights and counts. Inert without Enhanced AI.
-
----
-
-### 🧱 Blocks, Rails & Create Companions
-
-#### 🚃 Mob Cart Loader
-Two directional blocks that automate moving mobs in and out of minecarts on the adjacent rail — and, with Create, in and out of train carriages:
-- **Mob Loader** boards a mob standing in the adjacent pen into a parked, empty rideable minecart.
-- **Mob Unloader** ejects a mob riding a parked minecart into the adjacent pen.
-- **Create trains** (optional, on by default): point the loader's **output** face — or the unloader's **input** face — at a **Create track** instead of a rail, and the same blocks serve **carriage seats**. The block doesn't have to sit in the track bed: it scans up to 3 blocks along its facing direction (configurable), so it can stand off to the side next to the carriage body — but the scan stops at the first solid block, so it never reaches through a wall. The mob goes into (or comes out of) the seat nearest to that track, within a configurable radius (default 4 blocks). Only **standing** trains are served, so a train passing through is never touched. Unlike Create's own seats this deliberately ignores Create's `seatHostileMobs` restriction — hostile mobs can be shipped by rail, and the comparator still tells you what's aboard.
-- **Inverse redstone**: active by default, a redstone signal disables the block. 6-way directional with a distinct **input** and **output** face (flow chevrons on the glass sides point input → output). Never touches players.
-- **Comparator output** on the stored mob: `0` = empty, `1` = a hostile mob (MONSTER category), `2` = a friendly/neutral mob — so redstone can react to *what* is being moved.
-- The affected mob spins as a **live model inside the glass block**; with Create's Engineering Goggles a stats panel shows the mob type and (while sneaking) its health.
-- Craft with a glass frame + a minecart, a saddle and a hopper (loader) / dropper (unloader).
-
-#### 🛤️ Minecart Chunk Loading
-Adds a **Chunk Loader Rail** that keeps chunks loaded around traveling minecarts, so long-distance rail networks don't stall at chunk borders. Chunks are forced only while a cart is active and released after a timeout.
-
-#### 🚄 Train Chunk Loading
-Adds a **Chunk Loader Track** — a real, connectable **Create train track** variant (curves, slopes, girders — everything a normal track does) that keeps chunks loaded around trains passing over it. Create itself only *simulates* trains through unloaded chunks: they keep moving, but onboard drills, deployers, hoppers and portable storage interfaces stop working. Over Chunk Loader Tracks they keep running. Same mechanics as the Chunk Loader Rail: chunks are forced while a carriage is over the track and released after a timeout; state survives restarts. Craft it like the rail: 8 train tracks around an ender pearl → 8 tracks. **Placement tip:** a track in an *unloaded* chunk can't see the train — space loader tracks closer than `chunk_load_radius × 16` blocks along the line so the loaded corridor rolls along with the train. A **Ponder entry** (hold **W** on the item) walks through the placement rules in-game.
-
-#### ⚓ Stationary Chunk Loader
-A **Chunk Anchor** block that force-loads its chunk (plus a configurable radius) while redstone-powered — for redstone clocks and Create contraptions that must keep running in unloaded chunks.
-
-#### 💧 Create Water Wheel Unstucker
-Detects Create water wheels that stalled after a chunk reload (a known kinetic/flow desync) and can kick them back into rotation. Ships with the `/vpaunstuck` command to re-initialise stalled wheels on demand; auto-fix is opt-in.
-
-#### 🧱 Copycat Pathfinding
-Create marks every **Copycat Panel** as unwalkable, so mobs treat a 3-pixel plate like a solid wall — a cat won't use a passage whose ceiling carries a panel, an axolotl won't swim past a waterlogged one. This makes panels block only the movements that actually cross the plate: walking along a panel-lined wall, under a ceiling panel or over a supported floor panel works again, while a panel standing across the way still stops mobs. Free-standing panel bridges and `copycat_step` keep their vanilla-slab behaviour. See [docs/copycat_pathfinding.md](docs/copycat_pathfinding.md).
-
-#### 🔱 Conduit Attack Range
-Makes vanilla conduits **attack hostile mobs at every active tier** (not just at full size), within half the Conduit Power radius, and fixes the client-side attack beam so the animation shows correctly.
-
-#### 🌌 End Conduit
-An **End-only conduit upgrade**: a distinct craftable item that renders like a vanilla conduit but activates only in the End, needs **no water**, and forms its frame from Glowstone / End Stone / End Stone Bricks / Sea Lantern. It grants Conduit Power (and, together with End Oxygen, effectively unlimited air) on dry End land. Crafted from chorus fruit, eyes of ender and a vanilla conduit.
-
----
-
-### 🛠️ Items & Crafting
-
-#### 🐟 Flying Fish
-A new aquatic mob with spawn egg, bucket and cooked food variant, woven into vanilla fishing. **Flying Fish Boots** let you skim faster across the water surface and gain short leaps while sprinting on water. Raw Flying Fish also counts as **cat food** — it tames, heals and breeds cats just like cod does. Spawns are common in warm oceans (where cod does not spawn at all) and deliberately rare in lukewarm oceans, so they don't crowd cod out of the shared water-ambient mob cap.
-
-#### 📦 Stackables
-Makes normally-unstackable items stackable and raises stack sizes for configured items:
-- Potions / splash / lingering (default 16); stews & soups, ender pearls, eggs (default 64).
-- Auto-detects Tough As Nails items (juices, water bottles, ice cream, empty canteens, …).
-- Note: filled canteens with durability can't be stacked (Minecraft limitation).
-
-#### 🏹 Tipped Arrows from Potions
-Craft tipped arrows with a **normal potion** instead of a lingering potion — no more Dragon's Breath grind. Lingering potions still work too; only the recipe's center ingredient is widened, no new tipped arrow types are added.
-
-#### 🪣 Dispenser Bucket Guard
-A dispenser that can't use its bucket **throws it on the floor** — an empty bucket with no fluid in front of it, a water bucket aimed at a solid block. One misfire and an automated water door has lost its bucket. This keeps the bucket in the dispenser instead and turns the failed attempt into a no-op (with vanilla's "dispenser failed" click). Successful pickups and placements are byte-for-byte unchanged, and anything that isn't a bucket is untouched. See [docs/dispenser_bucket_guard.md](docs/dispenser_bucket_guard.md).
-
-#### 🧭 Compass Overhaul
-Three repairs around the compass. **A lodestone compass no longer forgets where it was bound** — vanilla drops the binding whenever its POI lookup comes back empty, which also happens for an unloaded chunk or an unreadable POI file, and the coordinates are then gone while the item keeps its glint and its name (it typically shows up right after a Waystone warp, but Waystones is not at fault). We answer that question from the block instead, so the binding only clears when the chunk is loaded and the lodestone is provably gone. **The needle stops jittering aboard a Create Aeronautics airship** — Sable already rotates it, but from the previous tick's pose and only for a viewer found by chunk position. And it adds the **World Compass**: a second compass that always points north — in the Nether and the End too, and while a ship turns underneath it, which makes it a proper direction sign in a (glass) item frame. Craft it from a Compass, three Eyes of Ender and an Amethyst Shard. And it repairs the needle where **Quark's *Compasses Work Everywhere* takes it over** — that replacement aims at the raw block position, i.e. the block's north-west corner rather than its centre, ignores airships entirely and drops an item frame's rotation steps. See [docs/compass_overhaul.md](docs/compass_overhaul.md).
-
-#### 🧰 Custom Crafting Recipes
-Adds configurable **shaped and shapeless** crafting recipes straight from the module config — including the fair rail upgrades (plain rails → powered/detector/activator) and a reworked Netherite Ingot recipe that trades gold for Create's Powdered Obsidian (replaces the vanilla scrap+gold recipe; inert without Create). The place to add your own vanilla/cross-mod recipes without a datapack.
-
-#### 🗺️ Pathfinder Quills
-Craft Quark's Pathfinder's Quill (normally trade-only) with a Feather + an Eye of Ender + a block matching the target biome (e.g. Sand for Desert, Podzol for Old Growth Pine Taiga) — all 15 quill variants Quark supports. Inert without Quark.
-
-#### 🔨 Free Anvil Repair
-Pure anvil repairs cost **no XP levels** — only plain repairing is free; combining enchanted items, applying books and renaming keep vanilla costs.
-- Material repair and same-type combine repair (unenchanted sacrifice), even for gear past the "Too Expensive!" cap.
-- **Extra repair materials** (`extra_repair_materials`, Quark-style `item=material`): netherite gear repairs with diamonds and Create's diving gear with its base material out of the box; add your own combos.
-
-#### 💎 Waystone Amethyst Repair
-Repair the Waystones **Warp Stone** with amethyst in an anvil (free while Free Anvil Repair is enabled). Inactive without the Waystones mod.
-
----
-
-### 🌍 World & Environment
-
-#### 🫧 End Oxygen
-Removes breathable oxygen from the End, so players must hold their breath or use gear (Create backtanks, Conduit Power via the End Conduit) to survive. Configurable.
-
-#### 🍎 Food Effects
-Enhances food items with additional potion effects and thirst restoration.
-- Add any potion effect to any item via config, with an optional probability per effect; configured items become **always edible**.
-- **Tough As Nails** support (optional): thirst restoration and heating/cooling tooltips.
-- Ships with extensive defaults for Vanilla, Create and Tough As Nails items.
-
-#### 🪂 Glider Water Repair
-Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you, which without the copper upgrade **wrecks the paraglider** — and that part stays exactly as the mod intends. What changes is the way back: the only cure the mod offers is an anvil plus the Reinforced Paper of that glider's exact tier (for an iron one: 5 leather + 4 paper + 8 iron ingots), while the broken glider wears a charred sprite and looks for all the world like it is on fire. So here, dunking it works — a broken glider lying in water becomes usable again, with a hiss and a puff of steam. Only the broken flag clears; the durability the strike cost stays gone, so the anvil repair keeps its purpose. See [docs/glider_water_repair.md](docs/glider_water_repair.md).
-
-#### 🌙 Idle Gamerule Pause
-Pauses day / weather / season cycles while the server is empty and resumes them on the first join — the world doesn't drift while nobody is online.
-
-#### 🗺️ Chunk Reset (command)
-Provides a command to delete and regenerate chunks from world generation — useful for resetting explored areas to pick up new world-gen.
-
----
-
-### 🥽 Overlays, HUD & Quality-of-Life
-
-#### 🧪 Debug Overlay (framework)
-The shared **Engineering-Goggles debug-overlay** framework other modules plug into: a global toggle plus chunk borders, cat stats, and more. Uses Create's goggles when present, falling back to the `vanillaplusadditions:arm_goggles` item tag.
-
-#### 👹 Mob Spawn Overlay
-Press **F3 + M** to light up every position where hostile mobs can spawn — the spawn view OptiFine's `F7` used to give you, which Sodium/Iris don't bring along. Red fields spawn mobs right now, yellow ones once it gets dark, and a violet outline marks spots roomy enough for a spider. The check mirrors vanilla's own spawn code (ground placement, block/sky light, hitbox clearance) and is dimension-aware, so the Nether and the End are judged by their own light rules. Key, scan radius, colors and the animated stripes are configurable.
-
-#### 🦾 Arm Target Overlay
-While wearing Engineering Goggles, shows a Create **Mechanical Arm's** input/output target positions in the world — makes configuring arms much easier.
-
-#### 📦 Item Vault Viewer
-Lets players view the aggregated contents of a Create **Item Vault**: wear Engineering Goggles and **Ctrl+right-click** the vault (modifier key rebindable). Works on placed vaults **and on vaults mounted on moving Create contraptions** — carts, trains, elevators — where Create itself deliberately opens nothing.
-
-#### 🎥 Static FOV
-Stops the field-of-view from widening when the player moves faster (sprinting, Speed, elytra/flight) — a steadier view.
-
-#### ⚙️ VPA Options (backup/restore)
-Backup & restore of client options (`options.txt`) including **all keybinds** — manual snapshots via `/vpaoptions` or an Options-screen button, plus automatic rotating backups whenever settings change. Great when a modpack update scrambles your controls.
-
-#### 🎒 Overpacked Extensions
-Quality-of-life features for **Overpacked** giant backpacks (each individually toggleable):
-- **Slowdown override** — rescale Overpacked's full-backpack movement penalty with a configurable multiplier (up to and including no slowdown). Needs Overpacked.
-- **Backpack keybinds** — open the compartments of a worn giant backpack (main compartment on `B` by default; right/left unbound) without taking it off. Needs Overpacked + Curios.
-
-*Sorting & searching inside the backpack aren't reimplemented — Quark already does both. Whitelist Overpacked's screen in Quark's config to get Quark's own sort button + search bar on the backpack (see [docs](docs/overpacked_extensions.md)).*
-
-#### 🪦 Death Coordinates Announcer
-Announces player death coordinates in chat; operators can click the message to teleport to the death location.
-
----
-
-### 🔌 Integrations & Utility
-
-#### 🗺️ BlueMap Signs
-Turns `[bm]` signs into curated **BlueMap** markers; manage them with `/bmsigns`. Server-side; inert without BlueMap.
-
-#### 🚫 Texture Kill
-Replaces configured textures with a fully transparent one — handy for hiding cosmetic textures from other mods (e.g. Create contraption hats). Format: `namespace:textures/category/name.png`.
+<table>
+<tr>
+<td width="110" align="center"><img src="docs/img/items/world_compass.png" width="88"></td>
+<td><b><a href="docs/modules/compass_overhaul.md">Compass Overhaul</a></b><br>
+Vanilla drops a lodestone binding whenever its lookup comes back empty — including for a chunk that
+simply is not loaded. This keeps the binding unless the lodestone is provably gone, fixes the needle
+aboard a turning airship, and adds a second compass that always points to world north.</td>
+</tr>
+<tr>
+<td width="110" align="center"><img src="docs/img/blocks/cat_feeding_station.png" width="88"></td>
+<td><b><a href="docs/modules/cat_guardian.md">Cat Guardian</a></b> &amp;
+<b><a href="docs/modules/axolotl_guardian.md">Axolotl Guardian</a></b><br>
+Feed a tamed cat and it patrols and hunts hostile mobs around your base; the same for axolotls
+underwater. Both get armour, a bowl, and a feeding station with a few dozen skins.</td>
+</tr>
+<tr>
+<td width="110" align="center"><img src="docs/img/blocks/mob_loader.png" width="88"></td>
+<td><b><a href="docs/modules/mob_cart_loader.md">Mob Cart Loader</a></b><br>
+Two blocks that load a mob into a passing minecart and unload it again at the other end — keeping
+its UUID, so nothing is duplicated and nothing is lost.</td>
+</tr>
+<tr>
+<td width="110" align="center"><img src="docs/img/items/chunk_loader_track.png" width="88"></td>
+<td><b><a href="docs/modules/train_chunk_loading.md">Chunk loading that follows you</a></b><br>
+A rail, a Create track and a standing anchor block, each keeping a rolling window of chunks loaded
+so the cart, the train or the contraption keeps running when nobody is watching.</td>
+</tr>
+<tr>
+<td width="110" align="center"><img src="docs/img/items/flying_fish.png" width="88"></td>
+<td><b><a href="docs/modules/flying_fish.md">Flying Fish</a></b><br>
+A fish that leaps out of the water, and boots made from it that let you run across the surface.</td>
+</tr>
+<tr>
+<td width="110" align="center"><img src="docs/img/items/wolf_armor_netherite.png" width="88"></td>
+<td><b><a href="docs/modules/wolf_mount.md">Wolf Mount</a></b> &amp;
+<b><a href="docs/modules/battle_dogs.md">Battle Dogs</a></b><br>
+Armour your wolf in four tiers — and if it is big enough, saddle up and fight from its back.</td>
+</tr>
+</table>
 
 ## 🔧 Configuration
 
-Each module has its own configuration options. See our detailed guides:
-- [Module Configuration Guide](docs/MODULE_CONFIG_GUIDE.md)
-- [Debug Logging Configuration](docs/DEBUG_LOGGING_CONFIG.md)
-- [MobGlow Command Guide](docs/MOBGLOW_MODULE_GUIDE.md)
+One TOML file, one section per module, every key commented in place.
 
-## 🚀 Installation
+* [Configuration Guide](docs/guides/configuration.md) — where the file is and how it works
+* [Configuration Reference](docs/reference/config.md) — every key of every module, generated
+* [Debug Logging](docs/guides/debug-logging.md) — per-module log control
 
-1. Download the latest version from [Releases](https://github.com/Gerry3010/vanillaplusadditions/releases)
-2. Install NeoForge for Minecraft 1.21.1
-3. Place the jar file in your mods folder
-4. Start Minecraft and enjoy!
+## 📚 Documentation
 
-## 🧩 Module dependencies (other mods)
-
-**None of these mods are required to run VanillaPlusAdditions** — since v1.0.0-beta.25 all of
-them are optional dependencies. Modules that integrate with another mod detect it at runtime
-and degrade gracefully when it is missing. All modules not listed here are pure vanilla.
-
-| Module | Integrates with | Without that mod |
-|---|---|---|
-| `arm_target_overlay` | [Create](https://modrinth.com/mod/create) | Overlay inactive (it visualizes Create's Mechanical Arm targets) |
-| `item_vault_viewer` | Create | Module skips initialization entirely (it views Create's Item Vaults) |
-| `train_chunk_loading` | Create | Module skips initialization entirely (it adds a Create track variant) |
-| `create_water_wheel_unstucker` | Create | Module skips initialization (needs Create water wheels) |
-| `copycat_pathfinding` | Create | Module skips initialization (it fixes Create's copycat panels) |
-| `mob_cart_loader` | Create *(optional)* | Minecart loading/unloading fully functional — train-carriage seats and the goggle stats panel need Create |
-| `end_oxygen` | Create *(optional)* | Fully functional — Create backtanks just can't supply air in the End |
-| `debug_overlay` | Create *(optional)* | Goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag |
-| `overpacked_extensions` | [Overpacked](https://modrinth.com/mod/overpacked) + [Curios](https://modrinth.com/mod/curios) | Slowdown override still works with Overpacked alone; backpack keybinds + sort button are inert without a worn giant backpack |
-| `waystone_amethyst_repair` | [Waystones](https://modrinth.com/mod/waystones) | Module inactive (needs the Warp Stone) |
-| `cat_guardian` | [Sable](https://modrinth.com/mod/sable) *(optional)* | Cat bowl / feeding station use plain block variants (no ship-assembly awareness) |
-| `axolotl_guardian` | Sable *(optional)* | Axolotl bowl / feeding station use plain block variants |
-| `compass_overhaul` | Sable *(optional)* | Lodestone guard and World Compass work fully; only the sub-level needle correction is skipped (there are no ships without Sable) |
-| `block_glow` | Sable *(optional)* | No difference — the integration only additionally highlights blocks *inside* Sable sub-levels (ships), which don't exist without Sable |
-| `glider_water_repair` | [Gliders](https://modrinth.com/mod/gliders) | Module skips initialization entirely (it frees that mod's broken paraglider) |
-| `food_effects` | [Tough As Nails](https://modrinth.com/mod/tough-as-nails) *(optional)* | Thirst-related food effects are skipped |
-| `stackables` | Tough As Nails *(optional)* | Only vanilla items are made stackable |
-| `bluemap_signs` | [BlueMap](https://modrinth.com/plugin/bluemap) (server) | Module stays inert (`[bm]` signs do nothing) |
-| `haunted_house` | [Alex's Mobs](https://modrinth.com/mod/alexs-mobs) + [Dungeons and Taverns](https://modrinth.com/datapack/dungeons-and-taverns) | Module skips initialization (needs the Murmur entity + witch villa structure) |
-
-**Standalone module jars** (`vpa_<module>.jar` from the releases) additionally require
-`vpa_core.jar`; `vpa_cat_guardian` also needs `vpa_debug_overlay` + `vpa_flying_fish`, and the
-two chunk loaders (`vpa_minecart_chunk_loading`, `vpa_stationary_chunk_loader`) need
-`vpa_debug_overlay`. The all-in-one bundle jar has no such requirements (never install bundle
-and standalone jars together).
+* **[Every module](#-modules)** — one page each, from a one-line summary down to the implementation
+* [Module System](docs/guides/module-system.md) — how a module is built, for contributors
+* [Companion Armor](docs/guides/companion-armor.md) — the armour tiers shared by wolves and cats
+* [Testing](docs/guides/testing.md) — test server and client
+* [Instance Switcher](docs/guides/instance-switcher.md) — the development utility
 
 ## 🔨 Development
 
-### Prerequisites
-- JDK 21
-- Gradle 8.4+
-- Git
+Requires **JDK 21** and Git; the Gradle wrapper handles the rest.
 
-### Setup
 ```bash
-# Clone the repository
-git clone https://github.com/Gerry3010/vanillaplusadditions.git
+git clone https://github.com/GeraldHofbauerWeb/vanillaplusadditions.git
 cd vanillaplusadditions
-
-# Setup development environment
-./gradlew build
+./gradlew build        # includes Checkstyle and SpotBugs
+./gradlew moduleJars   # the standalone module jars, into build/libs/modules/
 ```
 
-### Test Environments
-The project includes test server and client setups:
-```bash
-# Test server
-cd test-server
-./build-and-test.sh
+The build needs four third-party jars in `libs/` that are not redistributed here — CI fetches them
+in `.github/workflows/build.yml`, and the same URLs work locally.
 
-# Test client
-cd test-client
-./launch-client.sh
+Documentation is generated and checked:
+
+```bash
+python3 scripts/docgen/check_docs.py        # completeness, dead links, stale generated blocks
+python3 scripts/docgen/gen_meta.py          # rebuild the fact boxes and config tables
+python3 scripts/docgen/gen_readme.py        # rebuild the table above
+python3 scripts/docgen/render_models.py     # rebuild the item and block images
 ```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) first.
+Contributions are welcome — please read the [Contributing Guidelines](CONTRIBUTING.md) first.
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
+
+The 32 `world_compass` needle frames are recoloured from the vanilla compass sprites and are
+therefore derived Mojang assets; they are not covered by the MIT licence above.
 
 ## 🌟 Credits
 
-- **Developer**: Gerald Hofbauer
-- **Framework**: [NeoForge](https://neoforged.net/)
-
-## 📚 Documentation
-
-- [Module System Overview](docs/MODULE_SYSTEM.md)
-- [Configuration System](docs/CONFIGURATION_SYSTEM_SUMMARY.md)
-- [Testing Guide](docs/TESTING.md)
-- [Companion Armor & Cat Guardian Systems](docs/COMPANION_ARMOR.md)
-- [Cat Guardian](docs/cat_guardian.md)
-- [Arm Target Overlay](docs/arm_target_overlay.md)
-- [Block Glow](docs/block_glow.md)
-- [Chunk Reset Command](docs/chunk_reset.md)
-- [Custom Crafting Recipes](docs/custom_crafting_recipes.md)
-- [Compass Overhaul](docs/compass_overhaul.md)
-- [Copycat Pathfinding](docs/copycat_pathfinding.md)
-- [Dispenser Bucket Guard](docs/dispenser_bucket_guard.md)
-- [End Oxygen](docs/end_oxygen.md)
-- [Glider Water Repair](docs/glider_water_repair.md)
-- [Mob Drops](docs/mob_drops.md)
-- [Overpacked Extensions](docs/overpacked_extensions.md)
-- [Texture Kill](docs/texture_kill.md)
-- [Wolf Mount](docs/wolf_mount.md)
-
-## 🐛 Debug Logging
-
-VanillaPlusAdditions includes a sophisticated debug logging system:
-- Global and per-module control
-- Detailed log messages for troubleshooting
-- See [Debug Logging Guide](docs/DEBUG_LOGGING_CONFIG.md)
+**Developer**: Gerald Hofbauer · **Framework**: [NeoForge](https://neoforged.net/) ·
+**Built with**: AI pair programming
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/Gerry3010/vanillaplusadditions)
-- [Issue Tracker](https://github.com/Gerry3010/vanillaplusadditions/issues)
-- [NeoForge](https://neoforged.net/)
+* [Releases](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases)
+* [Issue Tracker](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/issues)
+* [Changelog](CHANGELOG.md)

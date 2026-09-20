@@ -1,0 +1,39 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [],
+  "displayName": "Freecam Sub-Level Noclip",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [
+    "freecam_sublevel_noclip.EntityMoveFreecamMixin — @Mixin(Entity.class), client-only (listed in the \"client\" block of vanillaplusadditions.mixins.json); @Inject(method = \"move\", at = HEAD) vpaFreecamNoclip(MoverType, Vec3, CallbackInfo); sets noPhysics = true on the camera entity. First test is a reference comparison against Minecraft.getInstance().getCameraEntity(), so every other entity leaves the handler immediately."
+  ],
+  "moduleDeps": [],
+  "moduleId": "freecam_sublevel_noclip",
+  "notes": "WHY IT EXISTS (traced in the decompiled mods, 2026-09-20): Freecam turns blocks into air with BlockStateBaseMixin, which cancels BlockStateBase.getCollisionShape(BlockGetter, BlockPos, CollisionContext) whenever the context is an EntityCollisionContext whose getEntity() is its own net.xolt.freecam.util.FreeCamera. Sable never routes through that overload on a sub-level: SubLevelEntityCollision.getSubLevelEntityCollisionShape builds a SubLevelEntityCollisionContext only for ScaffoldingBlock and returns state.getCollisionShape(level, pos) for every other block - the two-argument form, which serves BlockStateBase.cache.collisionShape and never asks who is colliding. So the camera passes through the terrain and bumps into the airship.\n\nWHY noPhysics AND NOT A MIXIN ON SABLE: Sable hooks sub-level collision with @Redirect on the Entity.collide(Vec3) call inside Entity.move (mixin/entity/entity_sublevel_collision/EntityMixin). Vanilla's Entity.move only reaches that call in its else-branch - `if (this.noPhysics) { setPos(...) } else { ... this.collide(movement) ... }` - so setting noPhysics short-circuits the world collision AND Sable's redirect in one step, without naming a single Sable class. A mixin on getSubLevelEntityCollisionShape would be more faithful (it would hand the decision back to Freecam's own per-block config) but it targets a private method whose signature carries two Sable-internal types, and the repo compiles against libs/sable-neoforge-1.21.1-1.2.2.jar while the pack runs Sable 2.0.5 - a silent no-op at best.\n\nSCOPE LIMIT, DELIBERATE: noPhysics is all-or-nothing, so the handler only acts when Freecam is set to ignore every block. FreecamAccess.ignoresAllBlocks() mirrors the first branch of Freecam's CollisionBehavior.isIgnored: ModConfig.INSTANCE.collision.ignoreAll AND BuildVariant.getInstance().cheatsPermitted(). With ignoreAll=false and a per-block rule instead (ignoreTransparent / ignoreOpenable / ignoreCustom), this module stays out of the way entirely and the camera still sticks in a hull - that case is not fixable through noPhysics.\n\nNO COMPILE DEPENDENCY: Freecam is not in libs/ and appears nowhere in a signature. Everything goes through FreecamAccess, which caches ModList.get().isLoaded(\"freecam\"), compares entity.getClass().getName() against the literal \"net.xolt.freecam.util.FreeCamera\", and reflects ModConfig.INSTANCE.collision.ignoreAll plus BuildVariant.cheatsPermitted(). A failed lookup sets lookupFailed and the module goes quiet for the session - a renamed field costs the feature, not the game.\n\nFINDING THE CAMERA: Freecam calls MC.setCameraEntity(freeCamera) when it switches on (Freecam.java, onEnable/onEnableTripod), so Minecraft.getInstance().getCameraEntity() is the camera entity while freecam or a tripod is active. The handler needs no Freecam API for that.\n\nTIMING — THE FIRST ATTEMPT WAS WRONG AND IS WORTH RECORDING: writing noPhysics from a ClientTickEvent.Pre handler does nothing, because Player.tick() OPENS with `this.noPhysics = this.isSpectator();` (Player.java:248 of the 1.21.1 sources) and Freecam's camera is a LocalPlayer, not a spectator. Anything set earlier in the tick is wiped before the camera moves. Confirmed in game on 2026-09-20: glass frames and compasses worked, freecam still stuck. The flag therefore has to be written at HEAD of Entity.move, whose very first statement is `if (this.noPhysics)` (Entity.java:602) — the branch that skips vanilla collision AND the Entity.collide call Sable redirects into its sub-level collision.\n\nNOT VERIFIED IN GAME YET (2026-09-20): the cause chain is read from the decompiled jars (sable-neoforge-1.21.1-2.0.5.jar, freecam-neoforge-1.3.0+mc1.21.jar), the build is green, but the client deploy was still pending when the module was written.\n\nRELATED, SAME ROOT CAUSE FAMILY BUT A DIFFERENT FIX: entities that belong to a ship but are missing from the entity-type tag sable:retain_in_sub_level get projected out of the plot (Quark's glass item frames, Overpacked's giant backpack). Those are repaired by the tag files in data/sable/tags/entity_type/, which ship in vpa_core rather than in any module.",
+  "oneLiner": "The Freecam camera flies through an airship the way it flies through a mountain, instead of stopping dead at the hull while the terrain underneath stays passable.",
+  "optionalMods": [
+    {
+      "evidence": "modules/freecam_sublevel_noclip/compat/FreecamAccess.java — isLoaded() caches ModList.get().isLoaded(\"freecam\"); isCamera() compares entity.getClass().getName() with the literal \"net.xolt.freecam.util.FreeCamera\"; ignoresAllBlocks() reflects net.xolt.freecam.config.ModConfig and net.xolt.freecam.variant.api.BuildVariant",
+      "modId": "freecam",
+      "whatItAdds": "The camera entity itself. Without Freecam the handler returns at ModList.get().isLoaded(\"freecam\") and nothing else is ever touched; no Freecam type is named anywhere in the module."
+    },
+    {
+      "evidence": "dev.ryanhcode.sable.mixin.entity.entity_sublevel_collision.EntityMixin — @Redirect on Entity.collide(Vec3) inside move(MoverType, Vec3); dev.ryanhcode.sable.sublevel.entity_collision.SubLevelEntityCollision.getSubLevelEntityCollisionShape — passes a CollisionContext only for ScaffoldingBlock",
+      "modId": "sable",
+      "whatItAdds": "The sub-levels the camera gets stuck in. Sable is never named in code — the fix works through vanilla's noPhysics branch in Entity.move, which sits in front of the Entity.collide call Sable redirects."
+    }
+  ],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [],
+  "requiredMods": [],
+  "shortDescription": "Lets the Freecam camera pass through Sable airships instead of getting stuck in the hull.",
+  "side": "client",
+  "sinceCommit": "",
+  "sinceVersion": "v1.0.0-beta.87"
+}

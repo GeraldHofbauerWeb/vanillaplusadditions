@@ -1,0 +1,29 @@
+{
+  "moduleId": "waystone_amethyst_repair",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "All three keys are resolved lazily and cached against the config value they were parsed from, so a changed id takes effect on the next anvil update without a restart:",
+      "issue": "Only two of the three keys are lazily resolved and cached. target_item (WaystoneAmethystRepairModule.java:133-145) and repair_materials (WaystoneAmethystRepairModule.java:124-131) cache against their config source; repair_percent_per_unit is read straight from the config on every repair with no resolution and no cache (WaystoneAmethystRepairModule.java:99 -> getConfig().getRepairPercentPerUnitValue(), WaystoneAmethystRepairConfig.java:83-85). The two bullets that follow the sentence only cover the two cached keys, so the sentence overstates what the section then documents. The practical consequence (no restart needed) is correct for all three.",
+      "correction": "Say that the two id keys are resolved lazily and cached against the config value they were parsed from, while repair_percent_per_unit is simply read live on every repair - all three therefore take effect on the next anvil update without a restart.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "`onInitialize` does nothing but `NeoForge.EVENT_BUS.register(this)`.",
+      "issue": "onInitialize also writes an info log line (WaystoneAmethystRepairModule.java:62: getLogger().info(\"Waystone Amethyst Repair module initialized - Warp Stone repairable with amethyst\")). 'nothing but' is literally false, though the omitted line has no behaviour.",
+      "correction": "'onInitialize does nothing but NeoForge.EVENT_BUS.register(this) plus one info log line.'",
+      "severity": "style"
+    },
+    {
+      "quote": "**Why a non-empty output wins.** NeoForge's hook is the first thing `createResult` does:",
+      "issue": "The hook is not quite the first thing: AnvilMenu.createResult first reads the left slot and sets this.cost.set(1) plus three local counters (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/inventory/AnvilMenu.java:117-121) and only then calls CommonHooks.onAnvilChange (AnvilMenu.java:123). The code block that follows is also an excerpt starting mid-method (CommonHooks.java:693-699, verbatim and correct) - the cancel branch at CommonHooks.java:687-692 precedes it and is dropped without an ellipsis.",
+      "correction": "'NeoForge's hook is the first thing createResult does after zeroing its counters' (or '...the first thing of consequence'), and mark the quote as an excerpt, e.g. with a leading '...' or by including the cancel branch.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "WaystoneAmethystRepairModule.java:112 reads the free-repair gate through ModuleManager.isModuleEnabled(\"free_anvil_repair\") - the moduleEnabledState snapshot (ModuleManager.java:194-199, written at ModuleManager.java:70 and :94) - while the pickup gate it depends on, AnvilMenuFreeRepairMixin -> FreeAnvilRepairModule.allowFreePickup() -> AbstractModule.isModuleEnabled() (AbstractModule.java:202-210), resolves the LIVE per-module config. Disabling free_anvil_repair by editing the config file at runtime therefore leaves this module producing a cost-0 result that AnvilMenu.mayPickup (AnvilMenu.java:72-74) then refuses: an anvil output the player can see but cannot take. A /vpa module enable|disable override (VanillaPlusAdditions.java:245-262 -> ModuleManager.setRuntimeModuleEnabled) moves both gates together and does not hit this. Documented on the page as a known limit; still a real latent bug, and using the module's own live resolution for the free gate would fix it.",
+    "WaystoneAmethystRepairModule.java:108-110 - the `if (unitsUsed == 0) { return; // nothing to repair }` guard is dead code: onAnvilUpdate already guarantees getDamageValue() > 0 and a non-empty right stack (:77-79) and perUnit >= 1 (:99), so the loop always runs at least once. Harmless defensive code, mirrored by free_anvil_repair's equally unreachable damagePerUnit <= 0 guard (FreeAnvilRepairModule.java:199-201, unreachable because repairPerUnit() floors at 1 at :181-183). The page states both facts correctly."
+  ]
+}

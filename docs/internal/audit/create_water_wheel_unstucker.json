@@ -1,0 +1,74 @@
+{
+ "moduleId": "create_water_wheel_unstucker",
+ "claimsChecked": 82,
+ "problems": [
+  {
+   "quote": "That reply is only reachable if the module started enabled and was switched off afterwards.",
+   "issue": "True for the bundle only. In the standalone jar, StandaloneModuleBootstrap.boot() calls module.initialize() unconditionally, and this module's shouldInitialize() returns only isCreateLoaded() — it never consults the enabled flag. So with Create present and enabled = false in config/vpa_create_water_wheel_unstucker-common.toml, onInitialize() runs, NeoForge.EVENT_BUS.register(this) happens, /vpaunstuck IS registered (onRegisterCommands only re-checks isCreateLoaded()), and it answers 'Water Wheel Unstucker module is disabled.' because isModuleEnabled() is false. StandaloneModuleBootstrap's own javadoc says exactly that: 'Module enable/disable still works: AbstractModule#isModuleEnabled() resolves via ... the module's own config value'.",
+   "correction": "Split the row: in the BUNDLE, ModuleManager.initializeModules() only initialises modules whose config says enabled, so the command does not exist at all. In the STANDALONE jar the module always initialises (the gate is Create, not `enabled`), so /vpaunstuck exists and replies 'Water Wheel Unstucker module is disabled.' — the runtime-toggle case is not the only way to reach that reply.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "with the unloaded tally at `members=0` but `stress=256`",
+   "issue": "The citation attached to this sentence — '([CHANGELOG, `v1.0.0-beta.66`](../../CHANGELOG.md))' — does not carry the numbers it is cited for. CHANGELOG.md:520-529 records only `unloadedStress=256` at `unloadedMembers=0` plus the quoted log line. `capacity=256`, `stress=384` and 'Real demand was 128 against a capacity of 256' appear nowhere in the repository (grep for 'stress=384' / 'capacity=256' hits only this doc page); they exist only in a private agent memory file outside the repo.",
+   "correction": "Either cite only what the CHANGELOG contains (unloaded tally: members=0, stress=256; wheel spun again at 8.0) or drop the capacity=256 / stress=384 / demand-128 figures, which no repository source supports.",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "Two lines are unconditional, the rest need `debug_logging = true`",
+   "issue": "Contradicted by the table directly underneath it. Four of the seven rows do not need debug_logging: the startup line, the 'Unstuck wheel …' line, 'everything /vpaunstuck writes, including the per-wheel outcome' (all marked '—'), and the backoff WARN, which sits outside any shouldDebugLog() check and needs only auto_fix (WaterWheelStallManager.checkWheel, the LOGGER.warn after max_fix_attempts).",
+   "correction": "e.g. 'Only three of these need debug_logging = true; the startup line, the sweep's cure line, the backoff WARN (auto_fix only) and everything /vpaunstuck writes are printed regardless.'",
+   "severity": "misleading"
+  },
+  {
+   "quote": "the public `material` field | One warning, `isAvailable()` false, no wheel is ever recognised — the module is inert",
+   "issue": "The material field is resolved inside its own nested try/catch in WaterWheelKinetics.ensureInitialized() (catch NoSuchFieldException → materialField = null) precisely so its absence does NOT disable the layer. If only `material` is renamed, isAvailable() stays true, detection, the stress cures and the re-init all keep working — the only loss is that getMaterial()/setMaterial() no-op, so a re-initialised wheel comes back with Create's default spruce planks instead of its own material. The 'If it fails' cell is accurate for the eight methods only.",
+   "correction": "Move `material` out of the Core row (or footnote it): 'the public material field is optional — losing it only costs the plank material across a re-init, not the module'.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Only water that is genuinely in motion produces a score",
+   "issue": "Not how the vanilla source computes it. FlowingFluid.getFlow (build/neoForm/…/world/level/material/FlowingFluid.java:54) is a pure function of the current neighbourhood: it sums horizontal fluid-height differences (plus a FALLING term) of the four neighbours. A stable stream — a source with flowing blocks beside the wheel — has a constant non-zero flow vector for ever with nothing changing over time, which is why a normal wheel runs indefinitely. Nothing in vanilla measures motion over time.",
+   "correction": "The accurate form is the first half of the sentence: a level pool of source blocks has no height gradient and yields a zero vector; any height gradient (a running stream permanently, or a gap being flooded transiently) yields a non-zero one. Drop 'genuinely in motion'.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "asking for one more recompute, which is exactly what the old soft kick did",
+   "issue": "Minor imprecision about the code being described. WaterWheelKinetics.softKick() is determineAndApplyFlowScore() AND updateGeneratedRotation(); lazyTick() runs only the first, and setFlowScoreAndUpdate() calls updateGeneratedRotation() only when the score actually changed. So the soft kick did do something lazyTick does not — force a re-announce to the network (GeneratingKineticBlockEntity.updateGeneratedRotation: onSpeedChanged + sendData, plus a stress update when speed != 0). The conclusion still holds, because on a stalled wheel speed is 0 and prevSpeed == speed, so the extra call changes nothing that could revive it.",
+   "correction": "'…asking for one more recompute plus a re-announce of a speed that is still zero — which is what the old soft kick did — changes nothing.'",
+   "severity": "style"
+  },
+  {
+   "quote": "is only ever reached from the explicit {@code /vpaunstuck} command.",
+   "issue": "JAVA SOURCE (not a doc defect) — stale comment in WaterWheelKinetics.clearUnloadedStressAccounting()'s javadoc. Since beta.66 the periodic sweep also reaches it: WaterWheelStallManager.isTallyClearable() returns true for hasOrphanedTally() in StressMode.SWEEP, and checkWheel() calls resolveOverstress(..., SWEEP). The doc page gets this right; the code comment does not.",
+   "correction": "Reword to: reached by /vpaunstuck in the judgement case, and by the periodic sweep when the tally is provably orphaned (stress or capacity charged with unloadedMembers == 0).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "@param allowPhantomClear  Whether step 2 may run (command context only)",
+   "issue": "JAVA SOURCE (not a doc defect) — WaterWheelStallManager.resolveOverstress documents a parameter that does not exist; the signature is (ServerLevel, BlockPos, BlockEntity, StressMode mode), and there is no @return although the method returns StressAction. The same javadoc's step 2 ('command-only' and 'Only done when the loaded members alone would fit the loaded capacity') also contradicts isTallyClearable(), which drops an orphaned tally in the sweep without that condition.",
+   "correction": "Rename the tag to @param mode, add @return, and rewrite step 2 to describe the two-mode split that isTallyClearable() actually implements.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "a reload-stalled wheel - Create only reads a non-zero flow score while the water is actually",
+   "issue": "JAVA SOURCE (not a doc defect) — the continuation 'moving, and then keeps it' in beginReinit()'s javadoc is contradicted by Create itself: WaterWheelBlockEntity's constructor sets setLazyTickRate(60) and lazyTick() re-runs determineAndApplyFlowScore() every 60 ticks, and setFlowScoreAndUpdate() overwrites flowScore with the freshly computed value. A score won from a transient flood is therefore re-derived (and can be reset to 0) within ~3 s; Create does not keep it.",
+   "correction": "Drop 'and then keeps it', or state the actual dependency: the score survives only as long as the surrounding fluid still produces a non-zero flow vector at the next lazy tick.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "if (!current.isAir() && current.getFluidState().isEmpty()) {",
+   "issue": "JAVA SOURCE (genuine bug, which the doc does disclose as a known limit) — in WaterWheelStallManager.processPendingReplaces the entry is removed from pendingReplace (it.remove()) BEFORE replaceWheel runs, and replaceWheel returns here without restoring the wheel when the gap is neither air nor fluid. The captured BlockState and material are then dropped: the wheel is destroyed with no item drop, no log line, and no pendingVerify entry, so nothing reports it. Same loss via forgetLevel (LevelEvent.Unload) and clearAll (ServerStoppedEvent) inside the flood window.",
+   "correction": "At minimum log a WARN with the lost state and position on this early return; better, re-queue the replace (or drop the wheel's item) instead of discarding it silently.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "if (!registry.isStillWheel(level, pos)) {",
+   "issue": "JAVA SOURCE (genuine, narrow bug) — during the reinit_flood_ticks window the tracked position holds air, so any checkWheel that lands in that window takes this branch and calls registry.remove(level, pos) + clearState(). The wheel is then put back by replaceWheel but is no longer tracked (setBlock fires no EntityPlaceEvent), so it is invisible to the sweep and to /vpaunstuck until its chunk unloads and reloads. Reachable whenever a due post-load check falls inside the window, and systematically if reinit_flood_ticks (max 40) is raised above check_interval_ticks (min 20).",
+   "correction": "Skip the isStillWheel eviction for positions that have an outstanding PendingReplace, or re-register the position in replaceWheel after the block is restored.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

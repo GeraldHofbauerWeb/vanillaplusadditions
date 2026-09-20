@@ -1,0 +1,83 @@
+{
+  "moduleId": "train_chunk_loading",
+  "displayName": "Train Chunk Loading",
+  "shortDescription": "Chunk Loader Track keeps chunks loaded around traveling Create trains.",
+  "oneLiner": "Adds a blue Create train track that force-loads the chunks around any train rolling over it, so the drills, deployers and item transfers on board keep running even when no player is nearby.",
+  "side": "both",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "requiredMods": [
+    {
+      "modId": "create",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/train_chunk_loading/TrainChunkLoadingModule.java:93-96 — `protected boolean shouldInitialize() { return ModList.get().isLoaded(\"create\"); }`. AbstractModule.initialize() returns early when that is false (AbstractModule.java:96-99), so without Create nothing is registered: no block, no item, no event handlers, no recipe. Every Create-typed class (ChunkLoaderTrackCompat, ChunkLoaderTrackBlock, TrainChunkLoadingEvents, ChunkLoaderTrackBorderRenderer, ChunkLoaderTrackPonder) sits behind that gate. Declared in src/main/resources/META-INF/neoforge.mods.toml:83-87 as type=\"optional\", versionRange=\"[6.0,)\", ordering=\"AFTER\", side=\"BOTH\" — optional for the bundle as a whole, hard-required for this module. Compile-side: build.gradle:127 pulls libs/create-1.21.1-6.0.9.jar."
+    }
+  ],
+  "optionalMods": [],
+  "items": [
+    "chunk_loader_track"
+  ],
+  "blocks": [
+    "chunk_loader_track"
+  ],
+  "entities": [],
+  "commands": [],
+  "keybinds": [],
+  "mixins": [],
+  "events": [
+    "RegisterTicketControllersEvent (mod event bus — subscribed via getModEventBus().addListener at TrainChunkLoadingModule.java:104, handler onRegisterTicketControllers at :132-140)",
+    "LevelTickEvent.Post (@SubscribeEvent TrainChunkLoadingModule.java:142, onLevelTick :143-156)",
+    "ServerTickEvent.Post (@SubscribeEvent TrainChunkLoadingModule.java:163, onServerTick :164-183)",
+    "LevelEvent.Unload (@SubscribeEvent TrainChunkLoadingModule.java:185, onLevelUnload :186-190)",
+    "AddReloadListenerEvent (@SubscribeEvent TrainChunkLoadingModule.java:196, onAddReloadListener :197-202)",
+    "EntityTickEvent.Post (@SubscribeEvent compat/TrainChunkLoadingEvents.java:29, onCarriageTick :30-56)",
+    "RenderLevelStageEvent / ClientTickEvent.Post — NOT subscribed by this module. ChunkLoaderTrackBorderRenderer merely implements DebugOverlayRenderer; debug_overlay's DebugOverlayClientEvents owns the @SubscribeEvent handlers and dispatches to every registered renderer."
+  ],
+  "recipes": [
+    "Shaped, code-injected: 8x `create:track` ringed around 1x `minecraft:ender_pearl` (pattern TTT / TET / TTT) -> 8x `vanillaplusadditions:chunk_loader_track`. Registered as recipe id `vanillaplusadditions:chunk_loader_track` through a PreparableReloadListener added in AddReloadListenerEvent, gated on isModuleEnabled(); if `create:track` resolves to AIR the recipe is skipped with a log warning (TrainChunkLoadingModule.java:196-248)."
+  ],
+  "configKeys": [
+    {
+      "key": "chunk_load_radius",
+      "type": "int",
+      "defaultValue": "2",
+      "range": "0 ~ 8",
+      "effect": "Chebyshev chunk radius force-loaded around an active loader track (0 = only its own chunk, 1 = 3x3, 2 = 5x5); acts as the rolling-load lookahead for a moving train."
+    },
+    {
+      "key": "active_timeout_seconds",
+      "type": "int",
+      "defaultValue": "15",
+      "range": "1 ~ 300",
+      "effect": "How long a loader track stays active and keeps chunks loaded after the last train carriage passed over it. Converted to ticks as value * 20."
+    },
+    {
+      "key": "only_while_players_online",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Only force-load chunks while at least one player is online; false keeps loading with nobody online (e.g. perpetual loops)."
+    },
+    {
+      "key": "overlay.chunk_border_scan_radius",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 16",
+      "effect": "Debug overlay: how many chunks around the player are scanned for loader tracks to draw chunk borders for."
+    },
+    {
+      "key": "overlay.chunk_border_vertical_span",
+      "type": "int",
+      "defaultValue": "24",
+      "range": "4 ~ 256",
+      "effect": "Debug overlay: vertical extent in blocks above and below the track of the rendered chunk border band."
+    }
+  ],
+  "sinceVersion": "v1.0.0-beta.58",
+  "sinceCommit": "e0eb358",
+  "notes": "PROVENANCE (re-verified): `git log -- src/main/java/.../modules/train_chunk_loading/` returns exactly one commit, e0eb358 (2026-08-03, \"feat(train_chunk_loading): Chunk Loader Track for Create trains + IVV on contraptions\"); the same holds for its resources (ponder/chunk_loader_track/, data/create/tags/). `git describe --tags --contains e0eb358` = v1.0.0-beta.58. So the module is exactly as shipped in beta.58 and has never been touched since. CHANGELOG.md:711 is the `## [1.0.0-beta.58] - 2026-08-03` heading; the module's release note runs :714-727. The \"IVV\" half of that commit message belongs to the separate item_vault_viewer module, not here.\n\nNO DEDICATED DOC PAGE: neither the working copy nor `git ls-files docs` has a train_chunk_loading page. The only prose is README.md:83-84 plus the CHANGELOG entry. The README paragraph was re-read and is accurate; no contradictions found.\n\nNO MIXINS, NO COMMANDS, NO KEYBINDS OF ITS OWN — verified: no `train_chunk_loading` entry in src/main/resources/vanillaplusadditions.mixins.json, no mixin/train_chunk_loading/ package, no build.gradle `mixins:`/`clientMixins:` for this module, no KeyMapping and no command registration anywhere in the module tree. The numpad-+ toggle that makes the chunk borders visible is `key.vanillaplusadditions.debug_overlay.toggle` (DebugOverlayKeybinds.java:18-22, GLFW_KEY_KP_ADD), owned by debug_overlay. Do not document that keybind as belonging to this module.\n\nOVERLAY VISIBILITY GATE (corrected): DebugOverlayClientEvents.active() requires the toggle to be on, an in-world player, AND GogglesUtil.isWearingGoggles(player) — which is Create's Engineer's Goggles in the helmet slot or any registered Curios slot, OR any item in the `vanillaplusadditions:arm_goggles` item tag (e.g. Create: Aeronautics aviator's goggles). Not \"Create Goggles\" only. DebugOverlayClientEvents is a static @EventBusSubscriber(Dist.CLIENT, Bus.GAME) and is not gated on the debug_overlay module's own `enabled` flag, so the overlay framework runs even if that module is config-disabled.\n\nHOW IT ACTUALLY WORKS: TrainChunkLoadingEvents hooks EntityTickEvent.Post and, for each CarriageContraptionEntity on a ServerLevel, every 10 ticks staggered per entity id (`(tickCount + (getId() & 7)) % 10`), scans the carriage's whole AABB footprint from 2 blocks below to 1 block above the carriage bottom, marking any Chunk Loader Track it finds active. LevelTickEvent.Post reconciles every 10 game ticks (`gameTime % 10 == 0`, and only while the server-wide forcingEnabled flag is true) and forces/releases a (2R+1)^2 chunk square per active track via a NeoForge TicketController. The chunks are forced as TICKING tickets (ChunkLoaderManager.forceChunksFor: `controller.forceChunk(level, railPos, x, z, true, true)`), so blocks and entities in them actually run, which is the whole point. The bookkeeping class is the SHARED util/chunkload/ChunkLoaderManager — the same one the minecart Chunk Loader Rail uses; this module only passes its own SavedData name `vanillaplusadditions_train_chunk_loader`, so the two modules' forced chunks and persisted sets stay independent.\n\nPERSISTENCE / PLAYER GATE: on world load the ticket controller's LoadingValidationCallback drops all of its own tickets (TrainChunkLoadingModule.java:135-137); active state is rebuilt from train movement plus the persisted ChunkLoaderData set. ServerTickEvent.Post flips the server-wide `forcingEnabled` flag — on the transition to enabled (server start / first join) it calls manager.resume() on every level so waiting trains continue; on the transition to disabled (last player leaves) it calls releaseAll(), which frees the tickets but KEEPS the persisted set. Note the asymmetry: a track that simply times out goes through releaseRail(), which DOES remove it from the persisted set, so only tracks with a train genuinely parked on them get resumed.\n\nKNOWN LIMIT, the #1 user-facing gotcha (both README and the Ponder scene state it): a loader track sitting in an already-unloaded chunk cannot see the simulated train, so tracks must be spaced closer than chunk_load_radius x 16 blocks — 32 blocks at defaults — along the line.\n\nGRACEFUL-DEGRADATION PATH: ChunkLoaderTrackCompat.extendTrackBlockEntityType() reflects into `BlockEntityType.validBlocks` (official Mojang mappings at runtime, so the field name is stable) to add our block to Create's track BE type. On ReflectiveOperationException/ClassCastException it only logs a warning — the track still works, but curved (bezier) connections no longer survive a chunk reload. Worth documenting as the symptom to expect after a Create update.\n\nLIFECYCLE HAZARD WITHOUT CREATE (derived from code, NOT observed at runtime — do not present as a confirmed bug): ModuleManager builds `enabledModules` purely from the config `enabled` flag (ModuleManager.java:89-99), and AbstractModule.initialize() returns early on shouldInitialize()==false without recording that fact (AbstractModule.java:96-99). commonSetup()/clientSetup() are still dispatched to the module afterwards (ModuleManager.java:121-136 / :161-176). So with the module config-enabled but Create ABSENT, onCommonSetup() would evaluate `CHUNK_LOADER_TRACK.get()` on a DeferredHolder that was never bound (BLOCKS.register(bus) only runs in onInitialize) — that throws a plain Exception before ChunkLoaderTrackCompat is even classloaded, and ModuleManager's `catch (Exception e)` swallows it. onClientSetup(), however, instantiates ChunkLoaderTrackBorderRenderer, whose bytecode references Create's CarriageContraptionEntity; a NoClassDefFoundError there is an Error and is NOT caught. This is exactly the failure class in the project memory note \"Optional-Mod-Gates & Linking\". Sibling Create-gated modules (copycat_pathfinding, item_vault_viewer) have empty onCommonSetup/onClientSetup, so this module is the one exposed. Unprovable without running the game.\n\nSTANDALONE JAR `vpa_train_chunk_loading`: build.gradle:458-461 declares it with dataGlobs for the two Create tag files and `moduleDeps: ['vpa_debug_overlay']`. renderModuleToml (build.gradle:507-530) emits required deps on vpa_core, neoforge, minecraft and vpa_debug_overlay, plus `incompatible` against the bundle `vanillaplusadditions` — and NO dependency on `create` at all. CORRECTION to a plausible-sounding but wrong claim: without Create the standalone jar does not \"silently no-op\". StandaloneModuleBootstrap.boot() (core/StandaloneModuleBootstrap.java:62-65) calls module.initialize() and then wires FMLCommonSetupEvent -> commonSetup() and FMLClientSetupEvent -> clientSetup() with NO try/catch at all, so the lifecycle hazard above applies here with nothing swallowing even an Exception. Jar contents: only `modules/train_chunk_loading/**`, `standalone/train_chunk_loading/**` and the two dataGlobs (data/create/tags/block/tracks.json and girdable_tracks.json, both entries `\"required\": false`, `\"replace\": false`) — the block/item models, textures, lang files and the Ponder NBT ride along in vpa_core, which ships ALL assets (build.gradle:602-624).\n\nCODE-ONLY RESOURCES (repo convention, see CLAUDE.md): the crafting recipe is code-injected via RecipeManager.replaceRecipes on reload, and block drops come from a `getDrops(BlockState, LootParams.Builder)` override in ChunkLoaderTrackBlock returning exactly one ItemStack of itself — which also covers Create's wrench pickup. There is intentionally no recipe or loot_table JSON. Note the recipe listener rebuilds the ENTIRE recipe map each reload (copy-merge-replace); several modules do this, and order is currently benign because each merges from the then-current set.\n\nTRACKMATERIAL DETAIL THAT MISLEADS: ChunkLoaderTrackCompat.MATERIAL declares `.sleeper(Ingredient.of(Items.ENDER_PEARL))` and `.rails(Ingredient.of(Items.IRON_NUGGET))`. These are TrackMaterial metadata consumed by Create's own datagen and are NOT the recipe (the source comment says so) — do not document them as ingredients. The real ingredients are create:track + ender pearl. The material also self-registers into TrackMaterial.ALL on construction (no registry event exists), which is why the class is built during block registration.\n\nCREATE'S BUNDLED LIBS (not optional mods, cannot be absent when Create is present): Ponder (net.createmod.ponder — the in-game scene, hold W on the item) and Flywheel (dev.engine_room.flywheel...PartialModel — the tie/segment_left/segment_right models for curved bezier connections) ship inside Create's META-INF/jarjar. build.gradle:134-137 adds Registrate/Flywheel/Ponder from libs/create-nested/ as compileOnly only, because the runtime copies come from Create itself. They are therefore deliberately NOT listed as optionalMods.\n\nCLIENT PERFORMANCE: ChunkLoaderTrackBorderRenderer.scanTrackChunks does a brute-force (2r+1)^2 chunk x all non-empty sections x 16x16x16 block scan every 10 client ticks, up to 33x33 chunks at the max scan radius of 16 (the radius is additionally clamped to 1..16 in code). It only runs while the overlay is active (toggled on + goggles), so it is not a passive cost — but raising overlay.chunk_border_scan_radius is expensive. There is an explicit in-code note that `now - lastScan` overflowed with lastScan = Long.MIN_VALUE and had to become `now >= lastScan + INTERVAL`. The border state is mirrored client-side from visible carriages with no networking, so the red/blue state is an approximation of the server's real forced set, not a readout of it.\n\nLOCALISATION: block name + 4 Ponder text keys + 1 Ponder header = 6 keys, present in en_us.json:12-17 and de_de.json:12-17 only. cs_cz, de_at, es_es and fr_fr contain zero keys for this module and fall back to English. ChunkLoaderTrackPonder's Javadoc warns that the literal `text()` strings in Java are fallbacks for Ponder editing mode/datagen only — the shipped game resolves `vanillaplusadditions.ponder.chunk_loader_track_spacing.header` / `.text_1`..`.text_4`, and the lang file order must match the order of the text() calls (verified: the four en_us texts match the four scene texts in order).",
+  "moduleDeps": [
+    "debug_overlay"
+  ],
+  "relatedModules": []
+}

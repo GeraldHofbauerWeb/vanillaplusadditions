@@ -1,0 +1,62 @@
+{
+ "moduleId": "battle_dogs",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "All three honour `bite_animation.only_when_ridden` and `bite_animation.strength`",
+   "issue": "Wrong for the swing timer. `WolfSwingTimeMixin.maintainSwingTime` checks only `BattleDogsModule.isModuleActive()` — it never calls `isBiteAnimationOnlyWhenRidden()` or `getBiteAnimationStrength()`. Only two of the three pieces read those keys: `WolfBiteAnimationMixin` (head snap) and `WolfBiteLunge.biteCurve` (lunge). The page's own limits table says the mixin 'checks only whether the module is active', and the fact sheet note 8 says 'Both read the same attackAnim ramp and honour enabled / only_when_ridden / strength' — both, i.e. two.",
+   "correction": "Rewrite as: 'The snap and the lunge honour `only_when_ridden` and `strength`, and both stop at `bite_animation.enabled = false`. The swing timer honours none of the three — see *Compatibility and known limits*.'",
+   "severity": "wrong"
+  },
+  {
+   "quote": "All four use vanilla's `ArmorMaterials.ARMADILLO` with `BodyType.CANINE` and no trim support",
+   "issue": "'No trim support' misnames the constructor argument. `WolfArmorItem` passes `false` as `AnimalArmorItem`'s third parameter, which is `boolean hasOverlay` — it controls the `<texture>_overlay.png` dye overlay that `WolfArmorLayer.maybeRenderColoredLayer` draws for `#minecraft:dyeable` stacks. Armour trims are not part of `AnimalArmorItem` at all in 1.21.1. (The fact sheet's 'hasTrim = false (WolfArmorItem:44)' is wrong the same way; the vanilla source outranks it.)",
+   "correction": "Replace 'and no trim support' with 'and no dye overlay (`AnimalArmorItem`'s `hasOverlay = false`, the `_overlay.png` layer vanilla wolf armour uses when dyed)'.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "inside `Wolf.aiStep`, that is a ticking-entity crash that takes the server with it.",
+   "issue": "The send is not reached from `Wolf.aiStep`. It runs in the `LivingDamageEvent.Pre` raised by the bite, which comes from `MeleeAttackGoal` → `Wolf.doHurtTarget` → `hurt` → `actuallyHurt`; the goal is ticked in `Mob.serverAiStep()` (`goalSelector.tick()`, Mob.java:792), which `LivingEntity.tick()` calls *before* `this.aiStep()` (LivingEntity.java:2493). The 'ticking-entity crash' conclusion still holds — only the named method is wrong. The same wording is in the `sendBiteDirection` javadoc and CHANGELOG beta.81, so it was inherited rather than invented.",
+   "correction": "Say 'and since the send sits on the wolf's AI tick (`Mob.serverAiStep` → `goalSelector.tick`), that is a ticking-entity crash that takes the server with it.'",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Protection and the rest are legal and pointless: the armour already absorbs everything.",
+   "issue": "'The rest are legal' overstates it, and it is the premise the Curse of Binding limits row rests on. The mod only adds the four wolf armours to `enchantable/{armor,durability,sharp_weapon}`. Protection, Mending, Smite and the like resolve through those, but Respiration and Aqua Affinity (`head_armor`), Feather Falling and Depth Strider (`foot_armor`), Looting (`weapon`) and Curse of Binding (`equippable`) do not. `AnvilMenu` gates every book on `ItemStack.supportsEnchantment` → `Enchantment.canEnchant` → `supported_items` (AnvilMenu.java:189), with an explicit bypass only for `instabuild`. So the Curse of Binding row describes a divergence that needs a creative player or a command to produce the stack in the first place.",
+   "correction": "Narrow to 'Protection, Mending and the other enchantments these three tags allow are legal and pointless', and add to the Curse of Binding row that Binding needs `#minecraft:enchantable/equippable`, which the mod does not add, so only a creative-mode anvil or a command can put it on a piece.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Untended, the very first bite of a wolf's life latches the flag and every later bite is",
+   "issue": "[Java source, not the doc — WolfSwingTimeMixin.java class javadoc] The claim is refuted by `LivingEntity.swing()`: its guard is `if (!this.swinging || this.swingTime >= this.getCurrentSwingDuration() / 2 || this.swingTime < 0)` (LivingEntity.java:1864) and `swing()` itself writes `this.swingTime = -1`. Untended, `swingTime` stays at -1, so the third clause is always true and every later bite still fires and still broadcasts its `ClientboundAnimatePacket`. The page already calls this out in its trailing TODO — the comment is what needs fixing, not the page.",
+   "correction": "Drop the 'silently swallowed' consequence from the javadoc; the honest justification for running server-side is just that it clears the `swinging` flag and keeps `swingTime`/`attackAnim` in vanilla's shape.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "default Unbreaking/Sharpness/Thorns levels and the thorns reflect fraction",
+   "issue": "[Java source, not the doc — BattleDogsConfig.java class javadoc] Stale. `buildModuleSpecificConfig` defines `thorns_reflect_fraction` plus the three `bite_animation` keys and nothing else; there are no default-enchantment-level keys in this module. The javadoc also never mentions the `bite_animation` group it does define.",
+   "correction": "Rewrite the class javadoc to name the keys that exist: `thorns_reflect_fraction` and the `bite_animation.{enabled,only_when_ridden,strength}` group.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "it follows the <em>head</em> yaw so the jab goes at whatever",
+   "issue": "[Java source, not the doc — WolfBiteLunge.java class javadoc, last paragraph] Stale since the bite packet landed. The code calls `BiteDirections.yawOr(wolf.getId(), headYaw)`, i.e. it prefers the server-reported yaw and uses head yaw only as a fallback — which the inline comment ten lines below explicitly calls 'only the fallback, and a poor one for the case that matters'. The class javadoc and the inline comment contradict each other.",
+   "correction": "Update the last javadoc paragraph to say the lunge follows the server-reported bite yaw, falling back to the interpolated head yaw when no fresh report exists.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "refuses the send itself, and since this runs inside {@code Wolf.aiStep}, the resulting",
+   "issue": "[Java source, not the doc — BattleDogsModule.sendBiteDirection javadoc] Same misattribution as the page: the send is reached from `Mob.serverAiStep()` → `goalSelector.tick()` → `MeleeAttackGoal` → `doHurtTarget` → `LivingDamageEvent.Pre`, not from `Wolf.aiStep()`. The crash characterisation is right, the method name is not — and the page copied it.",
+   "correction": "Say 'since this runs on the wolf's AI tick (`Mob.serverAiStep`)'.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "noticeable for a pet trotting along behind you and glaring while riding one, where the head fills",
+   "issue": "[Java source, not the doc — WolfBiteAnimationMixin.java class javadoc] The sentence is garbled: a contrast is missing, so it reads as if 'glaring while riding one' were also barely noticeable, which is the opposite of the point the rest of the module makes.",
+   "correction": "Something like: 'That is barely noticeable for a pet trotting along behind you, but glaring while riding one, where the head fills the lower half of the screen.'",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

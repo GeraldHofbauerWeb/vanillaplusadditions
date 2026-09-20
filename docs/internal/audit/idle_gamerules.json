@@ -1,0 +1,42 @@
+{
+  "moduleId": "idle_gamerules",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "So redstone, scheduled block ticks, hoppers, furnaces, crops and mob spawning carry on exactly as before — in whatever chunks are still loaded, which on an empty vanilla server is the spawn chunks and anything force-loaded.",
+      "issue": "Two of the six items are wrong for the case the sentence describes (nobody online). Random ticks (crops) and natural spawning are not driven by chunk loading alone: build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/server/level/ServerChunkCache.java:367 gates BOTH NaturalSpawner.spawnForChunk (:370) and level.tickChunk(levelchunk1, k) — the random-tick call (:374) — on `(this.level.isNaturalSpawningAllowed(chunkpos) && this.chunkMap.anyPlayerCloseEnoughForSpawning(chunkpos)) || this.distanceManager.shouldForceTicks(chunkpos.toLong())`. With zero players, ChunkMap.anyPlayerCloseEnoughForSpawning (ChunkMap.java:952-964) iterates an empty playerMap and returns false for every chunk, so in the spawn chunks nothing spawns and nothing random-ticks; only chunks holding a forced-ticking ticket (DistanceManager.shouldForceTicks, DistanceManager.java:294-297) keep doing either. Block entities (hoppers, furnaces) and scheduled block ticks are unaffected — they follow the chunk's ticking level (ServerLevel.java:190-191 blockTicks predicate isPositionTickingWithEntitiesLoaded, ServerLevel.java:1706-1708), and the spawn-chunk START ticket (ServerLevel.java:1402-1404, radius = gamerule spawnChunkRadius + 1, default 2+1) does put the inner spawn chunks into entity-ticking range — so the rest of the list is right. Neither gamerule the module touches has anything to do with it, which is the point the sentence is making, but as written it promises growing crops and spawning mobs in the spawn chunks of an empty server, and vanilla does not do that.",
+      "correction": "Split the list: \"So redstone, scheduled block ticks, hoppers and furnaces carry on exactly as before — in whatever chunks are still ticking, which on an empty vanilla server is the spawn chunks and anything force-loaded. Crops and mob spawning need more than a loaded chunk: vanilla only random-ticks and spawns in a chunk that has a player close enough for spawning or a forced-ticking ticket (ServerChunkCache.tickChunks), so with nobody online they run in force-loaded chunks only. That is exactly why the module wants a chunk loader next to it.\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "Two commands undo it:",
+      "issue": "The default list is three rules, not two (IdleGamerulesConfig.java:13-14, and the generated file test-server/config/vanillaplusadditions-common.toml:561 ships all three). On a server that has Serene Seasons — the very case the page names in the gamerule table and in the compatibility table — doSeasonCycle is frozen along with the other two, and the two commands listed leave the season clock stopped. The sentence before it (\"the world keeps a frozen sun and frozen weather\") drops the season clock the same way.",
+      "correction": "Say one command per rule in the list, and show the third: \"One command per rule in your list undoes it: /gamerule doDaylightCycle true, /gamerule doWeatherCycle true, and — on a Serene Seasons server — /gamerule doSeasonCycle true.\"",
+      "severity": "misleading"
+    },
+    {
+      "quote": "Pair the module with a chunk loader and your factory keeps running overnight while the sun does not move; that is the intended combination, not an accident.",
+      "issue": "\"That is the intended combination, not an accident\" is an intent claim the repository does not support. The module javadoc (IdleGamerulesModule.java:11-19), the config comment (IdleGamerulesConfig.java:25-28), the only commit that created the module (1d9a41c, full body) and README.md:84 never mention chunk loading; the fact sheet's relatedModules and moduleDeps are both empty (scripts/docgen/data/modules/idle_gamerules.json). Nothing in the module reads, sets or checks a force-load ticket. (The mechanism claim in the first half of the sentence is fine — see the finding above for the crops/spawning half.)",
+      "correction": "Drop the intent and keep the mechanism: \"Pair the module with a chunk loader and your factory keeps running overnight while the sun does not move.\" Optionally point at Stationary Chunk Loader as a suggestion, without claiming it was designed as a pair.",
+      "severity": "unprovable"
+    },
+    {
+      "quote": "No mixins, no commands, no keybinds, no registry entries, no assets, no data files and no lang keys — the module produces no player-visible text at all, only the one INFO line per transition.",
+      "issue": "Everything up to the dash checks out (no mixin package, no hit for idle_gamerules in src/main/resources, no DeferredRegister, one @SubscribeEvent). \"No player-visible text at all\" is an overstatement: the module's display name and description strings (IdleGamerulesModule.java:26-29) are printed in chat by /vpa module status (VanillaPlusAdditions.java:286-304, which prints module.getDisplayName() for every module) and are written into the config file as section comments (test-server/config/vanillaplusadditions-common.toml:550-560).",
+      "correction": "Scope it to the module's own in-game content: \"…and no lang keys — the module adds no in-game text of its own beyond the name core prints in /vpa module status and the comments in the config file; at runtime it produces only the one INFO line per transition.\"",
+      "severity": "style"
+    },
+    {
+      "quote": "| `gamerules` | list | `List.of(\"doDaylightCycle\", \"doWeatherCycle\", \"doSeasonCycle\") = [\"doDaylightCycle\", \"doWeatherCycle\", \"doSeasonCycle\"] (IdleGamerulesConfig.java:13-14, 29-32; generated in test-server/config/vanillaplusadditions-common.toml:561)` |",
+      "issue": "Every fact in the cell is correct (DEFAULT_GAMERULES at IdleGamerulesConfig.java:13-14, defineList at 29-32, the generated value at test-server/config/vanillaplusadditions-common.toml:561 — all verified), so this is not an accuracy problem. It is a readability one: the Default column of a user-facing config table shows a Java literal plus source-file citations instead of the TOML value a user would type. The block is machine-generated and byte-identical to gen_meta.config_block output, so the page itself must not be edited — the fix belongs in the defaultValue field of scripts/docgen/data/modules/idle_gamerules.json, after which gen_meta.py rewrites the page.",
+      "correction": "In the fact sheet, set defaultValue to `[\"doDaylightCycle\", \"doWeatherCycle\", \"doSeasonCycle\"]` and move the file:line provenance into the range/effect prose or into notes; then regenerate.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "IdleGamerulesModule.java:59-60 — the INFO line reports the full configured list as applied no matter what happened: performPrefixedCommand hands a parse failure to CommandSourceStack.sendFailure (Commands.java:321-346), which the withSuppressedOutput source drops (CommandSourceStack.java:510-514, silent=true per CommandSourceStack.java:236-255), and the module never inspects a return value. A typo or a rule from an absent mod is logged as a success. (The page documents this; listing it here as the underlying defect.)",
+    "IdleGamerulesModule.java:32-50 — no restore path: the module has exactly one handler (ServerTickEvent.Post) and no ServerStopping/shutdown hook, while gamerules are persisted to level.dat (PrimaryLevelData.java:261). A server stopped, crashed or disabled while empty keeps doDaylightCycle=false / doWeatherCycle=false (+doSeasonCycle) with nothing left to undo them.",
+    "IdleGamerulesConfig.java:29-32 — the defineList element validator is `o -> o instanceof String`, so an empty string or any typo passes config validation and only fails later as an unparseable command; a cheap guard (non-blank, matches a gamerule name pattern, or a warn log on a command that did not parse) would turn a silent no-op into a startup warning."
+  ]
+}

@@ -232,7 +232,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
     private static final ResourceLocation ARMOR_MODIFIER_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "cat_armor_bonus");
 
-    // ---- Guard follow-range boost: doubles A* node budget (16→32 blocks) for indoor navigation ----
+    // ---- Guard follow-range boost: widens the pathfinder's SEARCH RADIUS 16->32, NOT its node budget ----
     private static final ResourceLocation GUARDIAN_FOLLOW_RANGE_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "guardian_follow_range");
 
@@ -541,7 +541,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             boostAttackGoalPriority(cat);
         }
 
-        // Boost follow-range for pathfinding in complex indoor environments (doubles A* node budget)
+        // Boost follow-range so paths may reach 32 blocks instead of 16 (search radius, live)
         var followRangeAttr = cat.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.FOLLOW_RANGE);
         if (followRangeAttr != null && !followRangeAttr.hasModifier(GUARDIAN_FOLLOW_RANGE_ID)) {
             followRangeAttr.addPermanentModifier(new AttributeModifier(

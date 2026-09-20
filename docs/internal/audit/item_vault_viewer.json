@@ -1,0 +1,74 @@
+{
+ "moduleId": "item_vault_viewer",
+ "claimsChecked": 88,
+ "problems": [
+  {
+   "quote": "The vault's handler reports the default slot limit of 64, so `limit` is in practice the item's own\nmaximum stack size.",
+   "issue": "Wrong number. Create's vault inventory is a plain NeoForge `ItemStackHandler` subclass (ItemVaultBlockEntity$1 overrides only `onContentsChanged`), and `ItemStackHandler.getSlotLimit` returns `Item.ABSOLUTE_MAX_STACK_SIZE`, which is 99, not 64 (neoforge-21.0.167-sources ItemStackHandler.java:125-127; build/neoForm/.../world/item/Item.java:65). Every wrapper in the chain delegates: `VersionedInventoryWrapper.getSlotLimit`, `SameSizeCombinedInvWrapper` (extends CombinedInvWrapper) and `WrapperMountedItemStorage.getSlotLimit` (verified with javap -p on libs/create-1.21.1-6.0.9.jar). The conclusion drawn from it is unaffected, since min(99, maxStackSize) is still the item's own max stack size.",
+   "correction": "\"The vault's handler reports the default slot limit of 99 (`Item.ABSOLUTE_MAX_STACK_SIZE`), which is above every vanilla item's stack size, so `limit` is in practice the item's own maximum stack size.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`KeyMapping.isDown()` answers \"was this pressed since the last poll\", which is the wrong question\nfor \"is it being held while I click\".",
+   "issue": "Wrong about vanilla. `KeyMapping.isDown()` IS the held-state query — `return this.isDown && isConflictContextAndModifierActive();` (build/neoForm/neoFormJoined1.21.1-20240808.144430/.../net/minecraft/client/KeyMapping.java:102-104), with `isDown` set true on press and false on release via `KeyMapping.set` (:51-56, setDown :209-211). The method that answers \"pressed since the last poll\" is `consumeClick()` (:110-117), which the module does not use. So the stated reason for reading raw GLFW is not the real one; real reasons would be `KeyMapping.releaseAll()` on screen open (Minecraft.java:1062) and NeoForge's conflict-context/key-modifier gate folded into `isDown()`.",
+   "correction": "Drop the `consumeClick` description. E.g.: \"`KeyMapping.isDown()` does track the held state, but it is bookkeeping the client resets (`KeyMapping.releaseAll()`) and gates on conflict context and key modifiers; reading the raw window state answers \\\"is this key physically down right now\\\" without either.\" — or simply state that the raw read is the direct question, without a claim about `isDown()`.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Reading GLFW directly is also what makes a mouse-button binding work at all.",
+   "issue": "Wrong. Mouse buttons feed the same key-mapping bookkeeping: `MouseHandler` calls `KeyMapping.set(InputConstants.Type.MOUSE.getOrCreate(i), flag)` (build/neoForm/.../client/MouseHandler.java:128), so `isDown()` tracks a mouse-bound mapping just as it tracks a keyboard one. What is actually true is the inverse: because the module reads raw state, it NEEDS the explicit `Type.MOUSE` branch, since `InputConstants.isKeyDown` only covers keyboard keys.",
+   "correction": "\"Because the raw read bypasses the mapping, the `Type.MOUSE` branch is required: `InputConstants.isKeyDown` only handles keyboard keys, so a mouse-bound modifier has to be polled through `glfwGetMouseButton`.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "It only ever runs when both controller lookups failed.",
+   "issue": "Backwards. The fallback is gated on `handlers.isEmpty()` (ContraptionVaultAccess.java:72-88), i.e. on none of the resolved member positions having an entry in `getAllItemStorages()`. When both controller lookups fail, `controllerPos` is set to the clicked `localPos` (:58-60) and `collectMembers` still returns at least the clicked block (:102-103, owner == null → key compares equal), whose mounted storage is normally present — so in exactly the case the sentence names, the fallback is NOT used; step 3 + step 4 read the clicked block alone. The page's own step-6 row (\"If that list is empty\") states the real condition and contradicts this sentence.",
+   "correction": "\"It only ever runs when not one of the resolved member positions has a mounted storage — the two controller lookups failing is not enough on its own, because the clicked block then becomes its own controller and is normally read directly.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| Both contraption controller lookups fail | The nearest-storage fallback searches every mounted item storage within Chebyshev radius 3, vault or not, and can show a neighbouring container. The reflection failure itself is warned about once per launch. |",
+   "issue": "Same defect as the \"It only ever runs...\" sentence, in the limits table: the row's trigger is wrong. Both lookups failing makes the clicked block its own controller (ContraptionVaultAccess.java:58-60, 96-111); the nearest-storage fallback fires only when the resolved members yield no mounted storage at all (:72-88). The rest of the row (radius 3, any storage type, warn-once via the `warnedReflection` latch at :38, :173-180) is accurate.",
+   "correction": "Re-label the row, e.g. \"No mounted storage found for the clicked vault\" (with a note that a failed `capturedMultiblocks` reflection is warned about once per launch), and keep the effect text as is.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "The held modifier, the hand and the spectator state are the three things it cannot see, so those stay\nclient-side.",
+   "issue": "Spectator state is server-authoritative — `ServerPlayer.isSpectator()` is available in exactly the packet handlers being described; the server simply does not check it (ItemVaultViewerModule.java:65-155). The page itself says so later (\"the placed-block client handler does not, and neither does the server\"), so the \"cannot see\" justification is both false and inconsistent with the limits table. The modifier and the hand are genuinely invisible (neither payload carries a hand; OpenItemVaultViewerPacket / OpenContraptionVaultViewerPacket).",
+   "correction": "\"The held modifier and the hand are the two things it cannot see, so those stay client-side; the spectator check stays client-side too, although the server could make it.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "The member order mirrors `ItemVaultBlockEntity.initCapability`, which walks the vault along its\nhorizontal axis first: `Z` → sort by z, x, y; `Y` → y, x, z; otherwise x, y, z.",
+   "issue": "The `Y` case is attributed to Create, but Create's `initCapability` has exactly two orders: `alongZ` → offset(x, z, y) walked y-outer, i.e. world z, then x, then y; else → offset(y, x, z), i.e. x, then y, then z (decompiled ItemVaultBlockEntity.java:307-320). There is no Y ordering, and a vault's axis can never be Y: `ItemVaultBlock.getVaultBlockAxis` returns the `HORIZONTAL_AXIS` property (ItemVaultBlock.java:107-109). The `case Y` in `ContraptionVaultAccess.memberOrder` is unreachable code, not mirrored Create behaviour. The Z and X orders in the page do match Create exactly.",
+   "correction": "\"The member order mirrors `ItemVaultBlockEntity.initCapability`, which has two orders — a Z-axis vault sorts by z, x, y, everything else by x, y, z. (`ContraptionVaultAccess` also carries a `Y` case, but a vault's axis is a horizontal-axis property, so it can never be reached.)\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The window height is fixed when the menu opens, so filtering down to three items leaves a six-row panel",
+   "issue": "Only true for a vault whose distinct-item count already fills six or more rows. `visibleRows = Math.min(totalRows, 6)` (ItemVaultViewerMenu.java:83) and `imageHeight` is derived from it in the screen constructor (ItemVaultViewerScreen.java:44), so a vault with 20 distinct items opens as a three-row panel and filtering leaves a three-row panel.",
+   "correction": "\"The window height is fixed when the menu opens, so filtering does not shrink the panel — a vault that opened six rows tall stays six rows tall with three items left in it.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "var field = blockEntity.getClass().getDeclaredField(\"itemCapability\");",
+   "issue": "CODE, NOT DOC — latent bug in ItemVaultViewerModule.java:251 (reported, not fixed). Create initialises `itemCapability` lazily: `initCapability()` runs only from the capability lookup registered in `registerCapabilities` (ItemVaultBlockEntity:55-60) or from `getInvId()` (:280-283), and the field is reset to null in `notifyMultiUpdated()` (:346) and on a position change (:193/204). If nothing has queried the vault's ItemHandler capability since the multiblock (re)formed or the chunk loaded, the field is null, the reflection path silently falls through, and `getInventoryOfBlock()` shows only the controller block's 20 slots — the placed-vault twin of the beta.58 contraption bug, with no log line.",
+   "correction": "Query the capability instead of the field, e.g. `player.level().getCapability(Capabilities.ItemHandler.BLOCK, controllerPos, null)`, which runs `initCapability()` on the way; keep the reflection only as a fallback.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "therefore shows at most a twentieth of the vault.",
+   "issue": "CODE, NOT DOC — wrong comment in ContraptionVaultAccess.java class javadoc (:29). One block is 20 slots, i.e. 1/N of an N-block multiblock: 1/81 of a full 3×3×9 vault, but 1/2 of a two-block vault. \"At most a twentieth\" is true for neither. (The doc page words this correctly — \"one block's 20 slots\" — so only the Java comment is affected.)",
+   "correction": "\"...therefore shows only that one block's 20 slots — a 1/81 slice of a full 3×3×9 vault.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "case Y -> Comparator.<BlockPos>comparingInt(BlockPos::getY)",
+   "issue": "CODE, NOT DOC — dead branch plus wrong comment in ContraptionVaultAccess.java:118-129. `vaultAxis` derives the axis from `ItemVaultBlock.getVaultBlockAxis`, which reads `HORIZONTAL_AXIS` and can only be X or Z, so `case Y` is unreachable. The method javadoc (\"Create walks a vault's members along its horizontal axis first, then the two remaining axes\") also misdescribes Create: `initCapability` walks along the vault's own long axis (Z or X) and has no third order.",
+   "correction": "Drop the `Y` case (or leave it with a comment saying it is defensive and unreachable) and reword the javadoc to \"Create walks a vault's members along its long axis first — z, x, y for a Z-axis vault, x, y, z otherwise\".",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

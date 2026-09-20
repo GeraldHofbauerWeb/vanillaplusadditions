@@ -1,0 +1,28 @@
+{
+  "moduleId": "pathfinder_quills",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "For the five leaf biomes — Dark Forest, Savanna, Jungle, Mangrove Swamp and Cherry Grove — that means you cannot craft the quill without having stood in the biome already, because leaves keep their block form only under Shears or Silk Touch.",
+      "issue": "Wrong for Dark Forest, and loose for Savanna and Jungle. The Dark Forest entry uses plain Items.OAK_LEAVES (src/main/java/.../modules/pathfinder_quills/recipe/PathfinderQuillRecipes.java:25), and oak trees generate far outside the Dark Forest: build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/data/worldgen/features/VegetationFeatures.java:512-518 registers TREES_PLAINS from FANCY_OAK_BEES_005 + OAK_BEES_005 (holders at :98-99), and TREES_BIRCH_AND_OAK (:507-511) covers the Forest. So the Dark Forest quill can be crafted from oak leaves taken in Plains or Forest, with no Dark Forest visit at all. Likewise jungle leaves come from JUNGLE_TREE_CHECKED in Sparse Jungle (:522-526, holder28 at :125) and Bamboo Jungle, not only from minecraft:jungle, and acacia leaves also come from Windswept Savanna. Only Mangrove Swamp (MANGROVE_CHECKED, :126) and Cherry Grove are genuinely biome-locked.",
+      "correction": "Say that only Mangrove Swamp and Cherry Grove are strictly biome-locked; Jungle and Savanna need any biome of their family (Sparse/Bamboo Jungle, Windswept Savanna), and Dark Forest asks for ordinary Oak Leaves, which any oak tree anywhere provides — so that recipe is not gated on visiting a Dark Forest at all. The 'route to a second Cherry Grove, not your first one' argument only holds for the two biome-locked entries.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "The block is the biome's own leaves wherever the biome has a signature tree, and a defining ground or terrain block otherwise.",
+      "issue": "Not true for the Dark Forest row. The Dark Forest's signature tree is dark oak — DARK_FOREST_VEGETATION is 66.7% TreePlacements.DARK_OAK_CHECKED plus birch and fancy oak (build/neoForm/.../net/minecraft/data/worldgen/features/VegetationFeatures.java:457-469, holders :102-104) — but PathfinderQuillRecipes.java:25 uses Items.OAK_LEAVES, not DARK_OAK_LEAVES. The page repeats the claim from the source javadoc (PathfinderQuillRecipes.java:10-16), which has the same gap.",
+      "correction": "Either drop the absolute wording ('mostly the biome's own leaves — Dark Forest is the exception, it asks for ordinary Oak Leaves rather than Dark Oak Leaves') or flag the Dark Forest row in the table as the odd one out.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "Thirteen modules in this mod use that same merge-then-replace pattern, each re-reading the manager when its own listener runs, which is what lets them stack.",
+      "issue": "Off by one. Fourteen module classes call RecipeManager.replaceRecipes from an AddReloadListenerEvent listener: axolotl_guardian, battle_dogs, cat_guardian, compass_overhaul, custom_crafting_recipes, end_conduit, flying_fish, minecart_chunk_loading, mo_arrows, mob_cart_loader, pathfinder_quills, stationary_chunk_loader, tipped_arrows, train_chunk_loading (grep -rl replaceRecipes over src/main/java; each of the 14 also imports and handles AddReloadListenerEvent, e.g. MoArrowsModule.java:125 with the same LinkedHashMap merge at :141-146). The fact sheet's GOTCHA 9 list says 13 because it omits mo_arrows; the page inherited that number.",
+      "correction": "\"Fourteen modules in this mod use that same merge-then-replace pattern\" (or \"thirteen others besides this one\"), listing mo_arrows among them.",
+      "severity": "wrong"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/pathfinder_quills/recipe/PathfinderQuillRecipes.java:25 — the minecraft:dark_forest entry uses Items.OAK_LEAVES while the class javadoc (:10-16) promises 'each biome's own leaves where it has a signature tree'. The Dark Forest's signature tree is dark oak (vanilla DARK_FOREST_VEGETATION is 66.7% DARK_OAK_CHECKED, build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/data/worldgen/features/VegetationFeatures.java:457-469), so DARK_OAK_LEAVES would match the stated rule; with OAK_LEAVES this is the one leaf recipe craftable without ever seeing the target biome. Behavioural choice, not a crash — decide whether the code or the javadoc is wrong."
+  ]
+}

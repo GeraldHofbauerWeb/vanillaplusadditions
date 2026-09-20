@@ -1,0 +1,42 @@
+{
+  "moduleId": "mob_drops",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "`MobDropsConfig.DEFAULT_MOB_DROPS (MobDropsConfig.java:20-25)`",
+      "issue": "Wrong line citation. In the current source DEFAULT_MOB_DROPS spans MobDropsConfig.java:18-23 (line 18 = `private static final List<String> DEFAULT_MOB_DROPS = List.of(`, lines 19-22 = the four entries, line 23 = `);`). The same off-by-two is in the fact sheet scripts/docgen/data/modules/mob_drops.json, so the generator input needs fixing, not just the page.",
+      "correction": "MobDropsConfig.DEFAULT_MOB_DROPS (MobDropsConfig.java:18-23)",
+      "severity": "wrong"
+    },
+    {
+      "quote": "**Side.** Server. `LivingDropsEvent` only ever fires from `LivingEntity.die` on a `ServerLevel`, and the module references nothing client-side at all.",
+      "issue": "The event is fired from `LivingEntity.dropAllDeathLoot` (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/entity/LivingEntity.java:1474 - the only call site of `CommonHooks.onLivingDrops` in the patched sources). `LivingEntity.die` is one caller (LivingEntity.java:1430), but `ServerPlayer.die` calls `dropAllDeathLoot` directly (ServerPlayer.java:725) and never calls `super.die` - which the page itself states correctly two sections earlier ('it overrides `die` outright rather than calling `super.die`'). The conclusion (server-side only) holds; the stated mechanism contradicts the page's own player paragraph.",
+      "correction": "**Side.** Server. `LivingDropsEvent` is fired from `LivingEntity.dropAllDeathLoot`, which only runs on a `ServerLevel`, and the module references nothing client-side at all.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "Two files, 254 lines, no mixins, no commands, no keybinds, no network packets, no items, blocks or entities, and not a single data or resource file.",
+      "issue": "254 lines is exactly MobDropsModule.java (186) + MobDropsConfig.java (68), but the table directly below this sentence lists three classes, the third being `standalone/mob_drops/MobDropsStandalone` (19 lines, src/main/java/net/geraldhofbauer/vanillaplusadditions/standalone/mob_drops/MobDropsStandalone.java). Sentence and table disagree on the file count.",
+      "correction": "Three files, 273 lines (or: 'Two module files, 254 lines, plus a 19-line standalone entry point') - no mixins, no commands, ...",
+      "severity": "style"
+    },
+    {
+      "quote": "`onInitialize` does one thing — `NeoForge.EVENT_BUS.register(this)`.",
+      "issue": "`onInitialize()` has two statements: `NeoForge.EVENT_BUS.register(this)` (MobDropsModule.java:51) and `getLogger().info(\"Mob Drops module initialized - Custom mob drops are now active!\")` (MobDropsModule.java:53). Minor, but 'does one thing' is literally false, and the info line is relevant because it prints at default log level.",
+      "correction": "`onInitialize` does little more than `NeoForge.EVENT_BUS.register(this)` (plus one info line in the log).",
+      "severity": "style"
+    },
+    {
+      "quote": "`git log --all -S\"new MobDropsModule\"` finds no commit that ever added it",
+      "issue": "True only in the current (dirty) working tree: `new MobDropsModule()` exists uncommitted at VanillaPlusAdditions.java:156 and in standalone/mob_drops/MobDropsStandalone.java:17, and `git log --all -S\"new MobDropsModule\"` is indeed still empty. The moment the registration is committed - i.e. by the release this page says the module ships in - the instruction the page gives the reader returns a hit and reads as a contradiction of the very next paragraph ('Registering the module is what put them back').",
+      "correction": "Phrase the evidence as historical, e.g. 'no commit before this release ever added `new MobDropsModule()` to `registerModules()`', instead of handing the reader a git command whose result flips at release.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "MobDropsModule.java:34-38 - the field javadoc is wrong: it says 'Cache structure: EntityType -> (Item -> DropInfo)' while the field is `Map<EntityType<?>, List<DropInfo>>`. Leftover from the `Map<Item, Float>` predecessor in WitherSkeletonModule (v0.12.0^ WitherSkeletonModule.java:53); the list form is exactly what allows the same item twice per mob, so the comment describes the behaviour the code no longer has.",
+    "MobDropsModule.java:96-104 - unreachable null check with a silent wrong-mob fallback: `BuiltInRegistries.ENTITY_TYPE` is a `DefaultedRegistry` with default key \"pig\" (BuiltInRegistries.java:141-143) and `DefaultedMappedRegistry.get(ResourceLocation)` is `@Nonnull`, returning `defaultValue.value()` (DefaultedMappedRegistry.java:55-60). So `if (mobType == null)` never fires, the 'Mob not found' warning can never print, and a typo'd mob id silently attaches the rule to `minecraft:pig`. Fix as in MobGlowModule.java:174 / :211, which calls `BuiltInRegistries.ENTITY_TYPE.containsKey(id)` first.",
+    "MobDropsConfig.java:50-54 - `Float.parseFloat` accepts \"NaN\": the range test `chance < 0.0f || chance > 1.0f` is false for NaN, so `...;NaN` passes the spec validator, then `nextFloat() < NaN` is always false at runtime (MobDropsModule.java:153) and the rule silently never fires. Same silent-failure class as `chance = 0.0`, but this one looks like a typo rather than an intent."
+  ]
+}

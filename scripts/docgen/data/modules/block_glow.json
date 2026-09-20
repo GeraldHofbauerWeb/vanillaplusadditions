@@ -1,0 +1,104 @@
+{
+  "moduleId": "block_glow",
+  "displayName": "Block Glow",
+  "shortDescription": "Highlights selected block types with render outlines via /blockglow",
+  "oneLiner": "Type /blockglow iron_ore and every matching block within a set radius is outlined in glowing cyan through walls, until a timer runs out or you clear it.",
+  "side": "client",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "sinceVersion": "v0.16.0",
+  "sinceCommit": "5d68595",
+  "blocks": [],
+  "items": [],
+  "entities": [],
+  "recipes": [],
+  "keybinds": [],
+  "mixins": [],
+  "commands": [
+    "/blockglow <block_id> — highlight with configured default radius + duration (client-side command, registered via RegisterClientCommandsEvent; no .requires() permission gate, so it works for any player, even on a server that does not have the mod)",
+    "/blockglow <block_id> <radius> — radius is an integer >= 1 (Brigadier), additionally rejected at execute time if > max_radius",
+    "/blockglow <block_id> <radius> <duration_seconds> — duration integer >= 0, 0 = infinite",
+    "/blockglow clear — clears the current highlight"
+  ],
+  "configKeys": [
+    {
+      "key": "default_radius",
+      "type": "int",
+      "defaultValue": "24",
+      "range": "1 ~ 128",
+      "effect": "Default search radius in blocks for /blockglow."
+    },
+    {
+      "key": "max_radius",
+      "type": "int",
+      "defaultValue": "64",
+      "range": "1 ~ 256",
+      "effect": "Maximum allowed radius in blocks for /blockglow."
+    },
+    {
+      "key": "default_duration_seconds",
+      "type": "int",
+      "defaultValue": "60",
+      "range": "0 ~ 2147483647 (Integer.MAX_VALUE)",
+      "effect": "Default glow duration in seconds (0 = infinite)."
+    },
+    {
+      "key": "max_highlights_per_frame",
+      "type": "int",
+      "defaultValue": "512",
+      "range": "16 ~ 8192",
+      "effect": "Maximum number of block outlines rendered per frame. Caps how many boxes are DRAWN, not how many blocks are scanned."
+    },
+    {
+      "key": "selection_mode",
+      "type": "string",
+      "defaultValue": "\"nearest\"",
+      "range": "free-form string, no validator (define, not defineInList) — only \"scan_order\" (after trim+lowercase) is honored, every other value silently falls back to \"nearest\"",
+      "effect": "Selection mode for which blocks are highlighted: nearest or scan_order."
+    },
+    {
+      "key": "outline_color.red",
+      "type": "double",
+      "defaultValue": "0.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Red component of the outline color."
+    },
+    {
+      "key": "outline_color.green",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Green component of the outline color."
+    },
+    {
+      "key": "outline_color.blue",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Blue component of the outline color."
+    },
+    {
+      "key": "outline_color.alpha",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Alpha component of the outline color."
+    }
+  ],
+  "events": [
+    "net.neoforged.neoforge.client.event.RegisterClientCommandsEvent (BlockGlowClientEvents.java:75-76, GAME bus, @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME) at line 46)",
+    "net.neoforged.neoforge.client.event.RenderLevelStageEvent (BlockGlowClientEvents.java:106-107, every other stage returns immediately; only Stage.AFTER_TRANSLUCENT_BLOCKS is handled)"
+  ],
+  "requiredMods": [],
+  "optionalMods": [
+    {
+      "modId": "sable",
+      "whatItAdds": "Sable (Create: Aeronautics sub-levels): when loaded, the highlight search also walks Sable sub-levels intersecting the search box and transforms the found block boxes back into world space, so blocks on moving sub-levels glow too. Without Sable only the main ClientLevel is scanned — blocks sitting on a sub-level are simply never highlighted. Purely reflective (Class.forName on dev.ryanhcode.sable.api.sublevel.SubLevelContainer / companion.math.BoundingBox3d|BoundingBox3dc|Pose3dc and sublevel.SubLevel), so no compile-time dependency for this module and a reflection failure is logged once and then ignored.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/block_glow/client/compat/BlockGlowSableIntegration.java:26 (SABLE_MODID), :34-36 (ModList.get().isLoaded), :154-174 (reflection targets); call site src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/block_glow/client/BlockGlowClientEvents.java:153-156; bundle-level optional dep src/main/resources/META-INF/neoforge.mods.toml:97-103 (type=optional, versionRange=[1.2.2,), ordering=NONE, side=CLIENT); README.md:236 documents the no-Sable behaviour"
+    }
+  ],
+  "notes": "PROVEN FACTS / GOTCHAS FOR THE DOC WRITER (re-verified against source, line numbers from the current working tree)\n\n1. No mixins, no items/blocks/entities/recipes/keybinds, no lang keys. The whole module is 5 files under modules/block_glow/ (BlockGlowModule, config/BlockGlowConfig, client/BlockGlowClientEvents, client/BlockGlowHighlight, client/compat/BlockGlowSableIntegration) plus the standalone entrypoint standalone/block_glow/BlockGlowStandalone.java (@Mod(\"vpa_block_glow\")). No DeferredRegister anywhere in the module. `grep -i glow` in assets/vanillaplusadditions/lang/en_us.json only hits `command.vpa.mobglow.*` (the separate mob_glow module) — every block-glow message is a hardcoded English `Component.literal(...)` (BlockGlowClientEvents.java:250, 257, 264, 271, 279, 292). The module is not localizable.\n\n2. Purely client-side in effect, but NOT Dist-gated at module level. `BlockGlowModule` sits in the common package, is registered unconditionally in the bundle (VanillaPlusAdditions.java:154) and in the standalone jar via StandaloneModuleBootstrap, and its generated standalone mods.toml deps are all side=BOTH — on a dedicated server it just logs \"Block Glow module initialized\" and holds an unused state field. ALL behaviour sits in `client/BlockGlowClientEvents`, annotated `@EventBusSubscriber(value = Dist.CLIENT, bus = GAME)` (line 46). The Sable compat class was deliberately moved into `client/compat` because it references `ClientLevel` and \"must never be loaded on a dedicated server\" (class javadoc, lines 17-24; CHANGELOG.md:1132).\n\n3. PERFORMANCE — the big one. `collectMainWorldHighlights` (lines 172-188) does a full cubic scan **every rendered frame**, no caching, no chunk-level early-out: (2·radius+1)³ `getBlockState` calls. Default radius 24 → 117,649 lookups per frame; at `max_radius` 64 → 2,146,689 per frame. `max_highlights_per_frame` only limits how many boxes are *drawn*, not how many blocks are *scanned*. Any doc should warn that large radii tank the framerate.\n\n4. \"radius\" is a CUBE half-extent (Chebyshev), not a sphere — the scan loop runs x/y/z from `center-radius` to `center+radius` around `player.blockPosition()`. Corners reach ~1.7× the nominal radius. Distance sorting for `nearest` mode, though, uses true squared euclidean distance from the block-box center to the player position (line 184).\n\n5. `selection_mode` is a free-form `define(\"selection_mode\", \"nearest\")` with NO validator. `getSelectionMode()` (config lines 82-94) silently normalizes anything that is not exactly `scan_order` (after trim + lowercase) back to `nearest`. A typo produces no warning and no error.\n\n6. `nearest` (default) keeps the `max_highlights_per_frame` closest candidates via a bounded max-heap and then sorts them ascending before drawing (lines 190-212) — the render budget is spent on what is around you. `scan_order` is close to useless in practice: `renderScanOrderHighlights` takes `candidates.subList(0, limit)` — the scan order starts at the (−x,−y,−z) corner of the cube, so with more candidates than the budget you get outlines in one corner of the search box instead of around you. Sable sub-level candidates are appended AFTER the main-world ones (lines 153-156), so in `scan_order` they may never be rendered at all once the budget is used up.\n\n7. `default_radius` can legally be configured ABOVE `max_radius` (ranges 1–128 vs 1–256). In that case the bare `/blockglow <block>` fails with \"Radius cannot exceed <max_radius>\" (BlockGlowClientEvents.java:262-267) because the default value goes through the same check. The renderer additionally clamps with `Math.min(state.radius(), maxRadius)` (line 138), so lowering `max_radius` while a highlight is active shrinks it live.\n\n8. Command registration is gated on `module.isModuleEnabled()` at registration time (line 78). Flipping `enabled` in the config at runtime does not make `/blockglow` appear until commands are re-registered (world rejoin / reconnect). The render + execute paths re-check `isModuleEnabled()` (lines 113, 243, 287), so disabling mid-session does stop the drawing.\n\n9. Highlight state lifetime: `clientState` is a plain (synchronized) field on the module instance, cleared only by `/blockglow clear` or by the expiry check inside the render event (lines 128-131). There is NO level-unload / disconnect listener — the state survives leaving a world. Expiry is stored as an absolute `expiresAtGameTime` derived from `level.getGameTime()` (BlockGlowModule.java:26-31) and tested with `gameTime > expiresAtGameTime` (line 51), so after switching to a world/server with a HIGHER game time the highlight expires on the next rendered frame, and with a LOWER game time it effectively never expires until that world's clock catches up.\n\n10. DEAD CODE: `Math.min(Long.MAX_VALUE, currentGameTime + (long) durationSeconds * 20L)` (BlockGlowModule.java:29) is a no-op — the argument is already a `long`, so the min can never clamp, and the intended overflow guard does not exist.\n\n11. X-ray look is intentional: the custom `RenderType XRAY_LINES` (lines 48-63) uses `NO_DEPTH_TEST`, `NO_CULL`, `ITEM_ENTITY_TARGET` output, `TRANSLUCENT_TRANSPARENCY`, `COLOR_WRITE` and `VIEW_OFFSET_Z_LAYERING`, drawn at `AFTER_TRANSLUCENT_BLOCKS`. Outlines are therefore visible straight through terrain. Default color (0,1,1,1) = opaque cyan.\n\n12. Air handling: the suggestion provider (lines 65-70) drops every registry key whose block `== Blocks.AIR`, i.e. exactly `minecraft:air` — `minecraft:cave_air` and `minecraft:void_air` are distinct Block instances and therefore still suggested AND accepted. `executeEnable` refuses unknown ids with \"Unknown block type: <id>\" (containsKey check, line 249) and `Blocks.AIR` with \"Cannot glow air blocks\" (line 256). A third failure path: \"No active world on client\" when `minecraft.level == null` (line 270).\n\n13. Sable integration is 100% reflection (`Class.forName` on `dev.ryanhcode.sable.*`, lines 154-174) — this module does NOT compile-depend on the Sable jar, unlike other modules (build.gradle adds the Sable jars as compileOnly repo-wide, but no block_glow source references a Sable type). Reflection setup happens once behind a double-checked `reflectionInitialized` flag; failures are caught and logged exactly once via `warnOnce` (lines 127-134), so a Sable version that renames those classes degrades silently to main-world-only highlighting with a single WARN line. Cross-checked against the (gitignored, locally present) jars: dev/ryanhcode/sable/api/sublevel/SubLevelContainer.class and sublevel/SubLevel.class exist in libs/sable-neoforge-1.21.1-1.2.2.jar, companion/math/{BoundingBox3d,BoundingBox3dc,Pose3dc}.class in libs/sable-companion-common-1.21.1-1.6.0.jar — so the class names are correct for those versions (method signatures not verified).\n\n14. Sable bounding-box mutation trap, documented in the source (comments at lines 55-58 and 64): `BoundingBox3d.transformInverse(Pose3dc)` mutates in place (JOML style), so a FRESH box must be constructed per sub-level. This was an actual bug fix (CHANGELOG.md:1133).\n\n15. DOC CONTRADICTION: `docs/modules/block_glow.md:45` says \"when installed, block glow also works across **dimensions** linked via Sable\". The code works across Sable **sub-levels** (moving Create-Aeronautics-style contraption levels inside the same ClientLevel — `SubLevelContainer.getContainer(ClientLevel)` + `queryIntersecting`), not dimensions. CHANGELOG.md:1149 phrases it correctly (\"Sub-Levels\"), and README.md:236 does too (\"blocks *inside* Sable sub-levels (ships)\").\n\n16. README state: there is NO feature paragraph for this module, but it is NOT absent from the README — README.md:236 carries a row in the optional-mods compatibility table (\"`block_glow` | Sable *(optional)* | No difference — the integration only additionally highlights blocks *inside* Sable sub-levels (ships), which don't exist without Sable\"), and README.md:298 has the documentation link. That link still points to `docs/block_glow.md` while the file now lives at `docs/modules/block_glow.md` (staged rename in the working tree) → currently broken. This is repo-wide, not block_glow-specific: the whole `docs/<name>.md` link block in the README (lines ~295-307) is stale.\n\n17. Standalone jar `vpa_block_glow` does NOT declare the optional `sable` dependency: `renderModuleToml` (build.gradle:507-530) only emits vpa_core / neoforge / minecraft / moduleDeps / the `vanillaplusadditions` incompatible entry — there is no optional-dep mechanism for module jars at all. Only the bundle's `neoforge.mods.toml:97-103` carries the optional `sable` (side=CLIENT) entry. Harmless because the integration is reflective and `ModList.isLoaded(\"sable\")`-gated, but load ordering versus Sable is unspecified in the standalone jar. The module jar packs `modules/block_glow/**` (so client + client/compat come along) plus its standalone entrypoint; no dataGlobs, no mixins (build.gradle:397, :628-659).\n\n18. No `shouldInitialize()` override and no `isEnabledByDefault()` override — the module always initializes and defaults to enabled via `Module.isEnabledByDefault()` (Module.java:73-75). `onInitialize()` does nothing but log \"Block Glow module initialized\". `enabled` + `debug_logging` come from AbstractModuleConfig (AbstractModuleConfig.java:58-66) and are deliberately not listed under configKeys.\n\n19. No TODO/FIXME comments anywhere in the module. No unit tests (repo has none).",
+  "moduleDeps": [],
+  "relatedModules": []
+}

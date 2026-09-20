@@ -1,0 +1,23 @@
+{
+  "moduleId": "enhanced_ai_leader_loot",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "Section `[modules.enhanced_ai_leader_loot]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_enhanced_ai_leader_loot-common.toml` if you run the standalone jar).",
+      "issue": "This module has no standalone jar, so `config/vpa_enhanced_ai_leader_loot-common.toml` can never exist. build.gradle's standaloneModules list contains no entry for it (grep -c enhanced_ai_leader_loot build.gradle = 0, there is no standalone/enhanced_ai_leader_loot package), and the same page contradicts the sentence twice: the meta block says 'Download | bundle only - no standalone jar' and the limits table says 'Standalone jars | There is none.'. The sentence is generator boilerplate emitted unconditionally by scripts/docgen/gen_meta.py:128-132 (config_block), which - unlike meta_block at gen_meta.py:105-111 - never looks at facts['hasStandaloneJar']. 6 of 48 module pages are affected the same way.",
+      "correction": "Do NOT hand-edit the page here: the text sits between <!-- vpa:config:start --> and <!-- vpa:config:end --> and `python3 scripts/docgen/gen_meta.py --check` (CI) would flag it as stale. Fix the generator instead: in scripts/docgen/gen_meta.py config_block(), take the facts dict and emit the '(or `config/vpa_<id>-common.toml` if you run the standalone jar)' clause only when facts['hasStandaloneJar'] is true; then regenerate the blocks. Resulting sentence for this module: 'Section `[modules.enhanced_ai_leader_loot]` in `config/vanillaplusadditions-common.toml`.'",
+      "severity": "misleading"
+    },
+    {
+      "quote": "It is still registered, still writes its config section and still appears in `/vpa module status`, and nothing warns you: `enhancedai` is not declared in `neoforge.mods.toml`, the gate is runtime only.",
+      "issue": "Minor overstatement. The 'no declared dependency, no NeoForge missing-dependency error' half is correct (grep for 'enhancedai' in src/main/resources finds nothing; EnhancedAiLeaderLootModule.java:46-49 is the only gate), but 'nothing warns you' is not literally true: AbstractModule.initialize logs one line at INFO when the gate fails - AbstractModule.java:96-99, `logger.info(\"Module '{}' is disabled and will not be initialized\", displayName)`. So the server log does say something; it is just at INFO and worded as 'disabled' rather than 'Enhanced AI missing'.",
+      "correction": "Soften to something like: 'and nothing really warns you - `enhancedai` is not declared in `neoforge.mods.toml`, so NeoForge never complains; the only trace is one INFO line at startup, \"Module 'Enhanced AI Leader Loot' is disabled and will not be initialized\", which blames the module rather than the missing mod.'",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "EnhancedAiLeaderLootModule.java:30 - the class javadoc says \"See {@code docs/enhanced_ai_leader_loot.md} for how this was reverse-engineered.\" That path no longer exists; the page was moved to docs/modules/enhanced_ai_leader_loot.md (staged rename). Same stale path in CLAUDE.md:94 (not Java, but the same rename).",
+    "core/AbstractModule.java:97 - `logger.info(\"Module '{}' is disabled and will not be initialized\", displayName)` fires for every false shouldInitialize(), including the missing-optional-mod case used here, so a player without Enhanced AI is told the module is 'disabled' when it is really unavailable. Wording bug, not a functional one."
+  ]
+}

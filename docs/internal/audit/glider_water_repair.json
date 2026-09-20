@@ -1,0 +1,41 @@
+{
+  "moduleId": "glider_water_repair",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "With the copper upgrade,\nnothing. Without it, `GliderItem.setBroken(chestItem, true)`.",
+      "issue": "Wrong claim about the Gliders mod (docs/modules/glider_water_repair.md:50-51). Disassembly of GliderEventsNeoForge.onEntityStruckByLightning in gliders-1.21.1-neoforge-1.1.8.jar: at offset 32 hasCopperUpgrade() branches AWAY from setBroken (offset 41) to offset 47, where the mod calls GliderItem.setStruck(stack, true) and then, because hasBeenStruck() is now true, ServerPlayer.hurt(GliderDamageSource.ZAP_EXPERIMENT, 2.0F) (offsets 47-77). onLivingHurt only zeroes damage whose source is DamageTypes.LIGHTNING_BOLT (offsets 43-54), so the mod's own 2-point vc_gliders:zap_experiment hit (data/vc_gliders/damage_type/zap_experiment.json) is NOT cancelled. So with the copper upgrade it is not 'nothing': the glider survives, but the player is still hurt and the glider is flagged struck (which is what stops further bolts in lightningLogic).",
+      "correction": "With the copper upgrade the paraglider survives: the mod cancels the vanilla bolt damage, marks the glider `struck` and deals two points of its own `vc_gliders:zap_experiment` damage instead. Without the upgrade, `GliderItem.setBroken(stack, true)`.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you,",
+      "issue": "docs/modules/glider_water_repair.md:20 — no thunderstorm is required. GliderUtil.lightningLogic gates everything on Level.isRainingAt(entity.blockPosition()) (bytecode offset 5), and vanilla Level.isRainingAt is isRaining() + canSeeSky + motion-blocking height + biome precipitation == RAIN (build/neoForm/neoFormJoined1.21-20240613.152323/steps/unzipSources/unpacked/net/minecraft/world/level/Level.java:1068-1079). Ordinary rain is enough; the bolt is spawned by the mod, not by the weather. The page's own 'Why it exists' section (line 39) says 'Glide through rain', so the two statements disagree.",
+      "correction": "Glide through rain in the Gliders mod and it eventually drops a real lightning bolt on you (the thunder is the mod's, not the weather's).",
+      "severity": "misleading"
+    },
+    {
+      "quote": "The copper and nether upgrades are not separate items but item-property\noverrides on the same five models, so an upgraded glider is covered by the same prefix.",
+      "issue": "docs/modules/glider_water_repair.md:115-116 contradicts line 114-115 of the same paragraph, which correctly lists `copper_upgrade` and `nether_upgrade` among the items the mod ships. They ARE separate registered items — ItemRegistry's static initializer registers the strings 'copper_upgrade' and 'nether_upgrade' (javap of net/venturecraft/gliders/common/item/ItemRegistry.class, offsets 94 and 110). What is not a separate item is the UPGRADED PARAGLIDER: the upgrade is a boolean data component (ItemComponentRegistry.COPPER_UPGRADE / NETHER_UPGRADE) on the same paraglider item, and only the model is swapped through the `upgrade_level` item property (assets/vc_gliders/models/item/paraglider_iron.json: overrides 0.1 combined, 0.2 copper, 0.3 nether, 0.4 damaged_glider).",
+      "correction": "Applying an upgrade does not create a new item: copper and nether upgrades are data components on the same five paraglider items and only swap the model through the `upgrade_level` override, so an upgraded glider is covered by the same prefix.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "for that one the dunk buys a single flight: the flag clears, and the next durability step finds the\ndamage still at the maximum and sets it again.",
+      "issue": "docs/modules/glider_water_repair.md:151-152 is only true while the glider stays in the Nether. The durability step in GliderUtil.onTickPlayerGlide runs every 100 ticks outside the Nether (offsets 107-131), adds the damage, and on damage >= maxDamage plays FIRE_EXTINGUISH, calls setBroken(true) AND, when the dimension is not NETHER, ItemStack.setCount(0) (offsets 191-268). So taking the water-freed, empty-bar glider out of the Nether does not re-break it — the very next step deletes the stack, exactly the 'the glider is gone, not broken' case the page describes one paragraph earlier (line 145-147).",
+      "correction": "…and the next durability step finds the damage still at the maximum and breaks it again — in the Nether. Take it anywhere else and that same step also sets the stack's count to 0, so the glider is destroyed rather than merely broken again.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "| `vc_gliders:broken` | `false` — the glider glides again and drops the charred sprite |",
+      "issue": "docs/modules/glider_water_repair.md:125 asserts the charred sprite goes away, while the known-limits table at line 177 says the opposite is unverified ('whether the sprite on the ground drops its charred look before you pick the glider up is not established', with a TODO). The mechanism is real for a held/inventory stack (VCGlidersClient's upgrade_level predicate returns 0.4 only while GliderItem.isBroken, so once broken is false the damaged_glider override no longer applies), but not established for the dropped entity, because the module mutates the stack in place without ItemEntity.setItem.",
+      "correction": "Qualify the cell, e.g. '`false` — the glider glides again and loses the charred sprite once it is back in your hands', so it no longer contradicts the limits table.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "GliderWaterRepairModule.java:94 — `stack.set(requireBrokenComponent(), false)` mutates the ItemStack that `ItemEntity.getItem()` returned, i.e. the object held in the entity's SynchedEntityData slot DATA_ITEM (build/neoForm/.../net/minecraft/world/entity/item/ItemEntity.java:36); that accessor is only dirtied by `setItem` (ItemEntity.java:73, 275), which is never called here. The repair therefore is not pushed to tracking clients, so a client can keep rendering `damaged_glider` for the dropped item until the entity is re-tracked or the item is picked up. The page already flags this as unverified (line 177, TODO) — reported, not fixed.",
+    "GliderWaterRepairModule.java:82-88 — cosmetic only: `isModuleEnabled()` (a map lookup plus a config read in ModuleManager.resolveModuleEnabled) is evaluated BEFORE the `ServerLevel` test, so it still runs client-side for every dropped item every 20 ticks. The page's claim at line 96-99 that 'nothing at all runs on a client' is about the effect, not the guards; moving the ServerLevel check ahead of isModuleEnabled() would make it literally true."
+  ]
+}

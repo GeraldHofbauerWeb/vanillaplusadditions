@@ -1,0 +1,40 @@
+{
+  "moduleId": "static_fov",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "Soul Speed a flat `+0.0405` per level while you stand on soul sand — every one of them widens the view.",
+      "issue": "Soul Speed is not linear in the level. In 1.21.1 the enchantment applies `LevelBasedValue.perLevel(0.0405F, 0.0105F)` as an ADD_VALUE modifier on movement_speed (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/item/enchantment/Enchantments.java:455-459), and Linear.calculate() is `base + perLevelAboveFirst * (level - 1)` (.../LevelBasedValue.java:146-148). So the bonus is +0.0405 at I, +0.0510 at II, +0.0615 at III — not +0.0405 per level (which would give +0.1215 at III). The page's own table contradicts the sentence: the Soul Speed III row uses 0.1615 base (= 0.1 + 0.0615) to reach 0.20995.",
+      "correction": "Say: Soul Speed an `ADD_VALUE` bonus of +0.0405 at level I and +0.0105 for each level above that (+0.0510 at II, +0.0615 at III) while you stand on a block in `#minecraft:soul_speed_blocks` (soul sand or soul soil).",
+      "severity": "wrong"
+    },
+    {
+      "quote": "At 50 % the vanilla column moves halfway back toward 70° — in both directions — and the module's column does not move at all.",
+      "issue": "False for the two narrowing rows. The FOV Effects lerp happens in the ComputeFovModifierEvent constructor BEFORE the module sees the value (ComputeFovModifierEvent.java: `this.setNewFovModifier((float) Mth.lerp(...options.fovEffectScale().get(), 1.0F, fovModifier))`), and the handler only touches values above 1.0 (StaticFovClientEvents.java:28-30). At 50 % the Slowness I row becomes lerp(0.5, 1.0, 0.925) = 0.9625 -> 67.4° and the bow row lerp(0.5, 1.0, 0.85) = 0.925 -> 64.75° WITH the module on, i.e. the module column moves for exactly the rows the page calls 'the point of the clamp being one-sided'.",
+      "correction": "Restrict the claim to the clamped rows, e.g.: 'At 50 % the vanilla column moves halfway back toward 70° in both directions. Every row the module clamps still reads 70°, because whatever the slider leaves above 1.0 the clamp takes; the two narrowing rows move with the slider exactly as they do in vanilla.'",
+      "severity": "misleading"
+    },
+    {
+      "quote": "The README's \"sprinting, Speed, elytra/flight\" is loose on that point. (Read off the 1.21.1 source; not re-checked in game.)",
+      "issue": "Stale cross-reference. That wording exists only in the committed README (`git show HEAD:README.md` line 176); the working-copy README this page ships with was restructured and the Static FOV entry is now the table row README.md:94 ('| **Static FOV**<br><sub>`static_fov`</sub> | [Docs](docs/modules/static_fov.md) | *bundle only* | — |'), which contains no wording about elytra at all. A reader following the pointer finds nothing. The substance of the row (elytra does not widen the FOV) is correct and verified: gliding uses the SHARED_FLAG_FALL_FLYING entity flag, not `abilities.flying` (only set in LocalPlayer.java:801/809/887), and adds no movement_speed modifier.",
+      "correction": "Drop the README sentence, or restate it without citing README text that no longer exists — the elytra finding itself stands on its own.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "The cost of a disabled module is two map lookups per client tick.",
+      "issue": "Slightly over-precise. Per event the handler does one map lookup (`ModuleManager.getModule` -> `registeredModules.get`, core/ModuleManager.java:184-186), then `AbstractModule.isModuleEnabled()` (core/AbstractModule.java:202-216) evaluates `config.isEnabled()` — a `ModConfigSpec` value read inside a try/catch (core/AbstractModuleConfig.java:101-113) — before the second map lookup in `resolveModuleEnabled` (core/ModuleManager.java:205-208). So it is two map lookups plus a config-value read, not two map lookups.",
+      "correction": "'The cost of a disabled module is two map lookups and a config read per client tick.'",
+      "severity": "style"
+    },
+    {
+      "quote": "In a build where the module was never registered, the client code does nothing at all rather than throwing on every frame.",
+      "issue": "'Per frame' contradicts the page's own correct statement that the modifier is computed once per client tick: `GameRenderer.tickFov()` is called from `GameRenderer.tick()` (build/neoForm/.../GameRenderer.java:748, 847), and only `getFov` runs per frame, past the event.",
+      "correction": "'... rather than throwing on every client tick.'",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/core/AbstractModule.java:211-215 — the catch block's comment says 'If config not available yet, return true to allow initialization' but the code returns false. Comment and code contradict each other. (Core, not the static_fov module; the page documents this chain via isModuleEnabled(), so a repair run should not 'fix' the page to match the comment.)"
+  ]
+}

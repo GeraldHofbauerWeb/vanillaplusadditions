@@ -1,0 +1,46 @@
+{
+ "moduleId": "axolotl_guardian",
+ "claimsChecked": 163,
+ "problems": [
+  {
+   "quote": "An axolotl that has eaten guards a box 32 blocks wide and 16 blocks high around its bowl for the next five minutes",
+   "issue": "guard_radius (32) and guard_radius_y (16) are radii, not box dimensions. findTarget uses `new AABB(bowlPos).inflate(radius, radiusY, radius)` and isWithinGuardZone compares |x - bowl| <= radius, so the box reaches 32 blocks in EVERY horizontal direction and 16 up and down — roughly 65 x 33 x 65 blocks. The page states it correctly further down ('inflated by guard_radius (32) horizontally and guard_radius_y (16) vertically'), so the two passages contradict each other.",
+   "correction": "\"...guards a box that reaches 32 blocks in every horizontal direction and 16 blocks up and down from its bowl (about 65 blocks across, 33 high) for the next five minutes\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Vanilla keeps only the variant and the age and discards the rest of the entity, which would quietly destroy owner, bowl, experience, loot and worn armor.",
+   "issue": "Axolotl.saveToBucketTag (1.21.1, decompiled) writes Variant, Age AND the HAS_HUNTING_COOLDOWN expiry, and first calls Bucketable.saveDefaultDataToBucketTag, which stores CUSTOM_NAME, Health and the NoAI/Silent/NoGravity/Glowing/Invulnerable flags. What vanilla loses is the module's own state (data attachments), not 'the rest of the entity'.",
+   "correction": "\"Vanilla carries only its own handful of fields — variant, age, hunting cooldown, health, name and a few flags — and drops everything else the entity held, which would quietly destroy owner, bowl, experience, loot and worn armor.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Priority runs from the top down; the first state that matches ends the pass.",
+   "issue": "Only Playing dead, Fleeing and Fed actually `return` from tickAxolotl. The Returning branch does not: after it re-asserts the way home it falls through to enforceTargetZone, tickStuckDetection and the Fed branch (which calls maybeAcquireTarget and can clear RETURNING in the same pass). That fall-through is precisely what makes returning interruptible, as the page itself explains two paragraphs later.",
+   "correction": "\"Priority runs from the top down. Playing dead, Fleeing and Fed end the pass; Returning is handled and then falls through into the target scan below — which is what makes it interruptible.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Guardians never fight on land | Targets must be in water, and so must the axolotl.",
+   "issue": "The in-water requirement on the axolotl itself only gates NEW targets (maybeAcquireTarget's `!axolotl.isInWaterOrBubble() -> return`). The retaliation branch in onAxolotlHurt checks only `attacker.isInWaterOrBubble()`, and enforceTargetZone never drops a target because the axolotl left the water — a beached guardian keeps fighting until its air supply falls below 1200 (up to four minutes, per the page's own 'Dry land ends the shift').",
+   "correction": "\"Targets must be in water; the axolotl must be in water to pick up a new target, and a beached one gives up only once its air runs low.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Drops from a mob a guardian killed are inserted straight into its five loot slots before they ever become item entities.",
+   "issue": "LivingDropsEvent hands the module a `Collection<ItemEntity>` (onLivingDrops iterates `event.getDrops()` and calls `iter.remove()`); the drops already exist as ItemEntity instances at that point — they are merely never added to the level.",
+   "correction": "\"...inserted straight into its five loot slots before they are ever added to the world.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The module credits the owner on every hit a guardian lands (`victim.setLastHurtByPlayer(owner)`)",
+   "issue": "The actual call in onMobDamagedByAxolotl is `victim.setLastHurtByPlayer(ownerPlayer)`; `owner` is the UUID in that method, so the quoted line would not compile. Everything else about the mechanism is right.",
+   "correction": "Quote it as `victim.setLastHurtByPlayer(ownerPlayer)`.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [
+  "docs/modules/axolotl_guardian.md: the last row of 'Compatibility and known limits' ships an inline TODO marker (`<!-- TODO: read off the source; no test in this repository starts the client with the module off. -->`). scripts/docgen/check_docs.py flags it as a warning ('still contains a TODO marker'); it does not fail CI, and 11 other module pages carry the same kind of marker, so this is house style rather than a hard breach. Everything else the template demands is in order: level-1 title, TL;DR line, both vpa:meta and vpa:config marker pairs present and EMPTY (no hand-written text between them), no '## Configuration' heading, no hand-written config table, and all 22 image paths plus every relative link resolve (verified with ls and check_docs.py)."
+ ],
+ "verdict": "needs-repair"
+}

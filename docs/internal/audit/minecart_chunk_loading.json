@@ -1,0 +1,32 @@
+{
+ "moduleId": "minecart_chunk_loading",
+ "claimsChecked": 64,
+ "problems": [
+  {
+   "quote": "**Release.** Nothing else releases chunks.",
+   "issue": "Overstated and contradicted two sections later on the same page: `ChunkLoaderManager.releaseAll()` (ChunkLoaderManager.java:125-140) unforces every chunk of a level immediately on the on -> off players-online transition, without waiting for any timeout. The sentence is true only within the mark/reconcile/release loop it heads.",
+   "correction": "Narrow it, e.g. \"Nothing else *in the loop* releases chunks\" (the players-online pause in \"Pausing while nobody is online\" is the one other release path).",
+   "severity": "style"
+  },
+  {
+   "quote": "private boolean forcingEnabled = false;",
+   "issue": "NOT A PAGE ISSUE - Java finding, report only, do not edit the page. MinecartChunkLoadingModule.java:84: `forcingEnabled` is a module-instance field that is never reset when the server stops (no ServerStopping/Stopped handler anywhere; `onLevelUnload` only calls `manager.forgetLevel`). The module instance outlives an integrated server, so in single player: play a world (forcingEnabled becomes true) -> quit to title -> load a world again in the same game session. If the shutdown did not happen to include one server tick with 0 players, `shouldLoad && !forcingEnabled` is false on the new world and `manager.resume(level, radius)` is never called - while the LoadingValidationCallback (MinecartChunkLoadingModule.java:114-122) has already dropped the persisted tickets. Parked/stuck carts then stay unloaded until a player walks there. Identical pattern in TrainChunkLoadingModule.java:83 and StationaryChunkLoaderModule.java:79.",
+   "correction": "Reset `forcingEnabled = false` on ServerStoppingEvent (or when the overworld unloads), so the off -> on transition fires again for the next server instance.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "activeRailChunks.entrySet().removeIf(e -> now - e.getValue() > timeout);",
+   "issue": "NOT A PAGE ISSUE - Java finding, report only, do not edit the page. ChunkLoaderBorderRenderer.java:59: `activeRailChunks` is the only map never cleared on a world/dimension change (`railChunks` is replaced wholesale by each scan at :167-168). Entries are stamped with `mc.level.getGameTime()`. If the player leaves a world at game time 1_000_000 and joins one at game time 500, `now - e.getValue()` is negative, so the entry never satisfies `> timeout` and survives forever - `isLoaded()` then paints chunks at those coordinates red in the new world. Cosmetic, overlay-only.",
+   "correction": "Clear `activeRailChunks` (and `lastScan`) on level change, or drop entries whose stamp is in the future (`now < e.getValue()`).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "// On world load, drop every ticket we own: active state is rebuilt from cart movement.",
+   "issue": "NOT A PAGE ISSUE - Java finding, report only, do not edit the page. MinecartChunkLoadingModule.java:117: the comment is incomplete in the one way that matters. Cart movement alone cannot rebuild the state - a cart in an unloaded chunk does not tick, which is the whole reason `ChunkLoaderData` + `resume()` exist. The sibling javadoc on ChunkLoaderManager.java:21-22 states it correctly (\"re-derived from vehicle movement plus the persistent ChunkLoaderData set\"). Also, the lambda walks `helper.getBlockTickets()` only, so strictly it drops the controller's block tickets, not its entity tickets (the module registers none, so the effect is the same today).",
+   "correction": "Match the ChunkLoaderManager wording: \"...active state is rebuilt from cart movement plus the persisted ChunkLoaderData set (see resume()).\"",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "clean"
+}

@@ -1,0 +1,74 @@
+{
+ "moduleId": "hostile_endermen",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "Called after `applyAngerTime` instead of before it, that random 400–799 ticks would overwrite the\nconfigured `anger_duration` every single time.",
+   "issue": "The tick range is wrong, and the page contradicts its own quote three lines above. `TimeUtil.rangeOfSeconds(20, 39)` is `UniformInt.of(minInclusive * 20, maxInclusive * 20)` = `UniformInt.of(400, 780)` (build/neoForm/.../net/minecraft/util/TimeUtil.java), and `UniformInt.sample` is `Mth.randomBetweenInclusive(random, min, max)`, i.e. inclusive of 780. 799 would require rangeOfSeconds(20, 39.95).",
+   "correction": "that random 400–780 ticks would overwrite the configured `anger_duration` every single time.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "followed by up to 14 caller frames with the module's own class and everything under\n`net.geraldhofbauer.vanillaplusadditions.mixin` filtered out, so the first frame printed is the\nforeign caller.",
+   "issue": "The conclusion is false. Mixin merges an `@Inject` handler into the *target* class, so the stack frames for `PlayerTeleportDebugMixin` are reported as `net.minecraft.server.level.ServerPlayer.vpaLogTeleport` and `net.minecraft.server.level.ServerPlayer.teleportTo` — neither starts with `net.geraldhofbauer.vanillaplusadditions.mixin`, so that filter branch never fires for this hook. Only the `HostileEndermenModule.logPlayerTeleport` frame is actually removed, and the first two printed frames are the two ServerPlayer ones; the foreign caller is the third.",
+   "correction": "…with the module's own class filtered out. The first two frames printed are Mixin's merged `ServerPlayer.vpaLogTeleport` and `ServerPlayer.teleportTo`; the foreign caller follows them. (The mixin-package filter in the code is dead for this hook, because merged handlers carry the target class's name.)",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`ServerPlayer#teleportTo(double, double, double)` is where every in-dimension displacement of a\nplayer ends up, `LivingEntity.randomTeleport` included",
+   "issue": "Overstated, and the caveat two paragraphs later mislabels the other overload. ServerPlayer has two `teleportTo(ServerLevel, …)` methods (ServerPlayer.java:1535 and :1806) and both handle the same-dimension case themselves — `if (newLevel == this.level()) { this.connection.teleport(x, y, z, yaw, pitch); }` — without ever touching `teleportTo(DDD)`. That is the path `/tp` (TeleportCommand) and plenty of mod teleports take, so a same-dimension displacement can bypass the hook entirely. The module's own javadoc is narrower and says \"Every mod-side player displacement\".",
+   "correction": "`ServerPlayer#teleportTo(double, double, double)` is where `LivingEntity.randomTeleport` lands — chorus fruit, ender pearls and both mods above route through it. It is not a universal hook: the `teleportTo(ServerLevel, …)` overloads handle same-dimension teleports too (that is what `/tp` uses) and are not hooked.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "`HurtByTargetGoal` sits at target-selector priority 2 and\nworks off the enderman's 64-block follow range, not our 16",
+   "issue": "Priority 2 is right (EnderMan.java:105), but the range claim is not. `HurtByTargetGoal.canUse` tests with `HURT_BY_TARGETING = TargetingConditions.forCombat().ignoreLineOfSight().ignoreInvisibilityTesting()`, which never calls `.range(...)`; `TargetingConditions.test` only applies a distance check `if (this.range > 0.0)`, so acquisition through the revenge memory is range-unbounded. The 64-block follow range appears only in `TargetGoal.canContinueToUse`. The page's conclusion (that 16 blocks is not the bound) still holds.",
+   "correction": "`HurtByTargetGoal` sits at target-selector priority 2 and is not bounded by our 16 at all — its `HURT_BY_TARGETING` conditions set no range, and only `TargetGoal.canContinueToUse` applies the enderman's 64-block follow range.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "return p.getType() == EntityType.PLAYER && this.isAngryAtAllPlayers(p.level())\n    ? true\n    : p.getUUID().equals(this.getPersistentAngerTarget());",
+   "issue": "Presented as a source quote but silently edited. In build/neoForm/.../NeutralMob.java:78-86 the parameter is named `target`, not `p`, and the method opens with a guard the quote drops: `if (!this.canAttack(target)) { return false; } else { … }`. Same pattern elsewhere on the page: the `isAngerInducing` quote renames `p_325811_` to `p`, and the `updatePersistentAnger` quote names the flag `p_21668_` where the repo's sources call it `updateAnger`.",
+   "correction": "Either quote the decompiled source verbatim (keeping `target`, `p_325811_`, `updateAnger` and the `canAttack` guard, or marking the elision with `…`), or drop the fenced-Java framing and paraphrase.",
+   "severity": "style"
+  },
+  {
+   "quote": "private boolean vpaAllowTeleportAttack(Level level, LivingEntity victim, int range) {\n    return !HostileEndermenModule.suppressTeleportAttack(self, victim);\n}",
+   "issue": "The quoted method body references `self`, but the line that defines it — `LivingEntity self = (LivingEntity) (Object) this;` — is omitted without an ellipsis, so the snippet does not compile as shown.",
+   "correction": "Include the `LivingEntity self = (LivingEntity) (Object) this;` line, or write `suppressTeleportAttack((LivingEntity) (Object) this, victim)`.",
+   "severity": "style"
+  },
+  {
+   "quote": "**Lifecycle.** `onInitialize()` does one thing, `NeoForge.EVENT_BUS.register(this)`",
+   "issue": "Minor overstatement on a page that otherwise trades on exactness: `onInitialize()` also emits `getLogger().info(\"Hostile Endermen module initialized - the End just got less relaxing!\")`.",
+   "correction": "`onInitialize()` does one thing of substance, `NeoForge.EVENT_BUS.register(this)` (plus one info log)",
+   "severity": "style"
+  },
+  {
+   "quote": "[JAVA SOURCE, NOT THE DOC — HostileEndermenConfig.java:86] LOGGER.debug(\"  - Suppress teleport attack: {}\", suppressTeleportAttack.get());",
+   "issue": "Genuine latent NPE: the enclosing guard is `if (detectionRange != null && angerDuration != null && respectCarvedPumpkin != null)`, which does not cover `suppressTeleportAttack`. If that field were ever null while the other three are not, `onConfigLoad` throws. The doc already flags the asymmetry and calls it harmless, which is true today because all six values are built in the same `buildModuleSpecificConfig` call — reporting it here only as the requested Java note.",
+   "correction": "Add `suppressTeleportAttack != null` to the guard (or use the accessor `suppressTeleportAttack()` which already null-checks).",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "[JAVA SOURCE, NOT THE DOC — HostileEndermenModule.java:40] /** Static handle for the Enderman Overhaul compat mixin, which has no module instance. */",
+   "issue": "Wrong/outdated comment: the static `instance` field is read by all three mixin entry points — `suppressTeleportAttack` (Enderman Overhaul), `suppressAntiCheeseTeleport` (EnhancedAI) and `logPlayerTeleport` (the ServerPlayer diagnostics) — not just the Enderman Overhaul one.",
+   "correction": "\"Static handle for the three compat/diagnostic mixins, which have no module instance.\"",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "[JAVA SOURCE, NOT THE DOC — HostileEndermenModule.java:137] || className.startsWith(\"net.geraldhofbauer.vanillaplusadditions.mixin\")",
+   "issue": "Effectively dead code. The only mixin that reaches `logPlayerTeleport` is `PlayerTeleportDebugMixin`, whose `@Inject` handler Mixin merges into `net.minecraft.server.level.ServerPlayer`; stack frames therefore report the ServerPlayer class name and never match this prefix. The intended effect (log opens at the foreign caller) is not achieved — every log line starts with two ServerPlayer frames, eating 2 of the 14 slots.",
+   "correction": "Filter the merged frames by method name (`vpaLogTeleport`) or skip the first N frames, if opening at the foreign caller is the goal.",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "[JAVA SOURCE, NOT THE DOC — HostileEndermenModule.java:255] return player.distanceToSqr(enderman) <= range * range;",
+   "issue": "Minor inconsistency between the two range measurements. `findNearestTarget` calls `level().getNearestPlayer(getX(), getEyeY(), getZ(), range, …)`, which measures from the enderman's *eye*; `isInRange` measures entity-centre to entity-centre. At the boundary the two disagree by up to the enderman's eye height (~2.55 blocks), so a player right at `detection_range` can be \"still in range\" for the keep-current-victim branch but not findable as the nearest target on the next pass, or vice versa. Benign at the default 16, but it is an inconsistency, not a deliberate hysteresis.",
+   "correction": "Use the same reference point in both checks (either both eye-based or both position-based).",
+   "severity": "unprovable"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

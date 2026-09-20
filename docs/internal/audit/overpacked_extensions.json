@@ -1,0 +1,68 @@
+{
+ "moduleId": "overpacked_extensions",
+ "claimsChecked": 76,
+ "problems": [
+  {
+   "quote": "No mixins, no items, no blocks, no commands, no recipes — one network payload and six event handlers.",
+   "issue": "The count is wrong and contradicts the page's own event table 20 lines further down, which lists seven rows. The code has seven handler methods: SlowdownFeature.onPlayerTick, OverpackedExtensionsModule.onRegisterPayloadHandlers, OverpackedGuiBridge.onContainerClose / onEntityJoinLevel / onLogout, BackpackKeybinds.onRegisterKeyMappings, BackpackKeysClientEvents.onClientTick. 'Six' is stale from before the EntityJoinLevelEvent helper-sweep was added.",
+   "correction": "\"… — one network payload and seven event handlers.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Its own description string and the README still advertise a \"Quark-style sort button\"",
+   "issue": "Half of this is no longer true. The module's description string does still say it (OverpackedExtensionsModule.java:39-40), but the README in the working tree contains no occurrence of 'sort' at all — `grep -rni \"sort\" README.md` returns nothing. Only the committed version (git show HEAD:README.md) still has it, at lines 186 and 231; the README was rewritten in the same uncommitted change set as this page.",
+   "correction": "Drop the README from the sentence: \"Its own description string still advertises a \\\"Quark-style sort button\\\"; that is a leftover …\" (the README no longer does).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Overpacked's `GiantBackpack.hurt` drops the entire backpack as an item and discards the entity",
+   "issue": "Not on a hit. In overpacked-2.0.1 `GiantBackpack.hurt` does `SetDamage(get_damage() + amount * 10.0f)` and only takes the drop-and-discard branch when the source `isCreativePlayer()` OR the accumulated damage exceeds 40.0f — i.e. roughly five bare-hand punches, not one. The drop itself is additionally gated on the `doEntityDrops` gamerule (`spawnAtLocation` is skipped without it, but the entity is still discarded). The same simplification is repeated in the limits table row \"Someone hits the helper entity\".",
+   "correction": "\"Overpacked's `GiantBackpack.hurt` accumulates damage (`amount × 10`) and, once that passes 40 — or on a hit from a creative player — spawns `get_stack()` as an item (only with `doEntityDrops`) and discards the entity.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| Open Backpack (main compartment) | centre, `inv_id` 0 | 55 | `B` |",
+   "issue": "The 'Slots' column gives the container sizes, not what the player sees. `GiantBackpack.CreateInventory` allocates 55/28/28, but `GiantBackpackMenu` sets `rows = inv_id == 0 ? 6 : 3` and adds only `rows * 9` ShulkerBoxSlots — 54 for the centre, 27 for each side. The 55th slot of the centre container is the sleeping-bag slot (`SetSleepingBag`/`get_sleeping_bag` use `inv[0].getContainerSize() - 1`), which the backpack GUI never shows. The later sentence about `CreateInventory` building \"all three containers (55/28/28)\" is correct because it names the containers.",
+   "correction": "Either label the column \"Container\" or give the visible numbers: 54 / 27 / 27 (centre container 55 incl. the hidden sleeping-bag slot).",
+   "severity": "misleading"
+  },
+  {
+   "quote": "**Before `v1.0.0-beta.87` it did survive**",
+   "issue": "There is no v1.0.0-beta.87 to be 'before'. gradle.properties says `mod_version=1.0.0-beta.86`, the newest tag is v1.0.0-beta.86 (HEAD is `chore(release): v1.0.0-beta.86`), and the fix this sentence describes — the HELPER_TAG + EntityJoinLevelEvent sweep — is an uncommitted working-tree change to OverpackedGuiBridge.java. The page states a released version that does not exist yet. (The accompanying \"Observed in play on 2026-09-20, after two server restarts\" is corroborated only in general terms by the fact sheet's LEFTOVER HELPERS note; the 'two restarts' detail appears nowhere in the repository.)",
+   "correction": "Either bump the version first, or word it as unreleased: \"Until the fix currently on `master` (unreleased, after v1.0.0-beta.86) it did survive …\".",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "`vpa_overpacked_extensions` ships no mixins and no data files; it declares only `vpa_core`, which carries the keybind and message translations in all six languages.",
+   "issue": "The generated standalone metadata declares more than vpa_core: `renderModuleToml` (build.gradle:512-522) always emits required deps on `vpa_core`, `neoforge` and `minecraft`, plus an `incompatible` entry for `vanillaplusadditions`. The sibling page arm_target_overlay.md:143 words the same fact precisely (\"declares only `vpa_core`, NeoForge and Minecraft\"). No mixins, no dataGlobs and the six lang files are correct.",
+   "correction": "\"… it declares only `vpa_core`, NeoForge and Minecraft (plus the usual incompatibility with the all-in-one bundle); `vpa_core` carries the keybind and message translations in all six languages.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Overpacked 1.x has no such concept; there every compartment always exists.",
+   "issue": "Cannot be checked from this repository: only `libs/overpacked-2.0.1-1.21.1-neoforge.jar` is vendored, there is no 1.x jar anywhere, and no test note records a 1.x run. The same applies to the limits-table row \"Overpacked 1.x | Supported.\" What IS verifiable is our own behaviour: `isCompartmentLocked` returns false whenever `isV2()` is false, so nothing is ever reported as locked on 1.x. The statement about 1.x's own data model is repeated from the Java comments, not from 1.x code.",
+   "correction": "Hedge it the way the page hedges elsewhere: \"On 1.x the lock check is skipped entirely, so both side compartments always open — read off our own code; no 1.x jar is in the repository to confirm what Overpacked 1.x stores.\"",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "/** Transient backpack entities we spawned, keyed by entity id → the slot to write back to. */",
+   "issue": "JAVA SOURCE, not the page (OverpackedGuiBridge.java:46-47): this javadoc describes SESSIONS but now sits immediately above the HELPER_TAG constant, which has its own javadoc right below it. Two doc comments stack on one field, and SESSIONS (line 53) is left undocumented.",
+   "correction": "No page change. Move the comment back down onto SESSIONS in the Java.",
+   "severity": "style"
+  },
+  {
+   "quote": "Overpacked Extensions — a single module bundling three quality-of-life features",
+   "issue": "JAVA SOURCE, not the page (OverpackedExtensionsModule.java:14): the javadoc announces three features while its own <ol> lists two. Two more leftovers in the same file: line 49 says \"Backpack open/sort packets\" although exactly one payload type exists, and lines 26 / OverpackedExtensionsConfig.java:20 point at `docs/overpacked_extensions.md`, which no longer exists (the page moved to `docs/modules/`; build.gradle:174 has the same stale path).",
+   "correction": "No page change. Fix the comments in the Java.",
+   "severity": "style"
+  },
+  {
+   "quote": "Switching the module off at runtime makes the handler return at once and leaves Overpacked's own modifier in place, because the `NORMAL`-priority handler writes it again on the next tick.",
+   "issue": "The page's sentence is correct with Overpacked installed, but it points at a genuine gap in the Java (SlowdownFeature.java:40-42): when the module is switched off at runtime the handler returns before touching the attribute and never removes the modifier it last wrote. On a pack WITHOUT Overpacked nothing rewrites it, so our last `overpacked:speed` value sticks until relog (harmless at the 0.0 default, but a real residual slowdown if `slowdown_multiplier > 0` and something carried a `CUSTOM_DATA` `Count`). Efficiency note from the same method: `data.copyTag()` is called twice per stack per tick per player, deep-copying the whole backpack NBT — double what Overpacked itself does.",
+   "correction": "No page change required. In the Java, remove the `overpacked:speed` modifier once on the disabled path, and read `copyTag()` into a local.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

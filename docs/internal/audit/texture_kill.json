@@ -1,0 +1,56 @@
+{
+ "moduleId": "texture_kill",
+ "claimsChecked": 58,
+ "problems": [
+  {
+   "quote": "The original file is never read again for the entries you list, never written to, and stays intact for anything else that wants it.",
+   "issue": "True only for the `killed_textures` half. For `erase_regions` the original IS read again, from the packs below, on every single resource reload — that is the entire purpose of `CACHE.clear()` at TextureRegionEraser.java:52. The page contradicts itself three sections later: \"Clearing first makes the pack fall through to the packs below, so the eraser always works from an unmodified original.\"",
+   "correction": "Split the claim: \"For a killed texture the original is never read again. For an erased region the eraser re-reads the original from the packs below on every reload and blanks the rectangles afresh. Neither file is ever written to, and both stay intact for anything else that wants them.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Not possible for a normal pack: ours is added with `Pack.Position.TOP`.",
+   "issue": "Contradicted by the decompiled vanilla sources. `PackSelectionConfig` is `record PackSelectionConfig(boolean required, Pack.Position defaultPosition, boolean fixedPosition)`; the module passes `fixedPosition = false`. Two consequences: (1) `DownloadedPackSource.java:56` gives the server-supplied resource pack `new PackSelectionConfig(true, Pack.Position.TOP, true)`, and `Pack.Position.insert` (Pack.java:255-266) inserts a non-fixed TOP pack *below* every trailing fixed TOP pack — so a server pack always ends up above ours; (2) `PackSelectionModel.canMoveUp/canMoveDown` (lines 186-203) only refuse to step past a pack whose `isFixedPosition()` is true, so the player can drag any pack above ours in the resource-pack screen.",
+   "correction": "\"Possible. A server-supplied resource pack is pinned above ours (`fixedPosition = true` in vanilla), and since our pack is not fixed, the player can move another pack above it in the resource-pack screen. What `required = true` does buy is that ours cannot be switched off: `PackRepository.rebuildSelected` re-inserts required packs and `PackSelectionModel.canUnselect` refuses them.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`Pack.Position.TOP`, so it sits above every other pack in the list",
+   "issue": "Same defect as the Compatibility row. `Pack.Position.TOP.insert` scans from the end of the list backwards and stops at the first pack that is not `fixedPosition() && defaultPosition() == TOP`, inserting after it — i.e. below any fixed TOP pack. A server-downloaded pack is exactly such a pack, so \"above every other pack\" is not what the code does.",
+   "correction": "\"…so it is inserted at the high-priority end of the pack list — above the vanilla and mod packs, but below a server-supplied resource pack, which vanilla pins there with `fixedPosition = true`.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "The exact guarantee behind the two booleans in `new PackSelectionConfig(true, Pack.Position.TOP, false)` is a vanilla record detail and is not provable from this repository.",
+   "issue": "It is provable from the tree the build already unpacks: build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/server/packs/PackSelectionConfig.java names the components `required`, `defaultPosition`, `fixedPosition`, and both flags are read in plain vanilla code (`Pack.isRequired`/`isFixedPosition`, `PackRepository.rebuildSelected:86`, `PackSelectionModel:103/190/202`). The hedge is what lets the wrong claim in the same table row stand unchallenged.",
+   "correction": "Name them instead: `required = true` (the pack cannot be unselected — `rebuildSelected` forces it back in, `canUnselect` returns false), `defaultPosition = TOP`, `fixedPosition = false` (its position in the list is not pinned).",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "Without such a mod the extra registration is redundant and harmless.",
+   "issue": "The `TextureManager` registration is load-bearing on the session's first resource load, with no third-party mod involved. `MultiPackResourceManager` decides namespace membership once, in its constructor, from each pack's `getNamespaces()` (MultiPackResourceManager.java:26-56), and `getResource` only consults the manager for that one namespace (lines 77-80). At that moment `TextureRegionEraser.CACHE` is still empty — it is filled later, in `apply()` — so `TransparentTexturePack.getNamespaces()` returns only `create` and the pack is never pushed into the `minecraft` chain for that load. All 62 shipped erase entries are `minecraft:`, so on the first load ResourceManager cannot serve a single one of them; only the DynamicTexture registration puts them on screen. From the second reload on, CACHE is still populated when the next manager is built, so the pack does join the `minecraft` chain.",
+   "correction": "\"Without such a mod the registration still matters on the session's first resource load: a pack only joins a namespace's lookup chain if `getNamespaces()` named that namespace when the `ResourceManager` was built, and at that point the eraser's cache is still empty. On that first load the erased `minecraft:` textures reach the screen through `TextureManager` alone; from the next reload on the `ResourceManager` path works too.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "The comment above it calls this belt-and-suspenders and names Entity Texture Features as the reason",
+   "issue": "The comment (TextureRegionEraser.java:101 and :105) says only \"ETF\". No mod id and no expanded name appears anywhere in the module; the expansion is the page's own. The same applies to \"The same holds for Entity Texture Features, which is named in a comment and nowhere else.\"",
+   "correction": "Write \"names ETF as the reason\", or \"names ETF (presumably Entity Texture Features) as the reason\", so the page does not put a name into the source that is not there.",
+   "severity": "style"
+  },
+  {
+   "quote": "// Populate resource-pack cache so TransparentTexturePack.getResource() can serve\n        // modified PNGs for any code path that goes through ResourceManager (e.g. ETF).",
+   "issue": "JAVA SOURCE, not the page — TextureRegionEraser.java:100-101. The comment promises something the code cannot deliver on the first resource load of a session: `MultiPackResourceManager` snapshots namespace membership in its constructor from `getNamespaces()`, and `TransparentTexturePack.getNamespaces()` derives the erase-side namespaces from `CACHE`, which is still empty at that point. The pack is therefore absent from the `minecraft` lookup chain for that entire load and `getResource` is never asked. A fix would be for `getNamespaces()` (and `listResources()`) to also walk `config.getErasedRegions().keySet()`, not just `CACHE`.",
+   "correction": "No page change — reported as requested. Flagging the Java for a separate fix.",
+   "severity": "style"
+  },
+  {
+   "quote": "dt.upload();",
+   "issue": "JAVA SOURCE, not the page — TextureRegionEraser.java:172. `DynamicTexture(NativeImage)` already calls `upload()` in its constructor (build/neoForm/.../client/renderer/texture/DynamicTexture.java:22-32), so this uploads the same image to GL a second time for every erased texture on every reload. Harmless, but dead work.",
+   "correction": "No page change — reported as requested.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

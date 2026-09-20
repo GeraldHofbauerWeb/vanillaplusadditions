@@ -86,3 +86,21 @@ jobs:
           name: spotbugs-results
           path: build/reports/spotbugs/
           if-no-files-found: ignore
+
+  documentation:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check the documentation
+        # Every module has a page, every generated block is current, every link resolves.
+        # The image check skips itself here: rendering needs a vanilla client jar, and the
+        # PNGs are committed, so CI never has to download one.
+        run: python3 scripts/docgen/check_docs.py

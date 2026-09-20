@@ -1,0 +1,90 @@
+{
+  "blocks": [
+    "chunk_loader_rail"
+  ],
+  "commands": [],
+  "configKeys": [
+    {
+      "defaultValue": "2",
+      "effect": "Chebyshev chunk radius force-loaded around an active loader rail (0 = only the rail's own chunk, 1 = 3x3, 2 = 5x5); this is the rolling-load lookahead. MinecartChunkLoadingConfig.java:22-27.",
+      "key": "chunk_load_radius",
+      "range": "0 ~ 8",
+      "type": "int"
+    },
+    {
+      "defaultValue": "15",
+      "effect": "How long a loader rail stays active (keeps chunks loaded) after the last minecart passed over it, in seconds; multiplied by 20 into ticks at MinecartChunkLoadingModule.java:154. MinecartChunkLoadingConfig.java:29-32.",
+      "key": "active_timeout_seconds",
+      "range": "1 ~ 300",
+      "type": "int"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Only force-load chunks while at least one player is online; false keeps loading with nobody online (e.g. perpetual loops). Evaluated every server tick at MinecartChunkLoadingModule.java:168-181. MinecartChunkLoadingConfig.java:34-39.",
+      "key": "only_while_players_online",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "8",
+      "effect": "Debug overlay: how many chunks around the player are scanned for loader rails to draw permanent chunk borders for. In a sub-section pushed as \"overlay\" (MinecartChunkLoadingConfig.java:41-45); the renderer clamps the value to 1..16 again at ChunkLoaderBorderRenderer.java:133.",
+      "key": "overlay.chunk_border_scan_radius",
+      "range": "1 ~ 16",
+      "type": "int"
+    },
+    {
+      "defaultValue": "24",
+      "effect": "Debug overlay: vertical extent in blocks above/below the rail of the rendered chunk border band (drawn as centerY-span .. centerY+span, ChunkLoaderBorderRenderer.java:77,103-110). MinecartChunkLoadingConfig.java:47-50.",
+      "key": "overlay.chunk_border_vertical_span",
+      "range": "4 ~ 256",
+      "type": "int"
+    }
+  ],
+  "displayName": "Minecart Chunk Loading",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Post (GAME bus, instance handler; marks the loader rail under a ticking AbstractMinecart active - the rail at the cart's own block position or the one directly BELOW it) - MinecartChunkLoadingModule.java:124-139, railAt() at :244-253",
+    "net.neoforged.neoforge.event.tick.LevelTickEvent.Post (GAME bus; reconciles force/release every 10 game ticks per ServerLevel, gated on isModuleEnabled() AND the forcingEnabled player gate) - MinecartChunkLoadingModule.java:141-155",
+    "net.neoforged.neoforge.event.tick.ServerTickEvent.Post (GAME bus; server-wide players-online gate, calls manager.resume(level, radius) on the false->true transition and manager.releaseAll(level) on true->false) - MinecartChunkLoadingModule.java:162-182",
+    "net.neoforged.neoforge.event.level.LevelEvent.Unload (GAME bus; drops in-memory tracking for that ServerLevel - note: this handler alone does NOT re-check isModuleEnabled()) - MinecartChunkLoadingModule.java:184-189",
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (GAME bus; adds the PreparableReloadListener that injects the crafting recipe, gated on isModuleEnabled()) - MinecartChunkLoadingModule.java:195-201",
+    "net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent (MOD bus, added via getModEventBus().addListener; registers the TicketController vanillaplusadditions:minecart_chunk_loading plus its LoadingValidationCallback and hands it to the shared ChunkLoaderManager) - MinecartChunkLoadingModule.java:100,114-122",
+    "indirect/client: RenderLevelStageEvent (stage AFTER_TRANSLUCENT_BLOCKS) + ClientTickEvent.Post, dispatched by debug_overlay's DebugOverlayClientEvents to the ChunkLoaderBorderRenderer this module registers in onClientSetup - MinecartChunkLoadingModule.java:106-112, DebugOverlayClientEvents.java:25-83"
+  ],
+  "hasStandaloneJar": true,
+  "items": [
+    "chunk_loader_rail"
+  ],
+  "keybinds": [],
+  "mixins": [],
+  "moduleId": "minecart_chunk_loading",
+  "notes": "DOC-WRITER NOTES (all provable in-repo):\n\n1. STANDALONE DEPS: the standalone jar `vpa_minecart_chunk_loading` hard-requires `vpa_core` AND `vpa_debug_overlay` (build.gradle:444-446: `moduleDeps: ['vpa_debug_overlay']` on :446; `vpa_core` is added for every module jar at build.gradle:511; both rendered as `type=\"required\"`, the moduleDeps one at build.gradle:514), and declares the all-in-one bundle `vanillaplusadditions` as `incompatible` (build.gradle:516). Its data glob ships `data/minecraft/tags/block/rails.json` (build.gradle:445), a `replace: false` tag whose only value is `vanillaplusadditions:chunk_loader_rail`, so the rail joins the vanilla `minecraft:rails` tag. The module jar carries only `modules/minecart_chunk_loading/**`, `standalone/minecart_chunk_loading/**` and that data glob (build.gradle:641-648) - the block/item MODELS, BLOCKSTATE and TEXTURES live in `vpa_core.jar`, which ships `assets/vanillaplusadditions/**` wholesale (build.gradle:617). In the bundle none of this applies.\n\n2. PLACEMENT LIMIT (missing from the README): chunk forcing follows the CART, and a cart only ticks while its chunk is loaded (`onEntityTick`, MinecartChunkLoadingModule.java:124-139). A loader rail sitting in an already-unloaded chunk therefore never activates. Rails must be spaced closer than `chunk_load_radius x 16` blocks along the line so the loaded window rolls along with the cart. README.md:84 documents exactly this rule for the Train Chunk Loading variant but README.md:81 does NOT mention it for the rail - the same limit applies.\n\n3. A PARKED CART KEEPS THE CHUNKS LOADED: `markActive` is called every tick for any `AbstractMinecart` that sits on a loader rail - `railAt()` (MinecartChunkLoadingModule.java:244-253) accepts the rail at the cart's own block position or the one DIRECTLY BELOW it (`pos.below()`, not above). There is no movement/velocity check anywhere in the module. The forced chunk keeps the cart ticking, so the state is self-sustaining, and `ChunkLoaderData` persists the rail position across restarts. Leaving a cart standing on a loader rail is therefore a permanent chunk loader - with the caveat that at the default `only_while_players_online = true` the whole force-loading pauses while no player is online and resumes on the first join (MinecartChunkLoadingModule.java:162-182).\n\n4. THE OVERLAY IS NOT SELF-CONTAINED: `ChunkLoaderBorderRenderer` is registered into the shared debug_overlay framework (MinecartChunkLoadingModule.java:106-112, inside `onClientSetup`, which ModuleManager.clientSetup() runs only for enabled modules - ModuleManager.java:161-176). It only draws while (a) the debug overlay is toggled ON - key `key.vanillaplusadditions.debug_overlay.toggle`, default NumPad + (`GLFW_KEY_KP_ADD`, DebugOverlayKeybinds.java:18-22), owned by debug_overlay, NOT by this module - and (b) the player wears goggles (DebugOverlayClientEvents.java:85-91). Goggles = Create's Engineer's Goggles (helmet or a Curios slot, via `GogglesItem.isWearingGoggles`) OR an item in the HEAD slot from the `vanillaplusadditions:arm_goggles` tag, and that tag lists only `create:goggles` and `aeronautics:aviators_goggles`, both `\"required\": false` (GogglesUtil.java:21-23,25,33,36 + data/vanillaplusadditions/tags/item/arm_goggles.json). Without Create or Create: Aeronautics the overlay is unreachable. The tag JSON ships only with the arm_target_overlay module jar (build.gradle:387-388), so a standalone install lacking `vpa_arm_target_overlay` has only Create's check. Blue border = rail chunk, red = currently force-loaded (ChunkLoaderBorderRenderer.java:101-111).\n\n5. THE OVERLAY IS A CLIENT-SIDE APPROXIMATION: it re-derives \"loaded\" from the minecarts the client can see (`mc.level.entitiesForRendering()`, ChunkLoaderBorderRenderer.java:50-59) and reads the CLIENT's own config values through the static accessors. The config is registered as `ModConfig.Type.COMMON` (VanillaPlusAdditions.java:131 for the bundle, StandaloneModuleBootstrap.java:45 for a module jar) and is NOT synced, so on a multiplayer server with different `chunk_load_radius`/`active_timeout_seconds` the borders can be wrong. Its chunk scan is a brute-force walk over the non-empty sections of up to (2*scan_radius+1)^2 chunks every 10 client ticks (ChunkLoaderBorderRenderer.java:131-169) - at the default scan radius that is 289 chunks.\n\n6. RECIPE MECHANISM: the recipe is injected on every datapack reload by a `PreparableReloadListener` that copies the whole recipe map into a LinkedHashMap, adds ours and calls `recipeManager.replaceRecipes(...)` (MinecartChunkLoadingModule.java:195-241). Gated on `isModuleEnabled()`. custom_crafting_recipes, pathfinder_quills and tipped_arrows use the same pattern, the latter two citing this module as the template (PathfinderQuillsModule.java:69, TippedArrowsModule.java:62). Every one of them does `barrier.wait(...).thenRunAsync(..., gameExecutor)`, so the copies happen one after another on the game thread and the additions accumulate instead of clobbering each other.\n\n7. DROPS ARE HARDCODED: `getDrops(BlockState, LootParams.Builder)` always returns exactly one `chunk_loader_rail` (ChunkLoaderRailBlock.java:56-59) - no loot table is consulted at all, so Silk Touch, Fortune and any loot condition have no effect. The block is in no `mineable/*` tag (the repo-wide grep for `chunk_loader_rail` under `data/` hits only `minecraft:rails`), strength 0.7, `noCollission`, METAL sound, cyan map colour (MinecartChunkLoadingModule.java:67-73); it extends `BaseRailBlock` with `isStraight = false` (ChunkLoaderRailBlock.java:31) so curves and ascending shapes work - the blockstate JSON maps all 10 rail shapes - and it carries the vanilla `WATERLOGGED` property alongside `RAIL_SHAPE`.\n\n8. DISABLING THE MODULE UNREGISTERS THE BLOCK: `onInitialize` (which calls `BLOCKS.register`/`ITEMS.register` and `NeoForge.EVENT_BUS.register(this)`) only runs for enabled modules (ModuleManager.initializeModules, ModuleManager.java:83-108, plus the `shouldInitialize()` check in AbstractModule.initialize()). Setting `enabled = false` after building a rail network means `vanillaplusadditions:chunk_loader_rail` no longer exists and placed rails become unknown blocks.\n\n9. RESTART BEHAVIOUR: the `TicketController`'s LoadingValidationCallback drops every ticket it owns on world load (MinecartChunkLoadingModule.java:114-122); the active set is rebuilt from the persisted `ChunkLoaderData` (SavedData name `vanillaplusadditions_chunk_loader`, MinecartChunkLoadingModule.java:81; NBT key `active_rails`, ChunkLoaderData.java:21) the first time `shouldLoad` flips to true. With `only_while_players_online = true` that is the first player join; with it set to false it happens on the first server tick. Loading pauses again when the last player leaves (`releaseAll`, ChunkLoaderManager.java:125-140, which keeps the persisted set - only an expired timeout removes a rail from it, ChunkLoaderManager.java:106-110).\n\n10. SHARED UTIL: `util/chunkload/ChunkLoaderManager` + `ChunkLoaderData` are shared with `stationary_chunk_loader` (via its own StationaryChunkLoaderManager) and `train_chunk_loading` - each with its own SavedData name and TicketController. Changes there affect three modules. Both classes live in `basePkg/util/**`, which ships in `vpa_core.jar` (build.gradle:616), not in the module jar.\n\n11. MINOR: the static accessors at MinecartChunkLoadingModule.java:257-271 duplicate the config defaults as literals (2 / 15 / 8 / 24) for the `instance == null` case - a silent divergence risk if the config defaults ever change (the config getters at MinecartChunkLoadingConfig.java:54-72 duplicate them a third time). Also `instance` is a plain static field assigned in the constructor (:79,:91), so the last constructed instance wins.\n\n12. NO TODO/FIXME comments in the module or in util/chunkload. No mixins (the module has no entry in vanillaplusadditions.mixins.json and no `mixins:` list in its build.gradle descriptor), no commands, no network packets, no JEI plugin, no block entity. Lang: only `block.vanillaplusadditions.chunk_loader_rail` (\"Chunk Loader Rail\" en_us:11 / \"Chunk-Loader-Schiene\" de_de:11) - the BlockItem inherits that key. The item is added to the mod's main creative tab (MinecartChunkLoadingModule.java:98). There is currently NO dedicated page under `docs/modules/` for this module - only the README paragraph at README.md:80-81.\n\n13. README GAP (neighbouring, worth fixing while documenting): README.md:244-246 names only `vpa_minecart_chunk_loading` and `vpa_stationary_chunk_loader` as the jars needing `vpa_debug_overlay`, but `train_chunk_loading` declares the same dependency (build.gradle:461).",
+  "oneLiner": "A craftable rail that keeps the chunks around a traveling minecart loaded, so long-distance cart lines keep running instead of stalling at the edge of the loaded world.",
+  "optionalMods": [
+    {
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/debug_overlay/client/GogglesUtil.java:21-23,25,33,36; src/main/resources/META-INF/neoforge.mods.toml:80-88 (type=\"optional\", versionRange=\"[6.0,)\"); MinecartChunkLoadingModule.java has no ModList/Create reference at all",
+      "modId": "create",
+      "whatItAdds": "Only relevant for the debug view: the chunk-border overlay renders solely while the player wears goggles, and Create's Engineer's Goggles are the primary item that satisfies that check (accepted in the helmet slot or in a Curios slot, since Create registers that predicate itself). The call sits behind the static CREATE_LOADED = ModList.get().isLoaded(\"create\") flag, so it is never resolved without Create. Without Create (and without Create: Aeronautics) the overlay can never be shown - the chunk loading itself is fully unaffected, and the module does NOT override shouldInitialize(). Declared type=\"optional\" in the bundle's mods.toml."
+    },
+    {
+      "evidence": "src/main/resources/data/vanillaplusadditions/tags/item/arm_goggles.json:4; GogglesUtil.java:21-23,36",
+      "modId": "aeronautics",
+      "whatItAdds": "Create: Aeronautics' aviator's goggles (aeronautics:aviators_goggles) are the second accepted goggles item for the debug overlay, via the vanillaplusadditions:arm_goggles item tag checked on the HEAD slot. The entry is \"required\": false, so nothing breaks without the mod. Without it, Create's goggles remain the only way to see the chunk borders. aeronautics is not declared as a dependency in neoforge.mods.toml (only 'sable' is); the coupling is the tag entry alone."
+    }
+  ],
+  "recipes": [
+    "Shaped (code-registered, id vanillaplusadditions:chunk_loader_rail, group \"\", CraftingBookCategory.MISC): 8x Powered Rail ringed around 1x Ender Pearl (RRR / RER / RRR) -> 8x Chunk Loader Rail; injected into the RecipeManager on every datapack reload while the module is enabled (MinecartChunkLoadingModule.java:203-220)",
+    "Block drop (not a recipe, but code-only loot): breaking a Chunk Loader Rail always drops exactly one of itself via a getDrops override instead of a loot table (ChunkLoaderRailBlock.java:56-59)"
+  ],
+  "registeredInBundle": true,
+  "requiredMods": [],
+  "shortDescription": "Chunk Loader Rail keeps chunks loaded around traveling minecarts.",
+  "side": "both",
+  "sinceCommit": "bbb1d32",
+  "sinceVersion": "v1.0.0-beta.16",
+  "moduleDeps": [
+    "debug_overlay"
+  ],
+  "relatedModules": []
+}

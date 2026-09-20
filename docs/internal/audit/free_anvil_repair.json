@@ -1,0 +1,38 @@
+{
+ "moduleId": "free_anvil_repair",
+ "claimsChecked": 94,
+ "problems": [
+  {
+   "quote": "The Create entries are insurance rather than new behaviour: the diving gear already repairs with its own base material through the ordinary path, and would already be free. The netherite entries are the real saving — a diamond instead of a netherite ingot.",
+   "issue": "Only the two COPPER entries are insurance. Verified in libs/create-1.21.1-6.0.9.jar: AllItems registers create:netherite_diving_helmet and create:netherite_diving_boots with vanilla net.minecraft.world.item.ArmorMaterials.NETHERITE (repair ingredient = netherite ingot), while only copper_diving_* uses Create's own AllArmorMaterials.COPPER (repair ingredient = copper ingot). Create registers only COPPER and CARDBOARD armour materials and overrides isValidRepairItem nowhere in its armor package. So the two create:netherite_diving_*=minecraft:diamond entries are exactly the same 'real saving' (diamond instead of netherite ingot) the very next sentence reserves for the plain netherite gear — they are not insurance. CHANGELOG.md:970 itself says only 'die Copper-Eintraege sind explizite Absicherung'. (The fact sheet's create optionalMods entry propagates the same error; the Create jar outranks it.)",
+   "correction": "Only the two copper diving entries are insurance: copper diving gear carries Create's own COPPER armour material, whose repair ingredient is already a copper ingot, so it repairs free through the ordinary path anyway. The netherite diving pieces use vanilla's NETHERITE material and would otherwise want a netherite ingot, so — exactly like the nine plain netherite entries — a diamond is a real saving.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| `create:netherite_diving_helmet` / `_boots` | Diamond | repairs with its own base material |",
+   "issue": "In a column headed 'What vanilla does', 'its own base material' conceals that the base material is a netherite ingot, not a diamond. The row directly above states the identical fact honestly as 'repairs with a netherite ingot only'. As written this row is what licenses the wrong conclusion two paragraphs later.",
+   "correction": "| `create:netherite_diving_helmet` / `_boots` | Diamond | repairs with a netherite ingot only (vanilla `ArmorMaterials.NETHERITE`) |",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Note what this does **not** do: it never lowers a penalty an item has already accumulated. An item sitting at 63 stays at 63 — it simply becomes repairable again, while enchanting it still runs into the same wall.",
+   "issue": "The antecedent of 'this' is the `increase_prior_work_penalty = true` code block immediately above, and under that setting the sentence is false: applyPriorWorkPenalty calls AnvilMenu.calculateIncreasedRepairCost(63) = 127, so the item does not stay at 63, it doubles. 'Stays at 63' holds only in the default configuration (flag false), where result = left.copy() keeps the existing REPAIR_COST.",
+   "correction": "Make the subject explicit, e.g.: 'Note what neither setting does: lower a penalty an item has already accumulated. With the default `false` an item sitting at 63 stays at 63; with `true` it keeps doubling, 63 -> 127. Either way the item simply becomes repairable again, while enchanting it still runs into the same wall.'",
+   "severity": "misleading"
+  },
+  {
+   "quote": "protected boolean mayPickup(Player p_39023_, boolean p_39024_) {",
+   "issue": "Presented as a quote of the decompiled 1.21.1 AnvilMenu, but this repo's build/neoForm/neoFormJoined1.21.1-20240808.144430/.../AnvilMenu.java is Parchment-mapped and reads `mayPickup(Player player, boolean hasStack)`. The same applies to two other quotes on the page: `calculateIncreasedRepairCost(int p_39026_)` is actually `int oldRepairCost`, and `isValidRepairItem(ItemStack p_41402_, ItemStack p_41403_)` in Item.java:374 is actually `(ItemStack stack, ItemStack repairCandidate)`. The method bodies and the logic are verbatim correct; only the parameter names come from an older unmapped decompile.",
+   "correction": "Use the names the repo's own decompiled sources carry: `mayPickup(Player player, boolean hasStack)`, `calculateIncreasedRepairCost(int oldRepairCost)`, `isValidRepairItem(ItemStack stack, ItemStack repairCandidate)`.",
+   "severity": "style"
+  },
+  {
+   "quote": "the right stack is the same item, damageable, and carries neither `ENCHANTMENTS` nor `STORED_ENCHANTMENTS`",
+   "issue": "isPlainSacrifice checks component PRESENCE only for STORED_ENCHANTMENTS (`!right.has(...)`); for enchantments it checks that `EnchantmentHelper.getEnchantmentsForCrafting(right)` is EMPTY. Every item carries an empty ENCHANTMENTS component by default (DataComponents.COMMON_ITEM_COMPONENTS sets ENCHANTMENTS = ItemEnchantments.EMPTY), so 'carries no ENCHANTMENTS' read literally would never be satisfied and the sacrifice path would never fire.",
+   "correction": "'...and is free of enchantments — no `STORED_ENCHANTMENTS` component and an empty `ENCHANTMENTS` component.'",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

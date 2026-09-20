@@ -1,0 +1,56 @@
+{
+ "moduleId": "mob_spawn_overlay",
+ "claimsChecked": 82,
+ "problems": [
+  {
+   "quote": "Those nine files are the module in full: no registries, no commands, no network payloads, no `data/`\nfiles.",
+   "issue": "Off-by-one: the \"Under the hood\" table directly above lists TEN files (MobSpawnOverlayModule, config/MobSpawnOverlayConfig, six client classes — MobSpawnOverlayClientEvents, SpawnScanner, SpawnMarker, SpawnOverlayState, SpawnOverlayRenderer, SpawnOverlayRenderTypes —, the mixin and the standalone entry point). `find` over the three source directories returns exactly 10 .java files. The fact sheet carries the same error (\"Those nine files are the module in full\"), so the page inherited it rather than miscounting on its own.",
+   "correction": "\"Those ten files are the module in full …\" (and the fact sheet's note should be corrected too).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "The same line also clears the key mapping (`KeyMapping.set(key, false)`), so whatever you have M bound to does\nnot fire alongside it.",
+   "issue": "Misattributed to \"the same line\". Neither quoted line calls KeyMapping.set. In KeyboardHandler.keyPress the clearing happens in a separate branch further down: `if (flag4) { if (flag5) { KeyMapping.set(inputconstants$key, false); } else { KeyMapping.set(inputconstants$key, true); KeyMapping.click(inputconstants$key); } }` — gated on the same `flag5`, but additionally on `flag4` (screen == null), and it passes the `InputConstants.Key` object, not the int `key`. The practical consequence the sentence draws (your M binding does not also fire) is correct.",
+   "correction": "\"The same `flag5` is read again further down in `keyPress`: when it is set and no screen is open, vanilla calls `KeyMapping.set(inputconstants$key, false)` instead of `set(..., true)` + `click(...)`, so whatever you have M bound to does not fire alongside it.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Only a restart clears them.",
+   "issue": "Overstated. Re-enabling the module (config key `enabled` or the runtime override, which `ModuleManager.resolveModuleEnabled` honours on every call) makes the mixin's `isActiveClientSide()` gate pass again, and one F3+M then calls `SpawnOverlayState.toggle()`, which sets `markers = List.of()`. A restart is not the only way out of the stale-marker state.",
+   "correction": "\"They stay until you re-enable the module and toggle the overlay off again — or restart.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "**Six render types**, each in a depth-tested and an x-ray variant",
+   "issue": "Reads as 6 × 2 = 12. SpawnOverlayRenderTypes declares six RenderType constants in total (STRIPES_DEPTH/XRAY, SHIMMER_DEPTH/XRAY, LINES_DEPTH/XRAY) — three kinds, each in two variants. The list after the colon and the \"Under the hood\" table (\"Six render types\") are both right, so only this sentence's arithmetic framing is off.",
+   "correction": "\"**Three render types**, each in a depth-tested and an x-ray variant — six in all: …\"",
+   "severity": "style"
+  },
+  {
+   "quote": "It is nine lines of body:",
+   "issue": "The snippet that follows is eight lines (the `@Inject` annotation plus a seven-line method, KeyboardHandlerDebugKeyMixin.java:25-32). Nine only if the blank line at the top of the class body is counted.",
+   "correction": "\"It is eight lines\" — or drop the count.",
+   "severity": "style"
+  },
+  {
+   "quote": "This is the spawn view OptiFine's `F7` used to give you and that Sodium/Iris do not bring along.",
+   "issue": "Not verifiable from this repository — no OptiFine, Sodium or Iris code is present, so the claim about another mod's behaviour rests on the module javadoc, the CHANGELOG (beta.64) and README, not on inspectable code. Flagged only because the brief asks for other-mod claims to be checked against that mod's code.",
+   "correction": "No repair needed if you are confident in the framing; it is the module javadoc's own wording. Hedge only if you want the page to claim nothing it cannot show.",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "VertexConsumer stripes = buffers.getBuffer(SpawnOverlayRenderTypes.stripes(xray));",
+   "issue": "SOURCE BUG (SpawnOverlayRenderer.java:64-67, not a doc-writing error) — the renderer takes three VertexConsumers from the same `MultiBufferSource.BufferSource` up front and then writes to all three inside the marker loop. None of the six custom RenderTypes is in `RenderBuffers`' `fixedBuffers` map (the mod never subscribes to `RegisterRenderBuffersEvent` — grep over src/ finds no reference), so all three land on the *shared* ByteBufferBuilder. `MultiBufferSource.BufferSource.getBuffer` (1.21.1, decompiled) runs `if (this.lastSharedType != null) this.endBatch(this.lastSharedType);` before creating the next shared builder, and `endBatch` calls `builder.build()`, which sets `building = false`. So fetching `shimmer` kills `stripes`, fetching `outline` kills `shimmer`; the first `quad(stripes, …)` then hits `BufferBuilder.addVertex` → `beginVertex()` → `ensureBuilding()` → `throw new IllegalStateException(\"Not building!\")` inside RenderLevelStageEvent, i.e. a client crash as soon as the overlay is on with at least one marker. The same pattern sits in ChunkLoaderBorderRenderer.java:80-81, AnchorBorderRenderer.java:58-59 and ChunkLoaderTrackBorderRenderer.java:91-92; BattleDogsArmorLayer.java:59/65 shows the correct sequential get-use-get-use shape. I could not run the game to observe the crash, and no log or crash report in ~/.minecraft-instances mentions the module, so this is read off vanilla's source — but it is the one finding worth acting on. If it is real, the page's user-visible promises (\"every position … lights up\", the shimmer, the outline) describe intent rather than observed behaviour.",
+   "correction": "Not a page fix. In the code: fetch each VertexConsumer immediately before writing to it (or give the six types their own buffers via `RegisterRenderBuffersEvent`), then verify in-game before the page keeps asserting the overlay draws.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "the light test itself, evaluated against the dimension's {@link IntProvider} range rather",
+   "issue": "WRONG COMMENT (SpawnScanner.java:24-34, not a doc error) — the class javadoc lists the per-position checks \"in order of cost\" as 1 block light, 2 ON_GROUND placement, 3 collision, 4 the light test. The code runs the light test SECOND (`localBrightness > everDarkEnough → continue`, lines 81-84), before `fits(...)` does the placement and collision tests. The doc page describes the real order (block light → ever dark enough → ground → hitbox) and is right where the javadoc is not.",
+   "correction": "Leave the page as it is; reorder items 2-4 of the SpawnScanner javadoc to match the code.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

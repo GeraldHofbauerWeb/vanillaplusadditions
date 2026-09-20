@@ -1,0 +1,56 @@
+{
+ "moduleId": "better_mobs",
+ "claimsChecked": 96,
+ "problems": [
+  {
+   "quote": "`reassessWeaponGoal()` is only called on `AbstractSkeleton`. Any other mob given a ranged weapon keeps its melee AI and holds the bow without using it.",
+   "issue": "Refuted by the decompiled 1.21.1 sources. Several mobs in the shipped `enabled_mobs` list re-check the held item every tick and need no reassess call: `Drowned.DrownedTridentAttackGoal.canUse()` is `super.canUse() && this.drowned.getMainHandItem().is(Items.TRIDENT)` (Drowned.java:76, 499), and `Pillager` registers `RangedCrossbowAttackGoal` whose `canUse()` is `isValidTarget() && isHoldingCrossbow()` (Pillager.java:66). `Illusioner` likewise carries `RangedBowAttackGoal` (Illusioner.java:65). Skeletons are the special case precisely because their bow/melee goals are added and removed once, not re-evaluated.",
+   "correction": "Say instead: skeletons need `reassessWeaponGoal()` because `AbstractSkeleton` swaps its bow goal and melee goal at registration time. Mobs whose ranged goal re-checks the held item each tick - drowned with a trident, pillager with a crossbow, illusioner with a bow - will use a ranged weapon the module hands them. Mobs with no ranged goal at all (zombie, husk, wither skeleton, ...) hold it without using it.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Vanilla gives every skeleton a bow in `populateDefaultEquipmentSlots`",
+   "issue": "`WitherSkeleton` overrides `populateDefaultEquipmentSlots` and gives a stone sword instead, without calling super: `protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) { this.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD)); }` (WitherSkeleton.java:70-72). Wither skeleton is in both shipped default lists (`enabled_mobs` and `enabled_mobs_with_armor`), so it is not a hypothetical mob for this page.",
+   "correction": "\"Vanilla gives skeletons and strays a bow in `AbstractSkeleton#populateDefaultEquipmentSlots`\" - and note that wither skeletons are the exception, they start with a stone sword.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`LivingEntity#hurtArmor` and `#hurtHelmet` are empty bodies; only `Player` overrides them, and `Mob#doHurtTarget` never damages the held item.",
+   "issue": "`Wolf` also overrides `hurtArmor` in 1.21.1: `protected void hurtArmor(DamageSource damageSource, float damageAmount) { this.doHurtEquipment(damageSource, damageAmount, new EquipmentSlot[]{EquipmentSlot.BODY}); }` (Wolf.java:425-428). The `LivingEntity` bodies being empty (LivingEntity.java:1698-1702) and `Mob#doHurtTarget` not damaging the held item (Mob.java:1491) both check out, so the conclusion survives - but the enumeration does not.",
+   "correction": "\"only `Player` and `Wolf` override them - and `Wolf`'s override only covers the `BODY` slot, which no `Monster` has\", or simply drop the \"only Player\" clause: no `Monster` overrides either method, which is what actually matters here.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "moving `leather;20` to the front of the `above_zero` list would make leather the most common material by a wide margin and gold nearly extinct.",
+   "issue": "The arithmetic does not support either half. With `leather;20, gold;10, chainmail;10` the independent first-hit-wins walk gives leather 20 %, gold 0.8 x 10 = 8 %, chainmail 0.8 x 0.9 x 10 = 7.2 %. Gold falls from 10 % to 8 % - hardly extinct. And leather is already the most common material in the shipped order at 16.2 % (the page's own table says so two paragraphs earlier), so reordering moves it from 16.2 % to 20 %.",
+   "correction": "Either drop the sentence or state the real numbers: moving `leather;20` to the front raises leather from 16.2 % to 20 % and costs gold and chainmail about two and two points respectively (10 % -> 8 %, 9 % -> 7.2 %). A sharper illustration of why order matters would be a high-percentage entry in front, e.g. `leather;90` first, which does starve everything behind it.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Listing an id does nothing unless that entity extends `net.minecraft.world.entity.monster.Monster`. Animals, golems and most bosses never qualify.",
+   "issue": "The gate is right, but \"most bosses never qualify\" is backwards. `WitherBoss extends Monster` (WitherBoss.java:60), `Warden extends Monster` (Warden.java:77) and `ElderGuardian extends Guardian` -> `Monster`. Only `EnderDragon extends Mob implements Enemy` (EnderDragon.java:54) is excluded. The page even contradicts itself: warden and elder guardian appear in its own list of the \"other fifteen\" that do get potion effects.",
+   "correction": "\"Animals and golems never qualify; among the bosses only the Ender Dragon is excluded (`EnderDragon extends Mob`), while the Wither, the Warden and the Elder Guardian are all `Monster` subclasses.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "`WEAPON_TYPES` is a genuinely weighted pick — the weights are summed and normalised, so as long as the list is non-empty it always returns a material.",
+   "issue": "`selectWeightedProperty` (BetterMobsConfig.java:711-743) also bails out on the total: `if (totalWeight <= 0) { return null; }`, and each weight is floored with `Math.max(0, ...)`. A non-empty list whose weights are all `0` (or all negative) returns no material, and the module then falls back to the gear material at BetterMobsModule.java:128-130.",
+   "correction": "\"...so as long as the list is non-empty and its weights sum to more than zero, it always returns a material. All-zero weights return nothing and the weapon falls back to the gear material.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "four different orders showed up across eight runs of a four-entry map on the JDK 21 that builds this project.",
+   "issue": "Nothing in the repository records this experiment, and the tally does not reproduce - the same four-entry `Map.of` over eight runs on the project's JDK 21 (openjdk 21.0.12.1) gave me six distinct orders, not four. The underlying mechanism is real (`ImmutableCollections.SALT` is derived once per JVM start, so `Map.of` iteration order varies between runs), but the specific count is a one-off observation presented as a measured fact.",
+   "correction": "Drop the count and state the mechanism, which is what carries the argument: \"`Map.of` iteration order is unspecified and OpenJDK randomises it once per JVM start, so it differs from one server start to the next.\"",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "The message itself is German, and it is the only player-visible string the module has; there are no lang entries.",
+   "issue": "There are two hardcoded player-visible strings, and they are not in the same language. The chat line is German (BetterMobsModule.java:320-321), but the hover body the same sentence just described is English - `di` is built from \"Mob spawned with properties:\", \"Type: \", \"Position: \", \"Material: \", \"Weapon: \", \"Armor - Helmet: \" and so on (lines 149-311). \"There are no lang entries\" is correct; I found no `better_mobs` key under `assets/vanillaplusadditions/lang/`.",
+   "correction": "\"The chat line is hardcoded German, the hover body hardcoded English; neither goes through a lang file, so neither can be translated.\"",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

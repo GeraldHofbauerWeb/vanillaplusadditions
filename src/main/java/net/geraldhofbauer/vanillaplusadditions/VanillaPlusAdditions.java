@@ -24,6 +24,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.glider_water_repair.Glide
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_endermen.HostileEndermenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.hostile_zombified_piglins.HostileZombifiedPiglinsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.idle_gamerules.IdleGamerulesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.mob_drops.MobDropsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_glow.MobGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_spawn_overlay.MobSpawnOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
@@ -150,6 +151,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
         moduleManager.registerModule(new HostileEndermenModule());
         moduleManager.registerModule(new WitherSkeletonModule());
+        moduleManager.registerModule(new MobDropsModule());
         moduleManager.registerModule(new MobGlowModule());
         moduleManager.registerModule(new BlockGlowModule());
         moduleManager.registerModule(new BetterMobsModule());

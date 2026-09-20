@@ -71,12 +71,31 @@ jobs:
             echo "3. Make sure you have NeoForge for Minecraft 1.21.1 installed"
             echo ""
             echo "### 🔧 Configuration"
-            echo "See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)"
+            echo "See [Configuration Guide](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/docs/guides/configuration.md)"
             echo ""
             echo "### 🐛 Debug Logging"
-            echo "See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+            echo "See [Debug Logging Guide](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/docs/guides/debug-logging.md)"
             echo "EOF"
           } >> $GITHUB_ENV
+
+      - name: Create version-less copies for permanent download links
+        # Asset names carry the version, so a link to a specific jar goes stale every release.
+        # A second, version-less copy of each jar makes
+        #   /releases/latest/download/vpa_<module>.jar
+        # a link that never has to be touched again - that is what the docs tables point at.
+        run: |
+          mkdir -p build/libs/permalink
+          for jar in build/libs/*.jar build/libs/modules/*.jar; do
+            [ -f "$jar" ] || continue
+            base=$(basename "$jar")
+            case "$base" in
+              *-${{ env.VERSION }}.jar) ;;
+              *) echo "skipping $base (not a plain versioned jar)"; continue ;;
+            esac
+            cp "$jar" "build/libs/permalink/${base%-${{ env.VERSION }}.jar}.jar"
+          done
+          ls -1 build/libs/permalink | head -5
+          echo "... $(ls -1 build/libs/permalink | wc -l) version-less copies"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -86,6 +105,7 @@ jobs:
           files: |
             build/libs/*.jar
             build/libs/modules/*.jar
+            build/libs/permalink/*.jar
           draft: false
           prerelease: false
 
@@ -109,10 +129,10 @@ jobs:
                 echo "3. Make sure you have NeoForge for Minecraft 1.21.1 installed"
                 echo
                 echo "### 🔧 Configuration"
-                echo "See [Configuration Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/MODULE_CONFIG_GUIDE.md)"
+                echo "See [Configuration Guide](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/docs/guides/configuration.md)"
                 echo
                 echo "### 🐛 Debug Logging"
-                echo "See [Debug Logging Guide](https://github.com/Gerry3010/vanillaplusadditions/blob/master/docs/DEBUG_LOGGING_CONFIG.md)"
+                echo "See [Debug Logging Guide](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/docs/guides/debug-logging.md)"
               } > /tmp/release_notes.txt
               # --tag is optional here; gh release edit identifies by tag name
               gh release edit "$TAG" --notes-file /tmp/release_notes.txt 2>/dev/null || true

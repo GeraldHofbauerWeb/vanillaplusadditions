@@ -1,0 +1,38 @@
+{
+ "moduleId": "copycat_pathfinding",
+ "claimsChecked": 47,
+ "problems": [
+  {
+   "quote": "The diagonal variant checks all three legs — root to x-neighbour, root to z-neighbour, and root to the diagonal cell `(xNode.x, root.y, zNode.z)` — which is the cell vanilla actually produces, since `findAcceptedNode` only ever shifts a node in y.",
+   "issue": "`(xNode.x, root.y, zNode.z)` is the diagonal cell for only two of the four diagonal pairs. Vanilla calls `isDiagonalValid(p_node, reusableNeighbors[direction1], reusableNeighbors[direction2])` with `direction2 = direction1.getClockWise()` (WalkNodeEvaluator.java:140-142), so the pairs are (N,E), (E,S), (S,W), (W,N) — the arg called `xNode` is NOT always the x-axis neighbour. For (N,E): xNode is the north node, so `xNode.x == root.x`; zNode is the east node, so `zNode.z == root.z`; the expression yields root itself (all three deltas 0 → `crosses` returns false on every axis), i.e. the third leg is a no-op. Same for (S,W). Only (E,S) → (x+1,y,z+1) and (W,N) → (x-1,y,z-1) actually hit the diagonal cell. The claim that this is 'the cell vanilla actually produces' is therefore false for the NE and SW diagonals.",
+   "correction": "State that the third leg reaches the diagonal cell only for the (E,S) and (W,N) pairs and degenerates to `root` (a no-op) for (N,E) and (S,W) — or fix the code first and then document it. The `findAcceptedNode` half of the sentence is correct (it only ever shifts y).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "|| blocksMove(level, scratch, root.x, root.y, root.z, xNode.x, root.y, zNode.z);",
+   "issue": "[Java bug, PanelGeometry.java:101, plus the wrong javadoc at PanelGeometry.java:86-88] The third leg of `blocksDiagonal` picks x from `xNode` and z from `zNode`, but vanilla's `isDiagonalValid(root, xNode, zNode)` is called with (direction1, direction1.getClockWise()), so for the pairs (NORTH,EAST) and (SOUTH,WEST) the first argument is the z-axis neighbour and the second the x-axis one. The computed position is then `root` itself, and `blocksMove` returns false for a zero move. Consequence: for the NE and SW diagonals a plate in the diagonal target cell is never checked, so the path finder can route a mob diagonally into a panel it then bumps against — exactly the case `direction_aware` exists to prevent. The javadoc above it ('The diagonal cell is {@code (xNode.x, root.y, zNode.z)}') states the same wrong thing.",
+   "correction": "Do not fix — reported only. The robust form would take the coordinate that actually differs from root on each axis, e.g. x = (xNode.x != root.x ? xNode.x : zNode.x), z = (xNode.z != root.z ? xNode.z : zNode.z).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Not a copycat block at all — it is registered as a plain `WrenchableDirectionalBlock`, never overrode `isPathfindable`, and is already passable. Untouched.",
+   "issue": "The last claim is wrong, verified against create-1.21.1-6.0.9.jar (the jar in libs/). `copycat_bars` is indeed `REGISTRATE.block(\"copycat_bars\", WrenchableDirectionalBlock::new)` (AllBlocks <clinit>, bootstrap #692) and `WrenchableDirectionalBlock` overrides neither `isPathfindable` nor `getShape`/`getCollisionShape`, and the builder chain sets no properties — so the block keeps the default full-cube collision shape. Vanilla's default (BlockBehaviour.java:160-163) then answers LAND with `!state.isCollisionShapeFullBlock(...)` = false, and `getPathTypeFromState` returns `PathType.BLOCKED`. Copycat bars are therefore blocked for pathfinding just like any solid block, not 'already passable'.",
+   "correction": "Say that copycat_bars is left alone because it is a plain full-collision block: vanilla's own default already answers 'not pathfindable' for it, which is correct there, since mobs cannot pass it physically either. The 'not a copycat block / never overrode isPathfindable / untouched' parts are right.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`BlockStateBaseCopycatMixin` injects at HEAD of `BlockBehaviour.BlockStateBase.isPathfindable` and, where it answers at all, answers with vanilla's own expression from that same method — copied, not approximated:",
+   "issue": "`BlockBehaviour.BlockStateBase#isPathfindable(PathComputationType)` (BlockBehaviour.java:857-859) contains nothing but `return this.getBlock().isPathfindable(this.asState(), p_60650_);`. The two expressions the mixin copies (`!state.isCollisionShapeFullBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO)` and `state.getFluidState().is(FluidTags.WATER)`) come from the block-level default `BlockBehaviour#isPathfindable(BlockState, PathComputationType)` at BlockBehaviour.java:160-171 — a different method, the one Create actually overrides. 'From that same method' is not true.",
+   "correction": "'…answers with vanilla's own expressions from the block-level default `BlockBehaviour#isPathfindable` — the very implementation Create overrides — copied, not approximated'. The substance (verbatim copies of vanilla's expressions) is correct.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The cell is therefore not merely expensive — it does not exist for the A\\* search at all, so no malus or step-height tuning on the mob reaches it.",
+   "issue": "The gate in `findAcceptedNode` is `float f = this.mob.getPathfindingMalus(pathtype); if (f >= 0.0F)` (WalkNodeEvaluator.java:234-237), and `Mob.getPathfindingMalus` (Mob.java:171-183) returns a per-mob override from `pathfindingMalus` before falling back to `PathType.getMalus()`. A mob with `setPathfindingMalus(PathType.BLOCKED, >= 0)` would get a node, so mob-side malus tuning does reach this cell; no vanilla mob sets a BLOCKED malus (grep over the 1.21.1 sources finds none), which is why it holds in practice.",
+   "correction": "Soften to something like 'and because no mob assigns BLOCKED a non-negative malus, the cell does not exist for the A* search at all' — rather than claiming that no malus tuning can reach it.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

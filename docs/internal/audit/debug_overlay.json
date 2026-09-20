@@ -1,0 +1,38 @@
+{
+ "moduleId": "debug_overlay",
+ "claimsChecked": 62,
+ "problems": [
+  {
+   "quote": "`vpa_core` ships only `assets/**`, never `data/**`",
+   "issue": "Factually wrong: build.gradle's coreJar has a second, deliberate from-block `from(sourceSets.main.output) { include 'data/sable/**' }` (build.gradle:628, with a comment explaining the third-party compat tags). So vpa_core does ship data/**, just not arm_goggles.json.",
+   "correction": "Say instead: vpa_core ships `assets/vanillaplusadditions/**`, `logo.png` and the third-party compat tags under `data/sable/**` — but no module's own data files, so `arm_goggles.json` (assigned to the arm_target_overlay jar, build.gradle:387-388) is not in it.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`arm_target_overlay` and `item_vault_viewer` are goggles overlays as well, but neither goes through `GogglesUtil`: each carries its own copy of the check.",
+   "issue": "True for arm_target_overlay (ArmTargetOverlayClientEvents.java:134-140 duplicates the Create-predicate + arm_goggles-tag pair), but item_vault_viewer carries no copy of the check: it calls Create's `GogglesItem.isWearingGoggles(player)` directly and has no tag fallback at all (ItemVaultViewerClientEvents.java:64, 110; ItemVaultViewerModule.java:85, 116). A tagged Aeronautics aviator's goggles opens the debug overlay but not the vault viewer.",
+   "correction": "arm_target_overlay carries its own copy of the dual check; item_vault_viewer only calls Create's predicate (it requires Create anyway), so the arm_goggles tag does not work there.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The same for Chunk Loader Tracks and the carriage running over them",
+   "issue": "Reads as if the carriage itself gets an outline. ChunkLoaderTrackBorderRenderer draws nothing but track chunks (blue/red, ChunkLoaderTrackBorderRenderer.java:112-122); carriages are only scanned in markCarriageTracks (:69-79) to decide which track chunks count as active.",
+   "correction": "\"The same for Chunk Loader Tracks — red while a train carriage is holding them loaded.\" No box is drawn around the carriage.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "returns early when the registry is empty, so a pack with nothing plugged in pays a stage comparison and a list check",
+   "issue": "The order is the other way round: line 52 is `if (!active(mc) || DebugOverlayRegistry.renderers().isEmpty())`, so `active()` — including GogglesUtil.isWearingGoggles — is evaluated before the emptiness test. An empty-registry pack with the toggle on and goggles worn pays the full gate every frame; with the toggle off it stops at the first boolean, not at the list check.",
+   "correction": "\"...returns early when the gate fails or the registry is empty — with the toggle off that costs one boolean, otherwise the goggles check runs before the list is even looked at.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "and, as the next section shows, even when the module is switched off in the config",
+   "issue": "The next section is \"What counts as goggles\"; the claim is demonstrated two sections later, in \"The `enabled` switch does not switch it off\".",
+   "correction": "\"as the section on the `enabled` switch shows\" (or link it directly).",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

@@ -1,0 +1,38 @@
+{
+ "moduleId": "end_oxygen",
+ "claimsChecked": 165,
+ "problems": [
+  {
+   "quote": "`damage_tick` below 11 therefore does not\nactually raise the damage rate, it just gets swallowed.",
+   "issue": "Off by one. The swallow test in LivingEntity.hurt is `(float)this.invulnerableTime > 10.0F`; a hit sets invulnerableTime to 20 (DamageContainer.invulnerabilityTicksAfterAttack = 20) and it is decremented exactly once per tick in ServerPlayer.doTick(), which MinecraftServer.tickChildren() runs AFTER the level tick that fires the breathe hook. So at the hook of tick T+k the field reads 20-k. At damage_tick = 10 it reads exactly 10, which is not > 10, so the else branch runs and the hit lands -- damage_tick = 10 does double the damage rate. Only damage_tick <= 9 gets swallowed (at k=9 the field is 11 > 10 and amount 2.0 <= lastHurt 2.0 -> return false).",
+   "correction": "Change \"below 11\" to \"below 10\" (i.e. `damage_tick` of 9 or less gets swallowed; 10 still works and lands a hit every 10 ticks).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| Ticks from full to empty |",
+   "issue": "The three numbers under this header (598 / 1 794 / 2 990) are 299 depletion steps, i.e. the time from air 300 down to air 1 -- the moment the damage condition `getAirSupply() <= 1` first becomes true. Reaching an actually empty bar (0) takes 300 steps: 600 / 1 800 / 3 000 ticks. The numbers are the useful ones, but the column label names something else, and the page itself says two sections later that the bar bottoms out at 0.",
+   "correction": "Relabel the column to what the numbers measure, e.g. \"Ticks until damage starts\" (or \"full -> air 1\"). Leave 598 / 1 794 / 2 990 as they are.",
+   "severity": "style"
+  },
+  {
+   "quote": "unless you carry a Create backtank or stand in Conduit\n> Power.",
+   "issue": "With the stock config the backtank half of this TL;DR is not true: `backtank.requires_full_set` defaults to `true`, the gate is `getItemBySlot(HEAD).is(DIVING_HELMETS)`, and the page's own \"The diving helmet no tag defines\" section proves `vanillaplusadditions:diving_helmets` is empty in this repository (verified: the only file under data/vanillaplusadditions/tags/item/ is arm_goggles.json, no datagen, the string occurs only in the TagKey declaration). The reader who stops at the TL;DR is told a backtank saves them when out of the box it does not. The qualification exists, but only in the table below and in the compatibility table.",
+   "correction": "Add the caveat to the TL;DR, e.g. \"... unless you stand in Conduit Power, or carry a Create backtank (which needs `backtank.requires_full_set = false` or a datapack -- see below).\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Without Create, players simply never have backtank air (empty list / 0 air)",
+   "issue": "JAVA SOURCE, not a page defect -- reported per the task, do not edit anything for this. The class javadoc of CreateBacktankCompat and the three per-method javadocs (\"or an empty list without Create\", \"or 0 without Create\", \"no-op without Create\") promise graceful degradation that the class cannot deliver: it imports com.simibubi.create.content.equipment.armor.BacktankUtil and calls it in every method body, so invoking any of these methods without Create resolves, links and verifies the class and can throw NoClassDefFoundError -- which is exactly the beta.71/beta.72 trap that CreateCompat's own javadoc describes and that killed overpacked_extensions. The internal `CreateCompat.isLoaded() ? ... : ...` guards are unreachable in the case they claim to cover; the real contract is \"callers must gate on CreateCompat first, never call this without Create\".",
+   "correction": "No change to the page (the page already describes the split correctly). Note for the maintainer: the three javadocs on CreateBacktankCompat overstate what the in-method guards can do.",
+   "severity": "style"
+  },
+  {
+   "quote": "CreateBacktankCompat.consumeAir(player, backtanks.get(0), 1);",
+   "issue": "JAVA SOURCE, not a page defect -- reported per the task, do not edit anything for this. The handler is registered on the common bus, so this line also runs on the physical client. Create's BacktankUtil.consumeAir writes the BACKTANK_AIR data component unconditionally (the ServerPlayer check guards only the warning sounds), so the client mutates its own copy of the stack in parallel with the server. Both sides use the same `player.tickCount % depletionRate` cadence so they normally stay in step and the server resyncs anyway, but the client-side write is unnecessary and is the kind of thing that drifts if the two tick counts ever diverge.",
+   "correction": "No change to the page. Note for the maintainer: the backtank consumption could be gated on `!player.level().isClientSide`.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

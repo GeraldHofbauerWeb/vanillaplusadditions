@@ -1,0 +1,14 @@
+{
+ "moduleId": "block_glow",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "and `BoundingBox3d`'s two constructors plus `transform`, `transformInverse`, `toMojang` and the six `minX`…`maxZ` accessors",
+   "issue": "Precision nit in the reflection inventory: only the two constructors, `transform` and `transformInverse` are resolved on `dev.ryanhcode.sable.companion.math.BoundingBox3d` (SableReflectionApi lines 159-160, 166-167). `toMojang` and the six `minX`…`maxZ` accessors are resolved on the interface `BoundingBox3dc` (lines 168-174), and a fourth class, `Pose3dc`, is looked up as the parameter type. The methods do exist on `BoundingBox3d` (it implements the interface, otherwise the invocations would fail), so nothing stated is false — but the row above it says a renamed class or method degrades to main-level-only, and a reader chasing that would look in the wrong class.",
+   "correction": "e.g. \"…`BoundingBox3d`'s two constructors plus `transform`/`transformInverse`, and `BoundingBox3dc`'s `toMojang` and six `minX`…`maxZ` accessors (with `Pose3dc` resolved as the parameter type).\"",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "clean"
+}

@@ -3,7 +3,7 @@
 ## Project snapshot
 - NeoForge mod for Minecraft 1.21.1 on Java 21 (`gradle.properties`, `build.gradle`, `src/main/resources/META-INF/neoforge.mods.toml`).
 - Main entrypoint is `src/main/java/net/geraldhofbauer/vanillaplusadditions/VanillaPlusAdditions.java`; it registers modules first, then hands lifecycle control to the singleton `ModuleManager`.
-- Only modules added in `registerModules()` are live. `src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/mob_drops/` exists, but is not currently registered.
+- Only modules added in `registerModules()` are live; every module directory is registered (no exceptions).
 
 ## Architecture
 - Feature code lives in `src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/<module_id>/`.

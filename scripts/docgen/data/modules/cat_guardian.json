@@ -1,0 +1,172 @@
+{
+  "blocks": [
+    "cat_bowl",
+    "cat_feeding_station"
+  ],
+  "commands": [],
+  "configKeys": [
+    {
+      "key": "association_radius",
+      "type": "double",
+      "defaultValue": "64.0D",
+      "range": "1.0 ~ 128.0",
+      "effect": "Radius (blocks) in which tamed cats are associated when shift-clicking a bowl."
+    },
+    {
+      "key": "fed_duration_ticks",
+      "type": "int",
+      "defaultValue": "6000",
+      "range": "20 ~ 144000",
+      "effect": "How many ticks a single fish feeding keeps a cat in the 'fed' (guarding) state (20 ticks = 1 second)."
+    },
+    {
+      "key": "guard_radius",
+      "type": "double",
+      "defaultValue": "32.0D",
+      "range": "2.0 ~ 128.0",
+      "effect": "Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs."
+    },
+    {
+      "key": "guard_radius_y",
+      "type": "double",
+      "defaultValue": "16.0D",
+      "range": "2.0 ~ 128.0",
+      "effect": "Vertical radius (blocks, Y) around the associated bowl - cats ignore mobs further away vertically."
+    },
+    {
+      "key": "auto_associate_radius",
+      "type": "double",
+      "defaultValue": "1.5D",
+      "range": "0.5 ~ 4.0",
+      "effect": "Radius (blocks) within which a cat without a bowl is automatically associated with a nearby bowl."
+    },
+    {
+      "key": "glow_duration_seconds",
+      "type": "int",
+      "defaultValue": "30",
+      "range": "1 ~ 300",
+      "effect": "How many seconds the (client-side) glow lasts on associated cats when looking at their bowl. Consumed as ticks via getGlowDurationTicks() = value * 20."
+    },
+    {
+      "key": "max_cats_per_station",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 64",
+      "effect": "Maximum number of cats that can be associated with a single bowl or station. Also the divisor of the feeding station's comparator output."
+    },
+    {
+      "key": "cat_xp_capacity",
+      "type": "int",
+      "defaultValue": "500",
+      "range": "0 ~ 10000",
+      "effect": "Maximum XP points a single cat can hold before XP drops normally."
+    },
+    {
+      "key": "station_xp_capacity",
+      "type": "int",
+      "defaultValue": "5000",
+      "range": "0 ~ 100000",
+      "effect": "Maximum XP points a feeding station can hold before overflow stays on cats."
+    },
+    {
+      "key": "xp_per_bottle",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 64",
+      "effect": "XP points consumed per Bottle o' Enchanting produced at the station."
+    },
+    {
+      "key": "thorns_reflect_fraction",
+      "type": "double",
+      "defaultValue": "0.33D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full)."
+    }
+  ],
+  "displayName": "Cat Guardian",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (game bus, CatGuardianModule#onAddReloadListener - injects the six recipes)",
+    "net.neoforged.neoforge.event.entity.EntityJoinLevelEvent (game bus, server side only)",
+    "net.neoforged.neoforge.event.entity.player.PlayerEvent.StartTracking (game bus)",
+    "net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent (game bus)",
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Pre (game bus, server side only)",
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Post (game bus, server side only)",
+    "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract (game bus, CatGuardianModule#onEntityInteract - runs on BOTH sides; the cancel is unconditional, the effects are guarded by !isClientSide)",
+    "net.neoforged.neoforge.event.entity.player.AttackEntityEvent (game bus, CatGuardianModule#onAttackCat - empty-hand petting)",
+    "net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Pre (game bus, two separate handlers: onCatHurt, onMobDamagedByCat)",
+    "net.neoforged.neoforge.event.entity.living.LivingDropsEvent (game bus)",
+    "net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent (game bus)",
+    "net.neoforged.neoforge.event.entity.living.LivingDeathEvent (game bus)",
+    "net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent (mod bus, addListener in onInitialize)",
+    "net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent (mod bus, addListener in onInitialize)",
+    "net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent (client, mod bus, CatGuardianKeybinds)",
+    "net.neoforged.neoforge.client.event.EntityRenderersEvent.AddLayers (client, mod bus, CatGuardianClientSetup)",
+    "net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers (client, mod bus, CatGuardianClientSetup)",
+    "net.neoforged.neoforge.client.event.RegisterMenuScreensEvent (client, mod bus, CatGuardianClientSetup)",
+    "net.neoforged.neoforge.client.event.ClientTickEvent.Post (client, game bus, CatGuardianClientEvents)",
+    "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract (client, game bus, CatGuardianClientEvents - modifier+right-click opens the cat inventory)",
+    "net.neoforged.neoforge.client.event.RenderGuiEvent.Post (client, game bus, CatGuardianGogglesClientHandler)",
+    "net.neoforged.neoforge.client.event.RenderLevelStageEvent (client, game bus, CatGuardianGogglesClientHandler)"
+  ],
+  "hasStandaloneJar": true,
+  "items": [
+    "cat_bowl",
+    "cat_feeding_station",
+    "cat_armor_iron",
+    "cat_armor_gold",
+    "cat_armor_diamond",
+    "cat_armor_netherite"
+  ],
+  "keybinds": [
+    "key.vanillaplusadditions.cat_guardian.open_inventory_modifier - \"Open Cat Inventory (hold + right-click cat)\", default GLFW_KEY_LEFT_CONTROL, category key.categories.vanillaplusadditions (CatGuardianKeybinds.java:22-26). Read as a raw held-key state (InputConstants.isKeyDown / glfwGetMouseButton, CatGuardianKeybinds#isModifierDown) rather than KeyMapping.isDown(), so it works as a modifier; a mouse-button binding is supported. The same held state is the hold-to-peek trigger for the goggles stats popup (CatGuardianGogglesClientHandler.java:99).",
+    "NOT owned by this module: the overlay on/off toggle (default Numpad +) is key.vanillaplusadditions.debug_overlay.toggle, registered by the debug_overlay module (DebugOverlayKeybinds.java:18-21)."
+  ],
+  "mixins": [
+    "cat_guardian.CatGuardianFollowMixin (both sides; FollowOwnerGoal#canUse/canContinueToUse -> false for any Cat while the module is active)",
+    "cat_guardian.CatGuardianTeleportMixin (both sides; TamableAnimal#shouldTryTeleportToOwner -> false for tame cats while the module is active)",
+    "cat_guardian.ChestBlockCatMixin (both sides; static ChestBlock#isCatSittingOnChest -> false while the module is active, so cats on chests no longer block opening)",
+    "USES but does not own: core.EntitySharedFlagInvoker (shared vpa_core mixin) - CatGuardianClientEvents#setLocalGlow flips shared flag 6 through it for the client-side glow."
+  ],
+  "moduleId": "cat_guardian",
+  "notes": "PROVENANCE / VERIFICATION\n- Re-verified independently against: modules/cat_guardian/** (all 33 files), mixin/cat_guardian/**, modules/debug_overlay/client/{GogglesUtil,DebugOverlayKeybinds,DebugOverlayState}.java, modules/flying_fish/FlyingFishModule.java, vanillaplusadditions.mixins.json, build.gradle (standaloneModules + JEI), META-INF/neoforge.mods.toml, en_us.json, VanillaPlusAdditions.java:167, core/Module.java:73, core/AbstractModuleConfig.java:60+66, core/ModuleManager.java:88-110, README.md, git log/tag. No gradle run (read-only task).\n\nENABLED BY DEFAULT\n- CatGuardianModule overrides neither isEnabledByDefault() nor shouldInitialize(); the Module interface default (core/Module.java:73-75) returns true. Nothing gates initialization on another mod, so requiredMods is empty.\n\nCONFIG\n- Exactly the 11 keys above, all via defineInRange in CatGuardianConfig#buildModuleSpecificConfig. The inherited \"enabled\" (AbstractModuleConfig:60) and \"debug_logging\" (AbstractModuleConfig:66) keys are framework-wide and deliberately not listed here.\n\nREADME ACCURACY (checked line by line)\n- README.md:25 is WRONG: it claims guardians \"dive after underwater mobs with water breathing\". The code says the opposite - CatGuardianModule.tickCat() sets the PathType.WATER malus to 0 with the comment \"FloatGoal keeps them at the surface - they can never dive anymore\" (CatGuardianModule.java:1051-1054), and there is an explicit drowning-escape branch (air < 60 -> drop target, head home, line 1067). Cats cross shallow water only. Do not carry that sentence over.\n- README.md:26 is CORRECT and must not be \"fixed\": the stats popup really is hold-to-peek on the cat keybind (CatGuardianGogglesClientHandler.java:99 popupHeld = CatGuardianKeybinds.isModifierDown()) and the 3D boxes really are on a separate toggle, default Numpad + (line 100, DebugOverlayState.isEnabled()). Both additionally require goggles (line 88). The only nuance worth documenting: that Numpad+ keybind is registered by the debug_overlay module, not by cat_guardian.\n- README.md:296 still links docs/cat_guardian.md while the working tree has the file staged as docs/modules/cat_guardian.md - stale link from the in-flight docs reorg.\n\nDEAD / ORPHAN ARTEFACTS\n- Lang key \"key.vanillaplusadditions.cat_guardian.toggle_overlay\" (en_us.json:142) has NO reference anywhere under src/main/java - orphan from when the overlay toggle lived in this module.\n- Lang keys \"message.vanillaplusadditions.cat_guardian.overlay_on\" / \".overlay_off\" (en_us.json:157-158) are likewise unreferenced.\n- Commented-out dead line in CatGuardianModule#onEntityInteract (line 1354: \"// event.setCanceled(false);\"); the surrounding comment reads as if guardian cats were the cancelled case, while the control flow actually returns early for NON-guardian cats and cancels only for guardian cats.\n- CatGuardianConfig#getAssociationRadius() falls back to 8.0D (CatGuardianConfig.java:64) while the declared spec default is 64.0D and the static CatGuardianModule#getAssociationRadius() falls back to 64.0D (CatGuardianModule.java:265). Only reachable while the spec value is null, but it is an inconsistency.\n\nCROSS-MODULE COUPLINGS (other VPA modules, not optional mods)\n- HARD compile-time coupling to flying_fish: CatGuardianModule#isFishItem (line 1002-1012) dereferences FlyingFishModule.RAW_FLYING_FISH.get() / COOKED_FLYING_FISH.get() with no module gate - but only on the fall-through path, i.e. when the held stack is NOT already in #minecraft:fishes. FlyingFishModule attaches its DeferredRegister inside onInitialize() (FlyingFishModule.java:140-141) and ModuleManager.initializeModules() calls initialize() on ENABLED modules only, so with cat_guardian on and flying_fish off those holders stay unbound and .get() is expected to throw the moment a player right-clicks any cat with a non-fish item in hand. Code-structure risk, NOT verified in-game.\n- Coupling to debug_overlay: the goggles overlay uses debug_overlay's DebugOverlayState + GogglesUtil. build.gradle:403 declares moduleDeps ['vpa_debug_overlay','vpa_flying_fish'] for the standalone jar, matching both couplings.\n- GogglesUtil gates on Create's GogglesItem OR the item tag vanillaplusadditions:arm_goggles. That tag's JSON ships in the arm_target_overlay standalone jar's dataGlobs (build.gradle:388), not in cat_guardian's or debug_overlay's - so in a standalone cat_guardian install without Create AND without arm_target_overlay the tag branch has no data behind it and the overlay is unreachable.\n- The #minecraft:fishes additions (flying_fish + cooked_flying_fish) live in data/minecraft/tags/item/fishes.json, which build.gradle:429 ships with the flying_fish module - pulled in via the vpa_flying_fish moduleDep.\n- cat_guardian's OWN dataGlobs are only data/minecraft/tags/item/enchantable/armor.json + durability.json (build.gradle:401-402), which make the cat armor enchantable/mendable.\n\nBEHAVIOUR DETAILS WORTH DOCUMENTING\n- Association: sneak + right-click with BOTH hands empty on a bowl/station (AbstractCatBowlBlock#associateCatsWithBowl via useWithoutItem) associates every tamed cat of that player within association_radius. Vanilla skips the block interaction entirely when sneaking with an item in hand, so this really is an empty-hand gesture. Bowls/stations cap at max_cats_per_station (message .station_full for the rest, .no_cats when none were found, .associated on success). A bowl-less cat auto-associates within auto_associate_radius during tickCat.\n- Non-sneaking empty-hand right-click: bowl ejects its fish back into the player's inventory; station opens its GUI.\n- Feeding a bowl/station: only #minecraft:fishes (CatBowlBlock#useItemOn:44, CatFeedingStationBlock#useItemOn:163, CatBowlBlockEntity:17/44, CatFeedingStationBlockEntity#isValidFishType:99-100). The station's useItemOn loops and swallows the whole non-creative stack.\n- Hand-feeding a cat: isFishItem additionally accepts the two flying-fish items explicitly (the mod's own fishes.json puts them in the tag anyway). It only takes effect on GUARDIAN cats - a tamed non-guardian cat returns early and keeps vanilla breeding/feeding. Any player may feed any tamed guardian cat; ownership is NOT checked. Effect: fed ticks reset, cat healed to full, CAT_PURREOW, 7 heart particles, one item consumed unless creative, event cancelled.\n- Petting: empty main hand + left-click on ANY cat (tame or not, guardian or not) cancels the attack and plays CAT_PURR with 5 heart particles (onAttackCat). Easy to miss and worth documenting.\n- Eating from the bowl also grants Regeneration II for 100 ticks (MobEffectInstance(REGENERATION, 100, 1)) and, at a station, triggers a loot transfer.\n- Healing at base is a manual heal of 10/50 HP per tickCat pass (every 10 ticks) - STATION_HEAL_PER_PASS, with a long comment explaining that a re-applied Regeneration effect never healed because vanilla checks \"duration % 50 == 0\" before decrementing.\n- Flee logic: below 20% HP the cat drops all targets and runs home (CAT_FLEEING), sits at base until healed, resumes duty only above 40% HP (hysteresis). Ordinary post-combat return (CAT_RETURNING) is interruptible, ends within 4 blocks of the bowl (distSq <= 16) or after 1200 accumulated ticks.\n- Combat: armor absorbs 100% of incoming damage and takes ceil(damage) durability; Thorns reflects thorns_reflect_fraction * level; Sharpness on the armor adds 0.5 + 0.5*level outgoing. A guardian cat ONE-SHOTS creepers (damage forced to health + 1000) so the fuse never ignites. Armor tiers: iron 200 dur / +1.0 atk, gold 100 / +2.0, diamond 400 / +3.0, netherite 600 / +4.0 (fire-resistant item); enchantment values 9/25/10/15; repairable with an armadillo scute or the tier's own ingot/gem.\n- XP/loot: onMobDamagedByCat sets victim.setLastHurtByPlayer(owner) so vanilla drops XP at all (a cat-only kill otherwise drops none); XP is then redirected into the cat (cat_xp_capacity), handed to the station on deposit (station_xp_capacity) and converted to Bottles o' Enchanting at xp_per_bottle each (CatGuardianModule.java:1250-1252).\n- Station item handler: util/StationItemHandler, externalHandler = new StationItemHandler(inventory, lootInventory, true) for every side except DOWN, bottomHandler = ...(.., false) for DOWN (CatFeedingStationBlockEntity.java:79/85, wired in onRegisterCapabilities). Both take anything in (fish -> food chamber, rest -> loot); only the bottom one refuses to hand food back out, so a hopper underneath drains loot + XP bottles but never the cats' fish.\n- Station blockstate: FACING (horizontal) + SKIN; comparator output is enabled and returns floorDiv(associatedCats * 15, max_cats_per_station) - i.e. it reports cat occupancy, not fish or loot. CatStationSkin lists 28 values (ORIGINAL + 11 material skins + 16 wool colors), driven by a single deco slot with an item->skin map (wool x16, oak/spruce/dark-oak/cherry/bamboo wood, stone/stone bricks/bricks/deepslate/andesite, copper ingot, gold block, grass block). Skin identifiers are German (gemuetliches_holz, edle_dunkeleiche, ...) - legacy naming, do not rename.\n- Cat attribute buffs applied on EntityJoinLevel (server side) for EVERY cat that joins: FOLLOW_RANGE +16 and STEP_HEIGHT +0.9 as permanent modifiers, plus a CatGuardTargetGoal on targetSelector priority 1. These are added regardless of guardian status; only the fence-walking, water maluses and goal suppression are guardian-only (applied in tickCat).\n- Client-side-only glow: looking at a bowl re-asserts a local GLOWING shared flag on the looking player's own associated cats for glow_duration_seconds. The old server-side GLOWING effect (visible to everyone) and its RequestCatGlowPacket round-trip were removed; the config key is still named glow_duration_SECONDS but is consumed via getGlowDurationTicks() (value * 20).\n- Kitten inheritance: BabyEntitySpawnEvent tames the kitten to one randomly chosen tamed parent's owner (or the only tamed parent) and force-sits it, otherwise FollowOwnerGoal/panic-teleport yanks it across the map.\n- Packets: OpenCatInventory + RequestCatStats (to server), SyncCatInventory / SyncCatStats / SyncCatTarget / SyncCatPath (to client) - needed because entity AttachmentTypes do not sync by themselves; isGuardianCat() is server truth only. StartTracking re-sends armor, XP and the current target so the overlay is correct as soon as a player comes into range.\n- Recipes are injected in code via AddReloadListenerEvent (project convention: no datapack JSON). Block drops come from an overridden getDrops in AbstractCatBowlBlock (line 48) for the same reason; container contents are dropped in each subclass's onRemove.\n- Sable integration is deliberately indirected through SableCatBlocks: putting \"new SableCatBowlBlock(...)\" directly into the module class makes the verifier load Sable classes while LINKING CatGuardianModule, which crashes without Sable. Do not \"simplify\" that factory away.\n\nCLIENT-SETUP GATING (observed, worth a look)\n- CatGuardianClientSetup, CatGuardianClientEvents and CatGuardianGogglesClientHandler are @EventBusSubscriber classes that FML registers regardless of module state. CatGuardianClientSetup#onRegisterMenuScreens / #onRegisterRenderers call CAT_FEEDING_STATION_MENU.get(), CAT_INVENTORY_MENU.get() and CAT_FEEDING_STATION_BE.get() with no isModuleEnabled() check, and those DeferredHolders are only bound inside onInitialize(). The same pattern exists in axolotl_guardian and item_vault_viewer, so it is house style rather than a cat_guardian-specific slip - but it is the same shape of risk as the flying_fish coupling. Not verified in-game.",
+  "oneLiner": "Tamed cats you hook up to a fish bowl or feeding station become base guards: they patrol, kill hostile mobs in a configurable radius, haul the loot and XP back to the station, and can wear their own armor.",
+  "optionalMods": [
+    {
+      "modId": "sable",
+      "whatItAdds": "Bowl and feeding station are registered as Sable-aware block variants (SableCatBowlBlock / SableCatFeedingStationBlock) so they can ride a contraption; SableBowlAssemblyHandler#afterMove teleports the associated cats into the sublevel on assembly and re-points their stored bowl position at the new block pos. Without Sable the plain blocks are registered and a bowl on a moving ship simply loses its cats (the usual self-healing re-association applies). Declared type=\"optional\", side=\"CLIENT\" in neoforge.mods.toml:98-103.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/cat_guardian/CatGuardianModule.java:112 and :134 (ModList.get().isLoaded(\"sable\")), sable/SableCatBlocks.java, sable/SableBowlAssemblyHandler.java:27-63, sable/SableCatBowlBlock.java:18, sable/SableCatFeedingStationBlock.java:18"
+    },
+    {
+      "modId": "create",
+      "whatItAdds": "Create's Engineer's Goggles are one of the two ways to satisfy the goggles requirement for the overlay (cat stats popup, target/radius/path boxes). Without Create only an item in the vanillaplusadditions:arm_goggles tag counts, and that tag's JSON ships with the arm_target_overlay module, not with cat_guardian or debug_overlay. Declared type=\"optional\" in neoforge.mods.toml:82-87.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/debug_overlay/client/GogglesUtil.java:3,25,33 (used from cat_guardian/client/CatGuardianGogglesClientHandler.java:9,216)"
+    },
+    {
+      "modId": "jei",
+      "whatItAdds": "Adds the cat-armor anvil repair entries (armadillo scute + the tier's own ingot/gem) and the enchantment info to JEI. Without JEI the repairs still work in-game but are undiscoverable - JEI's built-in anvil list is hardcoded vanilla and cannot see a code-only isValidRepairItem. The plugin is loaded only by JEI's annotation scan and is additionally gated on the module being enabled. JEI is compileOnly in build.gradle:110-111 and not declared in neoforge.mods.toml at all.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/cat_guardian/compat/jei/CatGuardianJeiPlugin.java:21-45, build.gradle:110-111"
+    }
+  ],
+  "recipes": [
+    "cat_armor_iron - shaped \"X  \"/\"XXX\"/\"S S\" with X = iron ingot, S = armadillo scute (category EQUIPMENT)",
+    "cat_armor_gold - same pattern with X = gold ingot, S = armadillo scute (EQUIPMENT)",
+    "cat_armor_diamond - same pattern with X = diamond, S = armadillo scute (EQUIPMENT)",
+    "cat_armor_netherite - same pattern with X = netherite ingot, S = armadillo scute (EQUIPMENT)",
+    "cat_bowl - shaped \"S S\"/\"SSS\" with S = smooth stone (category MISC)",
+    "cat_feeding_station - shaped \"GGG\"/\"GCG\"/\"SSS\" with G = glass pane, C = cauldron, S = smooth stone (category MISC)",
+    "All six are injected in code by a PreparableReloadListener added in AddReloadListenerEvent, which merges them into RecipeManager.replaceRecipes(); gated on isModuleEnabled(). No datapack JSON, per the project convention."
+  ],
+  "registeredInBundle": true,
+  "requiredMods": [],
+  "shortDescription": "Adds cat food bowls and feeding stations. Fed cats actively guard your base against hostile mobs.",
+  "side": "both",
+  "sinceCommit": "f76a7c0",
+  "sinceVersion": "v1.0.0-beta",
+  "moduleDeps": [
+    "debug_overlay",
+    "flying_fish"
+  ],
+  "relatedModules": []
+}

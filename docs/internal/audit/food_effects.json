@@ -1,0 +1,26 @@
+{
+ "moduleId": "food_effects",
+ "claimsChecked": 115,
+ "problems": [
+  {
+   "quote": "So the practical effect is not a broken number but a flattened one: every configured food saturates to the maximum its nutrition allows, and the distinction between a cookie and a rabbit stew is gone.",
+   "issue": "Overstated and refuted by the page's own table. FoodData.add clamps to the hunger level reached (`Mth.clamp(saturationLevel + this.saturationLevel, 0.0F, (float)this.foodLevel)`), so only items whose inflated saturation EXCEEDS that level flatten out. Cookie and glow berries end at 1.6 and melon slice at 4.8 — far below any reachable food level (max 20, and even at foodLevel 2 a cookie's 1.6 stays under the cap). A cookie and a rabbit stew therefore still differ sharply.",
+   "correction": "Say instead: the golden foods (76.8 / 172.8 / 614.4) and the three stews (1 036.8 / 1 036.8 / 4 800) are so far above the clamp that they always saturate to the current hunger level; cookie, glow berries and melon slice merely get four times their vanilla saturation (1.6 / 1.6 / 4.8) and stay below the clamp.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| Saturation is flattened | See above. Every configured food saturates to the maximum; `FoodData` clamps the inflated value, so it looks generous rather than broken. |",
+   "issue": "Same absolute claim in the limits table. It is only true for the six items whose rebuilt saturation exceeds the post-eat hunger level; the three small foods (cookie 1.6, glow berries 1.6, melon slice 4.8) are never clamped in practice.",
+   "correction": "Reword to: 'Saturation is multiplied once per config line (4x for a single line). For the golden foods and the stews the result is far above the cap, so FoodData clamps them to the hunger level; the small foods (cookie, glow berries, melon slice) simply saturate four times as much as in vanilla.'",
+   "severity": "wrong"
+  },
+  {
+   "quote": "every TAN type is confined to `compat/TANIntegration`, which is a four-line utility class",
+   "issue": "The file is 20 lines (package, two imports, class javadoc, private constructor, and a two-statement method); only the body of applyThirst is two lines. 'Four-line' does not match anything countable in the file.",
+   "correction": "Drop the line count, e.g. 'which is a one-method utility class' (its only statements are `ThirstHelper.getThirst(player)` and `setThirst(Math.min(...))`).",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

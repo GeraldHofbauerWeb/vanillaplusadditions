@@ -1,0 +1,63 @@
+{
+  "moduleId": "mo_arrows",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "It works from a bow, a crossbow and a dispenser, and it can be picked up and shot again.",
+      "issue": "The dispenser half is false. A dispenser only shoots an item if a DispenseItemBehavior is registered for it: DispenserBlock.DISPENSER_REGISTRY has defaultReturnValue(DEFAULT_BEHAVIOR) (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/level/block/DispenserBlock.java:47,52,114) and vanilla registers arrows one by one - registerProjectileBehavior(Items.ARROW / TIPPED_ARROW / SPECTRAL_ARROW) (.../net/minecraft/core/dispenser/DispenseItemBehavior.java:73-75). Nothing in this repo registers a behaviour for fire_arrow: `grep -rn \"registerProjectileBehavior|DispenserBlock.registerBehavior\" src/main/java` returns nothing, and MoArrowsModule.onInitialize (MoArrowsModule.java:72-78) only registers items, the creative tab and the event bus. A Fire Arrow in a dispenser is therefore spat out as an item by DefaultDispenseItemBehavior. Bow and crossbow are correct (ProjectileWeaponItem.createProjectile calls ArrowItem.createArrow, ProjectileWeaponItem.java:118-126) and so is pick-up-and-reshoot (the pickup stack is the fire_arrow, AbstractArrow.java:632-633).",
+      "correction": "\"It works from a bow and a crossbow, and it can be picked up and shot again. A dispenser drops it as an item - vanilla registers a dispense behaviour per arrow item and this one has none.\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "`FireArrowItem` only overrides the two factories `ArrowItem` already has — `createArrow` for bows and crossbows, `asProjectile` for dispensers — and lights the result for a hundred seconds, which is exactly what the Flame enchantment does.",
+      "issue": "The two overrides and the hundred seconds are right (FireArrowItem.java:30,36-48; Flame is Ignite(LevelBasedValue.constant(100.0F)), Enchantments.java:881-896). But \"asProjectile for dispensers\" implies the dispenser path is live; asProjectile is only ever called from ProjectileItem dispense behaviour, which is never registered for fire_arrow (see the dispenser finding). As written it is dead code.",
+      "correction": "Keep the createArrow/100s statement; say that asProjectile is the dispenser factory but is currently unreachable because no dispense behaviour is registered for the item.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "| `assets/vanillaplusadditions/textures/item/fire_arrow.png` | the committed result, 14 pixels off vanilla |",
+      "issue": "Contradicts the page's own (correct) sentence \"Twenty-four pixels differ from vanilla in total\". gen_fire_arrow_texture.py recolours the head (14 pixels), 3 glow cells (GLOW_CELLS, scripts/gen_fire_arrow_texture.py:46) and adds 7 flame pixels (FLAMES, :50-54). The committed PNG contains exactly 24 pixels in the new palette (#B13F00 9, #C96C03 9, #EFCD56 5, #F9EBAB 1), none of which exist in vanilla arrow.png.",
+      "correction": "\"the committed result, 24 pixels off vanilla\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "| Module disabled | The recipe stops being injected and the event handler returns immediately. Items already crafted stay in the world and still fly, but lay no fire. |",
+      "issue": "A module that is disabled in the config is never initialized at all: ModuleManager only calls module.initialize() for enabledModules (ModuleManager.java:95-107) and AbstractModule.initialize returns before onInitialize (AbstractModule.java:90-101). So ITEMS.register(getModEventBus()) and NeoForge.EVENT_BUS.register(this) (MoArrowsModule.java:74-76) never run: the item vanillaplusadditions:fire_arrow is not registered and the handler is not subscribed (it does not \"return immediately\" - the isModuleEnabled() guard at MoArrowsModule.java:91 only covers a config flip inside a running session). Already-crafted Fire Arrows therefore reference a non-existent item id and read back as empty; they do not \"stay in the world and still fly\".",
+      "correction": "\"With the module disabled the item is not registered at all: no recipe, no handler, and Fire Arrows already in inventories or chests are lost on the next load. Turn off `light_fires` instead if you only want to stop the fires.\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "and then does precisely what a fire charge does, block for block:",
+      "issue": "The block placement matches FireChargeItem (canBePlacedAt -> sound -> setBlockAndUpdate(BaseFireBlock.getState) -> GameEvent.BLOCK_PLACE, FireChargeItem.java:40-47), but the sound does not. MoArrowsModule.java:111-112 plays SoundEvents.FLINTANDSTEEL_USE at pitch `random.nextFloat() * 0.4F + 0.8F` - that is FlintAndSteelItem.java:39 verbatim. A fire charge plays SoundEvents.FIRECHARGE_USE at `(rand - rand) * 0.2F + 1.0F` (FireChargeItem.java:63-68). FireChargeItem also tries the campfire/candle tool-modified state first and passes context.getHorizontalDirection() to canBePlacedAt, where the module passes the struck face.",
+      "correction": "Drop \"block for block\" or say it plainly: the fire block is placed exactly as a fire charge places it, but the sound played is flint and steel's (`SoundEvents.FLINTANDSTEEL_USE`).",
+      "severity": "misleading"
+    },
+    {
+      "quote": "water puts it out, and an extinguished Fire Arrow lays no fire — it is an ordinary arrow again\n  until it is shot anew.",
+      "issue": "Incomplete in a way that matters in play: AbstractArrow.tick clears the fire on `isInWaterOrRain() || blockstate.is(Blocks.POWDER_SNOW) || isInFluidType(canFluidExtinguish)` (AbstractArrow.java:200-202). Rain and powder snow extinguish the arrow too, so during a thunderstorm a Fire Arrow lays no fire at all. Same omission in the limits table row \"Extinguished in flight | Arrow flies through water, loses its fire, and lands as an ordinary arrow\".",
+      "correction": "\"water - and rain, and powder snow - put it out, and an extinguished Fire Arrow lays no fire\"; widen the limits row the same way.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "An earlier attempt reused vanilla's two-layer tipped-arrow model instead, and looked broken in game:",
+      "issue": "Nothing in the repository records an in-game observation. The module is uncommitted (`git log -- src/.../modules/mo_arrows/ docs/modules/mo_arrows.md scripts/gen_fire_arrow_texture.py` is empty), there is no earlier texture or model in the tree, and the fact sheet itself states \"NOT VERIFIED IN GAME YET (2026-09-20): compiles and passes Checkstyle; the client deploy was still pending\". The verifiable part is the layer split of tipped_arrow_base.png / tipped_arrow_head.png, which cannot be checked from this repo either (no client jar is vendored).",
+      "correction": "Either attribute it (\"the first draft reused ... which is why it was dropped\") without asserting an in-game look, or keep only the checkable statement about how the two tipped-arrow layers are cut and mark the module as not yet verified in game, as the fact sheet does.",
+      "severity": "unprovable"
+    },
+    {
+      "quote": "* [All modules](../../README.md#modules)",
+      "issue": "Broken anchor. The README heading is \"## 🧩 Modules\" (README.md:35), whose GitHub anchor is `#-modules`; 46 links in docs/modules use `README.md#-modules`, only this page and freecam_sublevel_noclip.md use `#modules`. scripts/docgen/check_docs.py:70-84 does not validate anchors, so the checker stays silent.",
+      "correction": "`* [All modules](../../README.md#-modules)`",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [
+    "Duplicate '## See also' section: the page has two (line ~131 hand-written, and the standard one at the end). It is the only page in docs/modules with two - `for f in docs/modules/*.md; do grep -c '^## See also' $f; done` gives 2 only here.",
+    "Section order deviates from the template: every other page places the vpa:config block before '## Compatibility and known limits' / '## Under the hood' / '## See also' (cf. tipped_arrows.md:102-167, flying_fish.md:188-264, wolf_mount.md:376-526). Here the config block is appended after the first 'See also', at the very end of the page."
+  ],
+  "sourceBugs": [
+    "FireArrowItem.asProjectile (src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/mo_arrows/item/FireArrowItem.java:43-48) is dead code: a dispenser only fires items that have a registered DispenseItemBehavior (DispenserBlock.java:114, default DefaultDispenseItemBehavior; DispenseItemBehavior.java:73-75 registers only ARROW/TIPPED_ARROW/SPECTRAL_ARROW). The module never calls DispenserBlock.registerProjectileBehavior(FIRE_ARROW), so a dispenser drops the Fire Arrow as an item. Fix: register the behaviour in a FMLCommonSetupEvent enqueueWork block.",
+    "MoArrowsModule.java:111-112 plays SoundEvents.FLINTANDSTEEL_USE with FlintAndSteelItem's pitch formula although the class javadoc and the docs describe the handler as mirroring a fire charge; FireChargeItem.java:63-68 uses SoundEvents.FIRECHARGE_USE with a different pitch. Either sound is defensible, but code and comment disagree.",
+    "Disabling the module in the config unregisters the item (ModuleManager.java:95-107 / AbstractModule.java:90-101 skip onInitialize, so MoArrowsModule.java:74 never registers ITEMS), which silently destroys already-crafted Fire Arrows. This is the project-wide module pattern rather than a bug introduced here, but it is worth knowing for an item-adding module - the `light_fires` switch is the safe way to defuse the arrow."
+  ]
+}

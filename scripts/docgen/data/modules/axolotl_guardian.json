@@ -1,0 +1,186 @@
+{
+  "moduleId": "axolotl_guardian",
+  "displayName": "Axolotl Guardian",
+  "shortDescription": "Adds axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs.",
+  "oneLiner": "Tame axolotls with raw fish, put a bowl or feeding station in your underwater base, and the fed axolotls patrol a configurable radius around it, killing hostile mobs in the water and hauling their loot and XP back to the station.",
+  "side": "both",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "sinceCommit": "4854f48",
+  "sinceVersion": "v1.0.0-beta.41",
+  "blocks": [
+    "axolotl_bowl",
+    "axolotl_feeding_station"
+  ],
+  "items": [
+    "axolotl_bowl",
+    "axolotl_feeding_station",
+    "axolotl_armor_iron",
+    "axolotl_armor_gold",
+    "axolotl_armor_diamond",
+    "axolotl_armor_netherite"
+  ],
+  "entities": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "key": "association_radius",
+      "type": "double",
+      "defaultValue": "64.0D",
+      "range": "1.0 ~ 128.0",
+      "effect": "Radius (blocks) in which owned axolotls are associated when shift-clicking a bowl."
+    },
+    {
+      "key": "fed_duration_ticks",
+      "type": "int",
+      "defaultValue": "6000",
+      "range": "20 ~ 144000",
+      "effect": "How many ticks a single tropical fish keeps an axolotl in the 'fed' (guarding) state (20 ticks = 1 second)."
+    },
+    {
+      "key": "guard_radius",
+      "type": "double",
+      "defaultValue": "32.0D",
+      "range": "2.0 ~ 128.0",
+      "effect": "Horizontal radius (blocks, XZ) around the associated bowl in which a fed axolotl scans for hostile mobs in water."
+    },
+    {
+      "key": "guard_radius_y",
+      "type": "double",
+      "defaultValue": "16.0D",
+      "range": "2.0 ~ 128.0",
+      "effect": "Vertical radius (blocks, Y) around the associated bowl - axolotls ignore mobs further away vertically."
+    },
+    {
+      "key": "auto_associate_radius",
+      "type": "double",
+      "defaultValue": "1.5D",
+      "range": "0.5 ~ 4.0",
+      "effect": "Radius (blocks) within which an axolotl without a bowl is automatically associated with a nearby bowl."
+    },
+    {
+      "key": "glow_duration_seconds",
+      "type": "int",
+      "defaultValue": "30",
+      "range": "1 ~ 300",
+      "effect": "How many seconds your own associated axolotls glow (client-side only) when looking at their bowl. The getter multiplies by 20, so the code works in ticks (default 600)."
+    },
+    {
+      "key": "max_axolotls_per_station",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 64",
+      "effect": "Maximum number of axolotls that can be associated with a single bowl or station. Also the divisor of the feeding station's comparator output."
+    },
+    {
+      "key": "axolotl_xp_capacity",
+      "type": "int",
+      "defaultValue": "500",
+      "range": "0 ~ 10000",
+      "effect": "Maximum XP points a single axolotl can hold before XP drops normally."
+    },
+    {
+      "key": "station_xp_capacity",
+      "type": "int",
+      "defaultValue": "5000",
+      "range": "0 ~ 100000",
+      "effect": "Maximum XP points a feeding station can hold before overflow stays on axolotls."
+    },
+    {
+      "key": "xp_per_bottle",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "1 ~ 64",
+      "effect": "XP points consumed per Bottle o' Enchanting produced at the station."
+    },
+    {
+      "key": "play_dead_min_health",
+      "type": "int",
+      "defaultValue": "4",
+      "range": "1 ~ 14",
+      "effect": "An armored guardian axolotl may only play dead once its health drops to this absolute HP value or below (axolotl max health is 14). Unarmored axolotls keep vanilla play-dead untouched."
+    },
+    {
+      "key": "heal_return_threshold",
+      "type": "double",
+      "defaultValue": "0.60D",
+      "range": "0.0 ~ 1.0",
+      "effect": "A fed, out-of-combat guardian whose health drops below this fraction of max HP proactively swims back to its bowl/station to heal."
+    },
+    {
+      "key": "heal_recovery_target",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "While at/near its home block (distance squared <= 16), a guardian axolotl keeps regenerating until its health reaches this fraction of max HP."
+    },
+    {
+      "key": "thorns_reflect_fraction",
+      "type": "double",
+      "defaultValue": "0.33D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level."
+    }
+  ],
+  "events": [
+    "AddReloadListenerEvent (recipe injection, gated on isModuleEnabled)",
+    "EntityJoinLevelEvent (server side only; FOLLOW_RANGE modifier + armor attribute/sync restore)",
+    "PlayerEvent.StartTracking (owner/armor/XP/target resync to the tracking player)",
+    "BabyEntitySpawnEvent",
+    "EntityTickEvent.Post (server side, every 10th tick, owned axolotls only)",
+    "PlayerInteractEvent.EntityInteract (module handler runs on BOTH sides - it sets sided cancellation results on the client and does the state changes on the server; a second, separate client-only handler in AxolotlGuardianClientEvents handles the Ctrl+right-click inventory open)",
+    "AttackEntityEvent (petting: empty-hand left-click on an owned axolotl is cancelled)",
+    "LivingDamageEvent.Pre (two handlers: axolotl-as-victim = armor absorption/Thorns/retaliation, axolotl-as-attacker = Sharpness bonus + owner credit + XP capture)",
+    "LivingDropsEvent",
+    "LivingExperienceDropEvent",
+    "LivingDeathEvent",
+    "RegisterCapabilitiesEvent (mod bus)",
+    "RegisterPayloadHandlersEvent (mod bus)",
+    "RegisterKeyMappingsEvent (client, mod bus)",
+    "EntityRenderersEvent.AddLayers (client, mod bus)",
+    "EntityRenderersEvent.RegisterRenderers (client, mod bus)",
+    "RegisterMenuScreensEvent (client, mod bus)",
+    "ClientTickEvent.Post (client)",
+    "RenderGuiEvent.Post (client, goggles handler)",
+    "RenderLevelStageEvent (client, goggles handler, stage AFTER_TRANSLUCENT_BLOCKS)"
+  ],
+  "keybinds": [
+    "key.vanillaplusadditions.axolotl_guardian.open_inventory_modifier - \"Open Axolotl Inventory (hold + right-click axolotl)\", default Left Ctrl (GLFW_KEY_LEFT_CONTROL), category key.categories.vanillaplusadditions. Held modifier (read via raw window key state, not KeyMapping.isDown), also gates the goggles stats popup."
+  ],
+  "mixins": [
+    "axolotl_guardian.AxolotlBucketRestoreMixin (registered in the common \"mixins\" list of vanillaplusadditions.mixins.json, not client-only; @Inject at TAIL of Axolotl.loadFromBucketTag)"
+  ],
+  "recipes": [
+    "axolotl_bowl - shaped, prismarine U-shape: \"P P\" / \"PPP\" with P = minecraft:prismarine",
+    "axolotl_feeding_station - shaped: \"GGG\" / \"GCG\" / \"PPP\" with G = glass pane, C = cauldron, P = prismarine",
+    "axolotl_armor_iron - shaped: \"X  \" / \"XXX\" / \"S S\" with X = iron ingot, S = turtle scute",
+    "axolotl_armor_gold - same pattern with X = gold ingot, S = turtle scute",
+    "axolotl_armor_diamond - same pattern with X = diamond, S = turtle scute",
+    "axolotl_armor_netherite - same pattern with X = netherite ingot, S = turtle scute (item is fireResistant)",
+    "All six are injected in code by AxolotlGuardianRecipeReloadListener, added in AddReloadListenerEvent, which merges them into the RecipeManager and calls replaceRecipes (project convention: no recipe JSONs). Axolotl armor is repaired on the anvil with turtle scutes via isValidRepairItem, not via a recipe."
+  ],
+  "requiredMods": [],
+  "optionalMods": [
+    {
+      "modId": "sable",
+      "whatItAdds": "When Sable (Create: Aeronautics sub-levels) is present, the bowl and station are registered as Sable-aware subclasses implementing BlockSubLevelAssemblyListener: assembling a ship that contains a bowl teleports the associated axolotls into the sub-level and rewrites their bowl position to the ship-local coordinates. Without Sable the plain blocks are registered and axolotls are simply left behind in the old level when their bowl is assembled onto a contraption. The indirection through SableAxolotlBlocks is mandatory - a direct 'new SableAxolotlBowlBlock' in the module class would make the verifier load Sable classes while linking the module and crash without Sable.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/axolotl_guardian/AxolotlGuardianModule.java:160 and :182 (ModList.get().isLoaded(\"sable\")); sable/SableAxolotlBowlBlock.java:9; sable/SableAxolotlBlocks.java:23,27"
+    },
+    {
+      "modId": "jei",
+      "whatItAdds": "AxolotlGuardianJeiPlugin registers the turtle-scute anvil repair (JeiMobArmorRepairs) and the enchantment listing (JeiMobArmorEnchantments) for all four axolotl armors, so JEI's recipe browser can show a repair that is code-only (isValidRepairItem) and therefore undiscoverable by JEI on its own. Without JEI the repair still works at the anvil, it is just invisible in the recipe browser. The plugin is loaded by JEI's annotation scan and is additionally gated on the module being enabled.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/axolotl_guardian/compat/jei/AxolotlGuardianJeiPlugin.java:21 (@JeiPlugin) and :34 (ModuleManager gate); build.gradle:110-111 (JEI as compileOnly API)"
+    },
+    {
+      "modId": "create",
+      "whatItAdds": "Both goggles overlays (the axolotl stats popup / bowl tooltip, and the 3D guard-radius box + target and path outlines) require the player to be wearing goggles. The check is delegated to debug_overlay's GogglesUtil: with Create installed, Create's Engineer's Goggles count (helmet slot or any Curios slot); otherwise only a HEAD-slot item in the vanillaplusadditions:arm_goggles tag counts. That tag ships in the bundle (data/vanillaplusadditions/tags/item/arm_goggles.json) and lists create:goggles plus aeronautics:aviators_goggles, both 'required: false' - so on a Create-less instance the overlay is only reachable with Create: Aeronautics' aviator's goggles (or another mod filling the tag). Goggles alone are not enough: the popup additionally needs the open_inventory_modifier key held, and the 3D boxes additionally need debug_overlay's DebugOverlayState toggle to be on.",
+      "evidence": "modules/axolotl_guardian/client/AxolotlGuardianGogglesClientHandler.java:214 -> modules/debug_overlay/client/GogglesUtil.java:25,33; AxolotlGuardianGogglesClientHandler.java:103-104 (popupHeld / DebugOverlayState.isEnabled); src/main/resources/data/vanillaplusadditions/tags/item/arm_goggles.json"
+    }
+  ],
+  "notes": "STALE JAVADOC / DEAD REFERENCES (compile fine, but mislead a reader):\n- AxolotlGuardianModule.java:1603 links `{@link #onRightClickBlock}` and `{@link #applyPendingBucketRestore}` - NEITHER METHOD EXISTS any more. Bucket-payload restore moved entirely into AxolotlBucketRestoreMixin -> AxolotlGuardianModule.restoreFromBucketTag:1654 (CHANGELOG 1.0.0-beta.67, line ~508: dispensers used to lose the owner).\n- AbstractAxolotlBowlBlockEntity.java:112 references `AxolotlGuardianModule.reconcileBowlAssociation` - no such method exists (same stale text in the cat module). The reverse repair is actually AbstractAxolotlBowlBlockEntity.reclaimOwnAxolotls():147.\n- No TODO/FIXME comments in the module.\n\nHARDCODED VALUES THAT ARE **NOT** CONFIGURABLE (a doc writer will want these, they look like config but are not):\n- Emergency flee below 20% HP (AXOLOTL_FLEEING), resume guarding above 40% HP (hysteresis). heal_return_threshold (0.60) sits above this.\n- Post-combat return: emergency teleport home after 1200 ticks (60 s) if further than 4 blocks out, give up in place after 1800 ticks (90 s).\n- Target blacklist BLACKLIST_TICKS = 1200 ticks (60 s). Stuck detection samples every 40 ticks; strike 3 blacklists the target and commits to returning home; strike >= 5 while homebound teleports home.\n- Target search evaluates at most the 8 nearest candidates by real A* path length, discarding partial paths (end node > 2 blocks from the mob) and routes leaving the zone; search cooldown 2 passes (~20 ticks) on a miss.\n- Zone hysteresis buffers: TARGET_ZONE_BUFFER = 4 blocks for targets, AXOLOTL_ZONE_BUFFER = 10 blocks for the axolotl itself. Idle leash: heads home when further than 8 blocks (distSq > 64) from the bowl.\n- FOLLOW_RANGE gets a permanent +16 modifier on EVERY axolotl that joins a level server-side (not just guardians, not just owned ones) - doubles the A* node budget from the axolotl base 16.\n- Heal rate at base = STATION_HEAL_PER_PASS = 10/50 = 0.2 HP per 10-tick pass (Regeneration I equivalent); deliberately a direct heal() because the old refreshed MobEffectInstance never ticked (vanilla checks duration % 50 == 0 before decrementing).\n- Eating a fish from the bowl/station additionally grants a real Regeneration II effect for 100 ticks (MobEffectInstance(REGENERATION, 100, 1)) on top of setting fed_duration_ticks.\n- Return trips set navigation setMaxVisitedNodesMultiplier(2.0f), reset on arrival / on acquiring a target.\n- Overlay memory: OVERLAY_TIMEOUT_TICKS = 300 ticks (15 s).\n- Inventory sizes: axolotl = 1 armor + 5 loot slots (AxolotlInventoryData.TOTAL_SLOTS = 6); station = 9 food slots + 15 loot slots + 1 skin slot (limit 1 item).\n- Armor tiers (AxolotlArmorItem.Tier): iron 800 durability / +1.0 attack, gold 400 / +2.0, diamond 1600 / +3.0, netherite 2400 / +4.0. Enchantment values 9 / 25 / 10 / 15. The attack bonus is an ADD_VALUE modifier on ATTACK_DAMAGE, re-applied on every EntityJoinLevelEvent.\n\nBEHAVIOUR A DOC MUST GET RIGHT:\n- Taming is 1/3 per raw fish (#minecraft:fishes) on an UNOWNED axolotl (heart particles on success, smoke on failure). Ownership lives in the AXOLOTL_OWNER entity attachment, NOT vanilla TamableAnimal, and is mirrored client-side via SyncAxolotlOwnerPacket.\n- An owned, non-breed-ready axolotl swallows the right-click but keeps your fish (no hand-feeding refuel; guardians eat from their bowl/station).\n- Guardian axolotls cannot breed: the tropical-fish-bucket interaction is cancelled for any axolotl with a bowl. Owned non-guardians can, via bucket or plain fish item.\n- A WATER BUCKET on an OWNED axolotl does a custom pickup (pickUpOwnedAxolotl) that writes owner, bowl pos, fed ticks, XP and the whole inventory incl. armor into the bucket's BUCKET_ENTITY_DATA sub-tag 'vpa_guardian'; the mixin restores it on any placement path (player, dispenser, Create deployer).\n- Empty-hand LEFT-click on an owned axolotl is petting: the attack is cancelled, a sound plays and 5 heart particles spawn. Owned axolotls can therefore not be punched bare-handed by anyone.\n- Babies inherit one parent's owner at random (BabyEntitySpawnEvent), but no bowl.\n- Armor absorbs 100% of incoming damage and loses max(1, ceil(damage)) durability; while armor is intact the PLAY_DEAD_TICKS memory is erased above play_dead_min_health, so an armored guardian only flops once the armor is gone.\n- Sharpness on the armor adds 0.5 + 0.5*level outgoing damage; Thorns reflects thorns_reflect_fraction of absorbed damage (Thorns level read BEFORE the armor may break).\n- Retaliation: a hit from an in-water Monster inside the zone sets ATTACK_TARGET directly - unless the axolotl is fleeing, playing dead, or the attacker is blacklisted and further than 3 blocks away.\n- Targets must be in water (isInWaterOrBubble) and inside the guard zone; hostile (Monster) targets additionally require fed ticks > 0, so an unfed guardian disengages mid-fight. Non-Monster hunt targets (fish) are exempt from the fed check but still leashed to the zone.\n- XP only flows if the owner is a player object present in the same level (victim.setLastHurtByPlayer). Offline owner = no XP at all - exact parity with cat_guardian.\n- Only the FEEDING STATION has a block-entity ticker (every 200 ticks: pruneStaleAssociations + reclaimOwnAxolotls). The plain axolotl_bowl has NO ticker, so it never self-repairs its association list; only the axolotl-side tick clears a dangling bowl pos.\n- The look-at glow is client-side only and per viewer (shared-flag bit 6 via the core EntitySharedFlagInvoker mixin) - other players see nothing.\n- Capability routing: ONLY the feeding station BE registers Capabilities.ItemHandler.BLOCK. The plain axolotl_bowl has no item-handler capability at all, so hoppers/automation cannot fill it - it is hand-fed only. On the station, DOWN face = bottom handler (refuses to hand food back out, so a hopper drains only loot + XP bottles), all other faces = external handler (insert anything, extract anything incl. the returned empty bucket).\n- The station has a comparator output: floorDiv(associatedAxolotls * 15, max_axolotls_per_station) (AxolotlFeedingStationBlock:219/224).\n- Station XP flow: axolotl buffer -> station counter -> Bottles o' Enchanting minted into the station's loot inventory whenever storedXp >= xp_per_bottle.\n- Both blocks are waterloggable, have a FILLED blockstate property, and provide their drops via a getDrops override (no loot-table JSON, per project convention). The station additionally has FACING and SKIN properties.\n- Station skins: 15 AxolotlStationSkin values (incl. ORIGINAL) driven by a single deco slot mapping 26 material items; skin enum constants are German-named (PRISMARIN_AQUARIUM, KUPFER_LABOR, KORALLE_BLAU, ...) while everything else is English.\n\nDATA FILES (shipped with the standalone jar via build.gradle dataGlobs):\n- data/minecraft/tags/item/axolotl_food.json adds minecraft:tropical_fish to VANILLA's axolotl_food tag. No Java code in this module reads it (isAxolotlFood uses ItemTags.FISHES). Side effect by design (CHANGELOG line ~641): raw tropical fish now tempts/breeds ordinary vanilla axolotls too, and Create attribute filters can route it.\n- data/minecraft/tags/item/enchantable/{armor,durability}.json include all four axolotl armors (alongside the cat/wolf armors and the flying-fish boots), so they are table-enchantable.\n\nSTANDALONE JAR: build.gradle:389-394 declares moduleDeps ['vpa_debug_overlay'], which renders as a REQUIRED dependency in the generated neoforge.mods.toml - vpa_axolotl_guardian will not load without vpa_debug_overlay. Reason: the goggles client handler compiles against debug_overlay's GogglesUtil and DebugOverlayState, and a module jar only ships modules/<its own id>/**. Note the jar does NOT ship data/vanillaplusadditions/tags/item/arm_goggles.json (that is arm_target_overlay's dataGlob), so in a standalone install without vpa_arm_target_overlay only Create's own goggles check can satisfy the overlay gate.\n\nCLIENT WIRING GAP: AxolotlGuardianClientSetup registers the armor render layer, the BER and both menu screens UNCONDITIONALLY (@EventBusSubscriber, no isModuleEnabled check). AxolotlGuardianClientEvents gates its two handlers on AxolotlGuardianModule.isModuleActive(). AxolotlGuardianGogglesClientHandler contains NO isModuleActive check of its own: its onClientTick is only reached through AxolotlGuardianClientEvents.onClientTick (which does gate), and its own @SubscribeEvent handlers (RenderGuiEvent.Post, RenderLevelStageEvent) simply find their pending lists empty when the module is off.\n\nDOCS: there is no docs/modules/axolotl_guardian.md yet - this module has only a README paragraph (README.md lines 29-30) plus a row in the optional-mod compat table (README.md line 234). The README paragraph is accurate but omits armor/XP/loot, the Ctrl keybind, the station comparator output and the goggles overlay.\n\nVERSION CAVEAT: the adding commit's own message says \"(beta.34)\", but no v1.0.0-beta.34..40 tags exist in this repository - the tag sequence jumps v1.0.0-beta.33 -> v1.0.0-beta.41 (verified with `git tag --contains 4854f48`). beta.41 is therefore the earliest EXISTING release tag containing the module.",
+  "moduleDeps": [
+    "debug_overlay"
+  ],
+  "relatedModules": []
+}

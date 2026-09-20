@@ -1,0 +1,188 @@
+{
+  "moduleId": "mob_spawn_overlay",
+  "displayName": "Mob Spawn Overlay",
+  "shortDescription": "F3+M overlay marking every position where hostile mobs can spawn",
+  "oneLiner": "Hold F3 and press M to light up every block around you where hostile mobs can spawn — red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a spider fits there too.",
+  "side": "client",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "requiredMods": [],
+  "optionalMods": [],
+  "items": [],
+  "blocks": [],
+  "entities": [],
+  "commands": [],
+  "keybinds": [
+    "F3 + M (default) — toggles the overlay. NOT a rebindable KeyMapping: no KeyMapping/RegisterKeyMappingsEvent exists anywhere in the module (verified by grep over the module and its mixin). The combo is intercepted in KeyboardHandler.handleDebugKeys via mixin, so it is rebound only through the config key toggle_key (GLFW code, default 77 = M), not through the vanilla Controls screen."
+  ],
+  "mixins": [
+    "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin (client) — @Inject at HEAD of KeyboardHandler#handleDebugKeys, cancellable; bails out unless MobSpawnOverlayModule.isActiveClientSide() and the pressed key equals the configured toggle_key, then calls MobSpawnOverlayClientEvents.toggleFromDebugKey() and sets the return value to true, so vanilla's handledDebugKey flag is set and releasing F3 does not additionally open the debug screen. Listed in the \"client\" block of vanillaplusadditions.mixins.json:32 and as clientMixins in build.gradle:449."
+  ],
+  "events": [
+    "net.neoforged.neoforge.client.event.ClientTickEvent.Post — rescan timer (@EventBusSubscriber(Dist.CLIENT, Bus.GAME) on MobSpawnOverlayClientEvents)",
+    "net.neoforged.neoforge.client.event.RenderLevelStageEvent — draws the markers, only at Stage.AFTER_TRANSLUCENT_BLOCKS"
+  ],
+  "recipes": [],
+  "configKeys": [
+    {
+      "key": "toggle_key",
+      "type": "int",
+      "defaultValue": "77",
+      "range": "32 ~ 348",
+      "effect": "GLFW key code pressed together with F3 to toggle the overlay (77 = M); change it if another mod claims the same F3 combo."
+    },
+    {
+      "key": "scan.horizontal_radius",
+      "type": "int",
+      "defaultValue": "16",
+      "range": "4 ~ 48",
+      "effect": "How far around the player spawn positions are scanned (blocks)."
+    },
+    {
+      "key": "scan.vertical_radius",
+      "type": "int",
+      "defaultValue": "8",
+      "range": "2 ~ 32",
+      "effect": "How far above/below the player spawn positions are scanned (blocks)."
+    },
+    {
+      "key": "scan.rescan_interval_ticks",
+      "type": "int",
+      "defaultValue": "10",
+      "range": "1 ~ 100",
+      "effect": "Ticks between rescans (20 = one second); lower reacts faster but costs more."
+    },
+    {
+      "key": "scan.max_markers",
+      "type": "int",
+      "defaultValue": "6000",
+      "range": "100 ~ 60000",
+      "effect": "Safety cap on how many markers a single scan may collect."
+    },
+    {
+      "key": "scan.mark_spider_spots",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Additionally outline positions with enough room (2x2) for a spider to spawn."
+    },
+    {
+      "key": "display.see_through_blocks",
+      "type": "boolean",
+      "defaultValue": "false",
+      "range": "",
+      "effect": "Draw markers through terrain (x-ray) instead of hiding them behind blocks."
+    },
+    {
+      "key": "display.stripe_scale",
+      "type": "double",
+      "defaultValue": "0.5D",
+      "range": "0.05 ~ 4.0",
+      "effect": "Width of one diagonal stripe in blocks — smaller means denser stripes."
+    },
+    {
+      "key": "display.scroll_speed",
+      "type": "double",
+      "defaultValue": "0.35D",
+      "range": "0.0 ~ 5.0",
+      "effect": "How fast the stripes travel (blocks per second)."
+    },
+    {
+      "key": "display.shimmer_strength",
+      "type": "double",
+      "defaultValue": "0.35D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Strength of the additive enchantment-style shimmer; 0 skips the whole shimmer pass."
+    },
+    {
+      "key": "color_spawn_now.red",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Red component for positions where mobs spawn right now."
+    },
+    {
+      "key": "color_spawn_now.green",
+      "type": "double",
+      "defaultValue": "0.15D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Green component for positions where mobs spawn right now."
+    },
+    {
+      "key": "color_spawn_now.blue",
+      "type": "double",
+      "defaultValue": "0.15D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Blue component for positions where mobs spawn right now."
+    },
+    {
+      "key": "color_spawn_now.alpha",
+      "type": "double",
+      "defaultValue": "0.55D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Alpha component for positions where mobs spawn right now."
+    },
+    {
+      "key": "color_spawn_at_night.red",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Red component for positions that only spawn mobs in the dark."
+    },
+    {
+      "key": "color_spawn_at_night.green",
+      "type": "double",
+      "defaultValue": "0.85D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Green component for positions that only spawn mobs in the dark."
+    },
+    {
+      "key": "color_spawn_at_night.blue",
+      "type": "double",
+      "defaultValue": "0.2D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Blue component for positions that only spawn mobs in the dark."
+    },
+    {
+      "key": "color_spawn_at_night.alpha",
+      "type": "double",
+      "defaultValue": "0.45D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Alpha component for positions that only spawn mobs in the dark."
+    },
+    {
+      "key": "color_spider_outline.red",
+      "type": "double",
+      "defaultValue": "0.75D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Red component of the outline drawn around spider-sized spots."
+    },
+    {
+      "key": "color_spider_outline.green",
+      "type": "double",
+      "defaultValue": "0.3D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Green component of the outline drawn around spider-sized spots."
+    },
+    {
+      "key": "color_spider_outline.blue",
+      "type": "double",
+      "defaultValue": "1.0D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Blue component of the outline drawn around spider-sized spots."
+    },
+    {
+      "key": "color_spider_outline.alpha",
+      "type": "double",
+      "defaultValue": "0.9D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Alpha component of the outline drawn around spider-sized spots."
+    }
+  ],
+  "sinceVersion": "v1.0.0-beta.64",
+  "sinceCommit": "cbb4dc8",
+  "notes": "SOURCE FILES (all under src/main/java/net/geraldhofbauer/vanillaplusadditions/): modules/mob_spawn_overlay/MobSpawnOverlayModule.java, modules/mob_spawn_overlay/config/MobSpawnOverlayConfig.java, modules/mob_spawn_overlay/client/{MobSpawnOverlayClientEvents,SpawnScanner,SpawnMarker,SpawnOverlayState,SpawnOverlayRenderer,SpawnOverlayRenderTypes}.java, mixin/mob_spawn_overlay/KeyboardHandlerDebugKeyMixin.java, standalone/mob_spawn_overlay/MobSpawnOverlayStandalone.java (@Mod \"vpa_mob_spawn_overlay\"). Those nine files are the module in full — no registries, no commands, no network packets, no data/ files.\n\nNO DOCS PAGE YET: docs/modules/ contains no mob_spawn_overlay.md (verified: grep over docs/ finds no mention at all) — this is one of the undocumented modules. README.md:166-167 is the only prose so far; CHANGELOG.md:583-606 (v1.0.0-beta.64) holds the full original German write-up and is the best secondary source.\n\nENABLED BY DEFAULT is inherited, not declared: MobSpawnOverlayModule overrides neither isEnabledByDefault() nor shouldInitialize() (its only @Override is onInitialize()); core/Module.java:73-75 defaults to true, and AbstractModuleConfig.java:60 turns that into the \"enabled\" config key. Registered in the bundle at VanillaPlusAdditions.java:185.\n\nWHAT IT CANNOT TELL YOU (module javadoc): Biome.NETWORK_CODEC strips MobSpawnSettings, so the client never learns which mobs a biome lists. The overlay answers \"is this a valid ground-spawn position for monsters\", not \"what spawns here\". It also deliberately ignores the 24-block player distance and the mob cap (SpawnScanner javadoc) — both are momentary and would only get in the way while spawn-proofing.\n\nSTAND-IN ENTITY: every position is tested with EntityType.ZOMBIE (SpawnScanner.GROUND_MONSTER) as \"the 1-wide monster\", plus EntityType.SPIDER for the outline. Mobs with other hitboxes or other SpawnPlacementTypes (drowned/water, phantoms, ...) are not represented at all — only SpawnPlacementTypes.ON_GROUND is evaluated.\n\nTHE CHECK PER POSITION, in the order SpawnScanner.scan runs it: (1) getBrightness(LightLayer.BLOCK) > dimensionType().monsterSpawnBlockLightLimit() -> skip; (2) getMaxLocalRawBrightness > monsterSpawnLightTest().getMaxValue() -> skip (i.e. \"could never be dark enough\"); (3) fits(): SpawnPlacementTypes.ON_GROUND.isSpawnPositionOk(level, pos, ZOMBIE) plus level.noCollision(type.getSpawnAABB(x+0.5, y, z+0.5)); (4) the spider outline repeats fits() with EntityType.SPIDER, only when scan.mark_spider_spots is on. Everything that survives (1)-(3) becomes a marker.\n\nRED VS YELLOW, precisely: \"spawns now\" (red) requires getMaxLocalRawBrightness(pos) <= monsterSpawnLightTest().getMinValue() AND getBrightness(LightLayer.SKY, pos) == 0; everything else that passed the checks is yellow. A position that still sees the sky therefore stays yellow even at midnight, because vanilla's own roll can still fail there. All light limits come from the DimensionType (monsterSpawnBlockLightLimit + the monsterSpawnLightTest IntProvider), not a hardcoded 0..7 — that is why Nether and End come out right.\n\nGOTCHA — stale markers when the module is disabled at runtime: onClientTick() checks both SpawnOverlayState.isEnabled() and MobSpawnOverlayModule.isActiveClientSide(), but onRenderLevelStage() checks only SpawnOverlayState.isEnabled(). Toggle the overlay on, then disable the module (config key \"enabled\", or the core command /vpa module disable mob_spawn_overlay, which AbstractModule.isModuleEnabled() honours live via ModuleManager.resolveModuleEnabled): the last scan's markers keep rendering forever — no rescan, and no way to toggle off, because the mixin also bails on isActiveClientSide(). Needs a restart to clear.\n\nGOTCHA — the toggle is a static that is never reset: SpawnOverlayState.enabled is a plain static boolean with no world-unload/disconnect hook, so it stays on across world changes for the whole session. (Toggling off does clear the marker list; leaving the world does not.)\n\nTOGGLE BEHAVIOUR: toggleFromDebugKey() flips the state, resets the rescan tick counter and — when switching on — scans immediately, so the first markers appear without waiting out rescan_interval_ticks.\n\nDEAD CODE: SpawnOverlayState.isTruncated() and its truncated field are written by SpawnScanner (via setResult) but read nowhere in the repo (verified by grep over all of src/). So nothing tells the player when a scan hit max_markers and silently dropped positions.\n\nUNPROVABLE CLAIM IN A JAVADOC: SpawnMarker.java:14-15 says the spider check is \"relevant below Y=0, where this pack turns every naturally spawned spider into a cave spider\". Nothing in this repository performs that conversion — the only other cave_spider mentions are entity-id list entries in better_mobs/config/BetterMobsConfig.java:33 and :101. It must come from outside the mod (server datapack or another mod), so do not repeat it as a feature of this module.\n\nPERFORMANCE: the scan is a plain triple loop over (2*h+1)^2 * (2*v+1) positions on the client thread every rescan_interval_ticks — with the defaults that is 33*33*17 = 18513 positions every 10 ticks (the Y range is additionally clamped to the level's build height). max_markers caps the collected markers, not the positions visited; when the cap is hit the loops abort early (y outermost, then x, then z), so the visible area gets cut off in scan order — bottom-up, then by X.\n\nRENDERING DETAILS worth documenting: flat quads drawn at RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS, lifted 0.015 above the floor (LIFT) and inset 0.03 per side (INSET) to avoid z-fighting. The floor Y comes from the collision shape of the block below (SpawnScanner.surfaceY), so markers sit flush on slabs and farmland instead of floating. Stripe UVs are derived from world coordinates (not a texture matrix) so the 45-degree pattern runs continuously across neighbouring markers and stays predictable under Iris/Sodium; they are wrapped into [0,1) per quad against float precision loss far from origin. The shimmer pass reuses the marker's own hue at alpha = shimmer_strength, with wider bands (x0.35) travelling faster (x3.5) than the base stripes. The six custom RenderTypes (stripes/shimmer/lines, each depth-tested and x-ray) are not part of vanilla's sorted batch, so MobSpawnOverlayClientEvents flushes them explicitly via SpawnOverlayRenderTypes.all(...).\n\nASSET: assets/vanillaplusadditions/textures/misc/spawn_overlay_stripes.png (seamless 45-degree stripe texture, the alpha channel carries the pattern; 194 bytes). It ships inside the vpa_core jar (build.gradle:617 includes assets/vanillaplusadditions/** there), which every standalone module jar requires (renderModuleToml, build.gradle:510) — so the standalone vpa_mob_spawn_overlay jar needs no dataGlobs of its own and still has its texture and lang strings.\n\nLANG KEYS: message.vanillaplusadditions.mob_spawn_overlay.on / .off (en_us.json:162-163, \"Mob spawn overlay: ON/OFF\"), shown as an action-bar message (displayClientMessage(..., true)). Translated in de_de, de_at, cs_cz, fr_fr, es_es.\n\nWHY A MIXIN AND NOT InputEvent.Key (mixin javadoc): NeoForge fires the key event only after handledDebugKey |= flag5 and it cannot be cancelled, so releasing F3 would additionally open the debug screen. Returning true from handleDebugKeys sets that flag, exactly as vanilla's own F3+G does.\n\nHISTORY: exactly one commit ever touched the module, its mixin and its standalone entrypoint (cbb4dc8, 2026-08-05, \"feat(mob_spawn_overlay): show monster spawn spots on F3+M\") — unchanged since; git describe --contains puts it at v1.0.0-beta.64~2. That same commit also introduced the build's clientMixins support. No TODO/FIXME comments anywhere in the module.",
+  "moduleDeps": [],
+  "relatedModules": []
+}

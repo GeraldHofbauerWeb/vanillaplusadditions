@@ -1,0 +1,46 @@
+{
+  "moduleId": "chunk_reset",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "Stand where the terrain should go away and type `/chunkreset`. Nothing is deleted yet: the command prints a warning with the chunk coordinates, the number of chunks and two clickable buttons.",
+      "issue": "Plain `/chunkreset` runs with radius 0 (ChunkResetModule.java:68, `.executes(ctx -> executeChunkReset(ctx, 0))`), and the radius==0 branch at ChunkResetModule.java:95-99 prints \"Chunk [x=<x>, z=<z>] will be PERMANENTLY deleted and regenerated.\" — there is no chunk count and no \"n chunks (s×s)\" wording. The count only appears in the radius>0 branch (ChunkResetModule.java:100-106).",
+      "correction": "Say that plain `/chunkreset` prints the chunk coordinates and the two buttons, and that the chunk count / \"s×s\" line only appears when a radius > 0 was given.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "9 chunks (3×3) around [x=12, z=-4] will be PERMANENTLY deleted and regenerated.",
+      "issue": "The sample block is introduced as the output of typing `/chunkreset`, but this exact line can only be produced by `/chunkreset 1` (ChunkResetModule.java:101-105). Typing `/chunkreset` produces the singular line from ChunkResetModule.java:96-99. Everything else in the block (the ━ rule, \"⚠ Chunk Reset Warning\", the LOST! line, `[✓ Confirm Reset]  [✗ Cancel]`) matches the source verbatim.",
+      "correction": "Either label the example `/chunkreset 1`, or replace the line with the radius-0 text: \"Chunk [x=12, z=-4] will be PERMANENTLY deleted and regenerated.\"",
+      "severity": "misleading"
+    },
+    {
+      "quote": "`ServerLevel.setChunkForced` only edits `ForcedChunksSavedData`.",
+      "issue": "Not what the 1.21.1 source does. ServerLevel.java:1415-1434 edits ForcedChunksSavedData and then, when the set actually changed, calls `this.getChunkSource().updateChunkForced(chunkpos, add)` (ServerLevel.java:1429-1431), which forwards to `DistanceManager.updateChunkForced` (ServerChunkCache.java:460-462) — that is the call that actually drops the FORCED ticket. The page's own earlier description (\"removes the position from `ForcedChunksSavedData` and tells the chunk cache about it\") is the correct one, so the page contradicts itself.",
+      "correction": "\"`ServerLevel.setChunkForced` only touches vanilla's forceload bookkeeping: it edits `ForcedChunksSavedData` and, through `ServerChunkCache.updateChunkForced`, drops the matching `FORCED` ticket in the `DistanceManager`. Nothing else.\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "The two field hops on the way — `ServerChunkCache.chunkMap` — need no accessor, because the field is `public final` and `ChunkMap` is a public subclass of `ChunkStorage`; there is no Mixin dependency anywhere in this module.",
+      "issue": "There is exactly one field hop, not two: ChunkResetModule.java:203-204 does `level.getChunkSource()` (a public method) and then `chunkSource.chunkMap` (the only field access; `public final ChunkMap chunkMap` at ServerChunkCache.java:55). The rest of the sentence is correct — ChunkMap.java:101 is `public class ChunkMap extends ChunkStorage` and the module declares no mixins.",
+      "correction": "\"The one field hop on the way — `ServerChunkCache.chunkMap` — needs no accessor, because …\" (or \"The path there — `level.getChunkSource().chunkMap` — needs no accessor, because …\").",
+      "severity": "misleading"
+    },
+    {
+      "quote": "This module has had no code change since `v1.0.0-beta.2` and this repository has no tests.",
+      "issue": "True of the implementation file only. `git log --follow` on modules/chunk_reset/ returns exactly one commit, 25db081 (= tag v1.0.0-beta.2), but the standalone entry point this page lists two paragraphs earlier under \"Under the hood\" — standalone/chunk_reset/ChunkResetStandalone.java — was added later in 27c7405 (\"roll out standalone jars to all 24 modules\", beta.23).",
+      "correction": "\"The module's logic has not changed since `v1.0.0-beta.2` (the standalone entry point was added in `v1.0.0-beta.23`) and this repository has no tests.\"",
+      "severity": "misleading"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "ChunkResetModule.java:189-192 — the radius==0 branch prints the green \"✓ Chunk […] reset.\" unconditionally and ignores the `succeeded` counter computed at :180-185, so a single-chunk reset whose write threw still reports success in chat (the error only reaches the log at :215).",
+    "ChunkResetModule.java:36 + :144 — `PendingReset(ChunkPos center, int radius)` does not record the dimension; `executeConfirm` applies the stored coordinates to `source.getLevel()` at confirm time, so confirming after a dimension change deletes the same ChunkPos in the wrong level.",
+    "ChunkResetModule.java:138-142 — dead guard: `if (!(source.getLevel() instanceof ServerLevel serverLevel))` can never fail, because `CommandSourceStack.getLevel()` is declared `public ServerLevel getLevel()` (CommandSourceStack.java:398-400). The failure message \"This command can only be used in a server level.\" is unreachable.",
+    "ChunkResetModule.java:201-218 — the deletion is not durable: the module neither unloads the chunk nor flushes the IOWorker, and `ChunkMap.save` reaches the same `this.write(chunkpos, compoundtag)` (ChunkMap.java:790-792) for any still-loaded chunk with `isUnsaved() == true` (ChunkMap.java:770-772), so the next autosave (MinecraftServer.java:939-947, interval `Math.max(100, tickrate*300)` = 6000 ticks at 20 tps) writes the chunk straight back over the cleared entry.",
+    "ChunkResetModule.java:206 — wrong/overbroad comment: \"Remove any forced loading ticket first\". `ServerLevel.setChunkForced(x, z, false)` removes only vanilla's `/forceload` ticket (ServerLevel.java:1415-1434); NeoForge/mod chunk tickets, spawn chunks and player tickets are untouched.",
+    "ChunkResetModule.java:170-174 — the player rescue teleport keeps the old Y (`nearby.getY()`) and does no ground/collision search; `ServerPlayer.teleportTo(double,double,double)` is a plain `connection.teleport(…)` (ServerPlayer.java:1524-1526), so a player can be placed inside stone or in mid-air, and can immediately walk back into the square.",
+    "ChunkResetModule.java:85 — a second `/chunkreset` silently replaces the pending entry via `Map.put`, and nothing ever expires or clears an entry on logout; only the newest square can be confirmed."
+  ]
+}

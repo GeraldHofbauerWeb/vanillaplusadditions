@@ -1,0 +1,50 @@
+{
+ "moduleId": "mob_cart_loader",
+ "claimsChecked": 114,
+ "problems": [
+  {
+   "quote": "Mobs without a spawn egg (the ender dragon, the wither, an iron golem) get the name without an icon.",
+   "issue": "All three examples are wrong for 1.21.1. Items.java registers ENDER_DRAGON_SPAWN_EGG (line 1414), IRON_GOLEM_SPAWN_EGG (line 1435) and WITHER_SPAWN_EGG (line 1519), each as a real SpawnEggItem bound to its EntityType, so SpawnEggItem.byId() finds all three and the panel does show an icon for them. Diffing every registered EntityType against every *_SPAWN_EGG item, the only vanilla Mob types with no spawn egg are GIANT and ILLUSIONER.",
+   "correction": "Use mobs that genuinely have no egg, e.g. \"Mobs without a spawn egg (the giant, the illusioner) get the name without an icon.\" — or drop the examples and just state the fallback.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Being shaped recipes, the middle row is fixed: a mirrored arrangement does not craft.",
+   "issue": "Backwards. Vanilla ShapedRecipePattern.matches(CraftingInput) tries the horizontally mirrored layout first and the literal one second (`if (!this.symmetrical && this.matches(input, true)) return true;`, ShapedRecipePattern.java:171-187). Neither pattern here is symmetrical, so GGG/MSH/GGG also crafts the Mob Loader and GGG/DSM/GGG also crafts the Mob Unloader. Being shaped constrains the row/column geometry, not the left-right order.",
+   "correction": "Say the opposite: shaped recipes are mirror-matched by vanilla, so the middle row also works reversed (minecart–saddle–hopper for the loader, dropper–saddle–minecart for the unloader); only the glass frame and the 3x3 shape are fixed.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Capture and release never happen in the same scan, so a mob needs at least two of them — ten ticks\nat the default interval — to travel from the pen into the cart.",
+   "issue": "The \"two scans\" part is right (both tickServer implementations `return` after a capture), but two scans are one interval apart, not two. At the default check_interval_ticks = 5 the capture scan and the release scan are 5 ticks apart, so the pen-to-cart transfer takes 5 ticks, not 10. Ten ticks is only the worst case if you also count waiting for the first scan after the mob walks in.",
+   "correction": "\"...so a mob needs at least two of them — five ticks between capture and release at the default interval, up to ten from the moment the mob walks into the pen.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "every mob whose hitbox overlaps it counts, nearest to the box centre wins",
+   "issue": "The tie-break is measured from the centre of the input block, not the centre of the 1x2x1 box. findPenMob builds `new AABB(penPos).expandTowards(0, 1, 0)` (centre at y+1.0) but then calls `nearest(mobs, penPos)`, and nearest() uses `around.getX()+0.5, around.getY()+0.5, around.getZ()+0.5` — y+0.5. A mob standing on the upper half therefore loses to one at foot level even if it is closer to the box centre.",
+   "correction": "\"...nearest to the centre of the input block wins\" (the search box reaches one block higher, but the distance is measured from the input block's own centre).",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The `create:tracks` tag does not exist, so the track test is always false and the track lookup returns before any Create type is resolved.",
+   "issue": "The tag does exist without Create: this mod itself ships src/main/resources/data/create/tags/block/tracks.json (replace:false, one entry vanillaplusadditions:chunk_loader_track with required:false). What actually makes isTrack() false is that the entry is optional and train_chunk_loading's shouldInitialize() gates on ModList.isLoaded(\"create\"), so chunk_loader_track is never registered and the tag resolves empty. The conclusion is right, the stated reason is not.",
+   "correction": "\"...the `create:tracks` tag resolves empty (our own optional entry for `chunk_loader_track` is skipped, because `train_chunk_loading` does not initialise without Create), so the track test is always false...\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Release puts the mob at the centre of the output block.",
+   "issue": "Only true for the unloader and for the break-drop, both of which go through releaseStoredNear(level, pos) with pos+0.5. The loader does not: MobLoaderBlockEntity releases at `cart.getX(), cart.getY(), cart.getZ()` for a minecart and at `seat.worldPos()` for a train seat. The sentence sits in a section that covers both blocks.",
+   "correction": "\"Release puts the mob where the target is: the cart's or the seat's own position for the loader, the centre of the output block for the unloader and for the break-drop.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The class javadocs on `MobLoaderBlock` and on `MobCartLoaderModule` still\ndescribe the pre-`v1.0.0-beta.54` design",
+   "issue": "The list is incomplete, and the page presents it as the full set. MobCartBER's class javadoc is stale in the same two ways (\"hovering above the block\" — it renders at the block centre via translate(0.5, 0.5, 0.5); \"pen candidate for the loader, cart passenger for the unloader\" — it renders the stored mob), and MobUnloaderBlock's second sentence (\"Shows the cart passenger as the spinning mini-mob\") is stale too, even though its first sentence happens to be correct.",
+   "correction": "Add MobCartBER, and note that MobUnloaderBlock's javadoc is only half right — its facing sentence holds, its display sentence does not.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

@@ -1,0 +1,50 @@
+{
+ "moduleId": "pet_potions",
+ "claimsChecked": 64,
+ "problems": [
+  {
+   "quote": "Cats, parrots and horses never target a player in vanilla, so for them calming has nothing to clear — which is exactly what happens: nothing, silently.",
+   "issue": "Wrong. The second half does not follow. `LivingEntity#hurt` sets `lastHurtByMob` on EVERY living entity hit by a player (build/neoForm/.../net/minecraft/world/entity/LivingEntity.java:1211-1215), and it is only cleared once `tickCount - lastHurtByMobTimestamp > 100` (LivingEntity.java:494-498). So the third branch in `calm` — `if (mob.getLastHurtByMob() == thrower)` (PetPotionsModule.java:313) — fires for a cat, parrot or horse you hit within the last ~5 seconds. `calmed` becomes true, a `PeaceEntry` is stored and the four heart particles plus the amethyst chime play. The module's own CHANGELOG entry for beta.65 says exactly this ('bzw. setTarget/setLastHurtByMob direkt (Katze, Pferd, Lama)'). This also undercuts the neighbouring sentence 'A potion thrown at an animal that was never angry at you produces no feedback'.",
+   "correction": "Say that for cats, parrots and horses there is no *targeting* to undo, but `setLastHurtByMob(null)` still applies: hit one and splash it within ~100 ticks and it counts as calmed — grace window, particles and chime included. The clearing simply has no behavioural effect, because none of them owns a `HurtByTargetGoal`.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "A lingering potion's cloud lasts 600 ticks (30 seconds) and starts at radius 3, so a pet that only wanders in later must be caught too.",
+   "issue": "Wrong number. 600 is only the `AreaEffectCloud#duration` field default (AreaEffectCloud.java:43); it is not how long the cloud lives. `ThrownPotion#makeAreaOfEffectCloud` (ThrownPotion.java:166-178) also sets `radiusPerTick = -getRadius() / getDuration()` = -0.005, and `AreaEffectCloud#tick` discards the cloud the moment the radius falls below 0.5 (MINIMAL_RADIUS) — reached after ~501 post-wait ticks, i.e. ~511 ticks (~25 s) total, and far sooner in practice because `radiusOnUse = -0.5` shrinks it by half a block per affected entity (five applications kill it). The same overstatement sits in the Java: `models/CalmingCloud.java` javadoc says 'keep applying their effects for up to half a minute'.",
+   "correction": "Either drop the number or write it honestly: the cloud starts at radius 3 with a 10-tick wait time and a nominal `duration` of 600 ticks, but it is discarded once the shrinking radius drops below 0.5 — roughly 25 seconds when nothing stands in it, much less when it keeps hitting entities.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| Calming, cloud tracking, grace period | Server only — explicit `isClientSide()` returns | `enabled` only |",
+   "issue": "Over-claims. Three of the four cloud/calming handlers do carry an explicit side guard (`onProjectileImpact` :169, `onEntityJoinLevel` :199, `onChangeTarget` :362), but `onEntityLeaveLevel` (PetPotionsModule.java:222-228) — which the page's own 'Under the hood' table lists under cloud tracking — has none, and NeoForge posts `EntityLeaveLevelEvent` from `ClientLevel` as well (build/neoForm/.../net/minecraft/client/multiplayer/ClientLevel.java:1131). GENUINE JAVA BUG behind it: in single-player/LAN the client and the integrated server share one module instance, and the client's copy of the cloud carries the same UUID, so when the client drops it (chunk unload, or the player moving beyond `clientTrackingRange(10)` = 160 blocks, EntityType.java:187-193) `calmingClouds.remove(cloud.getUUID())` deletes the entry while the server-side cloud is still alive and still applying effects — the cloud silently stops calming. The asymmetry is the giveaway: the join handler is guarded, the leave handler is not.",
+   "correction": "Qualify the row (e.g. 'server only, except `onEntityLeaveLevel`, which has no side guard') and mention the consequence under 'Compatibility and known limits': in single-player, a tracked cloud can be dropped early by the client unloading its copy. Report the missing `event.getLevel().isClientSide()` guard as a bug; do not fix it here.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Aiming a splash potion at a tamed animal normally does nothing at all: the potion never leaves your hand.",
+   "issue": "Too broad as a claim about vanilla. It is true for wolves — `Wolf#mobInteract` returns `CONSUME` client-side for any tamed wolf (Wolf.java:500-503) — and effectively true for a mountable horse (you mount instead). It is false for someone else's **cat**: `Cat#mobInteract` (Cat.java:359-408) enters the `isTame()` branch only when `isOwnedBy(player)` also holds, otherwise it falls straight through to `Animal#mobInteract` (Animal.java:136-158, not food) and on to `Mob#mobInteract`, which returns `PASS` — so the potion is thrown normally even without this module. The page does hedge this 75 lines later ('The wolf is the case that is provable in vanilla's source'), but the opening sentence is stated flatly.",
+   "correction": "Scope the sentence to the case that is actually provable: 'Aiming a splash potion at a tamed wolf normally does nothing at all…' and keep the later paragraph about other animals having their own `mobInteract`.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "On the client, `Wolf#mobInteract` never reaches any of its real branches and ends here:",
+   "issue": "'never' is too strong. The guard is `if (!this.level().isClientSide || this.isBaby() && this.isFood(itemstack))` (Wolf.java:434), so a baby wolf being fed does run the real branches on the client. Irrelevant for a potion, but the absolute wording is not what the source says.",
+   "correction": "'On the client, `Wolf#mobInteract` skips its real branches for anything but feeding a puppy, and ends here:' — or simply 'For a potion, `Wolf#mobInteract` on the client ends here:'.",
+   "severity": "style"
+  },
+  {
+   "quote": "A wolf's `HurtByTargetGoal` has `setAlertOthers()`, which calls `setTarget(you)` on every wolf of the same owner within follow range.",
+   "issue": "Slightly overstated. `HurtByTargetGoal#alertOthers` (build/neoForm/.../ai/goal/target/HurtByTargetGoal.java:76-115) skips any wolf that already has a target (`mob.getTarget() == null` is required) and any that `isAlliedTo` the attacker, and the box is `inflate(followDistance, 10.0, followDistance)` — follow distance horizontally, a fixed 10 blocks vertically. The conclusion the row draws is unaffected (fewer wolves alerted, not more).",
+   "correction": "'…which calls `setTarget(you)` on every wolf of the same owner that is nearby and not already busy with a target.'",
+   "severity": "style"
+  },
+  {
+   "quote": "public void onProjectileImpact(ProjectileImpactEvent event) {",
+   "issue": "[JAVA — code note, not a page error] `onProjectileImpact` (PetPotionsModule.java:164-190) never checks `event.isCanceled()`. `ThrowableProjectile#tick` only calls `hitTargetOrDeflectSelf` when the event was NOT cancelled (build/neoForm/.../projectile/ThrowableProjectile.java:47-50), so if another mod cancels the impact the potion does not break and applies nothing — yet the module still calms every owned pet in the copied splash box. The page's 'The event is observed only — never cancelled' is accurate about this module and needs no change.",
+   "correction": "No doc change required. Report as a minor code bug: the calming sweep should bail when `event.isCanceled()` is already true.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

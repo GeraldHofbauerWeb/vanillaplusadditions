@@ -1,0 +1,991 @@
+{
+ "config": "renderer=1.0.0 size=256 ssaa=4 frame=vanilla anchor=block cull=True shade=flat",
+ "entries": {
+  "blocks/axolotl_bowl.png": {
+   "inputs": "a345f84a7a18c70e400e42b3e538ea8f3247d9bea3d0bd9ab63ddac7e35b3589",
+   "model": "vanillaplusadditions:item/axolotl_bowl",
+   "png": "aa0b8ce231d35a0036a6710b42f9653b200015c4f433b63dab05b4f89b633ab6",
+   "sources": [
+    "file:models/block/axolotl_bowl.json",
+    "file:models/item/axolotl_bowl.json",
+    "file:textures/block/axolotl_bowl.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_bowl_filled.png": {
+   "inputs": "0edc2c86617ab811c702f5cb65b04781307ad13860a3b0b86a5fd66f87cee980",
+   "model": "vanillaplusadditions:block/axolotl_bowl_filled",
+   "png": "68b924f1cddbbee065f72747f48f83d444cbf9cd6bee984d091def6664705302",
+   "sources": [
+    "file:models/block/axolotl_bowl_filled.json",
+    "file:textures/block/axolotl_bowl.png",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/textures/item/tropical_fish.png"
+   ]
+  },
+  "blocks/axolotl_feeding_station.png": {
+   "inputs": "82e6790f808e7348d1d4298aa509ce375f400abca783d1c0e9444bf0c9126c60",
+   "model": "vanillaplusadditions:item/axolotl_feeding_station",
+   "png": "98429950622882e2b7aeaa2cd1415a502720aa7bcab8c2c2063f6e72f9a5e4ca",
+   "sources": [
+    "file:models/block/axolotl_feeding_station.json",
+    "file:models/item/axolotl_feeding_station.json",
+    "file:textures/block/axolotl_feeding_station.png",
+    "file:textures/block/axolotl_feeding_station_glass.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_amethyst_grotte.png": {
+   "inputs": "21efcc2d962ef206660e371e879f38eed0a9e9bfc8199e190f46836ac8340a0a",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_amethyst_grotte",
+   "png": "3a14b2284ddd7a09d3ac5b7710ebb056b2bdb58e18552336cee95f6ba4fa0440",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_amethyst_grotte.json",
+    "file:textures/block/axolotl_feeding_station_amethyst_grotte.png",
+    "file:textures/block/axolotl_feeding_station_amethyst_grotte_glass.png",
+    "file:textures/block/axolotl_feeding_station_amethyst_grotte_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_filled.png": {
+   "inputs": "317ea1450f3ef69565fcb076f29f197a971daa35a71687d12ef7c2403d290637",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_filled",
+   "png": "3d41a4c9777c7b2fdde24a22e2eb17026d8105346b823f48e12af3fca964121d",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_filled.json",
+    "file:textures/block/axolotl_feeding_station.png",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/models/block/cube.json",
+    "jar:assets/minecraft/textures/item/cod.png"
+   ]
+  },
+  "blocks/axolotl_feeding_station_froglight_strand.png": {
+   "inputs": "a9fd8d4eff78ed3dc71570a228823c2c7a9c1708a8a2a96840b4f009cac4643c",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_froglight_strand",
+   "png": "3abfd5398bd625d0bd9ce3171478749341c898e79367f833feaaad5bb1682ce3",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_froglight_strand.json",
+    "file:textures/block/axolotl_feeding_station_froglight_strand.png",
+    "file:textures/block/axolotl_feeding_station_froglight_strand_glass.png",
+    "file:textures/block/axolotl_feeding_station_froglight_strand_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_koralle_blau.png": {
+   "inputs": "56741a81d095ccd4d66ee9cdf5b3d770054bfa40c4d1c9bf3dceb495c223d563",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_blau",
+   "png": "4b4b09a3314018e93722119fd51c72f22e7ac6c1fcf6197899e31fc5764c32f3",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_koralle_blau.json",
+    "file:textures/block/axolotl_feeding_station_koralle_blau.png",
+    "file:textures/block/axolotl_feeding_station_koralle_blau_glass.png",
+    "file:textures/block/axolotl_feeding_station_koralle_blau_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_koralle_gelb.png": {
+   "inputs": "1f6f9f99f55e0302cb0a17d5bce203caf8b1df4130de42625fd1a9251517cff7",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_gelb",
+   "png": "f0072c7fe5a2b5e5b4d4c4b7dce7b6df4d1d7c0733de96fa503738372cccf391",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_koralle_gelb.json",
+    "file:textures/block/axolotl_feeding_station_koralle_gelb.png",
+    "file:textures/block/axolotl_feeding_station_koralle_gelb_glass.png",
+    "file:textures/block/axolotl_feeding_station_koralle_gelb_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_koralle_lila.png": {
+   "inputs": "e5893490d8b686e689a6ef0f77cf560682eb6cc5f958427f132a43b20221788a",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_lila",
+   "png": "5a81fd7487513cb8827df90438fccf569491e47802e12095064ad30730ea0215",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_koralle_lila.json",
+    "file:textures/block/axolotl_feeding_station_koralle_lila.png",
+    "file:textures/block/axolotl_feeding_station_koralle_lila_glass.png",
+    "file:textures/block/axolotl_feeding_station_koralle_lila_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_koralle_rosa.png": {
+   "inputs": "50063dac2e0ec5b658275c6f216497a49a33020cd0594a1bf6548fa6bd248000",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rosa",
+   "png": "d85dc44ad00abe4d8ad230e4e28cea11274352ecece5250f6075e4beba1b0073",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_koralle_rosa.json",
+    "file:textures/block/axolotl_feeding_station_koralle_rosa.png",
+    "file:textures/block/axolotl_feeding_station_koralle_rosa_glass.png",
+    "file:textures/block/axolotl_feeding_station_koralle_rosa_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_koralle_rot.png": {
+   "inputs": "a9d18e0bc94574c7a6fb02cbf17fe32209659c4147432ed83c3e507d3b686ef0",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_koralle_rot",
+   "png": "5940cf50d9aa4afe606ff1317cc08e4ce8b0016d5aefad1b7e1c8ef2c5a721c3",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_koralle_rot.json",
+    "file:textures/block/axolotl_feeding_station_koralle_rot.png",
+    "file:textures/block/axolotl_feeding_station_koralle_rot_glass.png",
+    "file:textures/block/axolotl_feeding_station_koralle_rot_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_korallengarten.png": {
+   "inputs": "054e05bf51e9000a6d53a02bc6e7405f9758bcd4845955fb6f163e513b3e7679",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_korallengarten",
+   "png": "10e21827ddf275cc33befdad2e1d5d93a65a1315163ac234e16d894160896f29",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_korallengarten.json",
+    "file:textures/block/axolotl_feeding_station_korallengarten.png",
+    "file:textures/block/axolotl_feeding_station_korallengarten_glass.png",
+    "file:textures/block/axolotl_feeding_station_korallengarten_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_korallenriff.png": {
+   "inputs": "8361683ba66682fed4358756f83e624b3c8e4f4d788d4b0caf3d5c1e37386720",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_korallenriff",
+   "png": "9d553ad02e2333e5bf7763b6e6facca112c7f79652ee2547a4083e6b125ff367",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_korallenriff.json",
+    "file:textures/block/axolotl_feeding_station_korallenriff.png",
+    "file:textures/block/axolotl_feeding_station_korallenriff_glass.png",
+    "file:textures/block/axolotl_feeding_station_korallenriff_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_kupfer_labor.png": {
+   "inputs": "a11fa15f7385ee4940ff80da1be710d606ac7572c2c79427cb1586bc626fb0ec",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
+   "png": "53232ca3d3ace231bc4ec678117ce1ec2026249bb17b2581c97259cd507b52cc",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_kupfer_labor.json",
+    "file:textures/block/axolotl_feeding_station_kupfer_labor.png",
+    "file:textures/block/axolotl_feeding_station_kupfer_labor_glass.png",
+    "file:textures/block/axolotl_feeding_station_kupfer_labor_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_lagune.png": {
+   "inputs": "436cd5a82a00654cddf53bf87dc9000f04b9935cb4fd54b054205871d117fba2",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_lagune",
+   "png": "51e4c460255cd2094617b4a59597f4c6b695866427964803061e476dccc2b7a1",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_lagune.json",
+    "file:textures/block/axolotl_feeding_station_lagune.png",
+    "file:textures/block/axolotl_feeding_station_lagune_glass.png",
+    "file:textures/block/axolotl_feeding_station_lagune_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_ozeanmonument.png": {
+   "inputs": "d2c43bbcf2783079cc6d9f76aed17e866fe0c26e15b47d0b1d25f4964f365c93",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_ozeanmonument",
+   "png": "82e06cd2fa685bfdec77e16f2e9f8c34b932d4f491fb126f7669b8391d1c71e4",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_ozeanmonument.json",
+    "file:textures/block/axolotl_feeding_station_ozeanmonument.png",
+    "file:textures/block/axolotl_feeding_station_ozeanmonument_glass.png",
+    "file:textures/block/axolotl_feeding_station_ozeanmonument_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_prismarin_aquarium.png": {
+   "inputs": "3645c59bcc41430ffdc477e9e25fb817e2b7c8052be931db7e546a0fa4a3cc2d",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
+   "png": "c5acad5c7a167b7637fce2f98df858549bd4c26e8c8e68af39619155469a03f7",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_prismarin_aquarium.json",
+    "file:textures/block/axolotl_feeding_station_prismarin_aquarium.png",
+    "file:textures/block/axolotl_feeding_station_prismarin_aquarium_glass.png",
+    "file:textures/block/axolotl_feeding_station_prismarin_aquarium_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/axolotl_feeding_station_wirrwald.png": {
+   "inputs": "632fa5f3aa38f0cd2cb31ee3b05544d5aee5e03ad2fb197143a03f17a161384c",
+   "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
+   "png": "a3124470bb345286b7da2258858a71c5eaf98262e796706bede2ad1b38ce661a",
+   "sources": [
+    "file:models/block/axolotl_feeding_station_wirrwald.json",
+    "file:textures/block/axolotl_feeding_station_wirrwald.png",
+    "file:textures/block/axolotl_feeding_station_wirrwald_glass.png",
+    "file:textures/block/axolotl_feeding_station_wirrwald_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_bowl.png": {
+   "inputs": "1bcbc6ddda2073fc9363f1ab51263748e32dce200bbdbebea8a68bf638692d29",
+   "model": "vanillaplusadditions:item/cat_bowl",
+   "png": "3647d56fb7983499babf6a00cded90a330352436c8e51aed2518912ae6c935f8",
+   "sources": [
+    "file:models/block/cat_bowl.json",
+    "file:models/item/cat_bowl.json",
+    "file:textures/block/cat_bowl.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_bowl_filled.png": {
+   "inputs": "f775ead2637d19d637d6add670090bf5de1f729a971f4a055957d1aa7451c42b",
+   "model": "vanillaplusadditions:block/cat_bowl_filled",
+   "png": "c59ae72efa4dc91c6132aeb213ff4136ddbf4e9b41844a878814ee8dbd602ce9",
+   "sources": [
+    "file:models/block/cat_bowl_filled.json",
+    "file:textures/block/cat_bowl.png",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/textures/item/cod.png"
+   ]
+  },
+  "blocks/cat_feeding_station.png": {
+   "inputs": "9a876d5982dcd0dfd51d50a7bd77c85205d1aeadd9aed1d217802920f08c4566",
+   "model": "vanillaplusadditions:item/cat_feeding_station",
+   "png": "b0591c35b9fff5f99355c206f61878cff8a44db303e2115393d4ed837aaeab28",
+   "sources": [
+    "file:models/block/cat_feeding_station.json",
+    "file:models/item/cat_feeding_station.json",
+    "file:textures/block/cat_feeding_station.png",
+    "file:textures/block/cat_feeding_station_glass.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_bambus_lounge.png": {
+   "inputs": "d31696d1318f317188234b3899e646ff716af56d4868bd4050e8e4cf94c65609",
+   "model": "vanillaplusadditions:block/cat_feeding_station_bambus_lounge",
+   "png": "6b5ba242d362cf2bb9c2a89b5bf6a4feb7cc79fa9acba043540d8222f37bfbcb",
+   "sources": [
+    "file:models/block/cat_feeding_station_bambus_lounge.json",
+    "file:textures/block/cat_feeding_station_bambus_lounge.png",
+    "file:textures/block/cat_feeding_station_bambus_lounge_glass.png",
+    "file:textures/block/cat_feeding_station_bambus_lounge_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_create_andesit.png": {
+   "inputs": "7e13ead5748eca7b4b80477ec52448542dce5b7a8eae27a4ada2fefafdb429f1",
+   "model": "vanillaplusadditions:block/cat_feeding_station_create_andesit",
+   "png": "bfb9a6a87bd7b07d83d5d0409d5355aaf098169c64f408548e5cabe8d9d5a222",
+   "sources": [
+    "file:models/block/cat_feeding_station_create_andesit.json",
+    "file:textures/block/cat_feeding_station_create_andesit.png",
+    "file:textures/block/cat_feeding_station_create_andesit_glass.png",
+    "file:textures/block/cat_feeding_station_create_andesit_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_deepslate_modern.png": {
+   "inputs": "1e9dd88f9ac30ed1de6fda1ad9277500b2991cd052d01ac26a25830ed9e669f0",
+   "model": "vanillaplusadditions:block/cat_feeding_station_deepslate_modern",
+   "png": "22d931067113fcbe1882cb403d132b66e889a8f8c474f8e23606f1d15398a030",
+   "sources": [
+    "file:models/block/cat_feeding_station_deepslate_modern.json",
+    "file:textures/block/cat_feeding_station_deepslate_modern.png",
+    "file:textures/block/cat_feeding_station_deepslate_modern_glass.png",
+    "file:textures/block/cat_feeding_station_deepslate_modern_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_dorf.png": {
+   "inputs": "a62b3d9307624fe0b71bbb967e92cbd8cd5ccdf4f659c005db960a1326b9572e",
+   "model": "vanillaplusadditions:block/cat_feeding_station_dorf",
+   "png": "784bb31f3a862924f38a610dd66d002c62d339b4dafc65983ec92c80af655d31",
+   "sources": [
+    "file:models/block/cat_feeding_station_dorf.json",
+    "file:textures/block/cat_feeding_station_dorf.png",
+    "file:textures/block/cat_feeding_station_dorf_glass.png",
+    "file:textures/block/cat_feeding_station_dorf_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_edle_dunkeleiche.png": {
+   "inputs": "97ebeb40b0c98e23f7025b5d3ef719f0d27951db46be7155f07719d6d626cce2",
+   "model": "vanillaplusadditions:block/cat_feeding_station_edle_dunkeleiche",
+   "png": "4602fe20c3d89855dc88de4ecf5ff39fbcd6335780342f149c53411cc2a6f83e",
+   "sources": [
+    "file:models/block/cat_feeding_station_edle_dunkeleiche.json",
+    "file:textures/block/cat_feeding_station_edle_dunkeleiche.png",
+    "file:textures/block/cat_feeding_station_edle_dunkeleiche_glass.png",
+    "file:textures/block/cat_feeding_station_edle_dunkeleiche_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_filled.png": {
+   "inputs": "88506543e64cbdd22ea07edb98003c3fd3c88de4be439bd82d63cef18a9dac21",
+   "model": "vanillaplusadditions:block/cat_feeding_station_filled",
+   "png": "86426a662fe2149c6c497e0688ed3a0759c4eb549ef12bd8c769d078fa4e58d8",
+   "sources": [
+    "file:models/block/cat_feeding_station_filled.json",
+    "file:textures/block/cat_feeding_station.png",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/models/block/cube.json",
+    "jar:assets/minecraft/textures/item/cod.png"
+   ]
+  },
+  "blocks/cat_feeding_station_gemuetliches_holz.png": {
+   "inputs": "7a123758784f977862685dbf4d5da7d34b9e18b5781fbd8473d835c0d4cfab60",
+   "model": "vanillaplusadditions:block/cat_feeding_station_gemuetliches_holz",
+   "png": "e8dc47824f447ea2895b20ddd691873523802938f2a3d861b004bc97ecef7ed1",
+   "sources": [
+    "file:models/block/cat_feeding_station_gemuetliches_holz.json",
+    "file:textures/block/cat_feeding_station_gemuetliches_holz.png",
+    "file:textures/block/cat_feeding_station_gemuetliches_holz_glass.png",
+    "file:textures/block/cat_feeding_station_gemuetliches_holz_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_hoehle.png": {
+   "inputs": "7aed58dfd1083673f7b0f51019d90815847e9edc7e90f23d7b15e7ccb0b46c2f",
+   "model": "vanillaplusadditions:block/cat_feeding_station_hoehle",
+   "png": "10118f5d3f3f723d4ae7e63da2c63f82a66fb9dc1b2567c4a6a8090474422597",
+   "sources": [
+    "file:models/block/cat_feeding_station_hoehle.json",
+    "file:textures/block/cat_feeding_station_hoehle.png",
+    "file:textures/block/cat_feeding_station_hoehle_glass.png",
+    "file:textures/block/cat_feeding_station_hoehle_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_kirschholz_cafe.png": {
+   "inputs": "9116177e6445a0daa61c201fc112cd3edf13eefa4cb6e881e8c901d36eb4500d",
+   "model": "vanillaplusadditions:block/cat_feeding_station_kirschholz_cafe",
+   "png": "98d4c451111bf213d3d680e2081dc296ce2338c91b91a96138e723757f77efd2",
+   "sources": [
+    "file:models/block/cat_feeding_station_kirschholz_cafe.json",
+    "file:textures/block/cat_feeding_station_kirschholz_cafe.png",
+    "file:textures/block/cat_feeding_station_kirschholz_cafe_glass.png",
+    "file:textures/block/cat_feeding_station_kirschholz_cafe_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_stein_bistro.png": {
+   "inputs": "00bcdd9bf18d5acc2db5c6de1b3f57951a00d821036cd6707e08aaee4d01f57d",
+   "model": "vanillaplusadditions:block/cat_feeding_station_stein_bistro",
+   "png": "34709b757b4ab9cf0d7e411639cd221d19fb789b4b628bee98335c1100b56e34",
+   "sources": [
+    "file:models/block/cat_feeding_station_stein_bistro.json",
+    "file:textures/block/cat_feeding_station_stein_bistro.png",
+    "file:textures/block/cat_feeding_station_stein_bistro_glass.png",
+    "file:textures/block/cat_feeding_station_stein_bistro_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_steinmetz.png": {
+   "inputs": "62a9f8980bac183b3007f94b4e372ed3911e573c8931c93d5a755c91415c84a5",
+   "model": "vanillaplusadditions:block/cat_feeding_station_steinmetz",
+   "png": "e40bd459373636e818b7942e627cfeffac3e348b8b9bc44bb5799b47172154b2",
+   "sources": [
+    "file:models/block/cat_feeding_station_steinmetz.json",
+    "file:textures/block/cat_feeding_station_steinmetz.png",
+    "file:textures/block/cat_feeding_station_steinmetz_glass.png",
+    "file:textures/block/cat_feeding_station_steinmetz_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wiesengarten.png": {
+   "inputs": "59ef2e0fd94544f79cdc399741e606ac8751eac43fec040f70cdae1f58f73da4",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wiesengarten",
+   "png": "20baa93b21103c8d720dbb0e209e6c28913589506d935e44e71b2ccb1b591ca2",
+   "sources": [
+    "file:models/block/cat_feeding_station_wiesengarten.json",
+    "file:textures/block/cat_feeding_station_wiesengarten.png",
+    "file:textures/block/cat_feeding_station_wiesengarten_glass.png",
+    "file:textures/block/cat_feeding_station_wiesengarten_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_blau.png": {
+   "inputs": "abc002adcff3a628dbe533863f2655cca85f556f2b45d86f99720eb2d36fa07f",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_blau",
+   "png": "c075f976c0caa0f1fd42ca959190378b88052edb9f218e12b9118d9dd02932da",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_blau.json",
+    "file:textures/block/cat_feeding_station_wolle_blau.png",
+    "file:textures/block/cat_feeding_station_wolle_blau_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_blau_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_braun.png": {
+   "inputs": "d9936b529a996c26664df60b1284183f557298fb0882ca34a8cf90aba5b2f306",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_braun",
+   "png": "eff78bf35a2be170b2efd4b34f77da431688e694a39299b397a2088be9b893ab",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_braun.json",
+    "file:textures/block/cat_feeding_station_wolle_braun.png",
+    "file:textures/block/cat_feeding_station_wolle_braun_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_braun_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_gelb.png": {
+   "inputs": "46927c62e60afa952ed3c53b04d75f54b6ba74d93e1af98f55347db2c4c27de9",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gelb",
+   "png": "d104ad7a7fa1f70ee5a330044b57f4d640b4ffc21d301ae2a71ca67fd19fd2ff",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_gelb.json",
+    "file:textures/block/cat_feeding_station_wolle_gelb.png",
+    "file:textures/block/cat_feeding_station_wolle_gelb_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_gelb_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_grau.png": {
+   "inputs": "ce56a960689bf741d0435090c500ad4d4c553afcfe8062c67ddb46f6c2916975",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_grau",
+   "png": "2ddd2edd672e88b940ba1a4fff404c5fc0bfd61d73dc1cf2a72b66c6904ad4a6",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_grau.json",
+    "file:textures/block/cat_feeding_station_wolle_grau.png",
+    "file:textures/block/cat_feeding_station_wolle_grau_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_grau_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_gruen.png": {
+   "inputs": "751a03925f4c3a8267885ebac287d035b1159f605e1bc8d17be62a1579fcb433",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_gruen",
+   "png": "e512db03bf21e842720792d36dd32d2e71c8b32fa8aac2165aed9fa1c742a54b",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_gruen.json",
+    "file:textures/block/cat_feeding_station_wolle_gruen.png",
+    "file:textures/block/cat_feeding_station_wolle_gruen_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_gruen_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_hellblau.png": {
+   "inputs": "f8354650757e0e53fe587c5e0c7517976e0fabbd4a24af2986e3f86332b4d6ba",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellblau",
+   "png": "06be399367603c7bf26c8b09ff2c55d4ddab1cd5416f6f3f1ea3f9884ff6b649",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_hellblau.json",
+    "file:textures/block/cat_feeding_station_wolle_hellblau.png",
+    "file:textures/block/cat_feeding_station_wolle_hellblau_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_hellblau_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_hellgrau.png": {
+   "inputs": "ad5b5179d806a3eda00d55de646244e55a40895f20961432a7f64b373666a43e",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgrau",
+   "png": "f944ae4c74f2055eb3f7ded9ce7e757f743d9d8f3520727009c40287917c254d",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_hellgrau.json",
+    "file:textures/block/cat_feeding_station_wolle_hellgrau.png",
+    "file:textures/block/cat_feeding_station_wolle_hellgrau_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_hellgrau_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_hellgruen.png": {
+   "inputs": "cd5ff3842516cef84438d1b634a60d28fec52ccf9a00870954cb73006c4f9abf",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_hellgruen",
+   "png": "3de0242bd2da77d42438c4a5691e88f7f7adf272df28e5dcd50e399c37526c51",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_hellgruen.json",
+    "file:textures/block/cat_feeding_station_wolle_hellgruen.png",
+    "file:textures/block/cat_feeding_station_wolle_hellgruen_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_hellgruen_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_magenta.png": {
+   "inputs": "02d39c096d80db0da3e502ef4b2a6c37c948590389b4b83c82dca6ed30726de5",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_magenta",
+   "png": "e9a33663ee0a1982e7b9c59df355694a9b7f5a50bcdc952a5c25c5ab25622fb8",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_magenta.json",
+    "file:textures/block/cat_feeding_station_wolle_magenta.png",
+    "file:textures/block/cat_feeding_station_wolle_magenta_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_magenta_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_orange.png": {
+   "inputs": "588afa8ff78dba03380d37529588ecb32e210449cfedd88c9a0dcff1b05a0e1e",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_orange",
+   "png": "48157a7e710fc02b5ccb95c9bc52f2600107a56922de6f103f19a581bb129833",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_orange.json",
+    "file:textures/block/cat_feeding_station_wolle_orange.png",
+    "file:textures/block/cat_feeding_station_wolle_orange_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_orange_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_rosa.png": {
+   "inputs": "6dae26ebf1eb0aa5a6a2b6621a2bf190c72673a6ccebf1446a918719da0512c8",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rosa",
+   "png": "db2ec88b8fe8948ce4b65835b5454e8979eb70be6e09fe8f6bee9f3ce7741173",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_rosa.json",
+    "file:textures/block/cat_feeding_station_wolle_rosa.png",
+    "file:textures/block/cat_feeding_station_wolle_rosa_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_rosa_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_rot.png": {
+   "inputs": "3feb2affc5be4cde70c8dfde1327bcf34ea5163bedf80104a90b7e584647fb22",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_rot",
+   "png": "f9542150fab45b484e0dfcb3f129c69de65b0c1537cf340f33f3825bce486324",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_rot.json",
+    "file:textures/block/cat_feeding_station_wolle_rot.png",
+    "file:textures/block/cat_feeding_station_wolle_rot_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_rot_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_schwarz.png": {
+   "inputs": "9fbaa63190e852edd3a0aac1e4aa112931a864dfaa1d828cadc45bdfe0dc9aad",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_schwarz",
+   "png": "e2c443cf96420ac45210fa83c62bf79c7dfbabede076e6448d47dae401297cba",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_schwarz.json",
+    "file:textures/block/cat_feeding_station_wolle_schwarz.png",
+    "file:textures/block/cat_feeding_station_wolle_schwarz_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_schwarz_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_tuerkis.png": {
+   "inputs": "8c7bec0887d3fde8bee41dc93d3005ebc3b1b11fd782f6f7810e38ea40d456c8",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_tuerkis",
+   "png": "95600883175ba7e2bad2bd280ed470b2bae43fce90ad3115548c66c1da3b0d6e",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_tuerkis.json",
+    "file:textures/block/cat_feeding_station_wolle_tuerkis.png",
+    "file:textures/block/cat_feeding_station_wolle_tuerkis_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_tuerkis_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_violett.png": {
+   "inputs": "3879d73d234f4aa3c8c7f6028d52e6df9cc56493ed45fb2d660b1f3bb9072453",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_violett",
+   "png": "2f2acf92c0990d14df8bb06e374ed7124967a3797ac2cb8f19d74f4be643c4c1",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_violett.json",
+    "file:textures/block/cat_feeding_station_wolle_violett.png",
+    "file:textures/block/cat_feeding_station_wolle_violett_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_violett_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/cat_feeding_station_wolle_weiss.png": {
+   "inputs": "1310dc34bbe649d56d73345f1225816192b1f5d7b99bbb98cc75392b7775efcd",
+   "model": "vanillaplusadditions:block/cat_feeding_station_wolle_weiss",
+   "png": "1baf9fc5342aa3c8138d9156d6678533ba3530778b4f6564be9c7f2958f66cd3",
+   "sources": [
+    "file:models/block/cat_feeding_station_wolle_weiss.json",
+    "file:textures/block/cat_feeding_station_wolle_weiss.png",
+    "file:textures/block/cat_feeding_station_wolle_weiss_glass.png",
+    "file:textures/block/cat_feeding_station_wolle_weiss_trim.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/chunk_anchor.png": {
+   "inputs": "82b27b4903e34c8dab0b5fc64b6de2da4292b0f30cb9d7fdeb013a91c74a9e4a",
+   "model": "vanillaplusadditions:item/chunk_anchor",
+   "png": "f232015d907dcbb84e8ee6f3aeb46f81c0373656b37b0570fa87d1aa14572b4d",
+   "sources": [
+    "file:models/block/chunk_anchor.json",
+    "file:models/item/chunk_anchor.json",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/models/block/cube.json",
+    "jar:assets/minecraft/models/block/cube_bottom_top.json",
+    "jar:assets/minecraft/textures/block/lodestone_side.png",
+    "jar:assets/minecraft/textures/block/lodestone_top.png"
+   ]
+  },
+  "blocks/chunk_anchor_active.png": {
+   "inputs": "23067a3de06cfbd39c4d24ed68e8a8b1d12baa8b628f7a185f2db88a19b8ef51",
+   "model": "vanillaplusadditions:block/chunk_anchor_active",
+   "png": "f6e9b1aaa44ac8fd35f5ca75edcfa43da93922a29a5f58dd14362ffd7ba38db5",
+   "sources": [
+    "file:models/block/chunk_anchor_active.json",
+    "file:textures/block/chunk_anchor_active_side.png",
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/models/block/cube.json",
+    "jar:assets/minecraft/models/block/cube_bottom_top.json",
+    "jar:assets/minecraft/textures/block/lodestone_top.png"
+   ]
+  },
+  "blocks/chunk_loader_rail.png": {
+   "inputs": "b69f2660461fe2bc438f0f6fe3e4729b92283ce6c3526a80e2e933c680d4fc72",
+   "model": "vanillaplusadditions:block/chunk_loader_rail",
+   "png": "252f00a42dd0fb7d37481474b9143ee01280659df361efae242caafb5fab4f8e",
+   "sources": [
+    "file:models/block/chunk_loader_rail.json",
+    "file:textures/block/chunk_loader_rail.png",
+    "jar:assets/minecraft/models/block/rail.json",
+    "jar:assets/minecraft/models/block/rail_flat.json"
+   ]
+  },
+  "blocks/chunk_loader_rail_corner.png": {
+   "inputs": "b897bbafc5ccbf310e5b3764dcd3efe6fff9bd4cba030e943e76f5c6e939ca0c",
+   "model": "vanillaplusadditions:block/chunk_loader_rail_corner",
+   "png": "1e56c1df45663de26e9cb79c35908b2515ce5404fc00353dd691b06235c06c91",
+   "sources": [
+    "file:models/block/chunk_loader_rail_corner.json",
+    "file:textures/block/chunk_loader_rail_corner.png",
+    "jar:assets/minecraft/models/block/rail_corner.json",
+    "jar:assets/minecraft/models/block/rail_curved.json"
+   ]
+  },
+  "blocks/chunk_loader_rail_raised_ne.png": {
+   "inputs": "21c2a55b1ee94ff69d37d58dd3a99abcbefaa8beff1e54eea53e74737b5c9e96",
+   "model": "vanillaplusadditions:block/chunk_loader_rail_raised_ne",
+   "png": "2373639afc408f3c03d186e08dfa7ed1484eaff8a6319d74f850e553c1dfe91d",
+   "sources": [
+    "file:models/block/chunk_loader_rail_raised_ne.json",
+    "file:textures/block/chunk_loader_rail.png",
+    "jar:assets/minecraft/models/block/rail_raised_ne.json",
+    "jar:assets/minecraft/models/block/template_rail_raised_ne.json"
+   ]
+  },
+  "blocks/chunk_loader_rail_raised_sw.png": {
+   "inputs": "79c2ec009b0b27feb90cd6bd0f7bbd9acf7a33054ff0fa414c03b97a06046fb3",
+   "model": "vanillaplusadditions:block/chunk_loader_rail_raised_sw",
+   "png": "76b9a517cd03c369ebdd11dfcad5c41c5cd107b047fcd782293d617af6f07f68",
+   "sources": [
+    "file:models/block/chunk_loader_rail_raised_sw.json",
+    "file:textures/block/chunk_loader_rail.png",
+    "jar:assets/minecraft/models/block/rail_raised_sw.json",
+    "jar:assets/minecraft/models/block/template_rail_raised_sw.json"
+   ]
+  },
+  "blocks/chunk_loader_track__ascending.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/ascending uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_d1_xo.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/cross_d1_xo uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_d1_zo.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/cross_d1_zo uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_d2_xo.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/cross_d2_xo uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_d2_zo.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/cross_d2_zo uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_diag.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/cross_diag uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__cross_ortho.png": {
+   "reason": "reference 'create:block/track/cross_ortho' lives in the 'create' namespace: that asset ships with another mod and is not in this repository",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__diag.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/diag uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__diag_2.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/diag_2 uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__obj_track.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/obj_track has no elements anywhere in its parent chain (vanillaplusadditions:block/chunk_loader_track/obj_track); it is a template other models inherit from, not geometry",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__segment_left.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/segment_left uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__segment_right.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/segment_right uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__teleport.png": {
+   "reason": "reference 'create:block/track/teleport' lives in the 'create' namespace: that asset ships with another mod and is not in this repository",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__tie.png": {
+   "reason": "model vanillaplusadditions:block/chunk_loader_track/tie uses the custom loader 'neoforge:obj' - the geometry lives outside the JSON (an .obj shipped by another mod), not in vanilla elements",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__x_ortho.png": {
+   "reason": "reference 'create:block/track/x_ortho' lives in the 'create' namespace: that asset ships with another mod and is not in this repository",
+   "skipped": true
+  },
+  "blocks/chunk_loader_track__z_ortho.png": {
+   "reason": "reference 'create:block/track/z_ortho' lives in the 'create' namespace: that asset ships with another mod and is not in this repository",
+   "skipped": true
+  },
+  "blocks/end_conduit.png": {
+   "reason": "parent builtin/entity - vanilla draws conduits with a BlockEntityRenderer from geometry hard-coded in Java; neither this mod's model nor vanilla's block/conduit.json holds any elements, so there is nothing to derive",
+   "skipped": true
+  },
+  "blocks/mob_loader.png": {
+   "inputs": "a81a002409144dcec1df6999058efbe4f2c4ebaa0bbc428a6440f8b90f5a7f17",
+   "model": "vanillaplusadditions:item/mob_loader",
+   "png": "8fef574a70d94a79d1ad300ad109337d246d5c572298fb2fb717e43a7cc5d655",
+   "sources": [
+    "file:models/block/mob_loader.json",
+    "file:models/item/mob_loader.json",
+    "file:textures/block/mob_loader_in.png",
+    "file:textures/block/mob_loader_out.png",
+    "file:textures/block/mob_loader_side.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/mob_loader_inactive.png": {
+   "inputs": "bf1fa7257e38a3006255f22423d2bc372c7f7538ff75551ce014914bb9c76276",
+   "model": "vanillaplusadditions:block/mob_loader_inactive",
+   "png": "48852598389f61844abecdc2d54778174bd1502586c33136edd54653f8885a22",
+   "sources": [
+    "file:models/block/mob_loader_inactive.json",
+    "file:textures/block/mob_loader_in_off.png",
+    "file:textures/block/mob_loader_out_off.png",
+    "file:textures/block/mob_loader_side_off.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/mob_unloader.png": {
+   "inputs": "0caaf9258e78e1c083919eab7041ecd8d04818e8939ee15a78e84627b838b052",
+   "model": "vanillaplusadditions:item/mob_unloader",
+   "png": "73905eb4cd53d271c709e6301dd373c7db2992d1dc368bcceb68e7a05e1b5a91",
+   "sources": [
+    "file:models/block/mob_unloader.json",
+    "file:models/item/mob_unloader.json",
+    "file:textures/block/mob_unloader_in.png",
+    "file:textures/block/mob_unloader_out.png",
+    "file:textures/block/mob_unloader_side.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "blocks/mob_unloader_inactive.png": {
+   "inputs": "271df7d2c8e50b942119bc9e02217ac94272337bc8db532c65fd75e5e2b394ac",
+   "model": "vanillaplusadditions:block/mob_unloader_inactive",
+   "png": "48852598389f61844abecdc2d54778174bd1502586c33136edd54653f8885a22",
+   "sources": [
+    "file:models/block/mob_unloader_inactive.json",
+    "file:textures/block/mob_unloader_in_off.png",
+    "file:textures/block/mob_unloader_out_off.png",
+    "file:textures/block/mob_unloader_side_off.png",
+    "jar:assets/minecraft/models/block/block.json"
+   ]
+  },
+  "items/axolotl_armor_diamond.png": {
+   "inputs": "44a52fc30b427c941610e852dce6ba5cba3672e6560e0bbb9528ec515ccd5177",
+   "model": "vanillaplusadditions:item/axolotl_armor_diamond",
+   "png": "06452a98d64dff9df24f04a95c75287f3d7ea22ae27b4458be9f049f38679854",
+   "sources": [
+    "file:models/item/axolotl_armor_diamond.json",
+    "file:textures/item/axolotl_armor_diamond.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/axolotl_armor_gold.png": {
+   "inputs": "cd1be8aa7cf5f4fb831246c177f4a34167c0e6363d890e4c01b9469db2536ff9",
+   "model": "vanillaplusadditions:item/axolotl_armor_gold",
+   "png": "b56c374bab77a77d567841d670495f509360e57c312a2fd9dcaba28f808891d1",
+   "sources": [
+    "file:models/item/axolotl_armor_gold.json",
+    "file:textures/item/axolotl_armor_gold.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/axolotl_armor_iron.png": {
+   "inputs": "f4e1e43cb10acead35e1ecc240e2b6f45241da47529f8e7b9b203dfd9df45c24",
+   "model": "vanillaplusadditions:item/axolotl_armor_iron",
+   "png": "82ae71fb6dfb168ac8c50875cd0d3adf35fe334e301262ea4173665a984c9fea",
+   "sources": [
+    "file:models/item/axolotl_armor_iron.json",
+    "file:textures/item/axolotl_armor_iron.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/axolotl_armor_netherite.png": {
+   "inputs": "b16abf5e3e6f6a4152d204be9db3c73507c76087f4e040d283c6ec9cf5677ffd",
+   "model": "vanillaplusadditions:item/axolotl_armor_netherite",
+   "png": "7da149052a0bdd421057b6fc5c8b774311e45632db834a0ede6506bb0ee7a5b0",
+   "sources": [
+    "file:models/item/axolotl_armor_netherite.json",
+    "file:textures/item/axolotl_armor_netherite.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/cat_armor_diamond.png": {
+   "inputs": "207d51d6043fff45c545f00c277b3956835b6640c541652bdaf51c915da4ec66",
+   "model": "vanillaplusadditions:item/cat_armor_diamond",
+   "png": "3f86e53ca26b06a17e6066b6f400cce305f0c1705fb364654ff1d335ed928f1d",
+   "sources": [
+    "file:models/item/cat_armor_diamond.json",
+    "file:textures/item/cat_armor_diamond.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/cat_armor_gold.png": {
+   "inputs": "ffef1ad914fababb081e18f9cf86f1a4a5928633956c3f551f6f2f51bb340395",
+   "model": "vanillaplusadditions:item/cat_armor_gold",
+   "png": "afc88b922c2936408b027c08df030bb25ec6cb811fa0950a2598ff05b535a303",
+   "sources": [
+    "file:models/item/cat_armor_gold.json",
+    "file:textures/item/cat_armor_gold.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/cat_armor_iron.png": {
+   "inputs": "b981c30f3240bd4494bcbc79b15a751ad6e226e91cc7090a35eb89340b6814be",
+   "model": "vanillaplusadditions:item/cat_armor_iron",
+   "png": "5907bb2aa92f9dacda59ff6aaad6c4a485c72bbcc3939b92355504203806f3c7",
+   "sources": [
+    "file:models/item/cat_armor_iron.json",
+    "file:textures/item/cat_armor_iron.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/cat_armor_netherite.png": {
+   "inputs": "956ab2bb07ad1a652878096a595fb9158034868409fef933c1e2a444a17db3c0",
+   "model": "vanillaplusadditions:item/cat_armor_netherite",
+   "png": "942ee65150c738e1a9399eedb02eff742c1ec6cd77ec49fa92d81fea639fdb26",
+   "sources": [
+    "file:models/item/cat_armor_netherite.json",
+    "file:textures/item/cat_armor_netherite.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/chunk_loader_rail.png": {
+   "inputs": "0fca5f5608d47e39880044482909e1c216fdda68bacb9049fd26431a149f5a0a",
+   "model": "vanillaplusadditions:item/chunk_loader_rail",
+   "png": "ef2c081afd9d8bea941b3c04bf8773551300009fd2338e99a5fa289427a2a65a",
+   "sources": [
+    "file:models/item/chunk_loader_rail.json",
+    "file:textures/block/chunk_loader_rail.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/chunk_loader_track.png": {
+   "inputs": "4f306a16f6b4c57353d2ef4882cc7c2c96f86f7af0c593bb21a6f5d140b20dbb",
+   "model": "vanillaplusadditions:item/chunk_loader_track",
+   "png": "3d49394e5008acace2b35b490a1b0bfc978223e6e5153407f180837e39d5644b",
+   "sources": [
+    "file:models/item/chunk_loader_track.json",
+    "file:textures/item/chunk_loader_track.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/cooked_flying_fish.png": {
+   "inputs": "baa295edc9b433296850ee2712573dc462d22f1d7bc66bddb42ecd1b2dfebf03",
+   "model": "vanillaplusadditions:item/cooked_flying_fish",
+   "png": "70887cd445b1ddf5bc02e68552d1ff727f3eff2b8d2a5194ed725a4871acb296",
+   "sources": [
+    "file:models/item/cooked_flying_fish.json",
+    "file:textures/item/cooked_flying_fish.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/fire_arrow.png": {
+   "inputs": "8b28d786a4d2a14547367c7efbc1c8f314a32b67bad5af1c6e3f99a36b137d5d",
+   "model": "vanillaplusadditions:item/fire_arrow",
+   "png": "ddc05fc91864770abfa40bf61fddb6d44b2061e1ea65b8f32ad22201af4989b2",
+   "sources": [
+    "file:models/item/fire_arrow.json",
+    "file:textures/item/fire_arrow.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/flying_fish.png": {
+   "inputs": "0701545881057c9c1f292d560dd74dea7a4ef87a9cfa0852a14e8e845d1e8318",
+   "model": "vanillaplusadditions:item/flying_fish",
+   "png": "34fbee2f9c93c3c65fbf82750505c6c418b53039c59b05cb0e6a5fa937d98103",
+   "sources": [
+    "file:models/item/flying_fish.json",
+    "file:textures/item/flying_fish.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/flying_fish_boots.png": {
+   "inputs": "d8d4288d710e119214866df927d0d2d34dfc7f6be2d89066d9ba5c00c7944182",
+   "model": "vanillaplusadditions:item/flying_fish_boots",
+   "png": "46a59e56f4727955526715a8b891cedeb342287ab7de3a5d47e884c4938ae9b7",
+   "sources": [
+    "file:models/item/flying_fish_boots.json",
+    "file:textures/item/flying_fish_boots.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/flying_fish_bucket.png": {
+   "inputs": "6391559d601be29667470592293afb827dd95849ec50be6c1af9de843a32c1d5",
+   "model": "vanillaplusadditions:item/flying_fish_bucket",
+   "png": "e90adcda266be0ec47f652f64998f4809d8e010bbadebf673c7690ba031344f4",
+   "sources": [
+    "file:models/item/flying_fish_bucket.json",
+    "file:textures/item/flying_fish_bucket.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/flying_fish_spawn_egg.png": {
+   "inputs": "984a01298be0022fcb343820ea706966e9109e9f23a935220b71dc5fb34a4306",
+   "model": "vanillaplusadditions:item/flying_fish_spawn_egg",
+   "png": "5268aa1723c4268687cf15044c6fd5956072582d5863a6d35f6b85d3dffec2a9",
+   "sources": [
+    "file:models/item/flying_fish_spawn_egg.json",
+    "jar:assets/minecraft/models/item/generated.json",
+    "jar:assets/minecraft/models/item/template_spawn_egg.json",
+    "jar:assets/minecraft/textures/item/spawn_egg.png",
+    "jar:assets/minecraft/textures/item/spawn_egg_overlay.png"
+   ]
+  },
+  "items/wolf_armor_diamond.png": {
+   "inputs": "f41db41deb360b2793a0545dda7309f907641d00a2fb0ca49c8a1dd4b7cc25df",
+   "model": "vanillaplusadditions:item/wolf_armor_diamond",
+   "png": "56128149faa9c7b177bb027659fb9e9d6cba8ade6cadb8b29293e6ce18a5add1",
+   "sources": [
+    "file:models/item/wolf_armor_diamond.json",
+    "file:textures/item/wolf_armor_diamond.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/wolf_armor_gold.png": {
+   "inputs": "c105a6dcb9f86b8e26e11345635a8c996a7b3868d810f8d7655aef40fa6fcbe5",
+   "model": "vanillaplusadditions:item/wolf_armor_gold",
+   "png": "619d872114c2f12908b0ceb51b9de3c80dbab0565c3d188e69c1f906257ffb91",
+   "sources": [
+    "file:models/item/wolf_armor_gold.json",
+    "file:textures/item/wolf_armor_gold.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/wolf_armor_iron.png": {
+   "inputs": "4a0c088855616981df5fff9f72a9ed8c352a829386f5630ad6c4bfcd103dbdd4",
+   "model": "vanillaplusadditions:item/wolf_armor_iron",
+   "png": "4a87670223c4f8ab72d27e72c87493d6e3bfba50e3df5ae8443f10d9c53daf96",
+   "sources": [
+    "file:models/item/wolf_armor_iron.json",
+    "file:textures/item/wolf_armor_iron.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/wolf_armor_netherite.png": {
+   "inputs": "7594fec94d14ef029a49d49199bda7ea9c8961f835460d8048fcf863dfcaa61c",
+   "model": "vanillaplusadditions:item/wolf_armor_netherite",
+   "png": "b530515fc6c9b6f74779b2c3d044fa2a4f7f692a617905b2940172a81c3591f6",
+   "sources": [
+    "file:models/item/wolf_armor_netherite.json",
+    "file:textures/item/wolf_armor_netherite.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/world_compass.png": {
+   "inputs": "93b2adf4b85e61ca19e68ca918db04750ca1e430a9d8facf730209d6c140e7cc",
+   "model": "vanillaplusadditions:item/world_compass",
+   "png": "859295f35902cb1cb53194160abbf5f20a9f88b8fd4835e2e1305a09a1c61e90",
+   "sources": [
+    "file:models/item/world_compass.json",
+    "file:textures/item/world_compass_16.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  }
+ },
+ "renderer": "1.0.0"
+}

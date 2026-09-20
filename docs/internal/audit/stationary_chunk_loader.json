@@ -1,0 +1,50 @@
+{
+ "moduleId": "stationary_chunk_loader",
+ "claimsChecked": 58,
+ "problems": [
+  {
+   "quote": "Its own module javadoc says \"permanently keeps the chunk it stands in loaded\" and forgets to mention this; the block's javadoc and the README get it right.",
+   "issue": "The README does NOT get it right any more. The working-tree README.md contains the words \"redstone\", \"powered\" and \"lever\" exactly zero times (`grep -i` over the whole file). The only two places the module appears are the table row at README.md:66 (name / Docs link / jar / deps, no prose) and the grouped teaser at README.md:156, which lumps it in with the rail and the Create track as \"each keeping a rolling window of chunks loaded\" — no redstone gate, and \"rolling window\" is wrong for a fixed anchor. The claim was true at HEAD (README.md:87 read \"...while redstone-powered...\"), but README.md is modified in this working tree (202 insertions / 294 deletions) and that sentence is gone. The page therefore cites, as corroboration, a document that no longer says it.",
+   "correction": "Either drop the README from the sentence (\"the block's javadoc gets it right\") or, better, note that neither the module javadoc nor the rewritten README mentions the redstone gate — which makes the block javadoc the only correct source in the repo. Worth also fixing README.md:156, whose \"rolling window of chunks\" describes the rail and the train track, not the anchor.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "In-memory tracking for that level is dropped without releasing; the tickets die with the level.",
+   "issue": "Mechanism is wrong, and it contradicts what the same page says two sections earlier. NeoForge does not throw forced-chunk tickets away when a level unloads: `ForcedChunkManager.forceChunk` writes them into the level's own `ForcedChunksSavedData` under the SavedData name \"chunks\" (ForcedChunkManager.java:87,101), and `ForcedChunkManager.reinstatePersistentChunks(ServerLevel, ForcedChunksSavedData)` re-adds every stored block/entity ticket on the next level load (:129-153). They survive the unload on disk. What actually removes them is this module's own LoadingValidationCallback, which the page describes correctly under \"Pause, resume and restart\" (\"drops every block ticket it owns whenever a world loads\") — i.e. the tickets are reinstated and then dropped at load time, not \"died\" at unload time. The page is repeating the (also wrong) javadoc on `StationaryChunkLoaderManager.forgetLevel`.",
+   "correction": "\"In-memory tracking for that level is dropped without releasing. The tickets themselves are persisted by NeoForge in the level's own forced-chunk data and are reinstated when the level loads again — the module's validation callback is what drops them there. The saved anchor set is untouched, so the anchors come back on the next resume.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Its own module javadoc says \"permanently keeps the chunk it stands in loaded\"",
+   "issue": "Inaccurate quotation. StationaryChunkLoaderModule.java:48-49 actually reads: \"permanently keeps the chunk it stands in (plus a configurable radius) loaded\". The page silently elides the parenthesis without an ellipsis, inside quotation marks.",
+   "correction": "Quote it as \"permanently keeps the chunk it stands in (plus a configurable radius) loaded\", or mark the elision: \"permanently keeps the chunk it stands in … loaded\".",
+   "severity": "style"
+  },
+  {
+   "quote": "An anchor with no signal is an ordinary decorative block: it loads nothing, and it is not even written to the save file.",
+   "issue": "Ambiguous to the point of being read as false. The block itself absolutely is written to the save file — it is an ordinary block in the chunk. What is not written is its position in the `vanillaplusadditions_chunk_anchor` SavedData, because `onAnchorActive` (the only writer of `ChunkAnchorData`) is only reached from the powered branches. At this point in the page the reader has not yet met that saved-data set (it is introduced three sections later), so \"the save file\" has no referent but the world save. The same wording recurs in the limits table (\"is not persisted\").",
+   "correction": "\"...it loads nothing, and its position is never written into the module's anchor list — an unpowered anchor is invisible to the whole chunk-loading machinery.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "JAVA SOURCE — StationaryChunkLoaderModule.java:79,139-149 — `private boolean forcingEnabled = false;`",
+   "issue": "GENUINE BUG (not a page error, reported per the task's second ask). `forcingEnabled` is an instance field on a module object that outlives an integrated server, and nothing ever resets it — there is no ServerStopping/ServerStopped handler anywhere in the module (`grep` confirms `forcingEnabled` is only touched in `onServerTick` and read in `onAnchorActive`). With `only_while_players_online = false`, `shouldLoad` is constantly `true`, so the `false -> true` transition that calls `manager.resume(...)` can only ever fire once per JVM. In singleplayer, leaving world A and opening world B in the same session therefore never resumes B's persisted anchors: `LevelEvent.Unload` has cleared the `forced` map via `forgetLevel`, `forcingEnabled` is still `true`, and no further transition is possible. The anchors stay dead until each one is manually unpowered and re-powered. Exactly the config value the page recommends for overnight farms is the one that triggers it. (With the default `true` it happens to self-heal, because the integrated server ticks with 0 players before the client connects.) The same pattern exists in MinecartChunkLoadingModule:84 and TrainChunkLoadingModule:83, where a stale `true` is benign because those modules re-add tickets every tick.",
+   "correction": "Reset `forcingEnabled = false` on `ServerStoppedEvent` (or key the flag per MinecraftServer instead of per module instance).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "JAVA SOURCE — StationaryChunkLoaderManager.java:119 — `/** Drops in-memory tracking for an unloading level (tickets vanish with the level). */`",
+   "issue": "WRONG COMMENT (not a page error). \"Tickets vanish with the level\" is false: NeoForge persists them in the level's `ForcedChunksSavedData` (\"chunks\") and reinstates them on the next load (ForcedChunkManager.java:87,101,129-153). They are removed by this module's own LoadingValidationCallback at load time, not by the unload. The doc page inherited this error (see finding 2). Related, ChunkAnchorData.java:13-14 has a second wrong comment: \"an anchor keeps its chunk loaded until the block is broken\" — it also stops the moment the redstone signal drops, via `onAnchorInactive`.",
+   "correction": "\"Drops in-memory tracking for an unloading level; the persisted tickets are cleared by our LoadingValidationCallback when the level loads again.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "JAVA SOURCE — AnchorBorderRenderer.java:37,44-49 — `private long lastScan = Long.MIN_VALUE;` / `if (now >= lastScan + SCAN_INTERVAL)`",
+   "issue": "GENUINE BUG, cosmetic/client-only (not a page error). `lastScan` holds a raw `level.getGameTime()` and is never reset when the player changes world or server, and the `anchors` map is never cleared on world change either. Joining a world whose game time is lower than the previous one (a fresh world, or a server younger than the singleplayer world you just left) makes `now >= lastScan + 20` false until the new world's game time catches up, so the overlay keeps drawing the previous world's anchor boxes — potentially for in-game days.",
+   "correction": "Clear `anchors` and reset `lastScan` on world change (e.g. track `mc.level` identity in `clientTick` and reset when it differs), or compare with `Math.abs(now - lastScan) >= SCAN_INTERVAL`.",
+   "severity": "wrong"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

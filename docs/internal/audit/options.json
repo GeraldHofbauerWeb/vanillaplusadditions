@@ -1,0 +1,20 @@
+{
+ "moduleId": "options",
+ "claimsChecked": 80,
+ "problems": [
+  {
+   "quote": "The check runs on the **first** `ClientTickEvent.Post` of the session — at the title screen, before any world is loaded — and never again; a static flag makes it one-shot.",
+   "issue": "\"at the title screen\" is wrong. Minecraft.run() calls runTick(!flag) with flag=false, and runTick(boolean renderLevel) executes the tick loop from the very first frame (Minecraft.java:1141, 1165-1167). The @EventBusSubscriber is already registered by then, because mods are constructed inside the Minecraft constructor (Minecraft.java:492 -> ClientModLoader.begin -> CommonModLoader.begin:46-49 -> ModLoader.gatherAndInitializeMods). The TitleScreen is only set by the runnable built in buildInitialScreens (Minecraft.java:663-672), which runs after the initial resource reload finishes. So the first ClientTickEvent.Post fires while the startup loading overlay is still on screen, before the title screen exists.",
+   "correction": "Replace \"at the title screen\" with something like \"during the startup loading screen, before the title screen even appears\". The rest of the sentence (once per launch, before any world is loaded, one-shot via the static flag) is correct and should stay.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "You get a stack trace rather than the friendly error line.",
+   "issue": "True for the command, understated for the GUI. NeoForge's ClientCommandHandler.runCommand has a `catch (Exception generic)` that logs the stack trace and sends the generic \"command.failed\" chat line, so the command survives. The GUI button has no such catch: the unchecked exception escapes Screen.mouseClicked and is caught only by Minecraft.run()'s `catch (Throwable)`, which writes a crash report and ends the game. The preceding claim in the same row (\"neither call site catches because both catch IOException only\") is accurate.",
+   "correction": "Distinguish the two call sites, e.g. \"From the command you get the generic 'command.failed' line plus a stack trace in the log; from the Backups screen there is nothing to catch it and the client crashes with a crash report.\"",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

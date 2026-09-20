@@ -1,0 +1,43 @@
+{
+  "moduleId": "death_coordinates",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "The coordinates go in raw as well, so the teleport lands on the block corner and puts you wherever the death was, lava and void included.",
+      "issue": "Wrong claim about vanilla. /tp parses its position with Vec3Argument.vec3(), i.e. centerCorrect = true (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/server/commands/TeleportCommand.java:45 and .../commands/arguments/coordinates/Vec3Argument.java:31). WorldCoordinates.parseDouble centre-corrects the X and Z components only (WorldCoordinates.java:80-89), and WorldCoordinate.parseDouble adds 0.5 to any argument with no decimal point (WorldCoordinate.java:37). The command built at DeathCoordinatesModule.java:117-123 passes plain integers, so `tp @s 112 63 -408` lands at X=112.5 / Y=63.0 / Z=-407.5 — the horizontal centre of the block, not its corner.",
+      "correction": "Say that the integer coordinates are centre-corrected by /tp itself: the clicker lands in the middle of the death block (X+0.5 / Z+0.5, Y unchanged). The rest of the sentence — that nothing makes the spot safe, lava and void included — is correct and can stay.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "In the bundle it is registered at `VanillaPlusAdditions.java:156`; nothing else in `src/` references it.",
+      "issue": "Both halves are wrong against the current working copy. The registration is at src/main/java/net/geraldhofbauer/vanillaplusadditions/VanillaPlusAdditions.java:160 (`moduleManager.registerModule(new DeathCoordinatesModule());`), not 156 — line 156 is `registerModule(new WitherSkeletonModule())`. And the standalone entry point the doc names two sentences earlier does reference the module: src/main/java/net/geraldhofbauer/vanillaplusadditions/standalone/death_coordinates/DeathCoordinatesStandalone.java:4 (import) and :17 (`StandaloneModuleBootstrap.boot(new DeathCoordinatesModule(), ...)`). A repo-wide grep for DeathCoordinatesModule returns exactly those four hits plus the class itself. (The fact sheet carries the same two errors.)",
+      "correction": "\"In the bundle it is registered at `VanillaPlusAdditions.java:160`; apart from that and the standalone entry point, nothing in `src/` references it.\"",
+      "severity": "wrong"
+    },
+    {
+      "quote": "The `@s` in the `tp` is load-bearing. It was `@p` until `v0.13.4`, which meant clicking teleported whichever player happened to be nearest to the clicker instead of the clicker themselves.",
+      "issue": "Misleading about what the old bug actually did. The pre-fix command was `/execute in %s as @p run tp @p %d %d %d` (git f84fe5d, the diff that introduced @s; the same string is in the introducing commit 1384bb8). `execute in <dim>` swaps the dimension of the context before `as @p` is resolved, so @p picked the nearest player *in the death dimension* to the clicker's own coordinates. A clicker standing in that same dimension is at distance 0 and got themselves — the command normally worked; it misfired across dimensions, or when another player stood closer to those coordinates in the target dimension. CHANGELOG.md:1258 only says \"willkürlich den nächsten Spieler\" and does not support \"nearest to the clicker\".",
+      "correction": "Say that `as @p` was resolved after `in <dimension>`, so it picked the nearest player in the death dimension rather than the clicker — harmless when the clicker was already in that dimension, wrong whenever they were not.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "There is no receiver-side filter of any kind: everyone online sees every death, in every dimension, at any distance.",
+      "issue": "Too absolute as a statement about what reaches a player. ServerPlayer.sendSystemMessage(Component) delegates with bypassHiddenChat = false (build/neoForm/.../net/minecraft/server/level/ServerPlayer.java:1625-1630), and acceptsSystemMessages returns false when the player's chat visibility is HIDDEN (ServerPlayer.java:1691-1693). A player with chat set to Hidden receives nothing. The module applies no filter, which is the point being made, but vanilla does.",
+      "correction": "\"The module applies no receiver-side filter: everyone online sees every death, in every dimension, at any distance — except for players who have set chat to Hidden, which vanilla drops before it reaches them.\"",
+      "severity": "misleading"
+    },
+    {
+      "quote": "public void die(DamageSource p_9035_) {\n    this.gameEvent(GameEvent.ENTITY_DIE);\n    if (net.neoforged.neoforge.common.CommonHooks.onLivingDeath(this, p_9035_)) return;",
+      "issue": "The quoted vanilla snippet does not match the decompiled source this repo builds against: the parameter is named `cause`, not `p_9035_` (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/server/level/ServerPlayer.java:685-688; the 1.21 tree at the same path also has `cause`). The structure and the point it supports — the NeoForge hook fires before RULE_SHOWDEATHMESSAGES is read at line 688 and before the broadcast at line 709 — are accurate.",
+      "correction": "Quote the parameter as `cause`, matching ServerPlayer.java:685-688 in build/neoForm/neoFormJoined1.21.1-*/steps/unzipSources/unpacked/.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "DeathCoordinatesModule.java:133-137 — the per-death log is gated on getConfig().shouldDebugLog() but emits getLogger().info(...), not .debug(...); enabling debug_logging adds an INFO line per player death. onCommonSetup (line 43) uses .debug() correctly.",
+    "DeathCoordinatesModule.java:107 — hasPermissions(2) is checked on the DYING player, while the hover/click is baked into the one component broadcast to everyone (lines 128-131). So an op death gives every player, op or not, a clickable line whose command is then refused for non-ops, and an ordinary player's death is never clickable even for an op. README.md:189 claims the opposite (\"operators can click the message to teleport to the death location\"), i.e. a per-recipient check that does not exist. Known open point: TODO at lines 105-106.",
+    "assets/vanillaplusadditions/lang/*.json — message.vpa.death_coords and message.vpa.death_coords.hover exist in all six lang files (en_us.json:178-179, de_de.json:178-179, de_at/cs_cz/es_es/fr_fr.json:21-22) but are referenced nowhere in src/; the module builds every string with Component.literal. Dead weight left over from the 0.10.3 → 0.12.0 round trip (CHANGELOG.md:1312 and :1297, section headings at :1309 and :1286).",
+    "DeathCoordinatesModule.java:128 — Objects.requireNonNull(level.getServer()) would NPE on a level without a server; unreachable in practice because of the isClientSide() guard at line 86, but it is an assertion rather than a handled case."
+  ]
+}

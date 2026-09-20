@@ -1,0 +1,36 @@
+{
+  "moduleId": "conduit_attack_range",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "The visible attack is a spray of `ParticleTypes.NAUTILUS` spawned in `animationTick` around the target's eye position and drifting back toward the conduit.",
+      "issue": "The direction is backwards and the conduit is not involved. build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/level/block/entity/ConduitBlockEntity.java:265-272 spawns ONE nautilus particle per client tick at vec31 = (entity.getX(), entity.getEyeY(), entity.getZ()) and passes a RANDOM offset as the speed triple (f3/f5 = (-0.5+rand)*(3+bbWidth), f4 = -1+rand*bbHeight) - the conduit's own `pos` never enters that branch. ParticleEngine.java:159 maps ParticleTypes.NAUTILUS to FlyTowardsPositionParticle.NautilusProvider, and FlyTowardsPositionParticle.java:42-50 stores the spawn point as xStart/yStart/zStart and starts the particle at spawn+offset, then FlyTowardsPositionParticle.java:104-106 interpolates x = xStart + xd*f with f falling from 1 to 0 as the particle ages. The particles therefore start in a random shell around the mob and converge ON the mob's eye. Nothing drifts toward the conduit.",
+      "correction": "The visible attack is a nautilus particle spawned each client tick in `animationTick` at a random offset around the target and flying inward onto the target's eye position (`FlyTowardsPositionParticle` interpolates back to its spawn point). It is a sparkle on the victim, not a link to the conduit.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "The attack animation works at the new range too — the stream of nautilus particles between conduit and victim, which vanilla draws only for targets within 8 blocks.",
+      "issue": "Two separate errors. (a) There is no stream between conduit and victim. ConduitBlockEntity.java:255-263 emits nautilus particles that fly from each FRAME block into the conduit (spawn point vec3 sits 1.5+ blocks above the conduit, the speed triple is the frame block's relative offset), and ConduitBlockEntity.java:265-272 emits a separate particle that converges on the TARGET. The two emissions never touch; no particle is ever drawn on the line between conduit and victim. (b) Even the victim-side particle is not reliably visible at the new range: ParticleTypes.java:97 registers NAUTILUS with overrideLimiter = false, so LevelRenderer.java:2701-2722 (addParticleInternal) returns null whenever camera.getPosition().distanceToSqr(x,y,z) > 1024.0 - i.e. a player standing at the conduit sees nothing of a victim hit at the default full-frame 48 blocks. The clause \"which vanilla draws only for targets within 8 blocks\" is correct (ConduitBlockEntity.java:234-239 + 242-247).",
+      "correction": "Say that the victim-side particle burst now appears for far targets too - drawn at the mob, not between mob and conduit - and note that nautilus particles are culled beyond 32 blocks from the player's camera (ParticleTypes.java:97 registers it with overrideLimiter = false), so you have to be near the mob to see it.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "So without a fourth edit a mob damaged at 30 blocks would take damage in silence, with no particles anywhere.",
+      "issue": "Both halves overstate. Not silent: ConduitBlockEntity.java:204-215 plays SoundEvents.CONDUIT_ATTACK_TARGET at the target's own coordinates on every hit, server-side and entirely independent of whether the client ever resolved destroyTarget - so a player near the mob hears the attack at any range. Not \"no particles anywhere\": the conduit's own frame particles (ConduitBlockEntity.java:255-263) keep spawning every client tick regardless of destroyTarget; only the particle on the victim is missing.",
+      "correction": "So without a fourth edit a mob damaged at 30 blocks would still be hit and would still make the conduit's attack sound, but no particles would appear on it - the conduit itself would keep sparkling as usual.",
+      "severity": "misleading"
+    },
+    {
+      "quote": "int i = positions.size();\nif (i < 42) {                                   // MIN_KILL_SIZE — a complete frame",
+      "issue": "Presented as a verbatim quote from ConduitBlockEntity.updateDestroyTarget but silently reformatted: the method's first statement `LivingEntity livingentity = blockEntity.destroyTarget;` (ConduitBlockEntity.java:186) is dropped with no ellipsis, and the predicate's lambda parameter is renamed from `p_350210_` to `e` (ConduitBlockEntity.java:195). The same applies to the `getDestroyRangeAABB` block, where vanilla's `int i/j/k` (ConduitBlockEntity.java:235-238) become `int x, y, z` on one line and the `(double)` casts are dropped. Semantics are preserved throughout, so this is presentation only - but a reader diffing the page against the decompiled source will not find these lines.",
+      "correction": "Either keep the vanilla identifiers and add a leading `// ...` where a statement is skipped, or label the blocks explicitly as \"lightly reformatted\".",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/mixin/conduit_attack_range/ConduitBlockEntityMixin.java:31-32 - javadoc says the fourth redirect lets the client \"render the vanilla attack beam\" and that otherwise \"no beam is drawn\". There is no beam in vanilla: ConduitBlockEntity.java:265-272 draws a single nautilus particle per client tick that converges on the target itself. The comment is what the doc page's wrong \"stream between conduit and victim\" claim is derived from.",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/conduit_attack_range/ConduitAttackRangeModule.java:81 - same inaccuracy in maxHostileRadius()'s javadoc (\"render the attack beam even beyond vanilla's 8 blocks\").",
+    "build.gradle:411-412 declares the standalone descriptor for conduit_attack_range, and the jar task (build.gradle:650-651) packs modules/conduit_attack_range/** plus standalone/conduit_attack_range/**, but src/main/java/net/geraldhofbauer/vanillaplusadditions/standalone/conduit_attack_range/ does not exist (verified by ls of the standalone package: 41 entries, none for conduit_attack_range). With no @Mod entrypoint nothing constructs ConduitAttackRangeModule, so ConduitAttackRangeModule.java:26 `instance` stays null, isActive() returns false and all four injections return vanilla values. The jar is still built and attached to releases (.github/workflows/release.yml:49, :88, :107). This is a real packaging bug, correctly described on the page; fixing it belongs in the code, not the doc."
+  ]
+}

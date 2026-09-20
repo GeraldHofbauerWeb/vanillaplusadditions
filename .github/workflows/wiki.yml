@@ -1,0 +1,60 @@
+name: Wiki
+
+# The wiki is generated, never edited by hand: docs/ in this repository is the source of truth and
+# this workflow mirrors it. Editing a page in the GitHub wiki UI will be overwritten by the next push.
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'scripts/docgen/**'
+      - '.github/workflows/wiki.yml'
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check the documentation before publishing it
+        # A broken link is worse in the wiki than in the repo, because there is no diff to blame.
+        run: python3 scripts/docgen/check_docs.py
+
+      - name: Generate the wiki tree
+        run: python3 scripts/docgen/gen_wiki.py --out build/wiki
+
+      - name: Push to the wiki
+        env:
+          # The wiki lives in a second git repository. GITHUB_TOKEN can usually write to it; if this
+          # step ever fails with 403, create a PAT with 'repo' scope and use it here instead.
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REMOTE="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
+          if ! git ls-remote "$REMOTE" >/dev/null 2>&1; then
+            echo "::error::The wiki repository does not exist yet. Open the repository's Wiki tab"
+            echo "::error::and create any page once - GitHub only creates <repo>.wiki.git on first use."
+            exit 1
+          fi
+          git clone --depth 1 "$REMOTE" build/wiki-repo
+          # Replace the content wholesale, but keep .git so history is preserved.
+          find build/wiki-repo -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -r build/wiki/. build/wiki-repo/
+          cd build/wiki-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "wiki already up to date"
+            exit 0
+          fi
+          git commit -m "docs: mirror ${GITHUB_SHA::7} from master"
+          git push

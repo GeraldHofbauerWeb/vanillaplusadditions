@@ -1,0 +1,74 @@
+{
+ "moduleId": "haunted_house",
+ "claimsChecked": 94,
+ "problems": [
+  {
+   "quote": "The player tick handler itself only runs every 20 ticks, and the interval is tested as `tickCount % interval == 0`, so an interval such as 30 effectively never fires.",
+   "issue": "Wrong. The two throttles do not cancel each other out, they intersect: the handler runs at tickCount ≡ 0 (mod 20) (HauntedHouseModule.java:1211-1214) and tryDirectAreaSpawn additionally demands tickCount % interval == 0 (HauntedHouseModule.java:927-930). The firing ticks are therefore the multiples of lcm(20, interval), which always exist. With interval = 30 the attempt fires every 60 ticks (3 s), not never. No value allowed by the range 20..1200 ever stops firing completely; 50 becomes every 100 ticks, 21 every 420 ticks. (The fact sheet makes the same mistake; the Java outranks it.)",
+   "correction": "Say that a non-multiple of 20 does not disable the spawner, it stretches it: the effective period becomes lcm(20, direct_spawn_interval_ticks) — e.g. 30 → one attempt every 60 ticks, 50 → every 100, 21 → every 420.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "and a\nshort entry such as `witch` would match every structure with that word in its id.",
+   "issue": "Wrong, because the entry cannot be configured in the first place. The list element validator isValidStructureEntry (HauntedHouseConfig.java:389-400, wired at :103) splits on ':' and rejects anything that is not exactly two colon-separated parts, logging \"Invalid structure entry format\". A bare `witch` fails that test, so ModConfigSpec corrects the list back to its default and the substring match never sees it. The substring behaviour itself (structureId.contains, :537-548) is correctly described.",
+   "correction": "Use an example that survives the validator, e.g. `dungeons_and_taverns:witch` — a valid two-part entry that is a prefix of `dungeons_and_taverns:witch_villa` and would match it and anything else under that namespace starting with 'witch'. Optionally add that a one-word entry is rejected outright by the config validator.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Three heuristics decide whether a position is a plausible haunted spot, all of them counting blocks\nin a box around it (`material_scan_horizontal_radius` 2, `material_scan_vertical_radius` 1 — a 5 × 3 × 5\nbox, 75 samples per pass).",
+   "issue": "\"all of them\" is not true for two of the three. hasRoofNearby (HauntedHouseModule.java:618-627) counts nothing and reads no box — it walks a single column of at most 6 blocks upwards and returns on the first sturdy-faced block. And the garden variant of the structure test uses radius 7 / vertical 2 (isNearStructureGarden, :628-633), i.e. 1125 samples, not 75. Only the structure-material and cave-material tests use the 5 × 3 × 5 / 75-sample box.",
+   "correction": "Attach the 5 × 3 × 5 / 75-sample figure to the structure- and cave-material tests only, and note that the roof test is a 6-block column scan with no box and no threshold (the table two lines below already says this correctly).",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The fog handler runs once a second per player (`tickCount % 20`), server-side, and it is skipped\noutright for **creative and spectator players**",
+   "issue": "\"Skipped outright\" overstates it. The creative/spectator test sits on the structure detection only (HauntedHouseModule.java:1232-1234): the handler keeps running, insideTargetStructure simply stays false, and the player falls into the else branch (:1331-1358), which removes the tracked position and refresh tick and still re-applies up to min(40, trail) ticks of Darkness while the trail drains. The compatibility table states this correctly (\"Structure detection is skipped for them\"); only this sentence does not.",
+   "correction": "\"...and for creative and spectator players the structure detection is skipped, so they are always treated as being outside — no fog build-up, no cache refresh, no direct spawns — which makes the module look broken when you test it in creative.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "a longer jump is interpolated into at most `movement_interpolation_max_steps` (10) samples, each of\nwhich can trigger its own scan — a teleport therefore costs up to eleven scans in one tick.",
+   "issue": "Internally inconsistent. The loop is `for (int i = 0; i <= steps; i++)` with steps = min(10, maxDelta) (HauntedHouseModule.java:1023-1026), so there are 11 sample positions, not 10. The conclusion (up to eleven scans) is right; the \"10 samples\" that is supposed to produce it is not.",
+   "correction": "\"...is interpolated into `movement_interpolation_max_steps` (10) steps — eleven sample positions including both ends — each of which can trigger its own scan, so a teleport costs up to eleven scans in one tick.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "public Map<Structure, LongSet> getAllStructuresAt(BlockPos p_220523_) {",
+   "issue": "The quoted signature does not match the sources this repository actually builds against. build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/level/StructureManager.java:157 reads `public Map<Structure, LongSet> getAllStructuresAt(BlockPos pos)`; the page uses the unmapped parameter name `p_220523_` and consequently also `SectionPos.of(p_220523_)` in the body. The two body lines are otherwise verbatim and the conclusion drawn from them (chunk-granular, full height) is correct.",
+   "correction": "Quote the repo's own mapping: `getAllStructuresAt(BlockPos pos)` / `SectionPos.of(pos)`.",
+   "severity": "style"
+  },
+  {
+   "quote": "An unrecognised value falls back to\n`structure_focused` without complaint.",
+   "issue": "The fallback target is right (getSpawnPreset catches IllegalArgumentException and returns STRUCTURE_FOCUSED, HauntedHouseConfig.java:474-484), but \"without complaint\" is not. An unrecognised string is first seen by the element validator isValidPreset (:459-470), which logs \"Invalid spawn preset '{}'. Expected: custom, balanced, structure_focused, courtyard\" and makes ModConfigSpec correct the key back to its default — so the user gets both a log warning and a rewritten config file. The silent path in the getter is only reachable if validation is bypassed.",
+   "correction": "\"An unrecognised value is rejected by the validator, logged as *Invalid spawn preset*, and reset to `structure_focused`; the getter falls back to the same preset if it ever sees one anyway.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "nextRevealCheckTick.put(replacementEntityUuid, replacementEntity.tickCount + RANDOM.nextInt(REVEAL_CHECK_INTERVAL_TICKS));",
+   "issue": "[JAVA SOURCE, NOT THE PAGE — no doc edit required] Genuine bug. nextRevealCheckTick stores an absolute Entity.tickCount (HauntedHouseModule.java:477, read at :1116-1119), but tickCount is a transient field: it is declared as a plain `public int` (Entity.java:195), incremented only by ServerLevel.tickNonPassenger (ServerLevel.java:772) and never written to or read from NBT. When the chunk unloads and reloads, a fresh entity instance starts at tickCount 0 while its UUID is still in pendingInvisibleReplacementEntities with a stale next-check value of, say, 6000 — so `if (replacementEntity.tickCount < nextCheckTick) return;` suppresses every reveal check until the reloaded instance has lived as long as the original did. Staring at the mob does nothing for minutes. Same class of problem as the documented restart case, but it survives inside one server session.",
+   "correction": "Report to the module author; the page need not change (its restart entry covers the adjacent symptom). A fix would key the backoff off level.getGameTime() instead of entity tickCount.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "// Stagger checks a bit so many entities do not all evaluate on the same tick.",
+   "issue": "[JAVA SOURCE, NOT THE PAGE — no doc edit required] The comment describes something the code cannot do. onEntityTick is gated by `event.getEntity().tickCount % REVEAL_CHECK_INTERVAL_TICKS != 0` (HauntedHouseModule.java:1101-1103), so evaluation only ever happens on multiples of 10; the extra RANDOM.nextInt(10) offset written at spawn (:477) is always swallowed by the next multiple of 10 and changes nothing. Entities are already staggered by their own spawn tick, since tickCount is per-entity.",
+   "correction": "Report to the module author — dead offset plus a comment that claims an effect the code does not have.",
+   "severity": "style"
+  },
+  {
+   "quote": "\"Example: 'minecraft:witch:10' means 10% of witches will be replaced with murmurs\"",
+   "issue": "[JAVA SOURCE, NOT THE PAGE — no doc edit required] Wrong user-facing comment in the generated config file (HauntedHouseConfig.java:94). The shipped replacement_entity_id default is \"minecraft:witch\" (:111), so out of the box those 10% become invisible witches, not murmurs. Second wrong comment in the same file: enable_fog_effect is commented \"Enable fog/blindness effect\" (:127) although the code applies MobEffects.DARKNESS, never Blindness (HauntedHouseModule.java:1313, 1337).",
+   "correction": "Report to the module author; the page itself already states the correct default loudly.",
+   "severity": "style"
+  },
+  {
+   "quote": "return replacementEntityId != null ? replacementEntityId.get() : \"alexsmobs:murmur\";",
+   "issue": "[JAVA SOURCE, NOT THE PAGE — no doc edit required] Two null-fallbacks contradict their own define() defaults: getReplacementEntityId falls back to \"alexsmobs:murmur\" (HauntedHouseConfig.java:556) against the define default \"minecraft:witch\" (:111), and getDirectSpawnMinPlayerDistance falls back to 6 (:748) against the define default 8 (:270). Both branches are unreachable while the ConfigValues are built, but they are the only place in the module where Alex's Mobs still looks like a default. Also dead: playersInStructure stores System.currentTimeMillis() (HauntedHouseModule.java:1326) that is never read, and tryDirectAreaSpawn samples with replacement, so duplicate random indices burn one of the ten picks (:962-967).",
+   "correction": "Report to the module author; no doc change.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

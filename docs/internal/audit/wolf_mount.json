@@ -1,0 +1,65 @@
+{
+ "moduleId": "wolf_mount",
+ "claimsChecked": 96,
+ "problems": [
+  {
+   "quote": "Vanilla `minecraft:wolf_armor` goes through vanilla's own absorption, so the wolf's health moves as well.",
+   "issue": "Contradicted by vanilla. `Wolf.actuallyHurt` (build/neoForm/.../world/entity/animal/Wolf.java:384-409) skips `super.actuallyHurt` entirely when `canArmorAbsorb(source)` is true: it only calls `itemstack.hurtAndBreak(Mth.ceil(damageAmount), this, EquipmentSlot.BODY)`. Vanilla wolf armour is therefore also a 100 % absorber — the wolf's health does not move while it is intact — exactly like battle_dogs armour (which drains 1 durability per ceil(damage) too, BattleDogsModule.java:311-317). The whole row's premise ('durability is the health pool only for battle_dogs armour') is wrong.",
+   "correction": "Vanilla `minecraft:wolf_armor` absorbs the damage too (`Wolf.actuallyHurt` bypasses health entirely, draining ceil(damage) durability), so the armour bar is the real health pool for vanilla armour as well. The wolf's health only moves for damage types tagged `BYPASSES_WOLF_ARMOR`, or once the armour has broken. The genuine vanilla/battle_dogs difference is elsewhere (vanilla absorption is hard-wired to `Items.WOLF_ARMOR` via `hasArmor()`, which is why battle_dogs needs its own handler).",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`battle_dogs` uses `LivingDamageEvent.Pre`, which fires far later — past the i-frame bookkeeping, past `setLastHurtByMob`, past armour absorption.",
+   "issue": "The `setLastHurtByMob` half is wrong. `CommonHooks.onLivingDamagePre` is called inside `LivingEntity.actuallyHurt` (LivingEntity.java:1789), while `setLastHurtByMob` runs at LivingEntity.java:1214 — i.e. in `hurt()` *after* `actuallyHurt` has returned. So `LivingDamageEvent.Pre` fires before, not after, that call. (The i-frame claim — `invulnerableTime` set at :1202 — and the armour-absorption claim — `getDamageAfterArmorAbsorb` at :1787 — are both correct.)",
+   "correction": "Say that `LivingDamageEvent.Pre` fires past the i-frame bookkeeping and past armour absorption, and that hooking it cannot prevent `setLastHurtByMob` because `hurt()` runs on to LivingEntity.java:1214 regardless — which is the real reason the immunity has to cancel at `LivingIncomingDamageEvent` (returning false there skips that line entirely). The table row 'lastHurtByMob | The wolf never registers its owner as an attacker' is itself correct and can stay.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "| `hostile_scan_radius`, `target_recheck_ticks`, `attack_creepers` with `defend_rider` or `target_nearest` off | Dead.",
+   "issue": "`attack_creepers` is not dead when `target_nearest` is off. `isAttackable()` (WolfMountModule.java:553-561) is reached from `retarget()`, which the defend paths `onRiderIncomingDamage` (:437-450) and `onRiderAttack` (:456-470) call behind `isDefendRider()` alone. Only the sweep (`retargetNearest`, gated on both switches at :293-299) needs `target_nearest`, so only `hostile_scan_radius` and `target_recheck_ticks` die with it off. The explanatory sentence in the same cell ('attack_creepers is only ever consulted from the defend and sweep paths') is right; the key list above it is not.",
+   "correction": "Split the row: `hostile_scan_radius` and `target_recheck_ticks` are dead unless `defend_rider` AND `target_nearest` are both on; `attack_creepers` is dead only with `defend_rider` off, since the defend paths consult it regardless of `target_nearest`.",
+   "severity": "misleading"
+  },
+  {
+   "quote": ".getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0, 0.25, 1.0))) {",
+   "issue": "That line does not exist in the NeoForge 1.21.1 source this repo builds against. Player.java:1315-1316 reads `this.level().getEntitiesOfClass(LivingEntity.class, itemstack.getSweepHitBox(this, target))` — the box is a Neo patch point. The inflate values are right only because the default `IItemExtension.getSweepHitBox` returns `target.getBoundingBox().inflate(1.0D, 0.25D, 1.0D)`, which an item can override. The quoted `if` also drops a real condition beyond the elided marker-ArmorStand check: `this.distanceToSqr(livingentity2) < entityReachSq`, a Neo change from vanilla's constant 9.0.",
+   "correction": "Quote the actual line (`itemstack.getSweepHitBox(this, target)`) and note that its default is the 1.0/0.25/1.0 inflate of the target's box, or drop the literal box from the quote. Keep the '…' but mention that the reach check is part of it.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Left raised on the client, `LivingEntity.aiStep`\nanswers it with `jumpFromGround()` on every grounded tick",
+   "issue": "Vanilla gates the repeat: `if ((this.onGround() || flag && d3 <= d4) && this.noJumpDelay == 0) { this.jumpFromGround(); this.noJumpDelay = 10; }` (LivingEntity.java:2789-2791). A stuck jump flag makes the mob hop roughly every 10 ticks, not on every grounded tick. (The same overstatement is in the mixin javadoc at WolfMountMixin.java:134-136 and in CHANGELOG.md:312-314.)",
+   "correction": "'answers it with `jumpFromGround()` on every tenth grounded tick (`noJumpDelay = 10`)' — the conclusion, an endlessly hopping mount, is unaffected.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "it keeps snapping at\nan archer 25 blocks away while a zombie stands in its face",
+   "issue": "Presented as vanilla behaviour, but a vanilla target goal cannot hold a target at 25 blocks: `TargetGoal.canContinueToUse` returns false once `this.mob.distanceToSqr(target) > getFollowDistance()^2` (TargetGoal.java:57-59, :76-78) and `TargetGoal.stop()` then calls `setTarget(null)` (:88-91); a wolf's `generic.follow_range` is 16 (Mob.createMobAttributes, Mob.java:159-161). The failure mode the section describes is real, but only inside 16 blocks. The page's own limits row ('`defend_rider_radius` above 16 | An upper bound, not a promise') says the same thing, so the two passages disagree.",
+   "correction": "Use a distance inside follow range (e.g. 'an archer fifteen blocks away'), or say explicitly that beyond 16 blocks vanilla drops the target by itself while a target goal is running — which is the point the later limits row makes.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "a plain\n`minecraft:wolf` on a spawn egg with `generic.scale = 3.25`, 350 max health, 25 attack damage,\narmour 12 and permanent Resistance IV",
+   "issue": "Only `generic.scale = 3.25` and the spawn-egg-in-an-item-frame detail are recorded anywhere in this repository (WolfMountConfig.java:77-78, CHANGELOG.md:295-298). The 350 HP / 25 attack / armour 12 / Resistance IV figures — which the summon commands then reproduce — appear nowhere but this page (they were carried over from the pre-rename `docs/wolf_mount.md`). That also sits badly next to the page's closing line 'Everything on this page is read off the source.'",
+   "correction": "Either mark those four numbers as read off the mod's spawn egg in game rather than off this repository's source, or soften the final 'Testing' row so it does not claim every number on the page comes from the source. The commands themselves are fine — the NBT keys (`attributes`/`id`/`base`, `active_effects`, `body_armor_item`, `Owner`, `CollarColor`) and the attributes-before-Health read order all check out against 1.21.1.",
+   "severity": "unprovable"
+  },
+  {
+   "quote": "If it already holds a live, still-attackable target, the new one has to be `retarget_margin`\n(3.0) blocks closer to win",
+   "issue": "Incomplete: `retarget()` replaces a live, still-attackable target only when `target_nearest` is also on — `if (getConfig().isTargetNearest() && wolf.distanceTo(target) < wolf.distanceTo(current) - getConfig().getRetargetMargin())` (WolfMountModule.java:493-496). With `target_nearest` off, a live target is never displaced from the defend path at all, however much closer the new one is. The page documents the equivalent gate for the sweep but not for this path.",
+   "correction": "Add that the margin comparison — and any replacement of a live target from the defend path — happens only with `target_nearest` on; with it off the mount keeps its current target until that target dies or becomes off-limits.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "public boolean wantsToAttack(LivingEntity p_30389_, LivingEntity p_30390_) {",
+   "issue": "Parameter names in four of the five code quotes do not match the sources this repo actually builds against: the NeoForm 1.21.1 decompile names them `wantsToAttack(LivingEntity target, LivingEntity owner)` (Wolf.java:648), `travelRidden(Player player, Vec3 travelVector)` (LivingEntity.java:2349), `canBeReplacedBy(WrappedGoal other)` (WrappedGoal.java:23) and `renderArmor(..., int x)` / `int l = x + k * 8` (Gui.java:1063-1070, quoted as `x + i * 8`). Every quote is logically faithful — this is fidelity, not substance.",
+   "correction": "Re-copy the quotes from `build/neoForm/neoFormJoined1.21.1-.../steps/unzipSources/unpacked/` so the identifiers match what a reader will find when they open those files.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [
+  "docs/modules/wolf_mount.md:210-211 contains a `<!-- TODO: measure the actual apex in game … -->` marker; `check_docs.py` flags it ('still contains a TODO marker'). It is a warning, not an error, and 11 other module pages carry one too — but the page is otherwise publishable, and its arithmetic is right (integrating v0=0.672 with MC's `v = (v-0.08)*0.98` gives an apex of ≈2.90 blocks, so the config comment's 2.5 is indeed conservative).",
+  "No hard violations otherwise: TL;DR present, both vpa:meta and vpa:config marker pairs present and empty, no hand-written `## Configuration` heading, every relative link and all four `docs/img/items/wolf_armor_*.png` resolve (verified with ls and with `check_docs.py --no-delegate`, which reports no errors). The 'Who may be ridden' gate table does carry Default/Config-key columns that the generated table will repeat, but the same pattern is already accepted on compass_overhaul.md and overpacked_extensions.md, so I am not counting it."
+ ],
+ "verdict": "needs-repair"
+}

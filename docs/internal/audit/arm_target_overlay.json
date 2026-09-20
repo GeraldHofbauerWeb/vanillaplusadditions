@@ -1,0 +1,26 @@
+{
+ "moduleId": "arm_target_overlay",
+ "claimsChecked": 64,
+ "problems": [
+  {
+   "quote": "A Mixin `@Accessor` was the first attempt and it does not compile: `ArmBlockEntity`'s supertype `SmartBlockEntity` implements `net.createmod.ponder.api.VirtualBlockEntity`, Ponder is not among the jars in `libs/`, and javac needs the whole supertype hierarchy to validate the cast.",
+   "issue": "Present-tense and no longer true. Ponder IS in libs/ today: libs/create-nested/ponder-neoforge-1.0.81+mc1.21.1.jar is git-tracked (git ls-files libs) and on the compile classpath as compileOnly (build.gradle:134-136), added 2026-08-03 in commit e0eb358 for train_chunk_loading. The jar contains net/createmod/ponder/api/VirtualBlockEntity.class (verified with unzip -l), so the compile blocker the paragraph gives as the reason no longer exists — a reader checking the claim finds the opposite. Everything else in the paragraph (package-private fields, the German javac message, SmartBlockEntity implements VirtualBlockEntity) is verified correct.",
+   "correction": "Put it in the past tense and add the change, e.g.: \"A Mixin @Accessor was the first attempt and it did not compile at the time: ArmBlockEntity's supertype SmartBlockEntity implements net.createmod.ponder.api.VirtualBlockEntity, Ponder was not among the jars in libs/, and javac needs the whole supertype hierarchy to validate the cast. Ponder has since arrived as a compileOnly jar (libs/create-nested/ponder-neoforge-1.0.81+mc1.21.1.jar, added for train_chunk_loading), so that blocker is gone — the reflection stayed because it works and needs no mixin config.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "so all five work while Ctrl is held and the orange conflict marker is\ncosmetic",
+   "issue": "Wrong colour for vanilla's conflict marker. KeyBindsList.KeyEntry.refreshEntry (build/neoForm/neoFormJoined1.21.1-20240808.144430/.../KeyBindsList.java:232-239) wraps the button label as Component.literal(\"[ \") ... .withStyle(ChatFormatting.RED) — the duplicate-keybind marker is red brackets, not orange. (The substance of the paragraph is correct: all five mappings collide via this.key.same(keymapping), and all five read raw GLFW state, so the conflict really is cosmetic.)",
+   "correction": "Say \"red\": \"...so all five work while Ctrl is held and the red conflict marker is cosmetic.\" Same for the following sentence's \"marker\".",
+   "severity": "wrong"
+  },
+  {
+   "quote": "`vpa_arm_target_overlay`'s generated `mods.toml` declares only `vpa_core`, NeoForge and Minecraft, with no Create dependency and therefore no `ordering=\"AFTER\" create`.",
+   "issue": "Incomplete \"only\". renderModuleToml (build.gradle:512-521) emits a fourth dependency entry: the all-in-one bundle `vanillaplusadditions` as type=\"incompatible\", range [0,) — that is why a module jar and the bundle refuse to load together. The Create half of the sentence is correct (no create entry at all, and the bundle's neoforge.mods.toml:82-87 does declare create optional with ordering=\"AFTER\").",
+   "correction": "\"...declares only `vpa_core`, NeoForge and Minecraft as required — plus the bundle `vanillaplusadditions` as incompatible — with no Create dependency and therefore no `ordering=\"AFTER\" create`.\"",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

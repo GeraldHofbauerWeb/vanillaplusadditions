@@ -1,0 +1,92 @@
+{
+  "blocks": [],
+  "commands": [
+    "/vpaunstuck"
+  ],
+  "configKeys": [
+    {
+      "defaultValue": "100",
+      "effect": "How often (in ticks) all tracked water wheels are swept for stalls; only remembered wheel positions whose footprint chunks are already loaded are checked, never a global scan. The sweep is driven by the global server tick counter (server.getTickCount() % interval == 0), so every dimension is swept in the same tick.",
+      "key": "check_interval_ticks",
+      "range": "20 ~ 1200",
+      "type": "int"
+    },
+    {
+      "defaultValue": "60",
+      "effect": "Delay in ticks between a chunk with water wheels loading - or a wheel being placed - and the targeted stall check for those wheels, so Create can finish its own init first.",
+      "key": "post_load_delay_ticks",
+      "range": "0 ~ 600",
+      "type": "int"
+    },
+    {
+      "defaultValue": "3",
+      "effect": "Consecutive re-init attempts per wheel before that wheel backs off for ~5 minutes (STALL_BACKOFF_TICKS = 6000) and the attempt counter resets; the first exhaustion also logs one WARN per wheel. Only relevant when auto_fix = true - the whole escalation state sits behind the auto_fix gate, and /vpaunstuck ignores it and clears any pending backoff.",
+      "key": "max_fix_attempts",
+      "range": "1 ~ 10",
+      "type": "int"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "DEAD KEY: documented as allowing the hard fix escalation (detach + re-attach the kinetic network), but its getter CreateWaterWheelUnstuckerConfig.isHardKickEnabled() has no caller anywhere in src/, and neither WaterWheelKinetics.softKick() nor hardKick() is ever invoked. Changing it has no effect - see notes.",
+      "key": "hard_kick",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Whether the periodic sweep may re-initialise a stalled wheel itself (break to air, wait reinit_flood_ticks, place back). false (the default) means the sweep changes no blocks and a genuine flow stall is only detected; the fix then comes from /vpaunstuck. With true, a still-stalled wheel is re-initialised once per sweep until max_fix_attempts is reached. It does NOT gate the stress-bookkeeping repairs, which run either way.",
+      "key": "auto_fix",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Allows dropping a stale unloaded-member stress tally to cure a phantom 'Overstressed' network - automatically in the sweep when the tally is provably orphaned (stress or capacity charged while unloadedMembers == 0), and in the judgement case (real unloaded members, loaded members alone would fit) only via /vpaunstuck. false disables both paths. It does not gate the preceding network recompute, which always runs for an overstressed stalled wheel.",
+      "key": "clear_phantom_stress",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "6",
+      "effect": "Ticks the wheel stays removed during a re-init so adjacent water can flood the gap and re-establish active flow before the wheel is placed back.",
+      "key": "reinit_flood_ticks",
+      "range": "1 ~ 40",
+      "type": "int"
+    }
+  ],
+  "displayName": "Create Water Wheel Unstucker",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.level.ChunkEvent.Load",
+    "net.neoforged.neoforge.event.level.ChunkEvent.Unload",
+    "net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent",
+    "net.neoforged.neoforge.event.level.BlockEvent.BreakEvent",
+    "net.neoforged.neoforge.event.tick.ServerTickEvent.Post",
+    "net.neoforged.neoforge.event.RegisterCommandsEvent",
+    "net.neoforged.neoforge.event.level.LevelEvent.Unload",
+    "net.neoforged.neoforge.event.server.ServerStoppedEvent"
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleId": "create_water_wheel_unstucker",
+  "notes": "DEAD CONFIG + STALE DOC COMMENTS (most important for a doc writer): `hard_kick` does nothing. `CreateWaterWheelUnstuckerConfig.isHardKickEnabled()` has no caller in src/, and `WaterWheelKinetics.softKick()` / `hardKick()` are defined but never invoked (grep over all of src/ finds only their declarations at WaterWheelKinetics.java:203 and :226). The only fix path in the code today is `WaterWheelStallManager.beginReinit()`: break the wheel to air (no drops), wait `reinit_flood_ticks`, place it back with its original blockstate + material, then scheduleTick so Create recomputes the flow score. Three places still describe the replaced beta.39 soft/hard-kick escalation and must NOT be copied into a doc page: the `max_fix_attempts` config comment (\"Attempt 1 is always the soft kick (flow recompute); further attempts use the hard kick if enabled\"), the class javadoc of CreateWaterWheelUnstuckerModule (lines 27-29, \"a soft flow recompute first, escalating to a full kinetic detach/re-attach\"), and docs/internal/BACKLOG.md:6-12. The escalation was replaced in 91ab8c6 (\"/vpaunstuck command + break+replace re-init\").\n\nWHAT ACTUALLY HAPPENS WITH DEFAULTS (auto_fix = false): the periodic sweep never touches a block. For a stalled wheel that reports Overstressed it settles Create's stress bookkeeping - `recomputeNetwork()` (updateNetwork + sync, always) and, when the unloaded tally is provably orphaned and `clear_phantom_stress` is on, dropping that tally. Either revival logs one unconditional INFO line (\"Unstuck wheel at ... - now spinning at ...\"). A genuine flow stall is detected and then nothing happens at all: the \"STALLED wheel ...\" line sits AFTER the `auto_fix` early return AND behind `shouldDebugLog()`, so with the default config it can never be printed - a stalled wheel produces no log output whatsoever. The user-visible fix is `/vpaunstuck`.\n\nDATA-LOSS RISK in the re-init (two paths): `beginReinit` removes the wheel with `setBlock(AIR, UPDATE_ALL)` and no drops, then queues a `PendingReplace`. (1) In `processPendingReplaces` the entry is removed (`it.remove()`) BEFORE `replaceWheel` runs, and `replaceWheel` returns without restoring if the position is neither air nor a fluid (\"never clobber a block a player may have placed in the gap\") - the wheel is then gone permanently, with no drop and no log line. The window is short (6 ticks by default) but real. (2) `pendingReplace` is in-memory only and is dropped by `forgetLevel` (LevelEvent.Unload) and `clearAll` (ServerStoppedEvent), so a level unload or a server stop inside the flood window also loses the wheel for good. A chunk unload does NOT lose it: `forgetChunk` deliberately leaves `pendingReplace` alone and `processPendingReplaces` waits for the chunk to reload.\n\nLARGE WHEELS: the registry tracks `LargeWaterWheelBlock` centers too (WaterWheelRegistry.isWheelBlock), and `onBlockBroken` resolves structural shell blocks to their master, but `beginReinit`'s own javadoc says \"Sized for small (single-block) wheels\" - it only AIRs/restores the single center position. What a re-init does to a 3x3 large wheel is not demonstrated anywhere in the repo; treat it as unverified.\n\n/vpaunstuck details: permission `Commands.LEVEL_GAMEMASTERS` (op level 2). The registration handler checks `isCreateLoaded()` again, but that check is effectively defensive: the whole `@SubscribeEvent` subscription only exists when `onInitialize()` ran, which already requires Create. Correspondingly, a module DISABLED IN THE CONFIG AT STARTUP never initialises (bundle: ModuleManager.initializeModules only initialises modules whose config says enabled; standalone: StandaloneModuleBootstrap always calls initialize(), where shouldInitialize() gates it) - the command then does not exist at all, rather than replying that the module is disabled. The \"Water Wheel Unstucker module is disabled.\" reply is only reachable when the module started enabled and was switched off afterwards (runtime override via ModuleManager.setRuntimeModuleEnabled, or a config reload), and the command has to be re-registered for the reply path to be hit. Return-value quirk: `return started == 0 ? Command.SINGLE_SUCCESS : started;` - the command result is 1 both when exactly one wheel was fixed and when nothing was done. The chat feedback prints `unstickAll`'s return value, which is `started + stressFixed`, so the number in chat can exceed the number of wheels actually re-initialised; the log summary breaks it down (re-initialised / revived by clearing a stale stress state / already spinning / skipped genuinely overstressed / skipped no water), and each re-init gets an outcome line ~1s later (\"re-init RECOVERED\" / \"re-init did NOT restart\").\n\nORDER DIFFERENCE BETWEEN SWEEP AND COMMAND: `checkWheel` resolves the overstress first and only then tests `hasNearbyFluid`; `unstickAll` tests `hasNearbyFluid` FIRST and skips the wheel entirely if it is dry. A phantom-overstressed wheel with no fluid in its 5x5x5 box is therefore counted as \"skipped (no water nearby)\" by the command and never gets the stress cure there, while the sweep would still have attempted it.\n\nNO LANG KEYS: all command output is hardcoded English via `Component.literal(...)` in CreateWaterWheelUnstuckerModule.onRegisterCommands - there is no create_water_wheel_unstucker key in assets/vanillaplusadditions/lang/en_us.json (grep for \"unstuck\"/\"water_wheel\" returns nothing). Also no mixins (no mixin/create_water_wheel_unstucker/ directory, nothing in vanillaplusadditions.mixins.json, and the build.gradle standalone entry at line 417 carries no mixins/dataGlobs/moduleDeps), no DeferredRegister of any kind, no items/blocks/entities/recipes/keybinds, no network packets, no assets or data files. Source footprint: 4 files in modules/create_water_wheel_unstucker/ (1541 lines total incl. config) plus standalone/create_water_wheel_unstucker/CreateWaterWheelUnstuckerStandalone.java (@Mod(\"vpa_create_water_wheel_unstucker\")).\n\nREFLECTION-ONLY Create access: WaterWheelKinetics reaches every block-entity API through Class.forName + cached Method/Field, because WaterWheelBlockEntity -> KineticBlockEntity -> SmartBlockEntity implements Ponder's VirtualBlockEntity and Ponder is not in libs/ (same gotcha as ArmBlockEntityReflection, see docs/internal/arm_target_overlay_case_study.md). Only Create's *Block* classes are imported at compile time (WaterWheelRegistry). If a future Create version renames anything in the core layer, one warning is logged once, `isAvailable()` turns false and every accessor degrades to a neutral no-op - no crash, but also no function. The KineticNetwork layer is resolved separately (warning \"stale-stress recovery disabled\"), and its private fields (unloadedCapacity/unloadedStress/unloadedMembers plus KineticBlockEntity.capacity/stress) again separately via setAccessible (warning \"phantom-overload recovery disabled\"); losing those only costs the phantom-overload cure and the exact diagnostics.\n\nDETECTION HEURISTICS worth documenting: a wheel is only touched when speed == 0 AND it is not a genuine overload (still overstressed after the recompute/tally cure while generatedSpeed != 0 is always left alone - \"Create's stress mechanics win\") AND `hasNearbyFluid` finds a non-empty fluid in the 5x5x5 box around the center. hasNearbyFluid accepts ANY fluid including lava, so a decorative wheel next to lava counts as \"wet\". Checks are skipped entirely unless every chunk overlapping the center +/-2 footprint is already loaded (`getChunkSource().getChunkNow`) - the module never force-loads. An overstressed wheel whose generatedSpeed is 0 is treated as a reload desync wearing an overstressed mask and goes down the normal stall path.\n\nTHREADING/STATE: no persistence at all; positions are rediscovered from each chunk's block-entity map on load (which covers server start via the spawn chunks). ChunkEvent.Load can fire off the server thread during worldgen, hence the ConcurrentHashMap registry and the ConcurrentLinkedQueue hand-off; everything else is server-thread only. The cleanup handlers (onChunkUnload, onBlockBreak, onLevelUnload, onServerStopped) are deliberately NOT gated on isModuleEnabled() - only null-checked - so state is still released if the module is toggled off at runtime.\n\nSHARED-NETWORK SELF-HEAL: per the in-code comment, fixing one wheel revives every wheel on the same kinetic network; the others just reset their counters on their next check (WaterWheelStallManager.checkWheel, speed != 0 branch). Not verified in game from this repository.\n\nSTALE JAVADOC: `resolveOverstress` documents `@param allowPhantomClear` but the parameter is `StressMode mode`, and it has no `@return` although it returns a StressAction.\n\nNO DEDICATED DOC PAGE: unlike most modules there is no docs/modules/create_water_wheel_unstucker.md - nothing under docs/ even mentions /vpaunstuck. The README carries the only prose (README.md:89-90) and, unlike neighbouring entries, links nothing; README.md:226 additionally lists the module in the optional-dependency table (\"Module skips initialization (needs Create water wheels)\"). The README wording is accurate but omits that the stress-bookkeeping repair runs regardless of auto_fix.\n\nVERSION CAVEAT: CHANGELOG.md:811 files the module under \"[1.0.0-beta.39] - 2026-07-08\" and the commit subject says beta.39, but tags v1.0.0-beta.39 and v1.0.0-beta.40 do not exist in this repository (`git tag -l` has 109 tags, neither of them) - the earliest tag containing 1a9c40f is v1.0.0-beta.41, which is what sinceVersion reports. Later behaviour changes, each with the first tag that contains them: 91ab8c6 (/vpaunstuck + break+replace re-init) -> v1.0.0-beta.53; c65e83c (revive wheels stuck on a stale overstressed state, CHANGELOG under 1.0.0-beta.60) -> v1.0.0-beta.60; e3ec69f (cure phantom overstressed networks, CHANGELOG under 1.0.0-beta.64) -> v1.0.0-beta.64; 976e64e (auto-clear orphaned stress tallies, CHANGELOG under 1.0.0-beta.66) -> v1.0.0-beta.66. The beta.39 CHANGELOG entry still advertises the soft/hard-kick behaviour and the `hard_kick` config key as live - it describes the original release, not today's code.\n\nUNRESOLVED: read-only source survey only - no gradle run, no server test. Nothing in the repo demonstrates that the break+replace re-init actually revives a real reload-stalled wheel (that is exactly what the ~1s verify log was added to find out), nor what it does to a 3x3 large wheel.",
+  "oneLiner": "Create water wheels that quietly stopped turning after their chunk was unloaded and reloaded get spotted and started again - automatically only where the repair is provably harmless (Create's own stress bookkeeping), and on demand with /vpaunstuck.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "requiredMods": [
+    {
+      "evidence": "CreateWaterWheelUnstuckerModule.java:62-65 - shouldInitialize() returns isCreateLoaded(), which is ModList.get().isLoaded(\"create\") (lines 58-60). Without Create, AbstractModule.initialize() logs \"Module '...' is disabled and will not be initialized\" and onInitialize() never runs, so nothing is registered and no event handler exists. WaterWheelRegistry.java:3-5 imports Create's WaterWheelBlock/LargeWaterWheelBlock/WaterWheelStructuralBlock at compile time, so that class must not be constructed without Create - it is only instantiated inside onInitialize(), behind the gate. The bundle's neoforge.mods.toml declares create as type=\"optional\", versionRange=\"[6.0,)\", ordering=\"AFTER\", side=\"BOTH\" (src/main/resources/META-INF/neoforge.mods.toml:82-87, shared by all Create-touching modules); the standalone jar's generated toml declares no Create dependency at all (build.gradle renderModuleToml, from line 507: only vpa_core, neoforge, minecraft, moduleDeps and the bundle-incompatible entry). The gate is therefore purely a runtime check, but it is a shouldInitialize() gate - Create is REQUIRED for this module to do anything.",
+      "modId": "create"
+    }
+  ],
+  "shortDescription": "Detects Create water wheels that stalled after a chunk reload and kicks them back into rotation.",
+  "side": "server",
+  "sinceCommit": "1a9c40f",
+  "sinceVersion": "v1.0.0-beta.41",
+  "moduleDeps": [],
+  "relatedModules": []
+}

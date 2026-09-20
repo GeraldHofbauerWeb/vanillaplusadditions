@@ -1,0 +1,81 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "key": "leap_mode",
+      "type": "enum",
+      "defaultValue": "LeapMode.DEFAULT",
+      "range": "DEFAULT | ARCADE | REALISTIC (LeapMode.java)",
+      "effect": "Auto-hop behaviour of the Flying Fish Boots: DEFAULT = automatic leaps when sprinting near the water surface (governed by leap_cooldown_ticks), ARCADE = leaps trigger any time the player touches water while sprinting, with the cooldown halved, REALISTIC = no automatic leaps at all, so only the horizontal water-skim boost remains (and with it no glide, because the glide grace is only set on a leap)."
+    },
+    {
+      "key": "boots_horizontal_boost",
+      "type": "double",
+      "defaultValue": "0.08D",
+      "range": "0.0 ~ 1.0",
+      "effect": "Horizontal speed boost applied while sprinting over or through water with Flying Fish Boots. Added to the delta movement each tick along the horizontal look vector, then clamped to the hardcoded MAX_SURFACE_SPEED of 0.95."
+    },
+    {
+      "key": "boots_vertical_boost",
+      "type": "double",
+      "defaultValue": "0.42D",
+      "range": "0.0 ~ 2.0",
+      "effect": "Vertical launch strength applied when the boots trigger a flying-fish leap (used as a floor via Math.max on the current upward motion)."
+    },
+    {
+      "key": "max_glide_fall_speed",
+      "type": "double",
+      "defaultValue": "0.08D",
+      "range": "0.01 ~ 1.0",
+      "effect": "Maximum downward speed while gliding after a water leap; lower values glide longer. Applies only during the 16-tick glide grace after a leap and only while out of water."
+    },
+    {
+      "key": "leap_cooldown_ticks",
+      "type": "int",
+      "defaultValue": "14",
+      "range": "1 ~ 200",
+      "effect": "Cooldown between automatic flying-fish leaps from the water surface. ARCADE uses half of it (minimum 1)."
+    }
+  ],
+  "displayName": "Flying Fish",
+  "enabledByDefault": true,
+  "entities": [
+    "vanillaplusadditions:flying_fish"
+  ],
+  "events": [
+    "net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent (mod bus, FlyingFishModule#onEntityAttributeCreation - AbstractFish attributes + MOVEMENT_SPEED 1.1)",
+    "net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent (mod bus, FlyingFishModule#onRegisterSpawnPlacements - IN_WATER / MOTION_BLOCKING_NO_LEAVES / checkSurfaceWaterAnimalSpawnRules, Operation.REPLACE)",
+    "net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers (mod bus, client only - the listener is added only when FMLEnvironment.dist == Dist.CLIENT, and the handler itself returns unless FlyingFishModule.isContentRegistered())",
+    "net.neoforged.neoforge.event.entity.living.LivingDropsEvent (game bus, gated on isModuleEnabled - fallback fish drop)",
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (game bus, gated on isModuleEnabled - adds the recipe reload listener)",
+    "net.neoforged.neoforge.event.tick.PlayerTickEvent.Post (game bus, gated on isModuleEnabled - server side only, skips passengers and spectators; all boots movement)"
+  ],
+  "hasStandaloneJar": true,
+  "items": [
+    "flying_fish_boots",
+    "flying_fish",
+    "cooked_flying_fish",
+    "flying_fish_spawn_egg",
+    "flying_fish_bucket"
+  ],
+  "keybinds": [],
+  "mixins": [],
+  "moduleId": "flying_fish",
+  "notes": "DOC-WRITER NOTES (every claim below is checked against files in this repo; the two claims that\nneed the vanilla 1.21.1 game data are checked against the decompiled/extracted Minecraft under\nbuild/neoForm/neoFormJoined1.21.1-20240808.144430/, which this project's own toolchain produced).\n\n1) COOKED FLYING FISH HAS NO COOKING RECIPE. Nothing in src/main/java or src/main/resources turns raw\ninto cooked. A repo-wide grep for cooked_flying_fish hits only the registration (FlyingFishModule.java:95-100),\nthe creative tab (:149), the LivingDropsEvent fallback (:197,:203), cat_guardian's food check\n(CatGuardianModule.java:1011), the item model and the #minecraft:fishes tag. The smelting/smoking/campfire\nJSONs existed once and were deleted in 1.0.0-beta.15 because they sat in the pre-1.21 plural folder\n`recipes/` (CHANGELOG.md:1025, restated at :1019); they were never re-implemented in code although the\nproject convention in CLAUDE.md demands code recipes. In-game sources are therefore: killing a flying\nfish that is ON FIRE (FlyingFishModule.java:203), creative, or commands. This contradicts the 0.15.0\nchangelog entry (CHANGELOG.md:1173) that still advertises \"Smelting-, Smoking- und Campfire-Rezepte\".\n\n2) THE ENTITY LOOT TABLE NEVER LOADS - now proven, not merely suspected. EntityType.Builder.build(String)\ndoes NOT set a loot table in 1.21.1 (EntityType.java:1317-1335); the table is derived lazily in\nEntityType#getDefaultLootTable from the registry key, as <namespace>:entities/<path>\n(EntityType.java:1037-1043). For this entity that is vanillaplusadditions:entities/flying_fish, which the\ndata loader reads from data/vanillaplusadditions/loot_table/entities/flying_fish.json - SINGULAR\nloot_table, exactly as vanilla ships its own (data/minecraft/loot_table/entities/cod.json in the 1.21.1\nserver jar). This repo's file sits at data/vanillaplusadditions/loot_tables/entities/flying_fish.json\n(PLURAL) and is still listed in the standalone jar's dataGlobs (build.gradle:426). Consequences: the\nentity resolves to the empty table, so the LivingDropsEvent fallback is the real and only drop path ->\ndrops are gated on the doMobLoot gamerule and the file's random_sequence never applies. Note also that\nthe JSON has no furnace_smelt function (vanilla's cod table does), so even a fixed path would not by\nitself produce the cooked drop - that comes from the event handler's isOnFire() branch.\nNeither Cod nor AbstractFish overrides getDefaultLootTable, so nothing else intervenes.\n\n3) THE CONFIG ONLY TUNES THE BOOTS, NOT THE FISH. FlyingFishEntity's own behaviour is entirely hardcoded\n(FlyingFishEntity.java:13-80): LEAP_CHANCE 0.12 rolled per aiStep, leap only while isInWater(), with no\nattack target, and only at the surface (fluid at blockPosition() is water, fluid one block above is not);\nlaunch = horizontal 0.45 + random*0.22, upward 0.56 + random*0.16; own leap cooldown 16 + random(24) ticks;\nair glide (out of water, not onGround) clamps fall speed to -0.08 and multiplies horizontal motion by 1.01.\nMovement speed attribute 1.1 via EntityAttributeCreationEvent (FlyingFishModule.java:162-169).\n\n4) HARDCODED BOOTS CONSTANTS not exposed in config: MAX_SURFACE_SPEED = 0.95 horizontal cap\n(FlyingFishModule.java:122, 406-415), launch keeps 0.6x the old horizontal motion and adds 0.55 * the\nnormalised horizontal look vector (:350-354), glide grace = 16 ticks after a leap (:366), water detection\nprobes y-0.1 / y-0.6 / y-1.0 plus isInWaterOrBubble (:378-383), and the DEFAULT surface check additionally\nrequires NO water at y+0.6 (:385-390).\n\n5) REALISTIC MODE ALSO KILLS THE GLIDE. The glide grace counter is set only inside launchPlayer(); REALISTIC\nnever launches (FlyingFishModule.java:297-299), so that mode leaves only the horizontal skim boost. ARCADE\nhalves the cooldown via Math.max(1, cooldown / 2) (:362-364) and leaps while fully submerged, not just near\nthe surface (:332-334).\n\n6) STALE STATE (small, bounded): playerLeapCooldowns and playerGlideGraceTicks are keyed by player UUID and\nare cleared either by counting down to <= 1 while ticking (:311-318) or on the first tick in which the player\nis NOT wearing the boots (:283-287). There is no PlayerLoggedOutEvent handler, so a player who logs out\nwearing the boots mid-cooldown leaves one Integer entry behind. Both maps are plain HashMaps but are only\ntouched on the server thread (the handler returns early on the client), so no concurrency issue.\n\n7) ENCHANTMENT RULES: Depth Strider and Frost Walker are blocked both at the table (isPrimaryItemFor) and via\nbooks (isBookEnchantable) - FlyingFishBootsItem.java:23-44; tooltip line desc_3 says so. The boots are\nlisted in data/minecraft/tags/item/enchantable/foot_armor.json, .../enchantable/armor.json and\n.../enchantable/durability.json. CAVEAT: of those three tag files the flying_fish standalone jar ships only\nfoot_armor.json (build.gradle:425-431), and vpa_core ships assets/** but no data/** (build.gradle coreJar,\n'assets/vanillaplusadditions/**'), so vpa_flying_fish installed standalone lacks the enchantable/armor and\nenchantable/durability entries the bundle has. It does ship fishes.json and cat_food.json, so the cat-food\nand feeding-station coupling survives standalone.\n\n8) BOOTS STATS: ArmorMaterials.DIAMOND, Type.BOOTS, durability ArmorItem.Type.BOOTS.getDurability(33) = 13*33\n= 429, i.e. exactly vanilla diamond boots (FlyingFishBootsItem.java:20; ArmorItem.java:145,159-160 in the decompiled 1.21.1 sources), Rarity.UNCOMMON. Three tooltip lines:\nitem.vanillaplusadditions.flying_fish_boots.desc_1/2/3 (aqua / gray / dark gray).\n\n9) FOOD VALUES: raw flying_fish nutrition 2 / saturation modifier 0.4F; cooked_flying_fish nutrition 5 /\nsaturation modifier 0.6F (FlyingFishModule.java:88-100).\n\n10) SPAWNS: MobCategory.WATER_AMBIENT, size 0.5 x 0.3, clientTrackingRange 4. SpawnPlacementTypes.IN_WATER +\nHeightmap MOTION_BLOCKING_NO_LEAVES + WaterAnimal::checkSurfaceWaterAnimalSpawnRules, registered with\nOperation.REPLACE. Biome modifiers: warm_ocean weight 28, lukewarm_ocean + deep_lukewarm_ocean weight 8,\nboth minCount 2 / maxCount 5. The split weights are a deliberate fix so flying fish stop crowding cod out of\nthe shared WATER_AMBIENT mob cap (CHANGELOG.md:665-675, beta.61).\n\n11) README CLAIM THAT IS WRONG: README.md:106 says the fish is \"woven into vanilla fishing\". It is not.\nThe module touches no fishing loot table (the only LootTableLoadEvent in the repo belongs to\nenhanced_ai_leader_loot); it only adds both fish items to the #minecraft:fishes ITEM tag, and vanilla's\nfishing table lists four literal item ids (cod 60, salmon 25, tropical_fish 2, pufferfish 13) with no tag\nentry - data/minecraft/loot_table/gameplay/fishing/fish.json in the 1.21.1 server jar. Flying fish cannot\nbe caught with a fishing rod. The cat-food claim in the same paragraph IS correct\n(data/minecraft/tags/item/cat_food.json adds raw flying_fish only, cooked deliberately excluded -\nCHANGELOG.md:677-680).\n\n12) CROSS-MODULE COUPLING (direction matters): cat_guardian depends on flying_fish, not the other way round.\nCatGuardianModule.java:73 imports FlyingFishModule and :1010-1011 accepts raw/cooked flying fish as\nguardian-cat food; build.gradle:403 gives vpa_cat_guardian moduleDeps ['vpa_debug_overlay','vpa_flying_fish'].\nBecause both fish items are in #minecraft:fishes, the cat and axolotl bowls/feeding stations accept them via\nthe tag as well (CatFeedingStationBlock.java:163, CatBowlBlock.java:44, AxolotlGuardianModule.java:385;\nCHANGELOG.md:651-656). flying_fish itself imports nothing from another module.\n\n13) DISABLED-MODULE EDGE: the two biome_modifier JSONs ship in the jar unconditionally, but the item and\nentity DeferredRegisters are handed to the mod bus only inside onInitialize() (FlyingFishModule.java:140-142),\nwhich ModuleManager calls only for modules enabled in config (ModuleManager.java:83-113). Turning flying_fish\noff therefore leaves datapack spawn entries pointing at an unregistered entity id. Not verified at runtime -\nflag as untested if the docs mention it.\n\n14) RECIPE INJECTION IS A FULL REPLACE: the reload listener copies every existing recipe into a LinkedHashMap,\nadds its own and calls RecipeManager.replaceRecipes on each datapack reload (FlyingFishModule.java:222-231).\nSeveral modules stack this same pattern per reload.\n\n15) RENDERING: FlyingFishRenderer (46 lines total) reuses the vanilla CodModel and ModelLayers.COD with its own\ntexture vanillaplusadditions:textures/entity/fish/flying_fish.png; it adds a sine wiggle and, when out of water,\na 90 degree Z rotation plus a small translate so the fish looks like it is soaring\n(FlyingFishRenderer.java:28-44). Renderer registration is additionally guarded by\nFlyingFishModule.isContentRegistered() (FlyingFishClientHooks.java:10-16).\n\n16) FlyingFishEntity extends Cod, and Cod extends AbstractSchoolingFish - so the flying fish inherits cod AI\nINCLUDING schooling behaviour, cod sounds and cod bucket handling; only getBucketItemStack is overridden\n(plus aiStep for the leap/glide). Anything in another mod that checks instanceof Cod or instanceof\nAbstractSchoolingFish will also match flying fish.\n\n17) The player tick deliberately skips client side, passengers and SPECTATORS (with an in-code comment at\nFlyingFishModule.java:274-276: the forced velocity sync jerks the spectator camera). Boost requires\nisSprinting() && !isShiftKeyDown() && touching water. All boots movement is server-authoritative via\nhasImpulse/hurtMarked - no client-side movement code, no packets.\n\n18) No mixins, no commands, no keybinds, no network payloads, no ModList.isLoaded checks, no shouldInitialize\noverride and no JEI plugin in this module (verified by grep over the module package). The boots recipe should\nstill appear in JEI because it lives in the RecipeManager rather than in a code-only repair hook - that part\nis an inference about JEI, not something this repo proves.\n\n19) There is currently NO docs/modules/flying_fish.md page - this module is documented only by the README\nparagraph (README.md:105-106).\n\n20) Localisation exists for en_us, de_de, de_at, es_es, fr_fr and cs_cz: each of the six lang files carries the\nsame 9 flying_fish keys (entity name, 5 item names, 3 boots tooltip lines).",
+  "oneLiner": "Adds flying fish that leap out of warm oceans, plus Flying Fish Boots that let you sprint across the water surface, hop out of the water and glide back down.",
+  "optionalMods": [],
+  "recipes": [
+    "Shapeless: Diamond Boots + Bucket of Flying Fish -> Flying Fish Boots (recipe id vanillaplusadditions:flying_fish_boots, CraftingBookCategory.EQUIPMENT), injected at runtime by a PreparableReloadListener added in AddReloadListenerEvent, which merges it into RecipeManager.replaceRecipes (FlyingFishModule.java:213-241); gated on isModuleEnabled(). The bucket comes back as an empty Bucket because FLYING_FISH_BUCKET is registered with .craftRemainder(Items.BUCKET) (FlyingFishModule.java:113).",
+    "Fallback mob drop (not a crafting recipe): LivingDropsEvent adds one Flying Fish, or Cooked Flying Fish when the dying fish is on fire, if the drop list contains no flying fish yet and the doMobLoot gamerule is on (FlyingFishModule.java:181-211). Because the entity loot table sits in the wrong folder (see notes), this is in practice the only drop path.",
+    "NO cooking recipe exists: raw -> cooked Flying Fish cannot be smelted, smoked or cooked on a campfire anywhere in this repo (see notes 1)."
+  ],
+  "registeredInBundle": true,
+  "requiredMods": [],
+  "shortDescription": "Adds leaping flying fish and water-skimming Flying Fish Boots.",
+  "side": "both",
+  "sinceCommit": "10e9ea4",
+  "sinceVersion": "v0.15.0",
+  "moduleDeps": [],
+  "relatedModules": []
+}

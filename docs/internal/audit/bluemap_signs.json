@@ -1,0 +1,40 @@
+{
+ "moduleId": "bluemap_signs",
+ "claimsChecked": 95,
+ "problems": [
+  {
+   "quote": "`BlockEvent.BreakEvent` is handled without checking `isCanceled()`, so a protection mod cancelling the break still costs the marker until the chunk reloads. Read from the source; not reproduced.",
+   "issue": "Overbroad, and wrong for the common case. `@SubscribeEvent` defaults to `receiveCanceled = false` — verified in the bytecode of bus-8.0.5 (`javap -v net/neoforged/bus/api/SubscribeEvent.class` shows `AnnotationDefault: false` for `receiveCanceled()` and `NORMAL` for `priority()`), so `onBlockBreak` is never invoked at all for an already-cancelled event. And `CommonHooks.fireBlockBreak` (neoforge 21.1.248 sources, line 582-584) calls `event.setCanceled(preCancelEvent)` BEFORE `NeoForge.EVENT_BUS.post(event)`, pre-cancelling for adventure mode, `player.blockActionRestricted` (spawn protection) and `GameMasterBlock`. A protection mod that cancels at HIGH/HIGHEST — which is what they use precisely to run first — likewise cancels before the module's NORMAL-priority handler, so the marker survives.",
+   "correction": "Narrow the body to what the row title already says: only a listener that cancels AFTER ours (priority lower than NORMAL) costs the marker. A break pre-cancelled by vanilla (spawn protection, adventure mode) or cancelled by a higher-priority protection mod never reaches `onBlockBreak`, and the marker is kept.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "`api` and `live` are `volatile`, and every push checks `isLive()`; while BlueMap is disabled the pushes are dropped and the next enable rebuilds from storage. Everything else (mixin hook, chunk and break events, commands) is already on the server thread.",
+   "issue": "The closing sentence claims completeness that the code does not have. `BlueMapBridge.onEnable` (compat/BlueMapBridge.java:56-63) sets `this.live = true` before calling `setupIcons(enabledApi.getWebApp())`, and `setupIcons` does `iconAddresses.clear()` / `iconAnchors.clear()` plus `put(...)` on two plain `HashMap`s from BlueMap's thread, while `buildPoi` reads those same maps with `get(...)` from the server thread. That is unsynchronised concurrent access, and it is not 'everything else ... already on the server thread'.",
+   "correction": "Add the icon maps to the paragraph: `setupIcons` runs on BlueMap's thread against unsynchronised `HashMap`s, and because `live` is set true before the icons are uploaded, a marker pushed during that window falls back to `defaultIcon()`.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| `modules/bluemap_signs/BluemapSignsModule.java` | The four event handlers, the `ModList` gate, the static mixin hook |",
+   "issue": "The file carries five `@SubscribeEvent` methods: `onServerStarting`, `onServerStopping`, `onChunkLoad`, `onBlockBreak` and `onRegisterCommands`. The fact sheet's `events` array also lists five. 'Four' only works if `onRegisterCommands` is silently excluded, which the row does not say — and the row's own next column mentions the mixin hook separately, so the reader has no cue that a handler was left out.",
+   "correction": "Either 'The five event handlers' or 'Four runtime handlers plus the command registrar, the `ModList` gate, the static mixin hook'.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Ids are stable and never reused:",
+   "issue": "True for command markers (`nextCommandId` only ever increments a persisted counter) but not for sign markers. `MapSignManager.signId(pos)` is `\"s/\" + Long.toUnsignedString(pos.asLong())`, i.e. the id IS the position, so a sign broken and rebuilt at the same block gets exactly the same id and its record is overwritten in place. The page even says so two paragraphs later ('a sign marker cannot be moved; it can only vanish and reappear elsewhere'), which contradicts the lead-in.",
+   "correction": "Split the claim: command ids are never reused; a sign id is its position, so rebuilding a `[bm]` sign at the same block reuses the same id and takes over the old record.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "`SIGN_IMMUTABLE` for anything with source `SIGN` and answer *\"change or break the sign (line 1) to edit/remove it.\"*",
+   "issue": "The quoted message is truncated without an ellipsis. `command.vpa.bmsigns.sign_immutable` in `en_us.json` is \"This marker comes from a sign — change or break the sign (line 1) to edit/remove it.\" The other quoted string on the page (\"BlueMap is not installed on this server.\") is exact, so a reader will take this one as exact too.",
+   "correction": "Quote it in full, or write *\"… change or break the sign (line 1) to edit/remove it.\"* to mark the elision.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [
+  "docs/modules/bluemap_signs.md:213 — contains a `<!-- TODO: verify in game with vpa_bluemap_signs.jar + vpa_core.jar; ... -->` marker. `scripts/docgen/check_docs.py` flags this as a warning ('still contains a TODO marker'); warnings do not fail CI, and 12 other module pages carry one, so this is a deliberate-looking convention rather than a hard break. Everything else the template requires is in order: level-1 heading, `**TL;DR**` line, all four `vpa:meta` / `vpa:config` markers present and empty (no hand-written text between them), no hand-written config table, no '## Configuration' heading, no images at all, and every relative link (`overpacked_extensions.md`, `../guides/configuration.md`, `../../README.md#-modules`) resolves — verified with `check_docs.py --no-delegate`, which reports zero errors for this page."
+ ],
+ "verdict": "needs-repair"
+}

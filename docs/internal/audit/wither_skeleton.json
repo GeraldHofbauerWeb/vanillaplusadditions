@@ -1,0 +1,39 @@
+{
+  "moduleId": "wither_skeleton",
+  "verdict": "needs-repair",
+  "problems": [
+    {
+      "quote": "passing the original spawn type is what keeps persistence and despawn behaviour in line with the spawn it replaced",
+      "issue": "Not true in 1.21.1. The MobSpawnType handed to finalizeSpawn is never used for persistence or despawning anywhere in the WitherSkeleton chain: WitherSkeleton.finalizeSpawn (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/entity/monster/WitherSkeleton.java:80-85) only calls super, sets ATTACK_DAMAGE and reassesses the weapon goal; AbstractSkeleton.finalizeSpawn (AbstractSkeleton.java:136-153) ignores the parameter entirely; Mob.finalizeSpawn (Mob.java:1192-1203) does exactly one thing with it: 'this.spawnType = spawnType;' (Mob.java:1202). Every use of that field in the whole of net.minecraft is NBT save/load ('neoforge:spawn_type', Mob.java:446-447 and :514) and the NeoForge getter Mob#getSpawnType (Mob.java:1590-1591). persistenceRequired is set only via setPersistenceRequired (Mob.java:1205-1207), which nothing in this chain calls.",
+      "correction": "Say what it actually does: passing the original spawn type only records it on the mob (Mob#getSpawnType / the 'neoforge:spawn_type' NBT tag) so other mods can read where it came from - it has no effect on persistence or despawning. The replacement wither skeleton despawns exactly like any other non-persistent mob.",
+      "severity": "wrong"
+    },
+    {
+      "quote": "A weight of two out of twenty-eight, so roughly one fortress monster in fourteen is an ordinary bow skeleton standing between the blazes, worth a bone and two arrows.",
+      "issue": "The weight decides which SpawnerData a spawn ROLL picks, not how many mobs of each kind end up in the world - and the group sizes in FORTRESS_ENEMIES differ (NetherFortressStructure.java:17-23: BLAZE w10 count 2-3, ZOMBIFIED_PIGLIN w5 count 4, WITHER_SKELETON w8 count 5, SKELETON w2 count 5, MAGMA_CUBE w3 count 4). Weighted by the expected group size the skeleton share is about 10 of 107 mobs, i.e. closer to one in eleven, not one in fourteen. 2/28 = 1/14 is correct only for the roll, which the sentence turns into a per-monster figure.",
+      "correction": "Keep '2 of 28' but attach it to the roll: 'a weight of two out of twenty-eight, so about one fortress spawn roll in fourteen is a group of five plain skeletons' (or give the per-mob figure as roughly one monster in eleven).",
+      "severity": "misleading"
+    },
+    {
+      "quote": "    Structure structure = ...getOrThrow(BuiltinStructures.FORTRESS);",
+      "issue": "Misquote. The real line is 'Structure structure = structureManager.registryAccess().registryOrThrow(Registries.STRUCTURE).get(BuiltinStructures.FORTRESS);' (build/neoForm/neoFormJoined1.21.1-20240808.144430/steps/unzipSources/unpacked/net/minecraft/world/level/NaturalSpawner.java:319) - a plain get, which is exactly why the next line the page quotes verbatim ('return structure == null ? false : ...', :320) has a null check. As printed, getOrThrow can never return null and the retained null check reads as dead code.",
+      "correction": "Quote it as '.get(BuiltinStructures.FORTRESS)' (the elided prefix is 'structureManager.registryAccess().registryOrThrow(Registries.STRUCTURE)').",
+      "severity": "misleading"
+    },
+    {
+      "quote": "Inside a Nether fortress a plain skeleton never gets to spawn: it is turned away and a wither skeleton takes its place.",
+      "issue": "The TL;DR promises less than the module does, and the page itself refutes it further down ('That is wider than the region vanilla itself calls a fortress spawn'). The gate is getAllStructuresAt on the mob's block position (WitherSkeletonModule.java:101-102), i.e. the structure references of the whole chunk column (StructureManager.java:157-160 uses only SectionPos.x()/z()), written to every chunk whose 16x16 footprint overlaps the fortress bounding box (ChunkGenerator.java:586). A skeleton in the lava sea below the fortress or on the surface above it is converted too, though it is in no sense 'inside a Nether fortress'.",
+      "correction": "Phrase the TL;DR by the real gate, e.g. 'In a chunk that belongs to a Nether fortress a plain skeleton never gets to spawn ...' - which also matches the wording already used in the first line of 'What it does'.",
+      "severity": "style"
+    }
+  ],
+  "templateViolations": [],
+  "sourceBugs": [
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:100 / :113 / :115 - the comments and the debug log say the opposite of what the code does: '// Check if the skeleton is inside a fortress - allow it if so', '// Allow normal skeleton spawn inside Nether Fortress' and getLogger().debug(\"Allowed normal skeleton spawn inside Nether Fortress at {}\") all fire on the exact path that sets insideFortress = true and therefore cancels the spawn eighteen lines later at :133.",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:29-40 (class javadoc) and :60 (startup log 'Normal skeletons are now banned from the Nether!') claim a Nether-wide ban; the handler returns early for every skeleton whose chunk carries no fortress reference (:103-105, :123-125), so plain skeletons spawn freely in the wastes and soul sand valleys.",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:33-34 and :39-40 advertise 'Optionally replaces them with Wither Skeletons' and 'Configurable message format and replacement behavior'. The replacement at :139 is unconditional and no such config keys exist - WitherSkeletonConfig.buildModuleSpecificConfig is an empty method (config/WitherSkeletonConfig.java:14-16).",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:49-50 - the shortDescription passed to super() says the module 'broadcasts messages about blocked spawns' without qualification, but broadcastSkeletonBlockedMessage returns immediately unless debug logging resolves to on (:146), and debug_logging defaults to AUTO (core/AbstractModuleConfig.java:66) over globalDebugLogging = false (core/ModulesConfig.java:63, :121). Out of the box nothing is ever broadcast.",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:188-189 calls Mob#finalizeSpawn directly; that method is @Deprecated / @ApiStatus.OverrideOnly in NeoForge with the note 'External callers should call via net.neoforged.neoforge.event.EventHooks#finalizeMobSpawn' (Mob.java:1185-1191). Using EventHooks.finalizeMobSpawn would let other mods' FinalizeSpawnEvent handlers see the replacement (and cannot recurse into this handler, since WitherSkeleton is not a Skeleton, AbstractSkeleton.java:46 / WitherSkeleton.java:28).",
+    "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:149-160 - the chat message is a hardcoded English literal with emoji (no lang key exists), and its coordinate line carries a RUN_COMMAND click event for '/tp @p x y z', which requires permission level 2 (TeleportCommand.java:43, :157), so a normal player clicking it just gets an error."
+  ]
+}

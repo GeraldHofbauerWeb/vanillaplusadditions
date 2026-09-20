@@ -1,0 +1,20 @@
+{
+ "moduleId": "tipped_arrows",
+ "claimsChecked": 54,
+ "problems": [
+  {
+   "quote": "`canCraftInDimensions` is the more generous `width >= 3 && height >= 3`, which is the same asymmetry vanilla's recipe carries: a modded grid bigger than 3×3 advertises the recipe but `matches()` still refuses it.",
+   "issue": "The consequence is wrong. A CraftingInput is never the raw container size: CraftingContainer.asPositionedCraftInput() calls CraftingInput.ofPositioned(), which crops the grid to the bounding box of the non-empty slots (build/neoForm/neoFormJoined1.21.1-20240808.144430/.../world/item/crafting/CraftingInput.java:36-82, .../world/inventory/CraftingContainer.java:15-21). A 3x3 pattern placed anywhere inside a 4x4 or larger modded grid therefore reaches matches() as a 3x3 input and DOES match — that cropping is exactly what makes `>= 3` the right dimension check. matches() only refuses when the filled area itself is not 3x3 (e.g. a stray tenth item outside the block).",
+   "correction": "Say instead: matches() requires the *filled* area to be exactly 3x3. Because vanilla crops the crafting input to its non-empty bounding box, a 3x3 pattern in a bigger modded grid still matches; only the 2x2 inventory grid, which can never produce a 3x3 input, is out. (The `>= 3` vs `== 3` difference between the two methods is real and is vanilla's, but it does not mean larger grids are refused.)",
+   "severity": "wrong"
+  },
+  {
+   "quote": "This snapshot-and-replace dance is house style rather than a one-off: twelve other modules do the same thing",
+   "issue": "Count is one short. `grep -rln \"replaceRecipes\" src/main/java/` returns 14 files, i.e. 13 modules besides tipped_arrows: custom_crafting_recipes, flying_fish, cat_guardian, battle_dogs, minecart_chunk_loading, stationary_chunk_loader, axolotl_guardian, end_conduit, mob_cart_loader, train_chunk_loading, pathfinder_quills, compass_overhaul and mo_arrows (MoArrowsModule.java:141-146, the same LinkedHashMap snapshot + replaceRecipes). The fact sheet itself says 13 but only names 12 — mo_arrows (added in v1.0.0-beta.87) is the one missing from its list.",
+   "correction": "\"thirteen other modules do the same thing\" (or drop the number: \"a dozen-plus other modules\").",
+   "severity": "wrong"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

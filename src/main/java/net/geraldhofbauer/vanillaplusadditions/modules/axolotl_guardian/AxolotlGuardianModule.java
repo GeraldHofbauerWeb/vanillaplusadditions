@@ -291,7 +291,9 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
     private static final ResourceLocation ARMOR_MODIFIER_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "axolotl_armor_bonus");
 
-    // Guard follow-range boost: doubles the A* node budget (16→32 blocks) for guard-radius pathing
+    // Guard follow-range boost: doubles the pathfinder's SEARCH RADIUS (16->32 blocks). The
+    // visited-node budget is fixed in PathNavigation's constructor and a later modifier cannot
+    // change it; createPath() however reads FOLLOW_RANGE live as the search range.
     private static final ResourceLocation GUARDIAN_FOLLOW_RANGE_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "axolotl_guardian_follow_range");
 
@@ -674,7 +676,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         // Axolotl.loadFromBucketTag (see restoreFromBucketTag) — MobBucketItem calls that right
         // after type.spawn returns, so it is still the same tick and before the entity ticks.
 
-        // Boost follow-range so the A* node budget covers the guard radius (base axolotl: 16)
+        // Boost follow-range so the search radius covers the guard radius (base axolotl: 16)
         var followRangeAttr = axolotl.getAttribute(Attributes.FOLLOW_RANGE);
         if (followRangeAttr != null && !followRangeAttr.hasModifier(GUARDIAN_FOLLOW_RANGE_ID)) {
             followRangeAttr.addPermanentModifier(new AttributeModifier(

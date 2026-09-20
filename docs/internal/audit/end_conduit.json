@@ -1,0 +1,44 @@
+{
+ "moduleId": "end_conduit",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "| Particle type | `vanillaplusadditions:end_nautilus` (`SimpleParticleType`, limiter off) |",
+   "issue": "Inverts the meaning of the constructor flag. The code is `new SimpleParticleType(false)` (EndConduitModule.java:91), and that boolean is `overrideLimiter` (ParticleType.java:8-16). `false` means the limiter is NOT overridden, i.e. the particle is subject to the client's particle limiter. \"limiter off\" reads as the opposite. ClientLevel.java:714 passes `getOverrideLimiter()` as the `force` argument, confirming the direction. The fact sheet gets this right (\"overrideLimiter false\"); the page paraphrased it backwards.",
+   "correction": "Write `SimpleParticleType`, limiter override off (the particle respects the client's particle limiter) — or simply `overrideLimiter = false`.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Conduit Power on its own is underwater night vision and a mining-speed bonus, which is not much use\non dry End stone.",
+   "issue": "Incomplete enumeration of a vanilla effect, and the omitted item is precisely the one the page is about. `MobEffectUtil.hasWaterBreathing` (MobEffectUtil.java:44) returns true for CONDUIT_POWER, so vanilla Conduit Power also grants water breathing, alongside hasDigSpeed (line 26) and the LightTexture underwater-vision branch (LightTexture.java:100). The page's practical point still holds — CommonHooks.onLivingBreathe:1353 only consults hasWaterBreathing when the eye is not in air, so it is inert on dry ground — but the sentence as written tells the reader vanilla Conduit Power has nothing to do with air, which is why the End Oxygen coupling can look more novel than it is.",
+   "correction": "\"Conduit Power on its own is water breathing, underwater night vision and a mining-speed bonus — none of which does anything on dry End stone, because vanilla only consults the water-breathing branch when your head is actually in a fluid.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| Toggling at runtime | `/vpa module enable\\|disable end_conduit` resolves on every check, so activation follows immediately. The recipe follows only at the next datapack reload. |",
+   "issue": "True for the server, but the page's own thesis is that both sides evaluate activation independently, and this row does not carry that over. `/vpa` is registered server-side (VanillaPlusAdditions.java:238-241, `requires(hasPermission(2))`) and `executeSetModuleRuntimeEnabled` writes into `ModuleManager.getInstance().runtimeModuleOverrides` in the server JVM only. `clientTick` calls the same `EndConduitModule.isModuleActive()` against the *client's* ModuleManager, which has no override, so on a dedicated server the block keeps rendering as active (cage turning, particles) after the command while the server has stopped granting Conduit Power. In singleplayer both sides share one ModuleManager, so it works there.",
+   "correction": "Add the qualifier: \"…so activation follows immediately on the server. The command is a server-side runtime override, so on a dedicated server the client keeps rendering the conduit active until it is restarted or its own config changes — the same split as the row above.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "public static int effectRadius(int frames) {\n    int divisor = module != null ? Math.max(1, module.getConfig().getEffectRadiusDivisor()) : 1;\n    return Math.max(1, frames / 7 * 16 / divisor);\n}",
+   "issue": "Presented as a verbatim method but a line has been silently dropped. The real method (EndConduitModule.java:129-133) opens with `EndConduitModule module = instance;` before the `divisor` line. As quoted, `module` is never declared, so the snippet would not compile and a reader cannot see where the singleton comes from — which matters, because the `module != null` guard only makes sense once you know it reads a static `instance` field.",
+   "correction": "Add the missing first line `EndConduitModule module = instance;` (or mark the elision with `…`).",
+   "severity": "style"
+  },
+  {
+   "quote": "Both wind sprites carry a `.mcmeta` with\n`frametime: 3` over a 32-pixel-high strip.",
+   "issue": "Ambiguous number. The `.mcmeta` is `{\"animation\": {\"frametime\": 3, \"height\": 32}}` — 32 is the height of each *frame*, not of the strip. The PNGs themselves are 64×704, i.e. 22 frames of 64×32. A reader checking the file will find nothing 32 pixels high.",
+   "correction": "\"…a `.mcmeta` with `frametime: 3` and `height: 32` — 32-pixel frames down a 64×704 strip, i.e. 22 frames.\"",
+   "severity": "style"
+  },
+  {
+   "quote": "| `modules/end_conduit/client/EndConduitClientSetup` | Binds all three of the above |",
+   "issue": "Off by one row in each direction. The three rows immediately above are EndConduitBER, EndConduitItemRenderer and EndConduitTextures — but EndConduitClientSetup never touches EndConduitTextures (it is dereferenced by the two renderers, not by the setup class). What it actually registers is the BER, the particle provider and the item renderer. The later prose (\"The three client handlers sit in EndConduitClientSetup\") is correct; only this cell is not.",
+   "correction": "\"Registers the BER, the `end_nautilus` particle provider and the item renderer\" — EndConduitTextures is used by the renderers, not bound here.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

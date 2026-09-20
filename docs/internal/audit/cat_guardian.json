@@ -1,0 +1,59 @@
+{
+ "moduleId": "cat_guardian",
+ "claimsChecked": 142,
+ "problems": [
+  {
+   "quote": "Retaliation bypasses the search cooldown: a `Monster` that hits the cat inside the zone triggers an immediate re-target. A fleeing cat ignores that.",
+   "issue": "The retaliation block lives at the end of `CatGuardianModule#onCatHurt`, which returns early at the top with `if (!(armor.getItem() instanceof CatArmorItem)) { return; }`. So the immediate re-target only ever fires for a cat that is WEARING cat armor. An unarmored guardian that is hit gets no re-target at all — and because `suppressFollowingBehaviors` strips `HurtByTargetGoal` from every guardian, it has no vanilla retaliation either. The page states this unconditionally in the targeting section, where nothing hints that armor is a precondition.",
+   "correction": "Add the precondition, e.g.: \"Retaliation bypasses the search cooldown — but only for an armored cat: the handler that triggers it (`onCatHurt`) returns immediately for a cat with no cat armor. An unarmored guardian never retaliates, because vanilla's HurtByTargetGoal is stripped from guardians as well.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "* **Follow range +16**, which doubles the A\\* node budget; the way home doubles it again.",
+   "issue": "Verified against vanilla `PathNavigation` (1.21.1 client, Mojang mappings; NeoForge's only patch to that class is the MC-94054 waypoint fix, not the constructor): the node budget is computed once in the constructor — `int i = Mth.floor(mob.getAttributeValue(FOLLOW_RANGE) * 16.0); this.pathFinder = this.createPathFinder(i);` — from the base value, before any modifier exists. The module adds its +16 in `EntityJoinLevelEvent`, i.e. after the Mob constructor has already built the navigation (and after `readAdditionalSaveData` for a reloaded cat), so the visited-node cap stays at 256. What the attribute *does* change live is the `maxRange` argument of `createPath(Set,int,boolean,int)`, i.e. the pathfinder's search radius (16 → 32 blocks). The node budget is doubled only by `setMaxVisitedNodesMultiplier(2.0f)` on the way home — so \"doubles it again\" is also wrong, it is the only doubling.",
+   "correction": "\"**Follow range +16**, which doubles the pathfinder's search radius (16 → 32 blocks) — it is read live on every path request. The visited-node budget itself is fixed when the navigation is built and is only raised by the doubled multiplier on the way home.\" (The same wording should be fixed in the code comment at `CatGuardianModule.java:225`, which the page copied.)",
+   "severity": "wrong"
+  },
+  {
+   "quote": "Together with the full heal from a hand-fed fish that is the only way a guardian recovers: mobs have no natural regeneration, and armored cats never take damage to heal in the first place.",
+   "issue": "There is a third recovery path, and the page documents it itself 35 lines earlier: eating a fish out of the bowl applies `new MobEffectInstance(MobEffects.REGENERATION, 100, 1)` (CatGuardianModule#tickCat) — Regeneration II for 5 s, which heals about 4 HP (interval `50 >> 1` = 25 ticks). So station healing plus hand-feeding is not \"the only way\".",
+   "correction": "\"Together with the full heal from a hand-fed fish and the Regeneration II burst a cat gets from eating at its bowl, that is how a guardian recovers: mobs have no natural regeneration, and armored cats never take damage to heal in the first place.\"",
+   "severity": "wrong"
+  },
+  {
+   "quote": "it walks down whatever hostile mob enters, kills it, picks the drops up off the floor and carries them home.",
+   "issue": "Guardian cats never pick anything up off the floor. `onLivingDrops` intercepts the drops in `LivingDropsEvent` and inserts them into the cat's loot slots before the item entities are ever spawned; whatever does not fit is left lying where the mob died and is never collected. The page says so correctly twice later (\"before they ever become item entities\", \"the cat does not come back for them\"), so the intro contradicts the body.",
+   "correction": "\"it walks down whatever hostile mob enters, kills it, takes the drops straight out of the kill and carries them home.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "The bundled JEI plugin adds the entries back; without JEI the repair still works, it is just undiscoverable.",
+   "issue": "`CatGuardianJeiPlugin#registerRecipes` calls `JeiMobArmorRepairs.register(registration, Items.ARMADILLO_SCUTE, armors)` — a single repair material. Only the armadillo-scute repair shows up in JEI; the tier's own ingot/gem repair (which `CatArmorItem#isValidRepairItem` also accepts, and which the page's own armor table advertises) is not registered and stays invisible even with JEI installed.",
+   "correction": "\"The bundled JEI plugin adds the armadillo-scute repair back; the repair with the tier's own ingot or gem is not registered and stays invisible even with JEI. Without JEI both still work, they are just undiscoverable.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "It refuses to hop without a solid block to clear, without headroom above take-off and landing, and one block higher at a water edge, so it does not leap over banks it could walk around.",
+   "issue": "All three guards sit inside the `if (dir != null)` branch of `assistLedgeJump`. When `goalDir(cat)` returns null (no navigation path, no cached goal path and the bee-line is under 0.6 blocks), the method falls through to `cat.setDeltaMovement(vx, 0.5, vz)` with the cat's current velocity and performs the hop with no collision, headroom or water-edge check at all.",
+   "correction": "Qualify it: \"As long as it has a path direction to hop along, it refuses to hop without a solid block to clear, … With no usable direction it simply hops in place, unchecked.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| ≥ 5 while heading home | teleport to a standable block next to the bowl (vanilla pet-teleport rules: sturdy floor, two clear blocks, no fluid) |",
+   "issue": "The three listed checks are what `teleportToBowl` actually does, but they are not vanilla's rules. Vanilla `TamableAnimal#canTeleportTo` (verified in the 1.21.1 jar) requires `WalkNodeEvaluator.getPathTypeStatic(...) == PathType.WALKABLE`, rejects a leaves block below for non-flying pets, and then tests `level.noCollision(this, bbox.move(offset))` — no sturdy-face test, no fixed two-block column, no explicit fluid test. Calling the module's own heuristic \"vanilla pet-teleport rules\" misattributes it.",
+   "correction": "Drop the attribution: \"(sturdy floor, two collision-free blocks, no fluid — the module's own variant of the vanilla pet teleport)\".",
+   "severity": "misleading"
+  },
+  {
+   "quote": "| Unfed | the fed timer hits 0 | walks to the bowl and eats; binds itself to a bowl if it has none |",
+   "issue": "Auto-binding is not part of the unfed state. In `tickCat` the bowl-less branch runs first and returns immediately (`if (!hasBowl) { sitGoalSuppressor.restore(cat); tryAutoAssociate(...); return; }`), so it happens on every pass regardless of the fed timer, and such a cat is in none of the four states. The prose under \"Binding a cat to a bowl\" gets this right; the table row conflates the two.",
+   "correction": "Drop the second half of the cell — \"walks to the bowl and eats\" — and leave the auto-binding where it is already described correctly, as something a bowl-less cat does before any state logic runs.",
+   "severity": "misleading"
+  }
+ ],
+ "templateViolations": [
+  "Both generated blocks are present but EMPTY: lines 7-8 (`<!-- vpa:meta:start -->` / `:end`) and lines 375-376 (`<!-- vpa:config:start -->` / `:end`) contain nothing. `python3 scripts/docgen/gen_meta.py --check` counts the page under \"would update\" and exits non-zero, so CI (`check_docs.py`) fails on it. Concretely the page is missing its fact box (Module ID / Side / Requires / Works with / Download / Config section / Since) and the whole generated `## Configuration` section with the settings table — which is why the page has no `## Configuration` heading while sibling pages do. Fix: run `python3 scripts/docgen/gen_meta.py`. Nothing hand-written sits between the markers.",
+  "Two `<!-- TODO ... -->` markers remain (line 389 \"code-structure risk read off the source; not reproduced in game\" and line 451 \"not verified in game — no test in this repository starts the client with the module off\"). `check_docs.py` reports `~ docs/modules/cat_guardian.md: still contains a TODO marker`. Warning only, does not fail the build — and both are honest, accurate caveats (there is no `src/test` in this repo at all), so they should stay unless the project wants a different marker for \"verified by reading only\"."
+ ],
+ "verdict": "needs-repair"
+}

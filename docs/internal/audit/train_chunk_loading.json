@@ -1,0 +1,50 @@
+{
+ "moduleId": "train_chunk_loading",
+ "claimsChecked": 104,
+ "problems": [
+  {
+   "quote": "Read out of Create 6.0.9's shipped bytecode — Create is a `compileOnly` jar here, not a source dependency:",
+   "issue": "Create is NOT a compileOnly dependency in this build. build.gradle:127 reads `implementation files(\"libs/create-1.21.1-6.0.9.jar\")`. The only `compileOnly` Create-related entry is build.gradle:134-136, and that is for Create's extracted jar-in-jar libs (Registrate/Flywheel/Ponder) in libs/create-nested/, not for Create itself. The second half of the sentence ('not a source dependency') is correct; the Gradle configuration named is wrong.",
+   "correction": "Replace with something like: \"Create is only here as a binary jar (`implementation files(\\\"libs/create-1.21.1-6.0.9.jar\\\")`), not as a source dependency\" — or drop the configuration name entirely.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "A `TrackBlock` with Create's own track properties (map colour `METAL`, strength 0.8, metal sound, no occlusion) on a custom `TrackMaterial` `vanillaplusadditions:chunk_loader`, track type `STANDARD`.",
+   "issue": "The four listed properties are correct for our block, but they are not \"Create's own track properties\". Create's `track` block (AllBlocks, verified in create-1.21.1-6.0.9.jar) is built as `initialProperties(SharedProperties::stone)` — i.e. copied from `Blocks.ANDESITE` — and then `.mapColor(METAL).strength(0.8f).sound(METAL).noOcclusion().forceSolidOn()` (AllBlocks.lambda$static$262). ChunkLoaderTrackCompat.createBlock() starts from a bare `BlockBehaviour.Properties.of()` and omits `forceSolidOn()` and the andesite base (so no `requiresCorrectToolForDrops`). The same overstatement appears in the Java comment on ChunkLoaderTrackCompat.java:67.",
+   "correction": "Say that the block reuses the four properties Create's track sets (map colour METAL, strength 0.8, metal sound, no occlusion), built from a bare `Properties.of()` rather than Create's andesite base, and without Create's `forceSolidOn()`.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "      CarriageEntityHandler.isActiveChunk(level, pos)\n          true  → dimensional.createEntity(level, …)\n          false → dimensional.removeAndSaveEntity(entity, …)",
+   "issue": "The net effect is right, but this is presented as a direct reading of Create 6.0.9's bytecode and the drawn control flow is not what manageEntities does. Inside `Carriage.manageEntities` the direct `isActiveChunk` call (offset 192) only guards the `createEntity` branch, and it is reached only when there is no entity yet (`if (entity == null)`). The removal sits on the other side of that null check and is driven by `CarriageEntityHandler.validateCarriageEntity(entity)` (offset 263), which sets `entity.leftTickingChunks = !isActiveChunk(level, pos)`; `removeAndSaveEntity` (offset 293) then fires on `!isAlive() || leftTickingChunks || discard`. So `isActiveChunk` does decide both outcomes, but only one of them directly.",
+   "correction": "Either soften the sketch to 'isActiveChunk decides both branches' prose, or add the intermediate step: `CarriageEntityHandler.validateCarriageEntity(entity)` → `entity.leftTickingChunks = !isActiveChunk(…)` → `dimensional.removeAndSaveEntity(entity, …)`.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Every handler returns early on `isModuleEnabled()`, including the reconcile that would release chunks.",
+   "issue": "Not every handler. `onLevelUnload` (TrainChunkLoadingModule.java:185-190, `LevelEvent.Unload`) has no `isModuleEnabled()` check and calls `manager.forgetLevel(level)` unconditionally. `onRegisterTicketControllers` has none either (it is only added to the bus when the module initialised). The row's conclusion — tickets already held stay held until the level unloads — is still correct, so the impact is small.",
+   "correction": "Narrow the quantifier, e.g. 'The tick handlers (reconcile, player gate) and the recipe listener all return early on `isModuleEnabled()`, including the reconcile that would release chunks.'",
+   "severity": "misleading"
+  },
+  {
+   "quote": "        // Mirrors Create's own track properties (AllBlocks.TRACK).\n        return new ChunkLoaderTrackBlock(BlockBehaviour.Properties.of()",
+   "issue": "CODE NOTE (Java, not the page) — wrong comment in ChunkLoaderTrackCompat.java:67. Create's track is `initialProperties(SharedProperties::stone)` (Blocks.ANDESITE) + `.mapColor(METAL).strength(0.8f).sound(METAL).noOcclusion().forceSolidOn()`. This block mirrors four of those calls but starts from a bare `Properties.of()` and drops `forceSolidOn()`, so the comment claims a parity that does not hold.",
+   "correction": "Reword the comment to say which of Create's track properties are reproduced and which are deliberately not, or add `.forceSolidOn()` to match. Do not fix as part of a doc repair — flagging only.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "    @Override\n    protected void onCommonSetup() {\n        // Let Create's track block entity accept our block, so curved-connection BEs persist.\n        ChunkLoaderTrackCompat.extendTrackBlockEntityType(CHUNK_LOADER_TRACK.get(), getLogger());",
+   "issue": "CODE NOTE (Java, not the page) — genuine lifecycle bug. ModuleManager builds `enabledModules` purely from the config `enabled` flag (ModuleManager.java:89-99) and dispatches `commonSetup()`/`clientSetup()` to all of them (ModuleManager.java:117-135), while AbstractModule.initialize() returns early on `shouldInitialize()==false` (AbstractModule.java:96-99) without recording that. With the module config-enabled but Create absent, `BLOCKS.register(bus)` never ran, so `CHUNK_LOADER_TRACK.get()` here resolves an unbound DeferredHolder and throws; ModuleManager swallows it, but StandaloneModuleBootstrap.boot() (lines 61-64) wires `FMLCommonSetupEvent -> module.commonSetup()` with no try/catch at all. `onClientSetup()` then classloads ChunkLoaderTrackBorderRenderer, whose bytecode names Create's CarriageContraptionEntity — a NoClassDefFoundError, which is an Error and is not caught anywhere. The page's 'Standalone jar without Create' row describes the client half of this correctly and honestly marks it as read off the source.",
+   "correction": "Guard onCommonSetup()/onClientSetup() with the same `ModList.get().isLoaded(\"create\")` check (or an `initialized` flag on AbstractModule). Flagging only — no edit made.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "the other eight load one of Create's OBJ meshes through the NeoForge OBJ loader — the ascending piece, five crossings and two diagonals",
+   "issue": "CODE NOTE (Java/assets, not a doc error — the sentence itself is accurate). Create registers its track block's render layer via Registrate `addLayer(RenderType::cutoutMipped)` (AllBlocks, bootstrap #488 -> lambda$static$263); this repo registers no render type for `chunk_loader_track` (no `ItemBlockRenderTypes.setRenderLayer` anywhere in src/main/java) and only `models/block/chunk_loader_track/tie.json` carries `\"render_type\"`. `ItemBlockRenderTypes.getChunkRenderType` falls back to `RenderType.solid()` (decompiled 1.21.1, line 349-355), and the main texture has 376 fully transparent pixels, so the block's 11 blockstate models would render in the solid layer where Create's render cutout-mipped.",
+   "correction": "Verify in game; if confirmed, add `\"render_type\": \"minecraft:cutout_mipped\"` to the chunk_loader_track block models (or register the layer in client setup). Flagging only — not verified at runtime and not a claim the page makes.",
+   "severity": "unprovable"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

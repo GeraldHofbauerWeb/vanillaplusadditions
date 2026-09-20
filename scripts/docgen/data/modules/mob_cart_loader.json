@@ -1,0 +1,80 @@
+{
+  "moduleId": "mob_cart_loader",
+  "displayName": "Mob Cart Loader",
+  "shortDescription": "Two blocks that load/unload mobs into minecarts on the adjacent rail, showing the mob as a spinning model and (with Create goggles) its stats.",
+  "oneLiner": "Two translucent machine blocks that capture a mob out of a pen and drop it into a parked minecart (or the seat of a standing Create train) - and back out again - with the captured mob spinning visibly inside and a comparator telling you whether it is hostile or friendly.",
+  "side": "both",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": false,
+  "requiredMods": [],
+  "optionalMods": [
+    {
+      "modId": "create",
+      "whatItAdds": "Two separate things. (1) The train half: the loader's output face (or the unloader's input face) may point at a block tagged create:tracks instead of at a rail, and the mob is then seated into / pulled out of the seats of a STANDING Create train carriage (CarriageContraptionEntity, via Contraption#getSeats / getSeatMapping / getSeatOf and AbstractContraptionEntity#addSittingPassenger; a train counts as standing when Create.RAILWAYS.trains has it, it is !derailed and |speed| < 1.0E-3). (2) Create's Engineer's Goggles are one of the two ways to trigger the HUD stats panel (GogglesItem.isWearingGoggles - helmet slot or a Curios slot). Without Create the create:tracks tag does not exist, so CreateCompat.isTrack() is always false, findTrackTarget returns null before any CreateTrainAccess member is resolved, and the blocks still work fully on plain minecarts. The module has NO shouldInitialize()/ModList gate of its own - initialization is never skipped; the only runtime check is CreateCompat.CREATE_LOADED = ModList.get().isLoaded(\"create\").",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/mob_cart_loader/compat/CreateCompat.java:24,28,45-47; .../compat/CreateTrainAccess.java:3-7 (com.simibubi imports),70-187 (findFreeSeat/findSeatedMob/seat/isStanding); .../blockentity/AbstractMobCartBlockEntity.java:124-140 (findTrackTarget gated on CreateCompat.isLoaded()); .../client/MobCartGogglesClientHandler.java:41; src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/debug_overlay/client/GogglesUtil.java:25,33; src/main/resources/META-INF/neoforge.mods.toml:82-87 (create declared type=\"optional\", side=\"BOTH\")"
+    },
+    {
+      "modId": "aeronautics",
+      "whatItAdds": "Only the HUD stats panel, and only as an alternative to Create's goggles: GogglesUtil also accepts any HEAD-slot item in the vanillaplusadditions:arm_goggles item tag, whose two (optional) entries are create:goggles and aeronautics:aviators_goggles. So Create: Aeronautics' aviator's goggles light up the same panel. Without either goggles source the blocks behave identically, the panel simply never renders.",
+      "evidence": "src/main/resources/data/vanillaplusadditions/tags/item/arm_goggles.json (create:goggles + aeronautics:aviators_goggles, both required:false); src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/debug_overlay/client/GogglesUtil.java:21-36; .../mob_cart_loader/client/MobCartGogglesClientHandler.java:35-53"
+    }
+  ],
+  "items": [
+    "mob_loader",
+    "mob_unloader"
+  ],
+  "blocks": [
+    "mob_loader",
+    "mob_unloader"
+  ],
+  "entities": [],
+  "commands": [],
+  "keybinds": [],
+  "mixins": [],
+  "events": [
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (NeoForge game bus; the module instance subscribes itself via NeoForge.EVENT_BUS.register(this) in onInitialize, handler MobCartLoaderModule#onAddReloadListener returns early unless isModuleEnabled() and otherwise adds a PreparableReloadListener that injects the two crafting recipes on the game executor)",
+    "net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers (mod bus, @EventBusSubscriber(value = Dist.CLIENT, bus = Bus.MOD) in MobCartLoaderClientSetup - registers MobCartBER for both block entity types)",
+    "net.neoforged.neoforge.client.event.RenderGuiEvent.Post (game bus, @EventBusSubscriber(value = Dist.CLIENT, bus = Bus.GAME) in MobCartGogglesClientHandler - draws the goggle stats panel)"
+  ],
+  "recipes": [
+    "mob_loader (shaped, injected in code via AddReloadListenerEvent -> RecipeManager.replaceRecipes, id vanillaplusadditions:mob_loader): rows \"GGG\"/\"HSM\"/\"GGG\" with G = minecraft:glass, H = minecraft:hopper, S = minecraft:saddle, M = minecraft:minecart -> 1x vanillaplusadditions:mob_loader (CraftingBookCategory.MISC)",
+    "mob_unloader (shaped, injected the same way, id vanillaplusadditions:mob_unloader): rows \"GGG\"/\"MSD\"/\"GGG\" with G = minecraft:glass, M = minecraft:minecart, S = minecraft:saddle, D = minecraft:dropper -> 1x vanillaplusadditions:mob_unloader (CraftingBookCategory.MISC)",
+    "Block drops: the shared base class AbstractMobCartBlock overrides getDrops(BlockState, LootParams.Builder) and returns exactly one ItemStack of itself, so both blocks drop themselves - no loot-table JSON (per the repo's code-only recipes/loot rule)"
+  ],
+  "configKeys": [
+    {
+      "key": "check_interval_ticks",
+      "type": "int",
+      "defaultValue": "5",
+      "range": "1 ~ 40",
+      "effect": "How often (in ticks) each loader/unloader block scans the adjacent rail and pen; lower = more responsive, higher = cheaper. The check is global-phase (serverLevel.getGameTime() % interval), not per block, and the value is additionally clamped with Math.max(1, ...)."
+    },
+    {
+      "key": "create_trains.enabled",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Also load/unload mobs into the seats of Create train carriages (inert without Create; minecart handling is unaffected either way). Checked inside findTrackTarget, so turning it off makes the blocks minecart-only."
+    },
+    {
+      "key": "create_trains.track_search_distance",
+      "type": "int",
+      "defaultValue": "3",
+      "range": "1 ~ 8",
+      "effect": "How many positions along the relevant direction the block scans for a Create track, starting at the block directly in front of the output (loader) / input (unloader) face - so 3 means that neighbour plus two more. The scan stops at the first block with a non-empty collision shape, so it never reaches through a wall."
+    },
+    {
+      "key": "create_trains.seat_search_radius",
+      "type": "double",
+      "defaultValue": "4.0",
+      "range": "1.0 ~ 16.0",
+      "effect": "How far (in blocks) a carriage seat may be from the found track block to still count; measured from the track block's centre, and the nearest matching seat wins. The same radius also inflates the AABB used to collect candidate carriages."
+    }
+  ],
+  "sinceVersion": "v1.0.0-beta.53",
+  "sinceCommit": "443fd4b",
+  "notes": "HOW IT REALLY WORKS (the README undersells this): the blocks do NOT move a mob straight from pen to cart. They CAPTURE the mob into the block entity as full entity NBT (field storedMob, key \"StoredMob\", written only in saveAdditional, never in getUpdateTag), discard() it from the world, and only RELEASE it to the output side once that side is unobstructed. A solid block in front of the output (e.g. an extended piston head) keeps the mob buffered inside indefinitely -> release is piston/redstone-gateable. Breaking the block calls dropStored() from AbstractMobCartBlock#onRemove, so a buffered mob is never lost. A doc page should lead with this buffering behaviour; README lines 70-78 only hint at it via \"stored mob\" in the comparator bullet.\n\nFACING SEMANTICS ARE EASY TO GET WRONG. BlockStateProperties.FACING stores the INPUT direction (observer-style: getNearestLookingDirection().getOpposite(), i.e. it points toward the player at placement; sneak-placing flips it 180 deg via isSecondaryUseActive). Output is always the opposite face. So for the LOADER the pen is on FACING and the cart/track on the opposite face; for the UNLOADER the cart/track is on FACING and the pen on the opposite face. The class javadoc on MobLoaderBlock (\"...minecart on the block's facing side\", \"Shows the pen candidate as the spinning mini-mob\") and the matching sentence in MobCartLoaderModule's class javadoc are STALE from before the store-inside rewrite and contradict MobLoaderBlockEntity's actual code (it reads inputPos for the pen and outputPos for the cart). MobUnloaderBlock's javadoc happens to be correct. Don't copy the block javadocs into docs.\n\nREDSTONE IS INVERTED: POWERED=true means INACTIVE. AbstractMobCartBlock.isActive(state) == !POWERED, and each tickServer bails out on it. Both powered=true blockstate variants swap to the *_inactive models (the same geometry with dimmed *_off textures), getStateForPlacement seeds POWERED from hasNeighborSignal and neighborChanged keeps it in sync. 6-way FACING (up/down included, blockstates rotate the model via x/y), rotate/mirror implemented.\n\nCOMPARATOR: hasAnalogOutputSignal is always true; getComparatorOutput() returns 0 = empty, 1 = stored mob of MobCategory.MONSTER, 2 = anything else. It is derived from the *display* type (which is set and cleared together with the stored mob), and updateNeighbourForOutputSignal is fired from exactly one place, setDisplay(), i.e. only when the synced display state actually changes.\n\nWHAT IT WILL AND WON'T PICK UP: the loader takes only net.minecraft.world.entity.Mob (so never players), alive, !isPassenger(), inside AABB(penPos).expandTowards(0,1,0) - a 1x2x1 box - nearest first. Its target cart must be a plain rideable net.minecraft.world.entity.vehicle.Minecart (NOT chest/hopper/furnace carts), with no passengers, and \"parked\" (horizontal deltaMovement squared < 1.0E-4), found in AABB(outputPos).inflate(0.4). The unloader looks for any AbstractMinecart in AABB(inputPos).inflate(0.4), requires it to be parked too, and then takes the first Mob passenger.\n\nCART BEATS TRAIN, AND IT DOES NOT FALL THROUGH: the loader only looks for a Create track when findParkedEmptyMinecart found nothing at all - a moving or occupied cart therefore simply blocks that tick, it does not silently divert to the train. The unloader is even stricter: if findCart returns ANY minecart it returns immediately (whether or not it was parked or carried a mob) and never reaches the track path that tick.\n\nAQUATIC RELEASE: releaseStoredNear() re-places WaterAnimal / Axolotl / any LivingEntity with canBreatheUnderwater() into a water block at the target pos or one of its 6 direct neighbours; if none is found the mob is released dry anyway.\n\nSAVE GOTCHA (documented in the source, worth repeating): storeMob uses mob.saveAsPassenger(tag), not Entity#save - save() returns false for a mob that is currently a passenger, which is exactly the unloader's case. This was the beta.55 fix (commit 1138d55, \"unloader stores passenger mobs + comparator output\").\n\nTICK CADENCE is global-phase, not per-block: serverTick returns unless serverLevel.getGameTime() % check_interval_ticks == 0, so every loader/unloader in the world scans on the same tick. Interval is clamped with Math.max(1, ...). getTicker returns null on the client, so there is no client ticker at all.\n\nCREATE-TRAIN SPECIFICS: only carriages of a train that is registered in Create.RAILWAYS.trains, !derailed and |speed| < 1.0E-3 are served. Create's own SeatBlock.canBePickedUp / seatHostileMobs restriction is deliberately NOT applied (documented in CreateTrainAccess's javadoc and in CHANGELOG 1.0.0-beta.57), so hostile mobs can be shipped by train. The unloader calls stopRiding() before storing so Create clears its seat mapping and syncs it. net.createmod.catnip is not on the compile classpath (build.gradle only pulls Registrate/Flywheel/Ponder out of Create's jarjar into libs/create-nested/), which is why track detection uses the create:tracks block tag instead of ITrackBlock and why the \"is the train standing\" check goes through the public trainId + global railway registry rather than the private carriage field.\n\nLINK-SAFETY DESIGN (beta.72, commit 9cbd6d8): the Create gate deliberately lives in CreateCompat, a class with zero Create types, because resolving any static member of CreateTrainAccess links and verifies it and the JVM verifier then eagerly loads CarriageContraptionEntity -> NoClassDefFoundError on a Create-less pack. CreateCompat.isTrack() was moved for exactly that reason.\nPOSSIBLE HOLE IN THAT SAME REASONING: MobCartGogglesClientHandler's javadoc claims \"without Create nothing shows and nothing breaks\", but it reaches Create through GogglesUtil (in the debug_overlay module), and GogglesUtil is itself a class that both holds the ModList gate AND has com.simibubi.create.content.equipment.goggles.GogglesItem in a method body - the precise anti-pattern CreateCompat's javadoc warns about. Untested here; in practice the bundle jar always ships with Create (train_chunk_loading needs it) and this module has no standalone jar, so the path may never have been exercised without Create.\n\nCLIENT SETUP IS NOT GATED ON THE MODULE BEING ENABLED: MobCartLoaderClientSetup is an @EventBusSubscriber auto-discovered by NeoForge and calls MOB_LOADER_BE.get() / MOB_UNLOADER_BE.get() unconditionally, while the DeferredRegisters are only attached to the mod bus inside onInitialize() (which ModuleManager skips for a disabled module). Same pattern in end_conduit, cat_guardian and axolotl_guardian, so it is repo-wide rather than specific to this module - flagging it as unverified, not as a confirmed crash.\n\nCROSS-MODULE COUPLING: the goggle panel imports GogglesUtil from modules/debug_overlay/client/. There is no standalone jar for mob_cart_loader, so no moduleDeps entry exists in build.gradle to carry that dependency - if a standalone jar is ever added, it will need moduleDeps: ['vpa_debug_overlay'] like minecart_chunk_loading, stationary_chunk_loader, train_chunk_loading and axolotl_guardian do.\n\nNO DEDICATED DOC PAGE EXISTS: there is no docs/modules/mob_cart_loader.md. README.md lines 70-78 (section \"Blocks, Rails & Create Companions\") plus the compat-table row at line 228 are the only prose. The neoforge.mods.toml comment above the optional create dependency (lines 80-81) lists arm_target_overlay, item_vault_viewer, end_oxygen and debug_overlay but forgets mob_cart_loader.\n\nSMALL THINGS: README says \"Create's Engineering Goggles\"; the item is \"Engineer's Goggles\". Three block entity types' worth of registration happens here too: BLOCKS, ITEMS and BLOCK_ENTITY_TYPES each register mob_loader and mob_unloader under the same paths. The mini-mob is rendered by MobCartBER at 3 deg/tick spin, scaled to 0.5/max(1.0, max(bbWidth, bbHeight)), with render shadow disabled and a generous render box (AABB(pos).inflate(1.0).expandTowards(0, 1.5, 0)); the display entity is a cached non-ticking EntityType#create clone (baby flag only applied when it is an AgeableMob). Both block models use render_type \"minecraft:translucent\" and the blocks are registered with .noOcclusion(), strength(1.5F, 3.0F), SoundType.METAL and MapColor.COLOR_GREEN (loader) / COLOR_RED (unloader). No mixins, no keybinds, no commands, no entity types, no JEI plugin, no TODO/FIXME anywhere in the module. Lang keys: block.vanillaplusadditions.mob_loader, block.vanillaplusadditions.mob_unloader, gui.vanillaplusadditions.mob_cart_loader.empty. Both items are added to the mod's main creative tab.\n\nFEATURE TIMELINE (for a \"since\" table): blocks first shipped in v1.0.0-beta.53 (443fd4b, 2026-07-27); store-inside-the-block + water release in v1.0.0-beta.54 (ccebec2); passenger-save fix + comparator output in v1.0.0-beta.55 (1138d55); Create train-carriage seats in v1.0.0-beta.57 (a16fac0, 2026-08-03); sneak-place 180 deg flip in v1.0.0-beta.58 (e0eb358, shipped inside the train_chunk_loading commit); Create gate split into CreateCompat in v1.0.0-beta.72 (9cbd6d8, 2026-08-27).",
+  "moduleDeps": [],
+  "relatedModules": []
+}

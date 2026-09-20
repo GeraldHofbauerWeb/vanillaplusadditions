@@ -1,0 +1,87 @@
+{
+  "moduleId": "hostile_endermen",
+  "displayName": "Hostile Endermen",
+  "shortDescription": "Makes endermen in the End attack players without being stared at first (a carved pumpkin still protects)",
+  "oneLiner": "In the End, every enderman within 16 blocks attacks you on its own without having to be stared at first — a carved pumpkin still protects you, and they drop the hunt the moment you get out of range.",
+  "side": "server",
+  "enabledByDefault": true,
+  "registeredInBundle": true,
+  "hasStandaloneJar": true,
+  "sinceCommit": "4943bd2",
+  "sinceVersion": "v1.0.0-beta.68",
+  "configKeys": [
+    {
+      "key": "detection_range",
+      "type": "int",
+      "defaultValue": "16 (DEFAULT_DETECTION_RANGE)",
+      "range": "1 ~ 128",
+      "effect": "Range in blocks in which endermen in the End automatically become hostile, and beyond which they calm down again; the hard ceiling is the vanilla enderman follow range of 64, so larger values are capped by vanilla targeting anyway."
+    },
+    {
+      "key": "anger_duration",
+      "type": "int",
+      "defaultValue": "600 (DEFAULT_ANGER_DURATION)",
+      "range": "-1 ~ 2147483647 (INDEFINITE_ANGER ~ Integer.MAX_VALUE)",
+      "effect": "How long endermen stay angry in ticks (-1 for indefinite, applied as Integer.MAX_VALUE ticks), refreshed every second while a player stays within detection_range."
+    },
+    {
+      "key": "respect_carved_pumpkin",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Keeps the vanilla carved pumpkin protection: players wearing a carved pumpkin (or a modded ender mask) are not attacked automatically; checked via NeoForge's CommonHooks.shouldSuppressEnderManAnger, so EnderManAngerEvent cancels also count."
+    },
+    {
+      "key": "suppress_teleport_attack",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Enderman Overhaul compat: stops its End Enderman from teleporting the player away on hit as long as the player has not hit that enderman back (5 s window); no effect without Enderman Overhaul installed."
+    },
+    {
+      "key": "suppress_anticheese_teleport",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "EnhancedAI compat: stops its \"Teleport anti-cheese\" goal from dragging players over to an enderman in the End as long as the player has not hit that enderman back (5 s window); no effect without EnhancedAI installed."
+    },
+    {
+      "key": "debug_teleport_tracking",
+      "type": "boolean",
+      "defaultValue": "false",
+      "range": "",
+      "effect": "Diagnostics: logs every player teleport together with up to 14 caller frames (VPA's own frames filtered out), which identifies the mod/feature that moved the player. Fires even while the module is disabled."
+    }
+  ],
+  "items": [],
+  "blocks": [],
+  "entities": [],
+  "commands": [],
+  "keybinds": [],
+  "events": [
+    "net.neoforged.neoforge.event.entity.EntityJoinLevelEvent (HostileEndermenModule.java:168-185, @SubscribeEvent on the instance registered to NeoForge.EVENT_BUS in onInitialize, line 153) — angers an enderman at the nearest valid player the moment it spawns into or is loaded in the End; gated by isModuleEnabled() and appliesTo() (server-side + Level.END).",
+    "net.neoforged.neoforge.event.tick.EntityTickEvent.Pre (HostileEndermenModule.java:190-203, @SubscribeEvent on the same instance) — re-evaluates hostility once per second per enderman (tickCount % 20, checked before the enabled/appliesTo gates); fires on both physical sides, but appliesTo() drops the client copy."
+  ],
+  "mixins": [
+    "hostile_endermen.EndEndermanTeleportMixin (in \"mixins\", i.e. both sides; string target tech.alexnijjar.endermanoverhaul.common.entities.EndEnderman, remap=false; @WrapWithCondition around the ModUtils.teleportTarget INVOKE inside doHurtTarget, returning !HostileEndermenModule.suppressTeleportAttack(self, victim))",
+    "hostile_endermen.PlayerTeleportDebugMixin (in \"mixins\", not \"client\", but targets ServerPlayer#teleportTo(DDD) via @Inject at HEAD, so it only fires server-side; calls HostileEndermenModule.logPlayerTeleport)",
+    "hostile_endermen.TeleportAntiCheeseMixin (in \"mixins\", i.e. both sides; string target insane96mcp.enhancedai.module.mobs.teleportanticheese.TeleportAntiCheeseGoal, remap=false; @Shadow @Final Mob mob + cancellable @Inject at HEAD of canUse that sets the return value to false)"
+  ],
+  "recipes": [],
+  "requiredMods": [],
+  "optionalMods": [
+    {
+      "modId": "endermanoverhaul",
+      "whatItAdds": "Enderman Overhaul's endermen extend the vanilla EnderMan class, so this module already makes them hostile. The extra integration is EndEndermanTeleportMixin, which cancels the End Enderman's teleport-the-victim-away-on-hit (the ModUtils.teleportTarget call inside doHurtTarget) while the player has not hit that enderman back (enderman.getLastHurtByMob() != victim, vanilla's ~100-tick window). Without the mod installed the target class is missing and Mixin silently disables the mixin; suppress_teleport_attack then does nothing. Caveat on the mod id: this module references only the package tech.alexnijjar.endermanoverhaul — there is no ModList.isLoaded check and no mods.toml dependency anywhere — but the id itself IS named in-repo, in scripts/docgen/data/tested-versions.json:29 (\"endermanoverhaul\": \"2.0.3\", read off the live server's mods folder).",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/mixin/hostile_endermen/EndEndermanTeleportMixin.java:21-35 (+ HostileEndermenModule.java:63-81, scripts/docgen/data/tested-versions.json:29, CHANGELOG.md:493-497)"
+    },
+    {
+      "modId": "enhancedai",
+      "whatItAdds": "TeleportAntiCheeseMixin vetoes EnhancedAI's TeleportAntiCheeseGoal in canUse() for endermen in the End whose target is a player that has not hit them back, so walking away from an unprovoked enderman no longer yanks the player back to it. Without EnhancedAI the target class is missing, the mixin is disabled and suppress_anticheese_teleport does nothing. Deliberately unlogged even under debug_teleport_tracking, because canUse() runs every tick per enderman. Mod id evidence: the package insane96mcp.enhancedai in the mixin target, the entity tag enhancedai:mobs/teleport_anti_cheese/can_use quoted in the module doc, scripts/docgen/data/tested-versions.json:27 (\"enhancedai\": \"4.2.2.1\"), and a ModList.get().isLoaded(\"enhancedai\") in the unrelated enhanced_ai_leader_loot module — but again no ModList check and no mods.toml dependency for THIS module.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/mixin/hostile_endermen/TeleportAntiCheeseMixin.java:26-39 (+ HostileEndermenModule.java:92-109, docs/modules/hostile_endermen.md:67-68, scripts/docgen/data/tested-versions.json:27)"
+    }
+  ],
+  "notes": "RE-VERIFIED INDEPENDENTLY against the working tree (line numbers are from it). Every claim below is provable from this repository unless explicitly marked otherwise.\n\nFILES (complete module, six files): modules/hostile_endermen/HostileEndermenModule.java (314 lines), modules/hostile_endermen/config/HostileEndermenConfig.java (181 lines), mixin/hostile_endermen/{EndEndermanTeleportMixin,PlayerTeleportDebugMixin,TeleportAntiCheeseMixin}.java, standalone/hostile_endermen/HostileEndermenStandalone.java (@Mod(\"vpa_hostile_endermen\"), boots via StandaloneModuleBootstrap.boot). Bundle registration: VanillaPlusAdditions.java:151 (import :24). Standalone descriptor: build.gradle:437-440, with the three mixins and NO dataGlobs, NO moduleDeps, NO clientMixins.\n\nHOW IT WORKS (no custom AI, no mixin on the enderman AI): the module only writes the enderman's persistent anger target + timer; vanilla's EndermanLookForPlayerGoal targets anyone matching isLookingAtMe(player) || isAngryAt(player), so vanilla does the hunting, including teleporting closer. The three mixins are purely compat/diagnostics. Documented consequence: the vanilla goal needs line of sight inside the 64-block follow range, so an angry enderman behind a wall stays idle; staring still freezes them and they still blink away at <4 blocks. (Those vanilla-goal details come from the module javadoc/doc page + CHANGELOG, not from decompiled vanilla read in this pass.)\n\nSIDE: server. appliesTo() hard-filters !enderman.level().isClientSide (HostileEndermenModule.java:208-210) on both handlers; the only mixin against a vanilla class targets ServerPlayer; grep for Minecraft.getInstance, net.minecraft.client, Dist.CLIENT, ClientSetup, KeyMapping over all six files returns nothing. (PlayerTeleportDebugMixin sits in the \"mixins\" list, not \"client\", but ServerPlayer only exists logically server-side.)\n\nLIFECYCLE: onInitialize() (151-156) does nothing but NeoForge.EVENT_BUS.register(this) plus one info log; onCommonSetup() (158-163) only debug-logs. Both @SubscribeEvent handlers therefore live on the instance registered to the NeoForge game bus.\n\nGOTCHA - the debug hook ignores the module toggle: logPlayerTeleport() (HostileEndermenModule.java:121-149) checks ONLY instance != null and getConfig().debugTeleportTracking() (122-125), unlike suppressTeleportAttack() (63-81) and suppressAntiCheeseTeleport() (92-109), which both check isModuleEnabled() first. With debug_teleport_tracking=true the ServerPlayer#teleportTo logging therefore still fires while the module is disabled. PlayerTeleportDebugMixin is also always applied (vanilla class, present in every install) - it just returns immediately. docs/modules/hostile_endermen.md does not mention this.\n\nDEBUG OUTPUT DETAIL: the log line prints distance, from/to coordinates and the dimension, then up to TELEPORT_DEBUG_FRAMES = 14 stack frames, skipping frames from HostileEndermenModule itself and from net.geraldhofbauer.vanillaplusadditions.mixin - so the first printed frame is the foreign caller (HostileEndermenModule.java:134-148).\n\nGOTCHA - anger \"indefinite\" is not literally infinite: anger_duration=-1 (HostileEndermenConfig.INDEFINITE_ANGER, Config.java:15) is translated to Integer.MAX_VALUE ticks in applyAngerTime() (281-285), not to a never-expiring flag.\n\nORDERING SUBTLETY worth documenting: angerAt() (273-279) calls setPersistentAngerTarget -> startPersistentAngerTimer -> applyAngerTime in that order, because vanilla's startPersistentAngerTimer() rolls a random 20-39 s duration that would overwrite the configured value if written first (source comment at 275-276; CHANGELOG.md:467-469 says the same).\n\nSURPRISING COUPLING: calmDown() (293-313) clears lastHurtByMob when it is a Player. That field is exactly what both compat hooks read for their \"player hit back\" self-defence window, so after an enderman calms down the memory that you fought back is gone and the teleport suppressions apply again from scratch. calmDown() deliberately leaves non-player targets (endermites) alone, and it early-returns entirely (297-299) unless the enderman is chasing a Player, has a persistent anger target / remaining anger time, or remembers a Player as its last attacker.\n\nCALM-DOWN TIMING: it is the once-per-second maintainHostility() pass (212-234) that calls calmDown() when findNearestTarget() finds nobody within detection_range - so \"immediately\" means within one 20-tick cycle.\n\ndetection_range allows up to 128, but values >64 buy nothing because the vanilla goal is bounded by the enderman follow range of 64 - the config comment (Config.java:42-44) states this, the code does not clamp.\n\nCOMPAT IS MIXIN-ONLY: no ModList.isLoaded() call and no shouldInitialize() override exist in this module (so requiredMods is genuinely empty), and META-INF/neoforge.mods.toml declares no dependency on either optional mod (grep for endermanoverhaul/enhancedai/insane96/alexnijjar over src/main/resources finds nothing). The entire \"safe without the mod\" guarantee rests on \"required\": false in the mixin config - true for the bundle (vanillaplusadditions.mixins.json:2) AND for the generated standalone config (template at build.gradle:496).\n\nMOD IDS - what the repo actually proves: hostile_endermen itself only references the packages tech.alexnijjar.endermanoverhaul and insane96mcp.enhancedai. The ids \"endermanoverhaul\" and \"enhancedai\" are nevertheless named in-repo: scripts/docgen/data/tested-versions.json:27+29 pins enhancedai 4.2.2.1 and endermanoverhaul 2.0.3 as the tested mods, docs/modules/hostile_endermen.md:68 quotes the entity tag enhancedai:mobs/teleport_anti_cheese/can_use, and a DIFFERENT module (EnhancedAiLeaderLootModule.java:48) gates itself on ModList.get().isLoaded(\"enhancedai\"). What stays unproven is only that those ids match the classes this module patches - nothing in this module ties id to package.\n\nSTATIC-INSTANCE PATTERN: a static `instance` field (41) is assigned in the constructor (HostileEndermenModule.java:50) so the mixins can reach the module; all three static hooks null-check it. If a bundle jar and the standalone jar were somehow loaded together, the last-constructed instance would win - not guarded in code.\n\nMINOR: onConfigLoad() (Config.java:80-88) guards its debug block by null-checking only detectionRange/angerDuration/respectCarvedPumpkin, then also dereferences suppressTeleportAttack (line 86); suppress_anticheese_teleport and debug_teleport_tracking are never logged. Harmless in practice (all values are built in the same call), but it is asymmetric.\n\nMINOR: onEntityTick() (191-203) runs the `tickCount % 20` filter BEFORE isModuleEnabled()/appliesTo(), so the 1 s re-evaluation is aligned to each entity's own tickCount - endermen are naturally staggered rather than all checked on the same tick.\n\nTARGET FILTER: isValidTarget() (260-271) rejects dead, creative and spectator players, and (when respect_carved_pumpkin is on) delegates to NeoForge's CommonHooks.shouldSuppressEnderManAnger with the head slot - the same hook vanilla's isLookingAtMe uses, so modded ender masks and EnderManAngerEvent cancels keep working.\n\nNO CONTENT SURFACE: the module registers no items, blocks, entities, commands, keybinds, recipes or loot - no DeferredRegister, no Commands.literal, no KeyMapping anywhere in its six files. No data/ or assets/ files (find -ipath '*enderm*' under src/main/resources returns nothing) and zero lang keys (grep -i enderm over en_us.json returns nothing). The only user-facing toggle is the generic /vpa module switch from core.\n\nHISTORY: exactly one commit ever touched this module - 4943bd2 (2026-08-16), which is itself the \"chore(release): v1.0.0-beta.68\" commit (feature and release bump landed together). git log -S\"hostile_endermen\" over build.gradle, vanillaplusadditions.mixins.json and VanillaPlusAdditions.java returns that same single commit, and `git tag --points-at 4943bd2` = v1.0.0-beta.68. Nothing has been fixed or changed since. CHANGELOG.md:449-504 documents it under [1.0.0-beta.68] - 2026-08-16.\n\nREADME DRIFT (working tree): README.md:46 still links [docs/hostile_endermen.md](docs/hostile_endermen.md), but that file no longer exists on disk - it is staged-renamed to docs/modules/hostile_endermen.md, so the link is dead. README content itself matches the code.\n\nDOC PAGE: docs/modules/hostile_endermen.md (110 lines) is accurate against the source, including its config table (all six keys plus `enabled`, with the right defaults and ranges). Its \"Known Limitations\" section (107-110) lists only two points - \"only the End is covered by design, there is no per-dimension list\" and the line-of-sight idling; the freeze-while-stared-at / blink-away consequences live in the Behaviour section (32-37), not under Known Limitations.",
+  "moduleDeps": [],
+  "relatedModules": []
+}

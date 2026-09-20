@@ -1,0 +1,86 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "key": "air_consumption_interval",
+      "type": "int",
+      "defaultValue": "2",
+      "range": "1 ~ 300",
+      "effect": "The number of ticks between each air depletion (1 = standard, higher = slower)."
+    },
+    {
+      "key": "water_breathing_effect_interval_bonus",
+      "type": "int",
+      "defaultValue": "4",
+      "range": "0 ~ 100",
+      "effect": "Additional ticks added to the consumption interval per level of Water Breathing effect."
+    },
+    {
+      "key": "out_of_air_damage",
+      "type": "double",
+      "defaultValue": "2.0",
+      "range": "0.5 ~ 20.0",
+      "effect": "The amount of damage to apply when the player is out of air in the End."
+    },
+    {
+      "key": "damage_tick",
+      "type": "int",
+      "defaultValue": "20",
+      "range": "1 ~ 200",
+      "effect": "The interval (in ticks) at which damage is applied when out of air."
+    },
+    {
+      "key": "backtank.backtank_depletion_rate",
+      "type": "int",
+      "defaultValue": "20",
+      "range": "0 ~ 1000",
+      "effect": "The number of ticks between each backtank air depletion (0 to disable depletion)."
+    },
+    {
+      "key": "backtank.requires_full_set",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Whether a diving helmet is required along with the backtank to breathe."
+    },
+    {
+      "key": "conduit_power_grants_air",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Whether the Conduit Power effect (e.g. from an End Conduit) lets the player breathe freely in the End, refilling air each tick. Default true."
+    }
+  ],
+  "displayName": "End Oxygen",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.entity.living.LivingBreatheEvent (common NeoForge.EVENT_BUS, instance handler registered in EndOxygenModule.onInitialize via NeoForge.EVENT_BUS.register(this))",
+    "net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Pre (client only, via @EventBusSubscriber(value = Dist.CLIENT, bus = Bus.GAME) on EndOxygenClientEvents)",
+    "net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Post (client only, same class)"
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleId": "end_oxygen",
+  "oneLiner": "The End has no breathable air: your air bubbles drain while you are there and you start taking damage once they run out, unless you carry a Create backtank (by default a diving helmet is required alongside it) or stand in Conduit Power, e.g. from an End Conduit.",
+  "optionalMods": [
+    {
+      "modId": "create",
+      "whatItAdds": "Create backtanks (read via BacktankUtil.getAllWithAir/getAir/consumeAir) are the only gear that supplies air in the End, and the client draws a backtank item + MM:SS remaining-time overlay next to the hotbar. Without Create, CreateCompat.isLoaded() is false, the backtank branch is skipped entirely and the module degrades to plain breath-holding (plus Conduit Power and Water Breathing). No shouldInitialize() gate, so the module itself always loads. README states the same: 'Fully functional - Create backtanks just can't supply air in the End'.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/end_oxygen/compat/CreateCompat.java:14 (ModList.get().isLoaded(\"create\")); .../compat/CreateBacktankCompat.java:25,32,40; .../EndOxygenModule.java:85-97; .../client/EndOxygenClientEvents.java:69-109; src/main/resources/META-INF/neoforge.mods.toml:80-87 (create, type=\"optional\", versionRange=\"[6.0,)\"); README.md:229"
+    }
+  ],
+  "recipes": [],
+  "registeredInBundle": true,
+  "requiredMods": [],
+  "shortDescription": "Removes oxygen from the End dimension, requiring players to hold their breath or use gear.",
+  "side": "both",
+  "sinceCommit": "83b1815",
+  "sinceVersion": "v0.9.0",
+  "notes": "MECHANIC (EndOxygenModule.onLivingBreathe, only for Player, only Level.END, skipped in creative/spectator):\n1) Conduit Power branch (if conduit_power_grants_air): setCanBreathe(true) + setRefillAirAmount(getMaxAirSupply()) and `return` - this branch also skips the damage block entirely. The effect source in this mod is the end_conduit module (EndConduitBlockEntity.java:167 adds MobEffects.CONDUIT_POWER, 260 ticks, amplifier 0, ambient+visible) - a real, load-bearing cross-module coupling.\n2) Air is floored at 1 (`if (getAirSupply() < 1) setAirSupply(1)`), applied every tick before the event's own consumption, so the bar never walks down to vanilla's drowning threshold; all damage comes from this module.\n3) Backtank branch (Create only): canBreathe=true, setRefillAirAmount(1), and every `backtank.backtank_depletion_rate` ticks 1 air is consumed from the FIRST backtank in the list (backtanks.get(0)). depletionRate == 0 disables consumption entirely -> an infinite tank.\n4) Otherwise canBreathe=false and 1 air is consumed only when `player.tickCount % (air_consumption_interval + (WaterBreathing amplifier + 1) * water_breathing_effect_interval_bonus) == 0`, else setConsumeAirAmount(0). Note this is keyed off the player entity's free-running `tickCount`, NOT a countdown that restarts when you enter the End - the phase is whatever the entity's age happens to be. With defaults (interval 2, vanilla max air 300) that is ~600 ticks / ~30 s of grace before damage starts.\n5) Damage: when `getAirSupply() <= 1 && tickCount % damage_tick == 0`, hurt with DamageSource vanillaplusadditions:out_of_oxygen (data/vanillaplusadditions/damage_type/out_of_oxygen.json: exhaustion 0.1, message_id vanillaplusadditions.out_of_oxygen, scaling when_caused_by_living_non_player; death message lang key `death.attack.vanillaplusadditions.out_of_oxygen` = \"%1$s ran out of oxygen\", en_us.json:84). `EndOxygenConfig.getOutOfAirDamage()` narrows the DoubleValue to a float for `player.hurt`.\n\nLIKELY BUG / DOC CONTRADICTION - the diving-helmet tag has no data file. `EndOxygenModule.DIVING_HELMETS` = TagKey `vanillaplusadditions:diving_helmets` (EndOxygenModule.java:40-43), and with the DEFAULT `backtank.requires_full_set = true` the backtank only works when the HEAD-slot item is in that tag (EndOxygenModule.java:88-90). The repo ships no such tag JSON: the only file under src/main/resources/data/vanillaplusadditions/tags/item/ is arm_goggles.json, a repo-wide find for tag JSONs (including world_datapacks/) turns up nothing named diving_helmets or backtanks, and grepping the whole repo finds \"diving_helmets\" only in EndOxygenModule.java and docs/modules/end_oxygen.md. There is no datagen in the project (no GatherDataEvent / TagsProvider / DataGenerator anywhere). So unless an external datapack on the server populates the tag, backtanks never grant air with default config; setting requires_full_set=false is the only in-repo-provable way to make them work. Verified independently in this pass - worth confirming in game before documenting the helmet requirement as functional.\n\nDEAD CODE: `EndOxygenModule.BACKTANKS` (TagKey `vanillaplusadditions:backtanks`, EndOxygenModule.java:35-38) is declared public static final and never read by any class in the repo. Backtank detection runs purely through Create's BacktankUtil. docs/modules/end_oxygen.md:38-39 (\"`vanillaplusadditions:backtanks` and `vanillaplusadditions:diving_helmets` item tags control which items count\") is therefore wrong for backtanks and unbacked for helmets.\n\nDOCS OUT OF DATE: docs/modules/end_oxygen.md's config table lists 6 keys and is missing `conduit_power_grants_air` (added 2026-07-22 in d73a4b0 together with end_conduit, first released in v1.0.0-beta.46). Its \"Requirements\" section calls Create a requirement - it is optional (mods.toml:80-87, type=\"optional\"). README.md:304 still links docs/end_oxygen.md while the file now lives at docs/modules/end_oxygen.md (doc restructure currently uncommitted in the working tree).\n\nCLIENT HUD HACK: EndOxygenClientEvents.onRenderGuiLayer (Pre, layer minecraft:air_level) mutates the local player's air (`setAirSupply(max - 1)` when air is full) purely so vanilla's air-bubble layer renders at all in the End - a client-side display trick, resynced by the server. The Post hook draws the first air-holding backtank's item at guiWidth/2+90, guiHeight-53 (+9 when the stack has DataComponents.FIRE_RESISTANT, i.e. netherite backtank) with an MM:SS timer computed from `max(0, air - 1) * backtank_depletion_rate / level.tickRateManager().tickrate()`, capped at 99:59; when backtank_depletion_rate == 0 it hardcodes totalSeconds = 5999 (displays 99:59); the text flashes red when `air < 60 && air % 2 == 0`. The whole overlay returns early unless CreateCompat.isLoaded(). This class is registered by annotation (@EventBusSubscriber(value = Dist.CLIENT, bus = GAME)), independent of module initialization, and guards itself by looking the module up in ModuleManager at runtime (null + isModuleEnabled check).\n\nDAMAGE QUIRKS worth a sentence in the docs: (a) the damage block is NOT inside an else - it also runs while breathing from a backtank, and since the backtank only refills 1 air per tick, a player who enters the End at air <= 1 keeps taking damage for a moment while the bar recovers; (b) out_of_oxygen is in no minecraft:bypasses_armor / bypasses_invulnerability tag - the repo ships no damage_type tag files at all - so unlike vanilla drowning this damage is reduced by armor and respects invulnerability frames.\n\nCONFIG SAFETY: `EndOxygenConfig.conduitPowerGrantsAir()` returns `conduitPowerGrantsAir == null || conduitPowerGrantsAir.get()` - defaults to true if the spec value is not built yet; the other six getters have no such guard and would NPE in the same situation.\n\nSIDES: the breathing handler is an instance handler on the common bus (`NeoForge.EVENT_BUS.register(this)` in onInitialize), i.e. it runs on both physical sides; only the HUD class is Dist.CLIENT-only. So this module is genuinely \"both\", not client-only.\n\nSTANDALONE JAR: build.gradle:423-424 lists end_oxygen with dataGlobs ['data/vanillaplusadditions/damage_type/out_of_oxygen.json'], no mixins, no moduleDeps; entrypoint src/main/java/.../standalone/end_oxygen/EndOxygenStandalone.java (@Mod(\"vpa_end_oxygen\") -> StandaloneModuleBootstrap.boot). The jar task includes modules/end_oxygen/** wholesale, so the client HUD class ships with it. The generated per-module neoforge.mods.toml (renderModuleToml, build.gradle:507-530) only declares vpa_core/neoforge/minecraft + 'incompatible' against the bundle - it does NOT declare the optional `create` dependency the bundle's mods.toml has. Per CHANGELOG [1.0.0-beta.72] (CHANGELOG.md:339-346) the Create gate was split into the Create-free CreateCompat class exactly so vpa_end_oxygen provably boots without Create (same class-linking trap that broke overpacked_extensions).\n\nORPHAN LANG KEYS: `message.action_bar.low_oxygen_alert` (\"§cLOW OXYGEN ALERT\") and `message.action_bar.remaining_oxygen` (\"Remaining Oxygen: %s %s\") sit in en_us.json:150-151 but no Java code anywhere references \"action_bar\" - apparently leftovers from an earlier oxygen HUD; do not document them as features.\n\nHISTORY: module directory added in 83b1815 (2026-05-07, \"Release version 0.9.0\"); `git log --follow` on EndOxygenModule.java finds no earlier path, and the earliest tag containing it (tags sorted by creatordate) is 0.9.0, same day. Later touches: a11fb79 (2026-05-08), ae2bca3 (lang externalization), 3a43685 (2026-05-11, client classes split out so dedicated servers stop loading client code), 27c7405/beta.23 (standalone jar), 576dd01/beta.25 (Create made truly optional via CreateBacktankCompat), d73a4b0/beta.46 (conduit_power_grants_air), 9cbd6d8/beta.72 (CreateCompat gate split). No TODO/FIXME comments in the module.",
+  "moduleDeps": [],
+  "relatedModules": []
+}

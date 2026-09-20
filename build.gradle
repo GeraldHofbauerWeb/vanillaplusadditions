@@ -382,7 +382,7 @@ def sDescription = project.mod_description.toString()
 // One descriptor per standalone artifact. dataGlobs = the module's own data/** files (assets live in core).
 // One entry per registered module. modId + entrypointPkg are derived below; dataGlobs = the module's
 // own data/** files (assets live in core), moduleDeps = required deps on other module jars, mixins =
-// mixin classes the module owns. (mob_drops is intentionally absent — it is not registered in the bundle.)
+// mixin classes the module owns.
 def standaloneModules = [
     [ moduleId: 'arm_target_overlay', displayName: 'Vanilla Plus: Arm Target Overlay',
       dataGlobs: ['data/vanillaplusadditions/tags/item/arm_goggles.json'] ],
@@ -444,6 +444,7 @@ def standaloneModules = [
     [ moduleId: 'minecart_chunk_loading', displayName: 'Vanilla Plus: Minecart Chunk Loading',
       dataGlobs: ['data/minecraft/tags/block/rails.json'],
       moduleDeps: ['vpa_debug_overlay'] ],
+    [ moduleId: 'mob_drops', displayName: 'Vanilla Plus: Mob Drops' ],
     [ moduleId: 'mob_glow', displayName: 'Vanilla Plus: Mob Glow' ],
     [ moduleId: 'mob_spawn_overlay', displayName: 'Vanilla Plus: Mob Spawn Overlay',
       clientMixins: ['mob_spawn_overlay.KeyboardHandlerDebugKeyMixin'] ],
@@ -518,7 +519,7 @@ def renderModuleToml = { d ->
     return """modLoader="javafml"
 loaderVersion="${sLoaderRange}"
 license="${sLicense}"
-issueTrackerURL="https://github.com/geraldhofbauer/VanillaPlusAdditions/issues"
+issueTrackerURL="https://github.com/GeraldHofbauerWeb/vanillaplusadditions/issues"
 
 [[mods]]
 modId="${d.modId}"
@@ -543,7 +544,7 @@ def renderCoreToml = {
     return """modLoader="javafml"
 loaderVersion="${sLoaderRange}"
 license="${sLicense}"
-issueTrackerURL="https://github.com/geraldhofbauer/VanillaPlusAdditions/issues"
+issueTrackerURL="https://github.com/GeraldHofbauerWeb/vanillaplusadditions/issues"
 
 [[mods]]
 modId="vpa_core"

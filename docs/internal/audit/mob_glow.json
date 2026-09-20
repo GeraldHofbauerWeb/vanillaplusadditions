@@ -1,0 +1,62 @@
+{
+ "moduleId": "mob_glow",
+ "claimsChecked": 78,
+ "problems": [
+  {
+   "quote": "so the effect ticks down and the HUD shows a counting number instead of the infinity symbol",
+   "issue": "The consequence described can never be observed. The module refuses players outright (`Cannot apply glow effect to players`, MobGlowModule.java:218-222), and only a player's own effects appear in the HUD/inventory. A mob's remaining duration is never displayed client-side: LivingEntity.onEffectAdded only forwards the instance via sendEffectToPassengers (LivingEntity.java:1032-1038) with `this.getId()`, i.e. the MOB's entity id, so even a player riding the glowing mob sees nothing in their own HUD; everything else that reaches the client is the shared glowing flag (updateGlowingStatus) and the particle list. The real, observable difference between Integer.MAX_VALUE and MobEffectInstance.INFINITE_DURATION (-1) here is only that the effect genuinely expires and that server-side data (/data get entity, /effect) reports a finite number.",
+   "correction": "Replace with something like: \"...so the effect genuinely ticks down and would expire after ~3.4 years, where a vanilla-infinite effect never does. Nobody ever reads the number off a screen - players cannot be targeted, and a mob's effect duration is not shown on the client.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "A large `default_duration`, or a large typed duration with `max_duration = 0` (\"no limit\"), overflows to a negative tick count and lands in the\n\"nothing glows\" case above",
+   "issue": "Stated as a rule, but int overflow wraps modulo 2^32 and the wrapped value is only sometimes negative. Counterexamples on the same code path: `default_duration = 214748365` gives 214748365 * 20 = 4,294,967,300, which wraps to +4 ticks (a 0.2 s glow, not \"nothing glows\"); `default_duration = 300000000` wraps to +1,705,032,704 ticks (~2.7 years). The worked example that follows (999999999 -> -1,474,836,500) is arithmetically correct, but it is one case, not the general one.",
+   "correction": "\"Both multiplications are unguarded `int` arithmetic, so a large `default_duration`, or a large typed duration with `max_duration = 0`, wraps around: the result can be negative (the \"nothing glows\" case above) or a small positive tick count. `/mobglow minecraft:zombie 999999999` with the limit off works out to -1,474,836,500 ticks; `default_duration = 214748365` wraps the other way, to 4 ticks.\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "Note that vanilla only\nre-sends a player's command tree through `PlayerList.sendPlayerPermissionLevel` — on join, on respawn,\non an op change and on `/reload`",
+   "issue": "Two inaccuracies. (a) The list is incomplete: a dimension change also re-sends the tree - ServerPlayer.changeDimension calls `playerlist.sendPlayerPermissionLevel(this)` (decompiled ServerPlayer.java:889), which matters on a page whose central theme is that /mobglow is per-dimension. (b) The /reload resend is not vanilla: it comes from a NeoForge patch in MinecraftServer.reloadResources (MinecraftServer.java:1516, comment \"//Forge: Fix newly added/modified commands not being sent to the client when commands reload.\"). Vanilla's PlayerList.reloadResources (PlayerList.java:897-909) sends tags and recipes only. The mechanism claim itself is right: the whole jar has exactly two callers of Commands.sendCommands, PlayerList.sendPlayerPermissionLevel and IntegratedServer.",
+   "correction": "\"...the command tree only reaches a player again through `PlayerList.sendPlayerPermissionLevel` — on join, on respawn, on a dimension change, on an op change, and, via a NeoForge patch in `MinecraftServer.reloadResources`, on `/reload`\"",
+   "severity": "misleading"
+  },
+  {
+   "quote": "    durationTicks = configDefault * 20;   // seconds → ticks",
+   "issue": "Inside a block presented as a verbatim source quote, the trailing comment has been rewritten; MobGlowModule.java:234 reads `durationTicks = configDefault * 20; // Convert seconds to ticks`. The same applies to the apply-path quote further down (\"livingEntity.addEffect(glowEffect);\" ...), where the source's `// Track this mob` line between `addEffect` and `trackedGlowingMobs.put` was dropped without an ellipsis, while the neighbouring comment was kept. The code itself is quoted correctly in both blocks; only the comments drift.",
+   "correction": "Quote the comment verbatim (`// Convert seconds to ticks`) or drop it, and mark the dropped `// Track this mob` line with the same `…` the page uses elsewhere.",
+   "severity": "style"
+  },
+  {
+   "quote": "// Count as changed if it didn't have the effect before or we're within the limit",
+   "issue": "CODE, NOT THE PAGE (MobGlowModule.java:281) - reported per the task's request for wrong comments in the Java, no page edit implied. The comment says \"or\", the code is `if (!hadGlowEffect && (maxMobs == 0 || changedCount.get() < maxMobs))`: both halves must hold. A mob that already glowed is never counted, whatever the limit says.",
+   "correction": "No doc change. In the source, reword to \"... if it didn't have the effect before AND we are still within the reporting limit\".",
+   "severity": "style"
+  },
+  {
+   "quote": ".comment(\"Maximum number of mobs that can be affected per command (0 for no limit)\")",
+   "issue": "CODE, NOT THE PAGE (MobGlowConfig.java:47) - genuine bug, correctly documented by the page. `livingEntity.addEffect(...)` and `trackedGlowingMobs.put(...)` run unconditionally for every match (MobGlowModule.java:273-279); `maxMobs` is consulted only in the reporting guard at line 282. The option therefore caps the chat number and the Brigadier return value, never the effect, so the config comment promises a limit the code does not implement.",
+   "correction": "No doc change. In the source, either move the cap into the loop or reword the comment to \"Maximum number of newly affected mobs reported per command\".",
+   "severity": "style"
+  },
+  {
+   "quote": "\"Default duration in seconds for glow effect when 'infinite' is specified \"\n                        + \"(-1 for truly infinite)\"",
+   "issue": "CODE, NOT THE PAGE (MobGlowConfig.java:34-35) - wrong comment. -1 does not give a truly infinite effect: MobGlowModule.java:231 sets `durationTicks = Integer.MAX_VALUE`, not `MobEffectInstance.INFINITE_DURATION` (-1, verified at MobEffectInstance.java:30), so `isInfiniteDuration()` stays false and the effect really expires.",
+   "correction": "No doc change. In the source, reword to \"(-1 for practically infinite: Integer.MAX_VALUE ticks, ~3.4 years)\" - or actually use INFINITE_DURATION.",
+   "severity": "style"
+  },
+  {
+   "quote": "trackedGlowingMobs.remove(mobUUID);",
+   "issue": "CODE, NOT THE PAGE (MobGlowModule.java:366 together with cleanupDeadReferences, lines 383-400) - genuine bug, correctly documented by the page. The remove sits outside the found-entity branch, and cleanupDeadReferences additionally drops every tracked UUID that `serverLevel.getEntity(...)` cannot resolve in the CURRENT level, so any clear silently discards tracking for mobs in other dimensions or unloaded chunks; their glow can then never be removed through /mobglow again.",
+   "correction": "No doc change. In the source, only untrack UUIDs that the level resolved (or key the map by dimension) and scope cleanupDeadReferences accordingly.",
+   "severity": "style"
+  },
+  {
+   "quote": "int durationSeconds = Integer.parseInt(durationStr);",
+   "issue": "CODE, NOT THE PAGE (MobGlowModule.java:238-248) - genuine bug, correctly documented by the page. The only numeric guard is `durationSeconds > maxDuration`: 0 and negative values pass (word() allows a leading '-' - StringReader.isAllowedInUnquotedString accepts 0-9, A-Z, a-z, _, -, . and +, verified in brigadier bytecode) and are reported as a successful application, although `MobEffectInstance.hasRemainingDuration()` removes the effect on the mob's next tick. `durationSeconds * 20` and `configDefault * 20` are also unguarded against int overflow.",
+   "correction": "No doc change. In the source, reject durations < 1 with a message, and do the seconds->ticks conversion in long arithmetic with a clamp.",
+   "severity": "style"
+  }
+ ],
+ "templateViolations": [],
+ "verdict": "needs-repair"
+}

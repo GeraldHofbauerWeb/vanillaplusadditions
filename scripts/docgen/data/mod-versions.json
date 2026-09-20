@@ -1,0 +1,24 @@
+{
+  "_comment": "Per third-party mod: the version floor we actually assert, and where that assertion comes from. 'declared' = a versionRange in src/main/resources/META-INF/neoforge.mods.toml, the only place the mod itself makes a promise. 'compiled' = the jar in libs/ we build against; nothing below it has been tried. Tested versions live in tested-versions.json and are read from the live server, not from here.",
+  "mods": {
+    "create":                 { "min": "6.0",      "source": "declared" },
+    "toughasnails":           { "min": "10.1.0",   "source": "declared" },
+    "sable":                  { "min": "1.2.2",    "source": "declared" },
+    "bluemap":                { "min": "5.0",      "source": "declared" },
+    "quark":                  { "min": "4.1-482",  "source": "compiled" },
+    "curios":                 { "min": "9.5.1",    "source": "compiled" },
+    "overpacked":             { "min": "2.0.1",    "source": "compiled" },
+    "bobo_lib":               { "min": "1.1",      "source": "compiled" },
+    "jei":                    { "min": "19.39.0",  "source": "compiled" },
+    "aeronautics":            { "min": null,       "source": "none" },
+    "vc_gliders":             { "min": null,       "source": "none" },
+    "enhancedai":             { "min": null,       "source": "none" },
+    "mr_dungeons_andtaverns": { "min": null,       "source": "none" },
+    "endermanoverhaul":       { "min": null,       "source": "none" },
+    "alexsmobs":              { "min": null,       "source": "none" },
+    "betterfortresses":       { "min": null,       "source": "none" },
+    "waystones":              { "min": null,       "source": "none" },
+    "rottencreatures":        { "min": null,       "source": "none" },
+    "nova_structures":        { "min": null,       "source": "none" }
+  }
+}

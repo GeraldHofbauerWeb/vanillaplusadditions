@@ -84,3 +84,7 @@ unused_assets/
 
 # NeoForge installer logs land next to the installer jar you ran (<name>.jar.log)
 /*.jar.log
+
+# Python-Bytecode der Doku-Werkzeuge
+__pycache__/
+*.pyc
