@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -63,6 +64,12 @@ class WaterWheelStallManager {
     /** Backoff after exhausting the fix attempts: 6000 ticks = ~5 minutes. */
     private static final long STALL_BACKOFF_TICKS = 6000L;
 
+    /** Wait before retrying a re-place whose gap is occupied: 20 ticks = 1 second. */
+    private static final long REPLACE_RETRY_TICKS = 20L;
+
+    /** Retries before a removed wheel is dropped as an item rather than held forever. */
+    private static final int REPLACE_MAX_RETRIES = 20;
+
     /** Who is asking for an overstress to be resolved - decides how far the cure may go. */
     private enum StressMode {
         /** The periodic sweep: only provably safe cures, one short log line when one lands. */
@@ -95,8 +102,19 @@ class WaterWheelStallManager {
      * @param wheelState the full block state to restore (preserves orientation / axis)
      * @param material   the visual material to re-apply (may be null)
      * @param dueTick    the game time at which to place the wheel back
+     * @param retries    how often the re-place has already found the gap occupied
      */
-    private record PendingReplace(BlockState wheelState, BlockState material, long dueTick) {
+    private record PendingReplace(BlockState wheelState, BlockState material, long dueTick, int retries) {
+    }
+
+    /** What {@link #replaceWheel} managed to do with a wheel it is holding. */
+    private enum ReplaceResult {
+        /** The wheel is back in the world (or was already there). */
+        RESTORED,
+        /** The gap is occupied; keep holding the wheel and try again. */
+        RETRY,
+        /** Out of retries - the wheel was dropped as an item instead of vanishing. */
+        GIVE_UP
     }
 
     private final CreateWaterWheelUnstuckerModule module;
@@ -193,6 +211,11 @@ class WaterWheelStallManager {
             // the flow with the water chunk absent would misread "no flow" and apply a wrong score.
             return;
         }
+        if (hasPendingReplace(level, pos)) {
+            // We removed the wheel ourselves and are holding it for the flood window; the air at this
+            // position is ours, not a deleted wheel.
+            return;
+        }
         if (!registry.isStillWheel(level, pos)) {
             registry.remove(level, pos);
             clearState(level, pos);
@@ -266,7 +289,9 @@ class WaterWheelStallManager {
                     level.dimension().location(), WaterWheelKinetics.getGeneratedSpeed(be), state.attempts + 1);
         }
 
-        beginReinit(level, pos, be);
+        if (!beginReinit(level, pos, be)) {
+            return; // refused (large wheel) - do not burn an attempt on something we will never try
+        }
         state.attempts++;
 
         if (state.attempts >= module.getConfig().getMaxFixAttempts()) {
@@ -337,7 +362,9 @@ class WaterWheelStallManager {
                 LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck: re-initialising stalled wheel at {} ({}),"
                         + " generatedSpeed={}, overstressed={}", pos.toShortString(), level.dimension().location(),
                         generated, WaterWheelKinetics.isOverStressed(be));
-                beginReinit(level, pos, be);
+                if (!beginReinit(level, pos, be)) {
+                    continue;
+                }
                 clearState(level, pos); // fresh on-demand fix - drop any prior backoff
                 started++;
             }
@@ -432,18 +459,35 @@ class WaterWheelStallManager {
      * a reload-stalled wheel - Create only reads a non-zero flow score while the water is actually
      * moving, and then keeps it. Sized for small (single-block) wheels.
      *
+     * <p>The pending entry is recorded <i>before</i> the block is removed, never after: between the
+     * two statements the wheel exists nowhere else, and anything that ends the tick in between - an
+     * exception, a level unload - would take it with it.</p>
+     *
+     * <p>Large wheels are refused unless {@code reinit_large_wheels} is set. Create rebuilds a large
+     * wheel through {@code LargeWaterWheelBlock.tick}, which calls {@code destroyBlock(center, false)}
+     * - without drops - so a re-init that goes wrong there costs the whole multiblock, not one block.</p>
+     *
      * @param level The server level
      * @param pos   The wheel center
      * @param be    The wheel block entity
+     * @return true if the wheel was removed and is now held for re-placement
      */
-    private void beginReinit(ServerLevel level, BlockPos pos, BlockEntity be) {
+    private boolean beginReinit(ServerLevel level, BlockPos pos, BlockEntity be) {
         BlockState wheelState = level.getBlockState(pos);
+        if (WaterWheelRegistry.isLargeWheel(wheelState) && !module.getConfig().isReinitLargeWheelsEnabled()) {
+            LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}) is a large wheel; not re-initialising it."
+                            + " Set reinit_large_wheels = true to allow it.",
+                    pos.toShortString(), level.dimension().location());
+            return false;
+        }
         BlockState material = WaterWheelKinetics.getMaterial(be);
+        long due = level.getGameTime() + module.getConfig().getReinitFloodTicks();
+        // Record first, remove second - the wheel must never exist only inside a local variable.
+        pendingReplace.computeIfAbsent(level.dimension(), key -> new HashMap<>())
+                .put(pos.immutable(), new PendingReplace(wheelState, material, due, 0));
         // Remove the wheel (no drops) so adjacent water can flood the void.
         level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-        long due = level.getGameTime() + module.getConfig().getReinitFloodTicks();
-        pendingReplace.computeIfAbsent(level.dimension(), key -> new HashMap<>())
-                .put(pos.immutable(), new PendingReplace(wheelState, material, due));
+        return true;
     }
 
     /**
@@ -468,8 +512,16 @@ class WaterWheelStallManager {
                 if (!isFootprintLoaded(level, entry.getKey())) {
                     continue; // wait for the chunk to reload rather than lose the wheel
                 }
+                PendingReplace pending = entry.getValue();
+                ReplaceResult result = replaceWheel(level, entry.getKey(), pending);
+                if (result == ReplaceResult.RETRY) {
+                    // Hold on to the wheel and come back. Updating the value in place is allowed
+                    // during iteration; a put() would not be.
+                    entry.setValue(new PendingReplace(pending.wheelState(), pending.material(),
+                            now + REPLACE_RETRY_TICKS, pending.retries() + 1));
+                    continue;
+                }
                 it.remove();
-                replaceWheel(level, entry.getKey(), entry.getValue());
             }
         }
     }
@@ -478,16 +530,39 @@ class WaterWheelStallManager {
      * Places a removed wheel back with its original state (orientation) and material, then triggers
      * Create's own flow recompute (as {@code onPlace} does) while the flooded water is still moving.
      *
+     * <p>The gap can legitimately be occupied when the wheel is due back - a player builds there
+     * during the flood window, a piston pushes into it, a falling block lands. That is not a reason
+     * to drop the captured wheel on the floor: the caller keeps holding it and we try again. Only
+     * after {@link #REPLACE_MAX_RETRIES} attempts is the wheel dropped as an item, which at least
+     * leaves the player something to pick up.</p>
+     *
      * @param level   The server level
      * @param pos     The wheel center
      * @param pending The captured wheel state
+     * @return what happened - the caller only releases the wheel on {@code RESTORED} or {@code GIVE_UP}
      */
-    private void replaceWheel(ServerLevel level, BlockPos pos, PendingReplace pending) {
+    private ReplaceResult replaceWheel(ServerLevel level, BlockPos pos, PendingReplace pending) {
         BlockState current = level.getBlockState(pos);
+        if (current.getBlock() == pending.wheelState().getBlock()) {
+            return ReplaceResult.RESTORED; // already back (a player rebuilt it, or we ran twice)
+        }
         // Only restore into our own placeholder (air, or water that flooded in) - never clobber a
         // block a player may have placed in the gap.
         if (!current.isAir() && current.getFluidState().isEmpty()) {
-            return;
+            if (pending.retries() < REPLACE_MAX_RETRIES) {
+                if (pending.retries() == 0) {
+                    LOGGER.warn("[create_water_wheel_unstucker] Cannot put the wheel back at {} ({}): {} is in the"
+                                    + " way. Holding the wheel and retrying.", pos.toShortString(),
+                            level.dimension().location(), current.getBlock().getName().getString());
+                }
+                return ReplaceResult.RETRY;
+            }
+            LOGGER.error("[create_water_wheel_unstucker] Gave up putting the wheel back at {} ({}) after {} tries -"
+                            + " {} is still in the way. Dropping {} as an item instead.", pos.toShortString(),
+                    level.dimension().location(), pending.retries(),
+                    current.getBlock().getName().getString(), pending.wheelState().getBlock().getName().getString());
+            Block.popResource(level, pos, new ItemStack(pending.wheelState().getBlock()));
+            return ReplaceResult.GIVE_UP;
         }
         level.setBlock(pos, pending.wheelState(), Block.UPDATE_ALL);
         BlockEntity be = level.getBlockEntity(pos);
@@ -498,9 +573,13 @@ class WaterWheelStallManager {
         }
         // Belt-and-suspenders: also schedule Create's flow recompute (onPlace already does this).
         level.scheduleTick(pos, pending.wheelState().getBlock(), 1);
+        // Our setBlock fires no EntityPlaceEvent, so the registry would not learn about the wheel
+        // again until its chunk next loads.
+        registry.onBlockPlaced(level, pos, pending.wheelState());
         // Check the outcome ~1s later and log whether the wheel actually restarted.
         pendingVerify.computeIfAbsent(level.dimension(), key -> new HashMap<>())
                 .put(pos.immutable(), level.getGameTime() + 20L);
+        return ReplaceResult.RESTORED;
     }
 
     /**
@@ -620,6 +699,7 @@ class WaterWheelStallManager {
      * @param level The server level being unloaded
      */
     void forgetLevel(ServerLevel level) {
+        flushPendingReplaces(level); // put held wheels back before the level goes away
         pendingPostLoad.remove(level.dimension());
         fixStates.remove(level.dimension());
         pendingReplace.remove(level.dimension());
@@ -627,9 +707,63 @@ class WaterWheelStallManager {
     }
 
     /**
+     * Puts every wheel this manager is holding for a re-init back into the world at once, ignoring the
+     * flood window. Called when a level unloads and when the server stops: six ticks of flooding are
+     * worth far less than the wheel, and a held wheel that is never placed back is simply gone.
+     *
+     * @param server The running server
+     */
+    void flushPendingReplaces(MinecraftServer server) {
+        for (ResourceKey<Level> dimension : List.copyOf(pendingReplace.keySet())) {
+            ServerLevel level = server.getLevel(dimension);
+            if (level != null) {
+                flushPendingReplaces(level);
+            }
+        }
+    }
+
+    /**
+     * Puts back every wheel held in one level. A wheel whose chunk is not loaded forces that chunk:
+     * we are about to lose the wheel otherwise. Whatever still cannot be placed is logged with its
+     * dimension, position and block state, so it can be restored by hand.
+     *
+     * @param level The server level
+     */
+    private void flushPendingReplaces(ServerLevel level) {
+        Map<BlockPos, PendingReplace> held = pendingReplace.get(level.dimension());
+        if (held == null || held.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<BlockPos, PendingReplace> entry : held.entrySet()) {
+            BlockPos pos = entry.getKey();
+            if (!isFootprintLoaded(level, pos)) {
+                level.getChunk(pos.getX() >> 4, pos.getZ() >> 4);
+            }
+            PendingReplace pending = entry.getValue();
+            // Force the last attempt: a retry would never come.
+            ReplaceResult result = replaceWheel(level, pos,
+                    new PendingReplace(pending.wheelState(), pending.material(), pending.dueTick(),
+                            REPLACE_MAX_RETRIES));
+            if (result != ReplaceResult.RESTORED) {
+                LOGGER.error("[create_water_wheel_unstucker] Could not restore the wheel held at {} ({}) before"
+                                + " shutdown. Its state was {} - restore it with /setblock if it is missing.",
+                        pos.toShortString(), level.dimension().location(), pending.wheelState());
+            }
+        }
+        held.clear();
+    }
+
+    /**
      * Clears everything (server stopped).
      */
     void clearAll() {
+        for (Map.Entry<ResourceKey<Level>, Map<BlockPos, PendingReplace>> byLevel : pendingReplace.entrySet()) {
+            for (Map.Entry<BlockPos, PendingReplace> entry : byLevel.getValue().entrySet()) {
+                LOGGER.error("[create_water_wheel_unstucker] Still holding a removed wheel at {} ({}) when the server"
+                                + " stopped: {}. Restore it with /setblock if it is missing.",
+                        entry.getKey().toShortString(), byLevel.getKey().location(), entry.getValue().wheelState());
+            }
+        }
         incomingPostLoad.clear();
         pendingPostLoad.clear();
         fixStates.clear();
@@ -649,6 +783,18 @@ class WaterWheelStallManager {
         if (pending != null) {
             pending.remove(pos);
         }
+    }
+
+    /**
+     * Whether a wheel is currently removed and held for re-placement.
+     *
+     * @param level The server level
+     * @param pos   The wheel center
+     * @return true while the re-init flood window is open for this position
+     */
+    private boolean hasPendingReplace(ServerLevel level, BlockPos pos) {
+        Map<BlockPos, PendingReplace> held = pendingReplace.get(level.dimension());
+        return held != null && held.containsKey(pos);
     }
 
     private static boolean inChunk(BlockPos pos, ChunkPos chunkPos) {

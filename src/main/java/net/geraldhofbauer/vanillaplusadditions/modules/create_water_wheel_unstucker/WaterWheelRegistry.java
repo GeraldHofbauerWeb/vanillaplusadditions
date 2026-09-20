@@ -52,6 +52,18 @@ class WaterWheelRegistry {
     }
 
     /**
+     * Whether a state is a large (multiblock) water wheel. Worth knowing before a re-init: Create
+     * rebuilds a large wheel through {@code LargeWaterWheelBlock.tick}, which destroys the centre
+     * block without dropping it.
+     *
+     * @param state The block state to test
+     * @return true for large water wheel blocks
+     */
+    static boolean isLargeWheel(BlockState state) {
+        return state.getBlock() instanceof LargeWaterWheelBlock;
+    }
+
+    /**
      * Scans a freshly loaded chunk's block entities for water wheels and registers them.
      *
      * @param level The server level the chunk belongs to

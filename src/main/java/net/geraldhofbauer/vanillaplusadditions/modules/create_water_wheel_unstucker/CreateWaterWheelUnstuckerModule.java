@@ -16,6 +16,7 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.List;
@@ -199,7 +200,21 @@ public class CreateWaterWheelUnstuckerModule
     }
 
     /**
-     * Clears everything when the server stopped.
+     * Puts back any wheel still removed for a re-init, while the levels are still there.
+     *
+     * @param event The server stopping event
+     */
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event) {
+        if (registry == null) {
+            return;
+        }
+        // Put back every wheel we are still holding for a re-init - after this the levels go away.
+        stallManager.flushPendingReplaces(event.getServer());
+    }
+
+    /**
+     * Clears all tracked state once the server has stopped.
      *
      * @param event The server stopped event
      */

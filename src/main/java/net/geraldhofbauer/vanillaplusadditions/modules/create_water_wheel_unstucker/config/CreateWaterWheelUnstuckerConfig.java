@@ -16,6 +16,7 @@ public class CreateWaterWheelUnstuckerConfig
     private ModConfigSpec.IntValue postLoadDelayTicks;
     private ModConfigSpec.IntValue maxFixAttempts;
     private ModConfigSpec.BooleanValue hardKick;
+    private ModConfigSpec.BooleanValue reinitLargeWheels;
     private ModConfigSpec.BooleanValue autoFix;
     private ModConfigSpec.BooleanValue clearPhantomStress;
     private ModConfigSpec.IntValue reinitFloodTicks;
@@ -62,6 +63,15 @@ public class CreateWaterWheelUnstuckerConfig
                         "The re-init briefly breaks + re-places the wheel (a manual fix, done by code) so",
                         "adjacent water re-flows - the only thing that revives a reload-stalled wheel.")
                 .define("auto_fix", false);
+
+        reinitLargeWheels = builder
+                .comment("Allow re-initialising large (multiblock) water wheels as well.",
+                        "false (default) = large wheels are only detected and logged, never touched.",
+                        "A re-init breaks the wheel and places it back a moment later. For a large wheel",
+                        "Create rebuilds the multiblock through LargeWaterWheelBlock.tick, which destroys",
+                        "the centre block WITHOUT dropping it - so a re-init that goes wrong there costs",
+                        "the whole structure rather than one block.")
+                .define("reinit_large_wheels", false);
 
         clearPhantomStress = builder
                 .comment("Cure a phantom \"Overstressed\" network: Create keeps a running stress/capacity",
@@ -119,6 +129,15 @@ public class CreateWaterWheelUnstuckerConfig
      */
     public boolean isHardKickEnabled() {
         return hardKick == null || hardKick.get();
+    }
+
+    /**
+     * Whether large (multiblock) water wheels may be re-initialised.
+     *
+     * @return true if large wheels may be broken and re-placed
+     */
+    public boolean isReinitLargeWheelsEnabled() {
+        return reinitLargeWheels != null && reinitLargeWheels.get();
     }
 
     /**
