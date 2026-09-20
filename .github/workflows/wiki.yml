@@ -33,11 +33,19 @@ jobs:
 
       - name: Push to the wiki
         env:
-          # The wiki lives in a second git repository. GITHUB_TOKEN can usually write to it; if this
-          # step ever fails with 403, create a PAT with 'repo' scope and use it here instead.
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The wiki is a second git repository, and GitHub's built-in GITHUB_TOKEN is NOT allowed to
+          # write to it - it is refused with a 403, by design. This needs a personal access token
+          # stored as the repository secret WIKI_TOKEN.
+          TOKEN: ${{ secrets.WIKI_TOKEN }}
         run: |
           set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then
+            echo "::error::No WIKI_TOKEN secret is set. The built-in GITHUB_TOKEN cannot push to a"
+            echo "::error::wiki (GitHub refuses it with 403), so the mirror needs its own token:"
+            echo "::error::create a classic PAT with the 'repo' scope and add it under"
+            echo "::error::Settings > Secrets and variables > Actions as WIKI_TOKEN."
+            exit 1
+          fi
           REMOTE="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git"
           if ! git ls-remote "$REMOTE" >/dev/null 2>&1; then
             echo "::error::The wiki repository does not exist yet. Open the repository's Wiki tab"
