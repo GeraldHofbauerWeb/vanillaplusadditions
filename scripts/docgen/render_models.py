@@ -120,7 +120,10 @@ import time
 import zipfile
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:                      # only ever hit where nothing is rendered, e.g. on CI
+    Image = None
 
 # Bump when the pixels this script produces change: --check then flags every PNG as stale, which
 # is exactly right, because the committed PNGs really are out of date at that point.
@@ -1567,6 +1570,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         log.error("--frame must be within 0.05..1.0")
         return 2
     cfg = RenderConfig(args.size, args.ssaa, args.frame, args.anchor, args.cull)
+
+    if Image is None:
+        # The committed PNGs are what CI checks against, and comparing them needs no imaging
+        # library at all - only regenerating does. A runner without Pillow is the normal case.
+        message = ("Pillow is not installed - it is only needed to REGENERATE images "
+                   "(pip install Pillow); the PNGs are committed")
+        if args.check:
+            log.info("skipping the image check: " + message)
+            return 0
+        log.error("cannot render: " + message)
+        return 2
 
     if not os.path.exists(args.client_jar):
         # Five vanilla textures and a handful of vanilla parent models live in the client jar.

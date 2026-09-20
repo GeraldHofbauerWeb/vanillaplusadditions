@@ -133,6 +133,7 @@ def main() -> int:
 
     problems: list[str] = []
     changes: list[str] = []
+    warnings: list[str] = []
 
     missing = set(source_dirs) - set(sheets)
     extra = set(sheets) - set(source_dirs)
@@ -145,7 +146,11 @@ def main() -> int:
     registered = set(re.findall(r"registerModule\(new (\w+)Module\(\)\)", ENTRYPOINT.read_text()))
     toml_keys = parse_toml_keys(args.toml) if args.toml.exists() else {}
     if not toml_keys:
-        problems.append(f"no config file to cross-check against at {args.toml} — key check skipped")
+        # A generated config file only exists where the mod has actually run. On a CI runner it
+        # never does, and that is not a defect in the data - it only means this one cross-check
+        # could not be performed. Warn, do not fail.
+        warnings.append(f"no config file at {args.toml} - the config-key cross-check was skipped "
+                        f"(pass --toml to point at one)")
 
     for module_id, sheet in sheets.items():
         for field in LIST_FIELDS:
@@ -203,12 +208,17 @@ def main() -> int:
         print(f"\n{len(changes)} normalisations:")
         for change in changes:
             print(f"  {change}")
+    if warnings:
+        print(f"\n{len(warnings)} warnings:")
+        for warning in warnings:
+            print(f"  ~ {warning}")
     if problems:
         print(f"\n{len(problems)} problems:")
         for problem in problems:
             print(f"  ! {problem}")
     else:
-        print("\nno problems — fact sheets agree with build.gradle and the config file")
+        checked = "build.gradle and the config file" if toml_keys else "build.gradle"
+        print(f"\nno problems — fact sheets agree with {checked}")
     return 1 if problems and args.check else 0
 
 
