@@ -1,11 +1,11 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.tipped_arrows.compat.jei;
 
 import mezz.jei.api.IModPlugin;
+import net.geraldhofbauer.vanillaplusadditions.modules.tipped_arrows.TippedArrowsModule;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -46,7 +46,7 @@ public class TippedArrowsJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        if (!ModuleManager.getInstance().isModuleEnabled("tipped_arrows")) {
+        if (!TippedArrowsModule.isModuleActive()) {
             return;
         }
 

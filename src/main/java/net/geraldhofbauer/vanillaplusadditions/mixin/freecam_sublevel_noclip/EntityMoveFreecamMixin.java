@@ -1,7 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.mixin.freecam_sublevel_noclip;
 
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.freecam_sublevel_noclip.FreecamSublevelNoclipModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.freecam_sublevel_noclip.compat.FreecamAccess;
 import net.minecraft.client.Minecraft;
@@ -45,7 +43,7 @@ public class EntityMoveFreecamMixin {
         if (self != Minecraft.getInstance().getCameraEntity()) {
             return;
         }
-        FreecamSublevelNoclipModule module = getModule();
+        FreecamSublevelNoclipModule module = FreecamSublevelNoclipModule.getInstance();
         if (module == null || !module.isModuleEnabled() || !FreecamAccess.isLoaded()) {
             return;
         }
@@ -53,10 +51,5 @@ public class EntityMoveFreecamMixin {
             return;
         }
         self.noPhysics = true;
-    }
-
-    private static FreecamSublevelNoclipModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("freecam_sublevel_noclip");
-        return module instanceof FreecamSublevelNoclipModule noclip ? noclip : null;
     }
 }

@@ -22,6 +22,9 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
  * settings (language, resource packs) may only fully apply after a restart.
  */
 public class OptionsModule extends AbstractModule<OptionsModule, OptionsConfig> {
+
+    private static OptionsModule instance;
+
     public OptionsModule() {
         super(
             "options",
@@ -30,10 +33,24 @@ public class OptionsModule extends AbstractModule<OptionsModule, OptionsConfig> 
             + "via command/GUI plus automatic rotating backups on change.",
             OptionsConfig::new
         );
+        instance = this;
     }
 
     @Override
     protected void onInitialize() {
         // Client events are registered via @EventBusSubscriber on OptionsClientEvents.
+    }
+
+    /**
+     * The module instance, or {@code null} before construction.
+     *
+     * <p>Module-local on purpose: {@code ModuleManager} only knows the modules registered by the
+     * all-in-one bundle, so looking this module up there returns {@code null} inside a standalone
+     * {@code vpa_options} jar. Callers must keep handling {@code null}.
+     *
+     * @return the module instance, or {@code null} if it has not been constructed yet
+     */
+    public static OptionsModule getInstance() {
+        return instance;
     }
 }

@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule, ItemVaultViewerConfig> {
+    private static ItemVaultViewerModule instance;
+
     private static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(Registries.MENU, VanillaPlusAdditions.MODID);
 
@@ -57,9 +59,21 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
 
     @Override
     protected void onInitialize() {
+        instance = this;
         MENUS.register(getModEventBus());
         getModEventBus().addListener(this::onRegisterPayloadHandlers);
         getLogger().info("Item Vault Viewer module initialized");
+    }
+
+    /**
+     * The module instance, or {@code null} before {@code onInitialize} has run. Module-local on
+     * purpose: {@code ModuleManager} is only populated by the all-in-one bundle, so a lookup there
+     * returns null inside a standalone {@code vpa_item_vault_viewer} jar.
+     *
+     * @return the live module instance, or null if it has not been initialized (yet)
+     */
+    public static ItemVaultViewerModule getInstance() {
+        return instance;
     }
 
     private void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {

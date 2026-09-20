@@ -27,15 +27,29 @@ public class FreecamSublevelNoclipModule
         extends AbstractModule<FreecamSublevelNoclipModule,
         AbstractModuleConfig.DefaultModuleConfig<FreecamSublevelNoclipModule>> {
 
+    private static FreecamSublevelNoclipModule instance;
+
     public FreecamSublevelNoclipModule() {
         super("freecam_sublevel_noclip",
                 "Freecam Sub-Level Noclip",
                 "Lets the Freecam camera pass through Sable airships instead of getting stuck in the hull.",
                 AbstractModuleConfig::createDefault);
+        instance = this;
     }
 
     @Override
     protected void onInitialize() {
         // Client-only: FreecamSublevelNoclipClientEvents registers itself via @EventBusSubscriber.
+    }
+
+    /**
+     * The module instance, or {@code null} before construction. Module-local lookup, because
+     * {@code ModuleManager} only knows the modules registered by the all-in-one bundle and would
+     * return {@code null} inside the standalone {@code vpa_freecam_sublevel_noclip} jar.
+     *
+     * @return the module instance, or {@code null} if it has not been constructed yet
+     */
+    public static FreecamSublevelNoclipModule getInstance() {
+        return instance;
     }
 }

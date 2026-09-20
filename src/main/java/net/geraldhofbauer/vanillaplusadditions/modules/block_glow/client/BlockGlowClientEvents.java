@@ -8,8 +8,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.BlockGlowModule.BlockGlowState;
 import net.geraldhofbauer.vanillaplusadditions.modules.block_glow.client.compat.BlockGlowSableIntegration;
@@ -294,12 +292,9 @@ public final class BlockGlowClientEvents {
         return Command.SINGLE_SUCCESS;
     }
 
+    /** The module, or {@code null} before it has been constructed. */
     private static BlockGlowModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("block_glow");
-        if (module instanceof BlockGlowModule blockGlowModule) {
-            return blockGlowModule;
-        }
-        return null;
+        return BlockGlowModule.getInstance();
     }
 }
 

@@ -10,6 +10,7 @@ import net.minecraft.util.StringUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 
@@ -109,7 +110,7 @@ public class WaystoneAmethystRepairModule
             return; // nothing to repair
         }
 
-        boolean free = ModuleManager.getInstance().isModuleEnabled(FREE_REPAIR_MODULE_ID);
+        boolean free = freeAnvilRepairActive();
         event.setOutput(result);
         event.setMaterialCost(unitsUsed);
         event.setCost(free ? 0 : unitsUsed);
@@ -170,4 +171,25 @@ public class WaystoneAmethystRepairModule
         }
         return !name.equals(left.getHoverName().getString());
     }
+
+    /**
+     * Whether Free Anvil Repair is active, asked in a way that also works outside the bundle.
+     *
+     * <p>{@code ModuleManager} only knows the modules the bundle registered, so in a standalone
+     * {@code vpa_waystone_amethyst_repair} jar a lookup by module id always comes back empty. There
+     * the sibling module is a separate mod, and all we can honestly observe is whether its jar is
+     * present - its own {@code enabled} flag lives in its own config file and is not visible from
+     * here. Someone who installs the jar and then disables it in the config therefore still gets
+     * the free repair; that is the lesser of the two wrong answers.
+     *
+     * @return true if repairs should cost no experience levels
+     */
+    private static boolean freeAnvilRepairActive() {
+        ModuleManager manager = ModuleManager.getInstance();
+        if (manager.getModule(FREE_REPAIR_MODULE_ID) != null) {
+            return manager.isModuleEnabled(FREE_REPAIR_MODULE_ID);
+        }
+        return ModList.get().isLoaded("vpa_" + FREE_REPAIR_MODULE_ID);
+    }
+
 }

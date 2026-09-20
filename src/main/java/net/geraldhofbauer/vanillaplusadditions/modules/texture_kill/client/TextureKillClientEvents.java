@@ -1,7 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.client;
 
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.texture_kill.TextureKillModule;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
@@ -27,8 +25,8 @@ public final class TextureKillClientEvents {
             return;
         }
 
-        Module mod = ModuleManager.getInstance().getModule("texture_kill");
-        if (!(mod instanceof TextureKillModule module) || !module.isModuleEnabled()) {
+        TextureKillModule module = TextureKillModule.getInstance();
+        if (module == null || !module.isModuleEnabled()) {
             return;
         }
 
@@ -51,8 +49,8 @@ public final class TextureKillClientEvents {
 
     @SubscribeEvent
     public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event) {
-        Module mod = ModuleManager.getInstance().getModule("texture_kill");
-        if (!(mod instanceof TextureKillModule module) || !module.isModuleEnabled()) {
+        TextureKillModule module = TextureKillModule.getInstance();
+        if (module == null || !module.isModuleEnabled()) {
             return;
         }
         event.registerReloadListener(new TextureRegionEraser(module.getConfig()));

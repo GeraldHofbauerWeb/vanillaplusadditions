@@ -8,8 +8,6 @@ import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import com.simibubi.create.content.kinetics.mechanicalArm.ArmBlockEntity;
 import com.simibubi.create.content.kinetics.mechanicalArm.ArmInteractionPoint;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.config.ArmTargetOverlayConfig;
 import net.minecraft.client.Minecraft;
@@ -74,7 +72,7 @@ public final class ArmTargetOverlayClientEvents {
             return;
         }
 
-        ArmTargetOverlayModule module = getModule();
+        ArmTargetOverlayModule module = ArmTargetOverlayModule.getInstance();
         if (module == null || !module.isModuleEnabled()) {
             return;
         }
@@ -138,13 +136,5 @@ public final class ArmTargetOverlayClientEvents {
         }
         // Aviation Goggles or other goggles registered in the arm_goggles item tag (head slot)
         return player.getItemBySlot(EquipmentSlot.HEAD).is(ARM_GOGGLES_TAG);
-    }
-
-    private static ArmTargetOverlayModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("arm_target_overlay");
-        if (module instanceof ArmTargetOverlayModule armModule) {
-            return armModule;
-        }
-        return null;
     }
 }

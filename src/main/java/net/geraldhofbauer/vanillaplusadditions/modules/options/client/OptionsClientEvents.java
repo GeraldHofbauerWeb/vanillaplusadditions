@@ -3,8 +3,6 @@ package net.geraldhofbauer.vanillaplusadditions.modules.options.client;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -209,7 +207,6 @@ public final class OptionsClientEvents {
     }
 
     private static OptionsModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("options");
-        return module instanceof OptionsModule m ? m : null;
+        return OptionsModule.getInstance();
     }
 }

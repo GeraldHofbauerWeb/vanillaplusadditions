@@ -42,12 +42,27 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
             ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "diving_helmets")
     );
 
+    private static EndOxygenModule instance;
+
     public EndOxygenModule() {
         super("end_oxygen",
                 "End Oxygen",
                 "Removes oxygen from the End dimension, requiring players to hold their breath or use gear.",
                 EndOxygenConfig::new
         );
+        instance = this;
+    }
+
+    /**
+     * The module instance, or {@code null} before construction.
+     *
+     * <p>Resolved module-locally instead of via {@code ModuleManager}: the manager is only filled by the
+     * bundle's {@code registerModules()}, so a lookup there returns {@code null} in a standalone module jar.</p>
+     *
+     * @return the module instance, or {@code null} if it has not been constructed yet
+     */
+    public static EndOxygenModule getInstance() {
+        return instance;
     }
 
     @Override

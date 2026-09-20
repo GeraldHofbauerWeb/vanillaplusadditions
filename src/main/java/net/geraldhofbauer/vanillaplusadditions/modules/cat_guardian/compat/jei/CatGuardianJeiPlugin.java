@@ -4,7 +4,6 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.util.JeiMobArmorRepairs;
@@ -31,7 +30,7 @@ public class CatGuardianJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        if (!ModuleManager.getInstance().isModuleEnabled("cat_guardian")) {
+        if (!CatGuardianModule.isModuleActive()) {
             return;
         }
         List<Item> armors = List.of(

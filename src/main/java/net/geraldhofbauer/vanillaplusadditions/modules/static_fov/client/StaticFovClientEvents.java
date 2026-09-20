@@ -1,7 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.static_fov.client;
 
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.static_fov.StaticFovModule;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -21,20 +19,12 @@ public final class StaticFovClientEvents {
 
     @SubscribeEvent
     public static void onComputeFovModifier(ComputeFovModifierEvent event) {
-        StaticFovModule module = getModule();
+        StaticFovModule module = StaticFovModule.getInstance();
         if (module == null || !module.isModuleEnabled()) {
             return;
         }
         if (event.getNewFovModifier() > 1.0f) {
             event.setNewFovModifier(1.0f);
         }
-    }
-
-    private static StaticFovModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("static_fov");
-        if (module instanceof StaticFovModule staticFovModule) {
-            return staticFovModule;
-        }
-        return null;
     }
 }

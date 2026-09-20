@@ -1,7 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.client;
 
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.EndOxygenModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateBacktankCompat;
 import net.geraldhofbauer.vanillaplusadditions.modules.end_oxygen.compat.CreateCompat;
@@ -29,7 +27,7 @@ public final class EndOxygenClientEvents {
 
     @SubscribeEvent
     public static void onRenderGuiLayer(RenderGuiLayerEvent.Pre event) {
-        EndOxygenModule module = getModule();
+        EndOxygenModule module = EndOxygenModule.getInstance();
         if (module == null || !module.isModuleEnabled()) {
             return;
         }
@@ -47,7 +45,7 @@ public final class EndOxygenClientEvents {
 
     @SubscribeEvent
     public static void onRenderGuiLayerPost(RenderGuiLayerEvent.Post event) {
-        EndOxygenModule module = getModule();
+        EndOxygenModule module = EndOxygenModule.getInstance();
         if (module == null || !module.isModuleEnabled()) {
             return;
         }
@@ -108,14 +106,6 @@ public final class EndOxygenClientEvents {
         int color = (air < 60 && air % 2 == 0) ? 0xFF0000 : 0xFFFFFF;
         guiGraphics.drawString(mc.font, timeLeft, 16, 5, color);
         guiGraphics.pose().popPose();
-    }
-
-    private static EndOxygenModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("end_oxygen");
-        if (module instanceof EndOxygenModule endOxygenModule) {
-            return endOxygenModule;
-        }
-        return null;
     }
 }
 

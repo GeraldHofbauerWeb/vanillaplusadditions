@@ -35,6 +35,8 @@ import java.util.concurrent.Executor;
 public class TippedArrowsModule
         extends AbstractModule<TippedArrowsModule, AbstractModuleConfig.DefaultModuleConfig<TippedArrowsModule>> {
 
+    private static TippedArrowsModule instance;
+
     private static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(Registries.RECIPE_SERIALIZER, VanillaPlusAdditions.MODID);
 
@@ -52,8 +54,22 @@ public class TippedArrowsModule
 
     @Override
     protected void onInitialize() {
+        instance = this;
         RECIPE_SERIALIZERS.register(getModEventBus());
         NeoForge.EVENT_BUS.register(this);
+    }
+
+    /**
+     * Whether the module is loaded and enabled.
+     *
+     * <p>Resolved through this module rather than through {@code ModuleManager}: that singleton is
+     * only filled by the bundle's entrypoint, so a lookup by module id comes back empty in a
+     * standalone {@code vpa_tipped_arrows} jar.
+     *
+     * @return true if the module is active
+     */
+    public static boolean isModuleActive() {
+        return instance != null && instance.isModuleEnabled();
     }
 
     // ---- Crafting recipe (registered in code, gated on the module being enabled) ----

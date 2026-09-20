@@ -1,7 +1,5 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client;
 
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.CatGuardianModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.AbstractCatBowlBlockEntity;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.network.*;
@@ -55,8 +53,7 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        CatGuardianModule module = getModule();
-        if (module == null || !module.isModuleEnabled()) {
+        if (!CatGuardianModule.isModuleActive()) {
             return;
         }
 
@@ -87,8 +84,7 @@ public final class CatGuardianClientEvents {
             return;
         }
 
-        CatGuardianModule module = getModule();
-        if (module == null || !module.isModuleEnabled()) {
+        if (!CatGuardianModule.isModuleActive()) {
             return;
         }
 
@@ -182,10 +178,5 @@ public final class CatGuardianClientEvents {
         } else {
             CAT_PATH_MAP.put(packet.catEntityId(), packet);
         }
-    }
-
-    private static CatGuardianModule getModule() {
-        Module module = ModuleManager.getInstance().getModule("cat_guardian");
-        return module instanceof CatGuardianModule m ? m : null;
     }
 }

@@ -6,8 +6,6 @@ import com.simibubi.create.content.contraptions.ContraptionHandlerClient;
 import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import com.simibubi.create.content.logistics.vault.ItemVaultBlock;
 import net.createmod.catnip.data.Couple;
-import net.geraldhofbauer.vanillaplusadditions.core.Module;
-import net.geraldhofbauer.vanillaplusadditions.core.ModuleManager;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.ItemVaultViewerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.network.OpenContraptionVaultViewerPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.item_vault_viewer.network.OpenItemVaultViewerPacket;
@@ -69,8 +67,8 @@ public final class ItemVaultViewerClientEvents {
             return;
         }
 
-        Module module = ModuleManager.getInstance().getModule("item_vault_viewer");
-        if (!(module instanceof ItemVaultViewerModule viewerModule) || !viewerModule.isModuleEnabled()) {
+        ItemVaultViewerModule viewerModule = ItemVaultViewerModule.getInstance();
+        if (viewerModule == null || !viewerModule.isModuleEnabled()) {
             return;
         }
 
@@ -103,8 +101,8 @@ public final class ItemVaultViewerClientEvents {
         if (player.isShiftKeyDown() || !ItemVaultViewerKeybinds.isModifierDown()) {
             return;
         }
-        Module module = ModuleManager.getInstance().getModule("item_vault_viewer");
-        if (!(module instanceof ItemVaultViewerModule viewerModule) || !viewerModule.isModuleEnabled()) {
+        ItemVaultViewerModule viewerModule = ItemVaultViewerModule.getInstance();
+        if (viewerModule == null || !viewerModule.isModuleEnabled()) {
             return;
         }
         if (!GogglesItem.isWearingGoggles(player)) {
