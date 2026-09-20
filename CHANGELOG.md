@@ -4,6 +4,56 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.87] - 2026-09-20
+
+### Added
+- **Neues Modul `mo_arrows` mit dem Feuerpfeil.** Pfeil plus Fire Charge, formlos. Er brennt im
+  Flug, zuendet an, was er trifft, und **legt Feuer, wo er landet** — das Letzte kann nicht einmal
+  ein Bogen mit Flammenschutz.
+  - Die Entity ist Vanillas eigener Arrow, nur angezuendet; das Feuerlegen haengt an
+    `ProjectileImpactEvent` und erkennt den Pfeil am Stack, den er fallen liesse. Keine eigene
+    Entity, kein Renderer, kein Spawn-Paket.
+  - Die Textur ist aus Vanillas `arrow.png` abgeleitet, die Farben stammen Pixel fuer Pixel aus
+    `campfire_fire.png`. Erzeugt von `scripts/gen_fire_arrow_texture.py` und eingecheckt, der Build
+    braucht also nie ein Client-Jar.
+  - `light_fires` schaltet allein das Feuerlegen ab. Das Anzuenden beim Treffer bleibt, weil es
+    Vanillas Verhalten fuer einen brennenden Pfeil ist und sich davon nicht trennen laesst.
+- **Neues Modul `freecam_sublevel_noclip`.** Die Freecam-Kamera flog durch Gelaende, blieb aber am
+  Rumpf eines Luftschiffs haengen.
+  - Grund: Sable reicht auf Sublevels nur fuer Geruestbloecke einen `CollisionContext` durch und
+    nimmt sonst die gecachte Form ohne "wer kollidiert" — Freecams Hook wird also nie gefragt.
+  - Repariert mit `noPhysics` am HEAD von `Entity.move`. Frueher geht nicht: `Player.tick` setzt das
+    Flag jeden Tick auf `isSpectator()` zurueck, ein Client-Tick-Handler verpufft wirkungslos.
+
+### Fixed
+- **Glass Item Frames und Overpacked-Rucksaecke bleiben am Schiff.** Ohne Eintrag in
+  `sable:retain_in_sub_level` wirft `EntitySubLevelUtil.shouldKick` sie aus dem Plot: der Rahmen
+  richtet sich nicht mehr am Raster aus und droppt, der Rucksack faellt. Zwei Tag-Dateien in
+  `vpa_core` beheben das. Upstream gemeldet als ryanhcode/sable#1576.
+- **Die Kompassnadel im Sitz.** Ein Mitfahrer behaelt Weltkoordinaten, aber eine plot-lokale
+  Gierung — Sable dreht sie in `calculateViewVector` mit. Jetzt wird ueber `getVehicle()` auch seine
+  Position in den Plot gerechnet, genau wie Sables eigener Overwrite es tut.
+- **Der Weltkompass im Item Frame.** Sein Ziel liegt vier Millionen Bloecke noerdlich des
+  Betrachters — sitzt der im Plot, dominierte der Versatz von rund 20 Millionen Bloecken die
+  Richtung statt Norden. Gemessen wird jetzt ab der Position in der Elternwelt.
+- **Liegengebliebene Backpack-Helfer.** `OverpackedGuiBridge.SESSIONS` ist statisch und nach einem
+  Neustart leer; eine bei offenem GUI mitgespeicherte Helfer-Entity wurde deshalb nie aufgeraeumt.
+  - Folgen: sie steckt im Spieler, und Overpackeds `place_predicate` verwirft dann **stumm** jedes
+    Platzieren aus der Hand — keine Meldung, nichts im Log. Und ihr Inhalt ist eine Kopie des
+    getragenen Rucksacks, also ein Duplikationsweg.
+  - Sie traegt jetzt den Tag `vpa_backpack_helper` und wird verworfen, sobald sie von der Platte
+    geladen wird. Die Spawn-Position bleibt absichtlich unveraendert.
+
+### Changed
+- **Das Rezept des Weltkompasses** ist jetzt Vanillas Kompass mit einem Amethyst-Splitter, wo das
+  Redstone sitzt: vier Eisenbarren aussen, ein Splitter in der Mitte. Vorher Kompass, drei
+  Enderaugen und ein Splitter.
+- **`scripts/deploy.sh`** legt das Modpack-Zip in `storage/drop` ab statt im Webroot oder in
+  `/var/tmp`. Beide Haelften waren kaputt: in den Webroot darf `gerry` seit dem Rechte-Fix nicht
+  schreiben, und aus `/tmp` oder `/var/tmp` darf Craft die Datei wegen des Sticky-Bits nicht
+  wegschieben. Schlaegt der Upload fehl, gibt es jetzt eine klare Meldung statt eines Tracebacks —
+  der alte Asset ist zu dem Zeitpunkt bereits geloescht, die Downloadseite also leer.
+
 ## [1.0.0-beta.86] - 2026-09-18
 
 ### Changed
