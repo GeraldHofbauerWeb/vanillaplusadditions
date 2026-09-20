@@ -23,10 +23,13 @@ angry at a player straight away, and once a second that mark is renewed for as l
 inside `detection_range`, 32 blocks by default. The crowd standing in the bastion does not wait for
 somebody to swing first any more.
 
-They are audibly angry with it. Vanilla keys three things off the anger flag, and the module simply
+They are audibly angry with it. Vanilla keys four things off the anger flag, and the module simply
 holds that flag down:
 
 * `getAmbientSound()` returns `ZOMBIFIED_PIGLIN_ANGRY` instead of the ordinary grunt;
+* `customServerAiStep` lets `maybePlayFirstAngerSound()` run — but the one-off shout it plays is
+  armed by vanilla's `setTarget` with a 0–20 tick roll, so it lands within a second of the goal
+  actually latching onto somebody — on a zero roll not at all — never from the held flag alone;
 * an adult picks up vanilla's `SPEED_MODIFIER_ATTACKING`, so it moves at 0.28 instead of 0.23
   (babies are excluded, as in vanilla);
 * the mob counts as *recently hurt by a player*, which decides its loot flag and its XP — see
@@ -56,9 +59,10 @@ ZombifiedPiglin` and nothing else.
 Both are instance methods on the NeoForge game bus. The `% 20` runs on each piglin's own `tickCount`,
 so the work spreads itself across the second instead of landing on one tick, and it is checked
 *before* the `instanceof` — a disabled module costs one `isModuleEnabled()` call per ticking entity
-and nothing else. Everything that matters happens server-side: the player lookup returns `null` on a
-client level, which stops the tick handler dead. The join handler is not gated that way, and the
-entry it writes on the client is the single-player wrinkle in the limits table below.
+and nothing else. Everything that matters happens server-side: `maintainHostility` returns on its
+own `isClientSide` guard before it ever looks for a player. The join handler is not gated that way —
+it goes straight to the lookup, which returns `null` on a client level, and the `null` entry it then
+files under the piglin's UUID is the single-player wrinkle in the limits table below.
 
 The join handler is only a head start. A piglin that spawns with nobody nearby, or one the event
 missed, is picked up by the next once-per-second pass anyway.
@@ -168,7 +172,7 @@ Under five seconds left, and it is re-angered. A piglin that can see you never c
 ### Walking away, and the one case where it does not work
 
 When the pass finds nobody in the cube it clears everything (the same three lines appear twice in
-the file):
+the file; the second copy is dead — see below):
 
 ```java
 angryPiglins.remove(zombifiedPiglin.getUUID());
@@ -209,9 +213,15 @@ grudge lands on whichever player came back first, not the closest one. Since a p
 carries one grudge, and vanilla's goal only considers players it is angry at, a piglin can walk past
 someone standing next to it to get at a player 30 blocks away.
 
-`target_switch_threshold` (5.0 s) is how long the current grudge must have been held before another
-player can take it over. It is measured in **wall-clock** time through `System.currentTimeMillis()`,
-so lag, a low TPS or a paused single-player world do not slow it down.
+`target_switch_threshold` (5.0 s) is not the age of the grudge. The stored timestamp is refreshed on
+every once-per-second pass in which the same player still comes back first in the query, so what the
+threshold really measures is how long the holder has been *displaced* from the front of that list —
+it only has to stay off the front for a full 5 s, and the grudge then goes to whoever is first on the
+pass where that happens. Nothing tracks *which* challenger did the displacing, so two players taking
+turns at the front unseat the holder just as effectively as one does. The age of the grudge itself
+buys nothing either way: a ten-minute-old one is displaced exactly as fast as a one-second-old one.
+The threshold is measured in **wall-clock** time through `System.currentTimeMillis()`, so lag, a
+low TPS or a paused single-player world do not slow it down.
 
 One wrinkle in the bookkeeping: on an actual switch the *previous* target's timestamp is carried
 over, because the fresh timestamp is only written in the "same player as last time" branch. The new
@@ -243,9 +253,12 @@ keeps the mob in the state vanilla attaches them to.
 
 The class javadoc lists "maintains pack behavior where attacking one angers nearby ones" as a
 feature. The module neither adds nor touches it: `maybeAlertOthers` is vanilla's, it only runs while
-the piglin has a target and can see it, and it recruits piglins within `FOLLOW_RANGE` that have **no
-target of their own**. The module does make it fire more often, because piglins that keep a grudge
-hold a target far more of the time.
+the piglin has a target, it only tries once its own 4–6 second `ALERT_INTERVAL` has elapsed and only
+if it can see that target then, and it recruits piglins that have **no target of their own** and are
+not allied to the target — in a box that reaches `FOLLOW_RANGE` out horizontally but, via
+`ALERT_RANGE_Y`, only 10 blocks up and 10 down, not the 35 in every direction the attribute name
+suggests. The module does make it fire more often, because piglins that keep a grudge hold a target
+far more of the time.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -258,7 +271,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|---|---|---|
 | `anger_duration` | int | `200` | -1 ~ 2147483647 (Integer.MAX_VALUE) | Config comment: "How long zombified piglins stay angry in ticks (-1 for indefinite)". Effectively a two-state switch, NOT a duration. Any value >= 0 is written at HostileZombifiedPiglinsModule.java:146 and then immediately overwritten at L149 by startPersistentAngerTimer(), which in vanilla 1.21.1 rolls a fresh random 400-780 ticks (ZombifiedPiglin.java:176-177) - so 200 behaves exactly like 5 or like 2000000000. Only -1 is observably different, and it works through a separate path: maintainHostility re-sets the timer to Integer.MAX_VALUE once per second while a player is in range (L244-248). In all cases the anger is zeroed the moment no eligible player is inside detection_range. |
 | `detection_range` | int | `32` | 1 ~ 128 | Config comment: "Range in blocks to detect players and become hostile". Radius of the axis-aligned box (getBoundingBox().inflate(range), HostileZombifiedPiglinsModule.java:164-166) in which the module looks for a player to pin the piglin's grudge on, and outside of which it wipes that grudge again. It is NOT attack range: the actual chase is vanilla's NearestAttackableTargetGoal, capped at the FOLLOW_RANGE attribute (35 blocks for a zombified piglin) and requiring line of sight, so values above ~35 only extend the zone in which a grudge is kept alive, not the distance from which piglins come at you. Creative and spectator players are never detected. |
-| `target_switch_threshold` | double | `5.0` | 0.0 ~ 1.7976931348623157E308 (Double.MAX_VALUE) | Config comment: "Time in seconds before a zombified piglin can switch to a new nearest player target". Seconds of WALL-CLOCK time (System.currentTimeMillis(), converted to ms by getTargetSwitchThresholdValue(true)) that the current grudge must have been held before the module will re-point it at a different player - so it is unaffected by TPS, lag or a paused single-player world. The "new nearest player" it switches to is really just the first player the level query returns (the list is never sorted), and on an actual switch the timestamp is not reset, so the new target starts out already past its threshold and only settles one second later. |
+| `target_switch_threshold` | double | `5.0` | 0.0 ~ 1.7976931348623157E308 (Double.MAX_VALUE) | Config comment: "Time in seconds before a zombified piglin can switch to a new nearest player target". Wall-clock seconds (`System.currentTimeMillis()`, converted to ms by `getTargetSwitchThresholdValue(true)`), so it is unaffected by TPS, lag or a paused single-player world. It does NOT measure how long the grudge has been held: the holder's timestamp is refreshed on every once-per-second pass in which it is still first in the query (HostileZombifiedPiglinsModule.java:213-218), so the clock only starts running once somebody else takes the front of the list. An old grudge is therefore no easier to displace than a fresh one. The "nearest" player is simply the first the level query returns - the list is never sorted - and on an actual switch the timestamp is not carried over fresh (:200-212), so the new holder settles only on the following pass. |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits
@@ -278,8 +291,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 ## Under the hood
 
-Three files, 381 lines, no mixins, no registry entries, no assets, no data files and no lang keys —
-the module produces no player-visible text at all, only log lines under `debug_logging`.
+Three files, 381 lines, plus a nineteen-line standalone entrypoint; no mixins, no registry entries,
+no assets, no data files and no lang keys — the module produces no player-visible text at all, only
+log lines under `debug_logging`.
 
 | File | Role |
 |---|---|
@@ -288,17 +302,17 @@ the module produces no player-visible text at all, only log lines under `debug_l
 | `modules/hostile_zombified_piglins/models/NearestPlayerTime.java` | `record NearestPlayerTime(Player player, long timeStamp)` |
 | `standalone/hostile_zombified_piglins/HostileZombifiedPiglinsStandalone.java` | `@Mod("vpa_hostile_zombified_piglins")`, boots through `StandaloneModuleBootstrap` |
 
-`onInitialize` does one thing, `NeoForge.EVENT_BUS.register(this)`, and the enabled check lives
-inside the two handlers rather than around the subscription — which is where the difference between
-the bundle and the standalone jar in the table above comes from. The bundle registers the module
-unconditionally in `VanillaPlusAdditions`; `build.gradle` declares the standalone jar as a bare
-one-liner with no mixins and no data globs.
+`onInitialize` does nothing but `NeoForge.EVENT_BUS.register(this)` and a log line, and the enabled
+check lives inside the two handlers rather than around the subscription — which is where the
+difference between the bundle and the standalone jar in the table above comes from. The bundle
+registers the module unconditionally in `VanillaPlusAdditions`; `build.gradle` declares the
+standalone jar as a bare one-liner with no mixins and no data globs.
 
 **State.** `HashMap<UUID, NearestPlayerTime> angryPiglins` maps a piglin to the player it is angry at
 and the wall-clock millisecond at which that grudge was last confirmed. Nothing else in the mod
 reads it, and it is never persisted.
 
-**If you edit this file**, four things are worth knowing before you trust what you read:
+**If you edit this file**, five things are worth knowing before you trust what you read:
 
 * the inline comment `// 10 seconds threshold` next to the switch check is stale — the configured
   default is 5.0 seconds, and the code is right;
@@ -307,7 +321,10 @@ reads it, and it is never persisted.
 * `getDetectionRange()`, `getAngerDuration()`, `getTargetSwitchThreshold()` (the raw `ModConfigSpec`
   accessors) and the no-argument `getTargetSwitchThresholdValue()` have no callers — everything goes
   through the `*Value()` variants, and the threshold is always fetched with `convertToMillis = true`;
-* `NearestPlayerTime` implements `Comparable`, but nothing ever sorts or compares one.
+* `NearestPlayerTime` implements `Comparable`, but nothing ever sorts or compares one;
+* the second copy of those three clear-anger lines — the `else` that closes the re-anger branch,
+  debug log included — can never run. `makeHostileToPlayer` is called there with a non-null player,
+  and on that path it skips the "nobody nearby" branch outright and always returns a record.
 
 ## See also
 

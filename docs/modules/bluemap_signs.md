@@ -168,9 +168,9 @@ Every line of `list` carries the id, the label, the icon key in brackets, the so
 who clicked, so they teleport whoever is allowed to use `/tp` and refuse for everyone else.
 
 **Sign markers cannot be touched from the command.** `remove` and `edit` return
-`SIGN_IMMUTABLE` for anything with source `SIGN` and answer *"change or break the sign (line 1) to
-edit/remove it."* The tab-completion for `<id>` filters sign markers out entirely, so their ids can
-only be reached by typing them in full.
+`SIGN_IMMUTABLE` for anything with source `SIGN` and answer *"This marker comes from a sign —
+change or break the sign (line 1) to edit/remove it."* The tab-completion for `<id>` filters sign
+markers out entirely, so their ids can only be reached by typing them in full.
 
 ### Persistence and ids
 
@@ -180,16 +180,19 @@ whenever BlueMap enables, `rebuildAllFromStorage` walks every level and rebuilds
 storage. A BlueMap restart, a map reload or a fresh server start therefore all end with the map
 agreeing with the world, without anyone touching a sign.
 
-Ids are stable and never reused:
+Ids are stable, but only the command ids are never reused: `nextCommandId()` does nothing but
+increment a counter that lives in the saved data. A sign id is not allocated at all — it *is* the
+position, so breaking a `[bm]` sign and putting a new one back on the same block produces the same
+id again, and the new marker takes over the old record.
 
 | Source | Id | Built from |
 |---|---|---|
 | Sign | `s/<packed pos>` | `Long.toUnsignedString(BlockPos.asLong())` — a sign at 100/64/-200 is `s/27762667782208` |
 | Command | `c<n>` | A counter in the saved data, incremented on every `add` |
 
-Because the sign id *is* the position, a sign marker cannot be moved; it can only vanish and reappear
-elsewhere. Command markers keep their `c<n>` id across `edit … pos`, which is what makes them worth
-having for anything that moves.
+Because the sign id is the position, a sign marker cannot be moved; it can only vanish and
+reappear elsewhere. Command markers keep their `c<n>` id across `edit … pos`, which is what makes
+them worth having for anything that moves.
 
 ### Without BlueMap
 
@@ -225,9 +228,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | BlueMap not installed | Only `/bmsigns help` works. Signs do nothing and nothing is persisted; the module is otherwise inert. |
 | Sign removed by anything but a player | Explosion, piston, water, `/fill`, `/setblock`, another mod: the pin stays on the map until that chunk is loaded again and the reconcile pass drops it. |
 | Sign created by anything but the edit screen | `/setblock` with sign NBT, structures, schematics: no `setText`, so the pin appears only at the next chunk load of that position. |
-| A break that is cancelled afterwards | `BlockEvent.BreakEvent` is handled without checking `isCanceled()`, so a protection mod cancelling the break still costs the marker until the chunk reloads. Read from the source; not reproduced. |
+| A break that is cancelled afterwards | The handler does not check `isCanceled()`, but it only ever sees breaks that are still live. `@SubscribeEvent` defaults to `receiveCanceled = false`, so a break that vanilla pre-cancels before posting (adventure mode, spawn protection, a game-master block) or that a listener above `NORMAL` priority cancels never reaches `onBlockBreak` at all, and the marker is kept. Only a listener that runs *after* ours — a lower priority, or `NORMAL` and registered later — costs the marker until that chunk reloads. Read from the source; not reproduced. |
 | Editing across dimensions | Only `list` takes a dimension. `add`, `addat`, `remove`, `edit` and the id suggestions all use the level you are standing in, and a correct id from another dimension fails with the same "no marker with id" message as a typo. |
-| Module disabled while the server runs | The three event handlers stop, but the command was registered at startup and is never gated: `/bmsigns add|edit|remove` keeps writing to the saved data and keeps pushing to BlueMap. Disabling only takes full effect after a restart, where the module is never initialized and the command never registered. |
+| Module disabled while the server runs | The two gated handlers (chunk load, block break) and the sign mixin hook stop, but the command was registered at startup and is never gated: `/bmsigns add\|edit\|remove` keeps writing to the saved data and keeps pushing to BlueMap. Disabling only takes full effect after a restart, where the module is never initialized and the command never registered. |
 | Config changed while the server runs | `marker_set_name`, `toggleable` and `default_hidden` are read when a marker set is built, `max_distance` when a marker is built. Existing ones keep the old values until the next rebuild — a BlueMap re-enable, a restart, or the next edit of that marker. |
 | `prefix` changed | Markers created under the old prefix are not dropped retroactively. Each one goes when its chunk next loads and the reconcile pass finds no match. |
 | HTML in a label | Only `detail` is escaped. Line 2 reaches the web UI as written. |
@@ -239,7 +242,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | File | Role |
 |---|---|
-| `modules/bluemap_signs/BluemapSignsModule.java` | The four event handlers, the `ModList` gate, the static mixin hook |
+| `modules/bluemap_signs/BluemapSignsModule.java` | Five `@SubscribeEvent` handlers — server start/stop, chunk load, block break, command registration — plus the `ModList` gate and the static mixin hook |
 | `modules/bluemap_signs/SignReader.java` | Sign text → `Optional<MapSignMarker>` |
 | `modules/bluemap_signs/MapSignManager.java` | BlueMap-free orchestration: storage plus mirror pushes |
 | `modules/bluemap_signs/MapSignData.java` | Per-level `SavedData`, the source of truth |
@@ -272,8 +275,19 @@ one `Dist.CLIENT` reference in it, and the only client-visible artefacts are the
 
 **Thread safety.** `BlueMapAPI.onEnable` may run on a BlueMap thread, so the rebuild is dispatched
 with `server.execute(…)`. `api` and `live` are `volatile`, and every push checks `isLive()`; while
-BlueMap is disabled the pushes are dropped and the next enable rebuilds from storage. Everything
-else (mixin hook, chunk and break events, commands) is already on the server thread.
+BlueMap is disabled the pushes are dropped and the next enable rebuilds from storage. The mixin
+hook, the chunk and break events and the commands all run on the server thread.
+
+The icons are the exception. `setupIcons` clears and refills the two plain `HashMap`s
+`iconAddresses` and `iconAnchors` on BlueMap's thread, while `buildPoi` reads them from the server
+thread — unsynchronised. And `onEnable` sets `live = true` *before* it uploads the icons, so a
+marker pushed during that window may find no address yet and falls back to
+`POIMarker.defaultIcon()` — the maps are cleared first and refilled key by key. That last part is
+self-correcting: `onEnable` queues `rebuildAllFromStorage` through `server.execute` only *after*
+`setupIcons` has returned, and that task builds a fresh `MarkerSet` per map from storage and
+replaces the whole set, so a plain pin from this window lasts only until the rebuild runs — every
+push writes to the `SavedData` first, so nothing is missing from it. The unsynchronised map access
+itself has no such backstop.
 
 **Build dependencies.** `libs/bluemap-5.7-neoforge.jar` is `compileOnly` plus `localRuntime`, and
 `libs/flow-math-1.0.4-SNAPSHOT.jar` is `compileOnly` on its own because BlueMap's marker API exposes

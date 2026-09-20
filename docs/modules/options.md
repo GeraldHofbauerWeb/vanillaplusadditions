@@ -68,10 +68,10 @@ disk, which is deliberate: the snapshot you most often want back is an automatic
 
 ### Automatic backups
 
-The check runs on the **first** `ClientTickEvent.Post` of the session — at the title screen, before
-any world is loaded — and never again; a static flag makes it one-shot. There is no watcher while
-you play, so a setting you change during a session is captured at the *next* start, not when you
-change it.
+The check runs on the **first** `ClientTickEvent.Post` of the session — during the startup loading
+screen, before the title screen even appears and long before any world is loaded — and never again;
+a static flag makes it one-shot. There is no watcher while you play, so a setting you change during a
+session is captured at the *next* start, not when you change it.
 
 1. The live options are flushed to disk (`Options.save()`), so the comparison sees what you
    actually have rather than what was last written.
@@ -168,7 +168,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Enabling the module mid-session | The command is registered once per `RegisterClientCommandsEvent`, and only if the module is enabled at that moment, so `/vpaoptions` stays absent until commands are registered again — rejoining a world or reconnecting. The screen button re-checks on every screen init and appears straight away. |
 | Enabling `auto_backup` mid-session | No effect until the next restart: the one-shot flag is already set. |
 | Overwriting a snapshot | `export` onto an existing name truncates it without a question, from the command and from the GUI alike. |
-| Hand-edited snapshot | A `key_` line whose value is not a key name vanilla knows makes `InputConstants.getKey` throw — an unchecked exception, which neither call site catches because both catch `IOException` only. You get a stack trace rather than the friendly error line. Files this module writes always hold valid values, so it takes a manual edit to reach. |
+| Hand-edited snapshot | A `key_` line whose value is not a key name vanilla knows makes `InputConstants.getKey` throw — an unchecked exception, which neither call site catches because both catch `IOException` only. From the command NeoForge's client-command handler catches it one level up, so you get the generic `command.failed` chat line plus a stack trace in the log. From the Backups screen nothing turns it into a message: vanilla's screen-error wrapper packs it into a crash report and the client goes down. Files this module writes always hold valid values, so it takes a manual edit to reach. |
 | Unreadable backup directory | `listBackups` swallows the `IOException` and returns an empty list, so a broken or permission-denied directory looks exactly like "no backups yet", never like an error. |
 | Two restores inside the same second | The safety snapshot's name has one-second resolution (`auto_<yyyyMMdd-HHmmss>-prerestore`), so the second one overwrites the first. |
 | `debug_logging` | No effect here — nothing in the module reads it. The little logging there is (automatic backup created; an operation failed) goes to the ordinary log at info and warn. |

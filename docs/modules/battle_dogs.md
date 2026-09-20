@@ -112,11 +112,13 @@ A vanilla wolf's `ATTACK_DAMAGE` is 4.0, tamed or not, so netherite doubles it. 
 removed by `LivingEquipmentChangeEvent` on the `BODY` slot — it therefore also disappears the moment
 the armour breaks.
 
-All four use vanilla's `ArmorMaterials.ARMADILLO` with `BodyType.CANINE` and no trim support, which
-settles three things at once: the anvil repair ingredient is the armadillo scute, the enchantment
-value is the same for every tier, and the armour carries the material's 11 armour points in the body
-slot. Those armour points are visible in the tooltip and completely moot in play — the absorption
-below zeroes the damage after vanilla has already applied them.
+All four use vanilla's `ArmorMaterials.ARMADILLO` with `BodyType.CANINE` and `hasOverlay = false` —
+`AnimalArmorItem`'s third constructor argument, the one that gives vanilla's own wolf armour its
+`_overlay.png` dye layer. The material settles three things at once: the anvil repair ingredient is
+the armadillo scute, the enchantment value is the same for every tier, and the armour carries the
+material's 11 armour points in the body slot. Those armour points are visible in the tooltip and
+completely moot in play — the absorption below zeroes the damage after vanilla has already applied
+them.
 
 ### Putting it on and taking it off
 
@@ -167,7 +169,12 @@ being closed (see above):
 | Thorns | reflects `absorbed × min(1.0, thorns_reflect_fraction × level)` back at a living attacker as thorns damage — 33 % per level by default |
 | Sharpness | adds `0.5 + 0.5 × level` to the wolf's outgoing damage |
 
-Protection and the rest are legal and pointless: the armour already absorbs everything.
+Beyond those three, everything else the same tags allow is legal and pointless. Protection sits in
+`#minecraft:enchantable/armor` next to Thorns, so the book goes on — but its reduction runs first, in
+`getDamageAfterMagicAbsorb`, and the absorption described above then zeroes whatever is left of the
+damage anyway. Mending is the one that stings: legal through the `durability` tag it shares with
+Unbreaking, but `ExperienceOrb.repairPlayerItems` only scans the *player's* own equipment slots, so a
+piece worn by the wolf is never mended.
 
 Thorns is read off the stack **before** the durability is charged, so a piece that breaks on the same
 hit still reflects. It is server-side only and is skipped when the damage source's attacker is not a
@@ -186,8 +193,13 @@ public boolean isEnchantable(ItemStack stack) {
 
 `ItemStack.isEnchantable()` asks the item first, and `EnchantmentMenu` only offers a slot for
 `itemstack.isEnchantable()`. An anvil and an enchanted book are the way in; the three
-`#minecraft:enchantable/{armor,durability,sharp_weapon}` tag files this mod ships are what make those
-books legal on the items in the first place.
+`#minecraft:enchantable/{armor,durability,sharp_weapon}` tags this mod puts these items in are what
+make those books legal on them in the first place — and they are also the ceiling. `AnvilMenu` checks
+every book against `ItemStack.supportsEnchantment`, which ends at the enchantment's own
+`supported_items`, with a bypass only for a player in creative. Anything asking for a tag the mod
+does not put these items in — Respiration and Aqua Affinity (`head_armor`), Feather Falling and Depth
+Strider (`foot_armor`), Looting (`sword`), Curse of Binding (`equippable`) — therefore cannot go on
+these items in survival at all.
 
 ### The bite
 
@@ -224,9 +236,9 @@ that matters, because `tickRidden` overwrites head and body rotation from the *r
 tick while a player is aboard. A reported yaw stays usable for 500 ms; after that the animation falls
 back to the head yaw on its own.
 
-All three honour `bite_animation.only_when_ridden` and `bite_animation.strength`, and the snap and
-the lunge both stop at `bite_animation.enabled = false`. The swing timer does not — see
-*Compatibility and known limits*.
+The snap and the lunge honour `bite_animation.only_when_ridden` and `bite_animation.strength`, and
+both stop at `bite_animation.enabled = false` — as does the packet. The swing timer honours none of
+the three: it asks only whether the module itself is active — see *Compatibility and known limits*.
 
 ## Items, blocks and recipes
 
@@ -277,7 +289,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | **Standalone jar cannot be enchanted** | The `enchantable/*` tag files are not in its `dataGlobs` either, so an anvil has nothing to say the books are legal on these items. Textures and models are unaffected — `vpa_core` ships all of `assets/vanillaplusadditions/**`. |
 | Absorption ignores ownership | The handler checks only "is a wolf" and "wears our armour". Any wolf given a piece by command is unkillable until it breaks. |
 | Absorption ignores `#minecraft:bypasses_wolf_armor` | Drowning, freezing, suffocation, starvation, wither and magic are absorbed too, where vanilla wolf armour lets them through. |
-| Curse of Binding | Vanilla's shear branch refuses to remove a piece carrying `PREVENT_ARMOR_CHANGE` unless the player is creative. This module's branch makes no such check. |
+| Curse of Binding | Vanilla's shear branch refuses to remove a piece carrying `PREVENT_ARMOR_CHANGE` unless the player is creative. This module's branch makes no such check. Getting to that divergence takes some doing, though: Binding wants `#minecraft:enchantable/equippable`, which the mod does not add these items to, so only a creative-mode anvil or a command produces such a stack in the first place. |
 | Enchanting table | Refuses the items outright (`AnimalArmorItem.isEnchantable` is `false`). Anvil and book only. |
 | Swing timer runs even with the animation off | `WolfSwingTimeMixin` checks only whether the module is active, not `bite_animation.enabled`. With the animation off, a wolf's `swingTime`/`attackAnim` are still maintained every tick on both sides — and `LivingEntity.tick` snaps the body-rotation target to `getYRot()` whenever `attackAnim > 0`, which vanilla never reaches for a wolf. |
 | Fresh Animations / Entity Model Features | Overwrite the head snap after `setupAnim` returns. The lunge still shows. |
@@ -343,11 +355,13 @@ Mixin needs the target method declared in the target class, and `Wolf` happens t
 the wet-shake. It is listed in the `"mixins"` block of `vanillaplusadditions.mixins.json`;
 `WolfBiteAnimationMixin` targets a client-only class and is listed in `"client"`.
 
-<!-- TODO: WolfSwingTimeMixin's javadoc claims that without it the first swing latches `swinging`
-     and every later bite stops broadcasting its ClientboundAnimatePacket. The vanilla source does
-     not bear that out: `swing()` re-fires when `swingTime < 0`, and an untended `swingTime` stays
-     at the -1 that `swing()` itself wrote. The mixin is still needed on the server to clear the
-     flag, but the "swallowed bites" consequence could not be reproduced from the code. -->
+<!-- TODO (source change, out of scope for a docs pass): WolfSwingTimeMixin's own javadoc still
+     claims that without it the first swing latches `swinging` and every later bite is silently
+     swallowed. That is wrong, and the vanilla source settles it — `swing()` writes `swingTime = -1`
+     (LivingEntity.java:1865) and its guard accepts `swingTime < 0` (LivingEntity.java:1864), so an
+     untended wolf re-fires `swing()` and re-broadcasts its ClientboundAnimatePacket on every bite.
+     This page says it correctly above; the javadoc needs the same correction. This marker stays
+     until it gets one. -->
 
 **Localisation.** The four item names exist in all six lang files. The two tooltip lines are shared
 with the cat and axolotl armours under `tooltip.vanillaplusadditions.mob_armor.attack` and

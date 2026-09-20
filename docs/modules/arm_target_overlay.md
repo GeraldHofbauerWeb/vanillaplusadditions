@@ -66,8 +66,9 @@ to *None* returns false, which means the overlay can never appear.
 **The Controls screen will flag a conflict on a fresh install.** Five Vanilla+ mappings share Left
 Ctrl as their default — this one, `item_vault_viewer`, `cat_guardian`, `axolotl_guardian` and
 `wolf_mount`. They are separate `KeyMapping` objects and every one of them reads the raw window
-state independently, so all five work while Ctrl is held and the orange conflict marker is
-cosmetic. Rebind if the marker bothers you; nothing breaks either way.
+state independently, so all five work while Ctrl is held and the red conflict marker — vanilla wraps
+the button label in red brackets — is cosmetic. Rebind if the marker bothers you; nothing breaks
+either way.
 
 ### Which goggles count
 
@@ -140,7 +141,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Aviator's goggles in a Curios slot | Not detected. The tag check only ever looks at `EquipmentSlot.HEAD`; only Create's own goggles reach the Curios path. |
 | Module disabled in config | The keybind is registered anyway — *Show Mechanical Arm Targets* stays in the Controls screen even with the module off or Create absent, because `ArmTargetOverlayKeybinds` subscribes on the mod bus with no gate at all. |
 | Dedicated server | The eight colour keys are registered into the **common** spec although the feature is purely client-side, so a server's `vanillaplusadditions-common.toml` carries them and they do nothing there. |
-| Standalone jar and Create | `vpa_arm_target_overlay`'s generated `mods.toml` declares only `vpa_core`, NeoForge and Minecraft, with no Create dependency and therefore no `ordering="AFTER" create`. Only the bundle declares Create as optional with that ordering. |
+| Standalone jar and Create | `vpa_arm_target_overlay`'s generated `mods.toml` declares only `vpa_core`, NeoForge and Minecraft as required — plus the bundle `vanillaplusadditions` as `incompatible`, so jar and bundle refuse to load together — and has no Create dependency at all, therefore no `ordering="AFTER" create`. Only the bundle declares Create as optional with that ordering. |
 | Two arms side by side | Only the one under the crosshair is drawn. There is no way to see several at once. |
 | Shared with `debug_overlay` | The `arm_goggles` tag is read by [Debug Overlay](debug_overlay.md) as well, through its own copy of the goggles logic. The tag file ships in *this* module's standalone jar only, so a `vpa_debug_overlay` jar installed without `vpa_arm_target_overlay` has no tag content to match — Create's own goggles still work there, tag-based ones do not. |
 
@@ -177,13 +178,17 @@ This is the same construction [Block Glow](block_glow.md) uses for its highlight
 ### Reflection, not a mixin
 
 `ArmBlockEntity.inputs` and `.outputs` are package-private in Create. A Mixin `@Accessor` was the
-first attempt and it does not compile: `ArmBlockEntity`'s supertype `SmartBlockEntity` implements
-`net.createmod.ponder.api.VirtualBlockEntity`, Ponder is not among the jars in `libs/`, and javac
-needs the whole supertype hierarchy to validate the cast.
+first attempt, and at the time it did not compile: `ArmBlockEntity`'s supertype `SmartBlockEntity`
+implements `net.createmod.ponder.api.VirtualBlockEntity`, Ponder was not among the jars in `libs/`,
+and javac needs the whole supertype hierarchy to validate the cast.
 
 ```
 Klassendatei für net.createmod.ponder.api.VirtualBlockEntity nicht gefunden
 ```
+
+That blocker is gone today: `libs/create-nested/ponder-neoforge-1.0.81+mc1.21.1.jar`, extracted from
+Create's own jar-in-jar for the `train_chunk_loading` module, is on the compile classpath as
+`compileOnly`. The reflection stayed anyway — it works, and this module still needs no mixin config.
 
 `ArmBlockEntityReflection` resolves both fields once inside a `synchronized` block, caches them and
 calls `setAccessible(true)`. Any `ReflectiveOperationException` — at resolve time or at read time —

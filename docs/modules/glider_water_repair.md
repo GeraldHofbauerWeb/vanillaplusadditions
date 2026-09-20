@@ -17,12 +17,13 @@
 
 ## What it does
 
-Glide through a thunderstorm in the Gliders mod and it eventually drops a real lightning bolt on you,
-which without the copper upgrade **wrecks the paraglider** — and that part stays exactly as the mod
-intends. What changes is the way back. The only cure the mod offers is an anvil plus the Reinforced
-Paper of that glider's exact tier (for an iron one: 5 leather + 4 paper + 8 iron ingots), while the
-broken glider wears a charred sprite and looks for all the world like it is on fire. So here, dunking
-it works: a broken glider lying in water becomes usable again, with a hiss and a puff of steam.
+Glide through rain in the Gliders mod and it eventually drops a real lightning bolt on you — the bolt
+is the mod's doing, no thunderstorm required — which without the copper upgrade **wrecks the
+paraglider**, and that part stays exactly as the mod intends. What changes is the way back. The only
+cure the mod offers is an anvil plus the Reinforced Paper of that glider's exact tier (for an iron
+one: 5 leather + 4 paper + 8 iron ingots), while the broken glider wears a charred sprite and looks
+for all the world like it is on fire. So here, dunking it works: a broken glider lying in water
+becomes usable again, with a hiss and a puff of steam.
 
 You have to actually throw it in. Only a **dropped item** is ever looked at — a broken glider in your
 inventory, in the chest slot or in a Curios back slot is untouched however deep you wade.
@@ -35,7 +36,7 @@ Only the broken flag clears; the durability the strike cost stays gone, so:
 
 ## Why it exists
 
-Thunderstorms are supposed to be dangerous. Glide through rain for more than 200 ticks and
+Flying in the rain is supposed to be dangerous. Glide through rain for more than 200 ticks and
 `GliderUtil.lightningLogic` spawns a real bolt straight onto the player:
 
 ```java
@@ -47,8 +48,13 @@ if (player.level().random.nextInt(24) == 0 && lightningTimer > 200 && !GliderIte
 }
 ```
 
-`GliderEventsNeoForge.onEntityStruckByLightning` then decides what it costs. With the copper upgrade,
-nothing. Without it, `GliderItem.setBroken(chestItem, true)`.
+`GliderEventsNeoForge.onEntityStruckByLightning` then decides what it costs. Without the copper
+upgrade, `GliderItem.setBroken(chestItem, true)` — the glider is wrecked. With the upgrade it survives,
+but the strike is not free: the mod marks it `struck` instead and deals two points of its own
+`vc_gliders:zap_experiment` damage. Only then is the bolt's *vanilla* damage cancelled:
+`onLivingHurt` zeroes `minecraft:lightning_bolt` for an upgraded player who is actually gliding,
+so of the whole strike only the mod's own two points land. Without the upgrade nothing is zeroed —
+the bolt hits in full *and* the glider breaks.
 
 **That part is deliberately left alone.** The strike is the point of the mechanic.
 
@@ -112,9 +118,12 @@ return GLIDER_MOD_ID.equals(id.getNamespace()) && id.getPath().startsWith(GLIDER
 
 In 1.1.8 that is exactly the five tiers — `paraglider_wood`, `_iron`, `_gold`, `_diamond`,
 `_netherite` — and nothing else the mod ships (`copper_upgrade`, `nether_upgrade`,
-`reinforced_paper*`). The copper and nether upgrades are not separate items but item-property
-overrides on the same five models, so an upgraded glider is covered by the same prefix. It is a
-prefix match rather than a list because a sixth tier should not need a code change.
+`reinforced_paper*`). Applying an upgrade does not create a sixth item, though: `copper_upgrade` and
+`nether_upgrade` are consumed at the anvil and set a data component on the paraglider itself. The
+component changes how the glider behaves, but not what item it is: only the model swaps, through
+the `upgrade_level` item property. An upgraded glider therefore keeps its `paraglider_*` id and is
+covered by the same prefix. It is a prefix match rather than a list because a sixth tier should not
+need a code change.
 
 ### What changes, and what does not
 
@@ -122,7 +131,7 @@ The entire effect is one line: `stack.set(requireBrokenComponent(), false)`.
 
 | | After the dunk |
 |---|---|
-| `vc_gliders:broken` | `false` — the glider glides again and drops the charred sprite |
+| `vc_gliders:broken` | `false` — the glider glides again and loses the charred sprite once it is back in your hands |
 | Durability | **untouched.** `isGlidingEnabled` is `glide && !broken`; the mod's `isTooBroken` check exists but is never called, so a nearly worn-out glider flies |
 | `vc_gliders:struck` | untouched, and it does not need to be: the mod clears it itself the moment flying is blocked — standing on the ground counts, so does being in water — which means the glider can be struck again |
 | Copper / nether upgrade, name, anything else on the stack | untouched |
@@ -148,9 +157,10 @@ Nether, sets the stack's count to 0. The glider is gone, not broken, so there is
 throw in the water.
 
 A broken glider whose bar is genuinely empty therefore practically only comes out of the Nether, and
-for that one the dunk buys a single flight: the flag clears, and the next durability step finds the
-damage still at the maximum and sets it again. For every ordinary strike victim — broken with
-durability left — the repair holds.
+for that one the dunk buys a single flight. Stay in the Nether and the next durability step finds the
+damage still at the maximum and sets the flag again. Carry the glider out and that same step also
+sets the stack's count to 0, so it is destroyed rather than merely broken a second time. For every
+ordinary strike victim — broken with durability left — the repair holds.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -202,11 +212,11 @@ reads it back as a `Boolean`.
 
 **History.** This module replaced `glider_lightning_guard` in commit `e7469c4`. The predecessor took
 a quarter of the paraglider's durability bar instead of letting the strike break it, and searched
-Curios slots to find the worn glider; both went, the first because the danger in a thunderstorm is
-the point of the mechanic, the second because only dropped items are looked at now. It never shipped
-in a tagged release — the tags jump straight from `v1.0.0-beta.81` to `v1.0.0-beta.86` — so only
-someone running a build from that window carries the old state. For them, the config section was
-renamed from `[modules.glider_lightning_guard]` to `[modules.glider_water_repair]` and the
+Curios slots to find the worn glider; both went, the first because the danger of flying in the rain
+is the point of the mechanic, the second because only dropped items are looked at now. It never
+shipped in a tagged release — the tags jump straight from `v1.0.0-beta.81` to `v1.0.0-beta.86` — so
+only someone running a build from that window carries the old state. For them, the config section
+was renamed from `[modules.glider_lightning_guard]` to `[modules.glider_water_repair]` and the
 `durability_cost` key is gone; both leftovers in an existing toml are dead entries.
 
 ## See also

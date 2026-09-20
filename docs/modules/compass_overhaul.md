@@ -91,8 +91,11 @@ range of the tick that kills it.
 ### Sable reads last tick's pose
 
 A Sable sub-level is a plot of chunks parked far away in the parent level and drawn at the ship's
-real position through a pose. An entity standing on a ship therefore has plot-local coordinates and
-a plot-local yaw, and a needle computed from those would point at "ship north".
+real position through a pose. Sable keeps most entities out of that plot — a player walking the deck
+lives at the projected world position and merely *sticks* to the sub-level. Only what is in the
+entity type tag `sable:retain_in_sub_level` — item frames, armour stands, minecarts, `create:seat` —
+really sits inside it, with plot-local coordinates and a plot-local yaw, and a needle computed from
+those would point at "ship north".
 
 Sable already handles that: it `@Overwrite`s `CompassItemPropertyFunction.getAngleFromEntityToPos`
 and rotates the target into the ship's space. It reads `lastPose()` though — the pose from the
@@ -156,15 +159,19 @@ The mixin injects at HEAD of the method Sable overwrites and returns its own bea
 with `pose.transformPositionInverse(Vec3.atCenterOf(target))`, and the bearing comes out in **turns**,
 the unit vanilla's angle function works in.
 
-**Only a viewer standing inside the plot counts.** Rotating the target into the ship's space is
-correct only while the yaw that vanilla folds in afterwards lives in that same space — which holds
-exactly when the viewer is *in* the plot. Someone standing on a hull drawn out in the world keeps
-world coordinates and a world yaw, and mixing a ship-space bearing into a world-space yaw puts the
-needle off by the ship's entire rotation: half a turn on a ship that faces backwards. An earlier
-version asked `getTrackingOrVehicleSubLevel` as well, meaning to help a player riding a seat — that
-player is outside the plot, so it did precisely the wrong thing, and from part D onwards it broke the
-ordinary lodestone compass too. `SableOrientation.bearingInSubLevel` therefore uses
-`SableCompanion.INSTANCE.getContainingClient(viewer)` and returns empty for everyone else.
+**Two viewers count, and no others.** Rotating the target into the ship's space is correct only
+while the yaw that vanilla folds in afterwards lives in that same space. That holds for a viewer
+that really sits in the plot — an item frame, or anything else in the entity type tag
+`sable:retain_in_sub_level` — which has plot coordinates and a plot-local yaw, so only the target
+has to be moved. It holds for a rider as well: Sable projects a player in a seat out to the parent
+level but leaves its yaw plot-local, so the rider's *position* is moved into the plot too, through
+the same pose, and the ship's translation cancels. Everyone else keeps world coordinates *and* a
+world yaw — a player walking the deck is projected out of the plot in full — and mixing a ship-space
+bearing into a world-space yaw would put the needle off by the ship's entire rotation: half a turn on
+a ship that faces backwards. `SableOrientation.bearingInSubLevel` therefore asks
+`SableCompanion.INSTANCE.getContainingClient` for the viewer, then for its vehicle, and returns empty
+for everyone else — asking Sable for the sub-level an entity merely *tracks* would answer exactly the
+cases that must not be answered.
 
 Without Sable installed, `SableGate.isLoaded()` is false, the bearing is never asked for, and the
 needle falls back to vanilla's (or Quark's) behaviour.
@@ -175,17 +182,29 @@ The needle is not computed here. Vanilla's own `CompassItemPropertyFunction` get
 four million blocks due north of the viewer:
 
 ```java
-new CompassItemPropertyFunction((level, stack, entity) -> GlobalPos.of(
-        level.dimension(),
-        BlockPos.containing(entity.getX(), entity.getY(), entity.getZ() - NORTH_DISTANCE)));
+new CompassItemPropertyFunction((level, stack, entity) -> {
+    Vec3 origin = originOf(entity);
+    return GlobalPos.of(level.dimension(),
+            BlockPos.containing(origin.x, origin.y, origin.z - NORTH_DISTANCE));
+});
 ```
 
 `NORTH_DISTANCE` is `4_000_000`. That is north from anywhere in the world to well within a tenth of a
 degree — a fraction of one of the 32 frames; the only offset is the floor `BlockPos.containing` puts
-on X, at most half a block over four million. The target is measured from the viewer and never
+on X, at most half a block over four million. The target is measured from that origin and never
 clamped, so for a viewer in the northernmost four million blocks it does land outside the world
 border — which is harmless here: `isValidCompassTargetPos` checks the dimension, never the bounds,
 and nothing on this path packs the position into a long.
+
+**The four million are measured in the parent level, never inside a plot.** With Sable installed
+`originOf` takes the origin from `SableOrientation.parentPosition(viewer, partialTick)` — the point
+the viewer itself is drawn at out in the parent level — instead of the viewer's raw position. A
+viewer that really sits in a plot, an item frame on a ship, has plot coordinates roughly twenty
+million blocks away from where the ship appears to be, and "four million north of that" is a target
+the sub-level correction of part B then maps back to a direction dominated by the plot offset rather
+than by north. Starting in the parent level makes the ship's own translation cancel against that
+correction, and what is left is north turned into the ship's space. Without Sable,
+`SableGate.isLoaded()` is false and the origin is simply `viewer.position()`.
 
 Deriving the angle by hand looked tempting (for a target infinitely far north vanilla's
 `0.5 - (yaw - 0.25 - bearing)` collapses to `0.5 - yaw`) and it was wrong in play: the needle came

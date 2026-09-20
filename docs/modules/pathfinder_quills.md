@@ -11,7 +11,7 @@
 | **Side** | Client + Server |
 | **Requires** | [Quark](https://modrinth.com/mod/quark) <sub>tested 4.1-482</sub> |
 | **Works with** | — |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_pathfinder_quills.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_pathfinder_quills.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.pathfinder_quills]` |
 | **Since** | `v1.0.0-beta.73` |
 <!-- vpa:meta:end -->
@@ -34,12 +34,18 @@ Position does not matter and no crafting table is needed; the 2×2 inventory gri
 does matter is that there is **exactly one of each** in the grid — a stack of three Sand plus a
 Feather and an Eye produces nothing (see [In detail](#in-detail)).
 
-The block is the biome's own leaves wherever the biome has a signature tree, and a defining ground
-or terrain block otherwise. For the five leaf biomes — Dark Forest, Savanna, Jungle, Mangrove Swamp
-and Cherry Grove — that means you cannot craft the quill without having stood in the biome already,
-because leaves keep their block form only under Shears or Silk Touch. That is a deliberate trade of
-accessibility for thematic accuracy, and it is the reason the quill is still worth trading for: the
-craft is the route to a *second* Cherry Grove, not to your first one.
+The block is a leaf block for five of the fifteen entries and a defining ground, terrain or plant
+block for the rest — Podzol for Old Growth Pine Taiga, Bamboo for Bamboo Jungle, Poppy for Flower
+Forest. Among the five leaf entries Dark Forest is the odd one out: its entry is plain **Oak
+Leaves**, not Dark Oak Leaves, even though dark oak is what the biome is built from — so that one
+quill can be crafted from a tree in Plains or Forest, without ever seeing a Dark Forest.
+
+Leaves keep their block form only under Shears or Silk Touch, but only two of the five leaf entries
+are genuinely tied to the biome they point at: Mangrove Swamp and Cherry Grove, whose trees generate
+in those biomes and nowhere else. Jungle Leaves come from Sparse Jungle and Bamboo Jungle as much as
+from Jungle, and Acacia Leaves from Savanna Plateau and Windswept Savanna as much as from Savanna.
+So the appeal of the quill — that the craft is the route to a *second* Cherry Grove rather than to
+your first one — holds for those two entries, not for the table as a whole.
 
 Everything past the crafting grid is Quark's. The search, the progress HUD, the retry behaviour and
 the map it finally produces are untouched here — this module only puts the quill in your hands with
@@ -110,8 +116,9 @@ the whole current recipe map is copied into a `LinkedHashMap`, the fifteen entri
 `replaceRecipes` writes it back. Nothing vanilla or Quark owns is overridden — these are pure
 additions under ids of the form `vanillaplusadditions:pathfinder_quill_<biome path>`.
 
-Thirteen modules in this mod use that same merge-then-replace pattern, each re-reading the manager
-when its own listener runs, which is what lets them stack.
+Fourteen modules in this mod use that same merge-then-replace pattern — among them `mo_arrows`,
+`tipped_arrows` and `custom_crafting_recipes` — each re-reading the manager when its own listener
+runs, which is what lets them stack.
 
 ### Recipe book and JEI
 
@@ -160,7 +167,7 @@ are fully opaque.
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.pathfinder_quills]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.pathfinder_quills]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_pathfinder_quills-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -181,7 +188,7 @@ This module has no settings of its own.
 | Recipe book | Empty until you craft a quill; the craft itself is what unlocks the entry. JEI is unaffected. |
 | Module switched off while the server runs | The listener is only attached while `isModuleEnabled()`, but the recipes already in the `RecipeManager` stay live until the next `/reload`. |
 | Client with the module off, or without Quark | The fifteen recipes are synced to clients encoded with `vanillaplusadditions:pathfinder_quill`, and that registry entry exists only where Quark is present **and** the module is enabled — the config is `ModConfig.Type.COMMON`, so a client keeps its own copy of that switch and the server's setting does not travel. A client missing the entry cannot decode them. Read off the source; no such mismatch has been reproduced. |
-| No standalone jar | `pathfinder_quills` is not in `build.gradle`'s `standaloneModules` list. It ships in the bundle only. |
+| Standalone jar | `vpa_pathfinder_quills` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. Quark stays a runtime requirement there as in the bundle: without it the module registers nothing. |
 | Modded target biomes | Recipe ids are built from the biome **path** only, so two targets with the same path in different namespaces would collide. Inert today — all fifteen entries are `minecraft:`. |
 
 ## Under the hood

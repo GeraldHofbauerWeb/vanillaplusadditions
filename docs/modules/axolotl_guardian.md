@@ -25,9 +25,9 @@ otherwise drifts about. This module gives it a post to hold — the underwater c
 Feed a wild axolotl fish until it takes to you, place an **Axolotl Bowl** or an **Axolotl Feeding
 Station** in the water, sneak and right-click it with both hands empty, and every axolotl of yours
 within 64 blocks is bound to that block. Then put fish in. An axolotl that has eaten guards a box
-32 blocks wide and 16 blocks high around its bowl for the next five minutes: it swims down any
-hostile mob that is *in the water*, kills it, takes the drops straight out of the kill and brings
-them home.
+that reaches 32 blocks in every horizontal direction and 16 blocks up and down from its bowl — some
+64 blocks across — for the next five minutes: it swims down any hostile mob that is *in the water*,
+kills it, takes the drops straight out of the kill and brings them home.
 
 <table>
 <tr>
@@ -143,7 +143,9 @@ any item in the tag does it, and the station also feeds out of a tropical fish b
 
 ### What a guardian does, state by state
 
-Priority runs from the top down; the first state that matches ends the pass.
+Priority runs from the top down. Playing dead, Fleeing and Fed end the pass; Returning is handled
+and then falls through into the zone enforcement and the target scan below — which is exactly what
+makes it interruptible.
 
 | State | Entered when | Behaviour |
 |---|---|---|
@@ -303,8 +305,8 @@ enchanting table looks at.
 
 ### Loot and experience
 
-Drops from a mob a guardian killed are inserted straight into its five loot slots before they ever
-become item entities. What does not fit stays on the floor as normal.
+Drops from a mob a guardian killed are inserted straight into its five loot slots before they are
+ever added to the world. What does not fit stays on the floor as normal.
 
 Edible drops are routed somewhere else first. Any drop in `#minecraft:fishes` is inserted into the
 guardian's bowl or station as **food**, item by item, before the loot pass runs — from wherever the
@@ -324,7 +326,7 @@ if (this.level() instanceof ServerLevel serverlevel
 ```
 
 So a kill by an axolotl alone drops none at all. The module credits the owner on every hit a
-guardian lands (`victim.setLastHurtByPlayer(owner)`), which makes vanilla drop the experience
+guardian lands (`victim.setLastHurtByPlayer(ownerPlayer)`), which makes vanilla drop the experience
 normally; it is then intercepted and redirected into the axolotl's buffer up to
 `axolotl_xp_capacity` (500), and anything over that spawns as ordinary orbs. The owner has to be
 **online and in the same level** at the moment of the hit, or there is no experience at all —
@@ -394,11 +396,14 @@ them would break existing blockstates.
 
 ### The bucket round trip
 
-A water bucket used on an **owned** axolotl does not take vanilla's path. Vanilla keeps only the
-variant and the age and discards the rest of the entity, which would quietly destroy owner, bowl,
-experience, loot and worn armor. The module replicates the pickup and writes all of that into a
-`vpa_guardian` sub-tag of the bucket's `BUCKET_ENTITY_DATA`, then detaches the axolotl from its
-bowl and discards it.
+A water bucket used on an **owned** axolotl does not take vanilla's path. Vanilla's own bucket data
+carries only its handful of fields — variant, age, hunting cooldown, health and the
+NoAI/Silent/NoGravity/Glowing/Invulnerable flags in the tag, plus the custom name, which vanilla
+sets as a `CUSTOM_NAME` component on the bucket item rather than into the tag — and drops everything
+else the entity held, which would quietly destroy owner, bowl, experience, loot and worn armor. The
+module replicates the pickup, keeps vanilla's `saveToBucketTag` and writes all of that into a
+`vpa_guardian` sub-tag of the bucket's `BUCKET_ENTITY_DATA`, then detaches the axolotl from its bowl
+and discards it.
 
 The restore is hooked at the tail of `Axolotl.loadFromBucketTag` — the one place every placement
 path funnels through. Emptying the bucket by hand, from a dispenser or with a Create deployer all
@@ -509,7 +514,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Anyone can bucket your axolotl | The guardian-preserving pickup fires for any player holding a water bucket, not only the owner. The state survives the trip, but so does the axolotl's absence from your base. |
 | A dead guardian takes everything with it | Fed timer, loot, experience and worn armor are entity attachments and are not dropped on death. Only the bowl's bookkeeping is cleaned up. |
 | Loot beyond five slots is lost | Drops that do not fit stay on the ground where the mob died; the axolotl does not come back for them. |
-| Guardians never fight on land | Targets must be in water, and so must the axolotl. A mob that beaches itself is dropped and blacklisted for 60 seconds. |
+| Combat is water-only, with one exception | Targets must be in water, and the axolotl has to be in water to start a search of its own. A mob that beaches itself is dropped and blacklisted for 60 seconds. The exception is a beached guardian: it still hits back at an attacker that is in the water inside its zone, and gives that target up once its own air supply falls below 1200 ticks. |
 | The plain bowl never self-repairs | Only the station has a ticker, so only the station prunes and reclaims its list. A bowl whose list has drifted stays drifted until an axolotl clears its own pointer. |
 | Offline owner, no experience | Experience only flows if the owner is a player object present in the same level at the moment of the hit. Loot collection is unaffected. |
 | Sable contraptions | With [Sable](https://modrinth.com/mod/sable) installed, bowls and stations are registered as Sable-aware variants and associated axolotls are teleported into the sublevel when a ship assembles, with their bowl position rewritten to the ship-local one. Without Sable a bowl assembled onto a contraption simply leaves its axolotls behind in the old level. |

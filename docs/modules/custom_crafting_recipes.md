@@ -66,9 +66,12 @@ Four things about the pattern are worth knowing before you write one:
 
 * **Rows in quotes are taken verbatim.** The parser first collects everything matching `"([^"]+)"`,
   and if that yields at least one row it never looks at the rest of the field.
-* **Unquoted rows are trimmed.** A row that begins or ends with an empty cell loses it, the grid
-  comes out ragged, and vanilla's pattern check throws the whole entry away. That is what the quoted
-  form is for.
+* **Unquoted rows are trimmed.** A row that begins or ends with an empty cell loses it. That alone
+  is harmless as long as every row loses the same amount — `shrink` strips those outer columns
+  itself, so the result is the grid you wanted anyway. Uneven trimming is what hurts: the grid comes
+  out ragged — ` S |SSS| S ` arrives as `S`, `SSS`, `S` — and `ShapedRecipePattern.shrink` then runs
+  off the end of the short row on a `substring`, taking the whole entry with it. That is what the
+  quoted form is for.
 * Rows are separated by `|`. If the field contains no `|` at all, commas are accepted instead —
   undocumented in the config comment, but it works.
 * A trailing empty row disappears (`String.split` with the zero limit drops trailing blanks), so
@@ -127,7 +130,7 @@ Everything is per entry. One bad line costs that line, never the list.
 |---|---|---|
 | Item id from a mod that is not loaded — namespace is neither `minecraft` nor `neoforge` and `ModList` does not know it | one `DEBUG` per entry plus a single `INFO` summary naming the namespaces | entry skipped, everything else loads |
 | Item id wrong while its mod *is* installed | `ERROR` `Invalid custom crafting recipe definition` plus `Reason: Unknown result item: …` | entry skipped |
-| Grid malformed — ragged rows, more than 3×3, a symbol used but not defined | `ERROR` — the same pair when the exception is an `IllegalArgumentException`, otherwise `Failed to parse custom crafting recipe` with a stack trace | entry skipped |
+| Grid malformed — ragged rows, a symbol used but not defined, a key symbol the pattern never uses | `ERROR` `Failed to parse custom crafting recipe` plus a stack trace — all three die inside vanilla (`shrink`'s `substring`, or the `IllegalStateException` from `DataResult.getOrThrow`), never as an `IllegalArgumentException`, so this row never takes the `Reason:` branch | entry skipped |
 
 The split between the first two rows is the point of the design: a recipe extension for a mod the
 pack does not have is expected, not a defect, so it stays quiet. A typo is loud.
@@ -251,7 +254,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Overpacked not installed | The Giant Backpack entry is skipped, nothing else is lost. |
 | Tag ingredients are never mod-gated | Only item ids are checked against `ModList`. A recipe built entirely from `#tags` is registered whatever is installed — an empty tag makes it uncraftable rather than absent. |
 | Reusing the id of a non-crafting recipe | The merge is keyed by id alone, so the original recipe of whatever type disappears and a crafting-table recipe takes its id. |
-| More than nine shapeless ingredients | Nothing checks the count. The recipe is built and can never match a 3×3 grid. Shaped grids are validated by vanilla's `ShapedRecipePattern`, so an oversized one is dropped with an error instead. |
+| More than nine shapeless ingredients | Nothing checks the count. The recipe is built and registered, and can never match a 3×3 grid. |
+| A shaped grid bigger than 3×3 | Nothing checks the size either. `ShapedRecipePattern.of` only runs the unpack step, and the row/column limits sit in the JSON codec it never goes through — so a 4×4 pattern is built and registered without a word, and never matches a vanilla crafting table. |
 | An existing config keeps its old defaults | The default list is only written when the file is created. A config from before an entry was added to the defaults keeps the shorter list — observed on an instance here whose `recipes` still holds only the four pre-Netherite entries. Add the line by hand. |
 | Already-connected clients | Not established here. `replaceRecipes` runs server-side inside the reload listener, and this repository contains no recipe-sync code for the module; what a client that is already connected sees is whatever vanilla and NeoForge do on a reload. |
 | The recipe book | Vanilla grants a recipe through an advancement reward, and no advancement of any kind ships in this repository, so nothing unlocks the five added ids on its own. The replaced `minecraft:netherite_ingot` keeps vanilla's. Deduced from the files, not tested in game. |
@@ -277,7 +281,7 @@ holders in (counting adds and replaces by whether `Map.put` returned anything) a
 collection back through `RecipeManager.replaceRecipes`. One `INFO` line per reload:
 `Applied {} custom recipes ({} added, {} replaced).`
 
-Twelve other modules use the same injection — `flying_fish`, `cat_guardian`, `battle_dogs`,
+Thirteen other modules use the same injection — `flying_fish`, `cat_guardian`, `battle_dogs`,
 `end_conduit`, `minecart_chunk_loading`, `pathfinder_quills`, `tipped_arrows` and the rest. Each one
 copies the recipe map as it finds it and hands back a full replacement, so they accumulate rather
 than overwrite one another.
@@ -292,8 +296,10 @@ standalone entry in `build.gradle` is accordingly the bare two-field form: `vpa_
 plus `vpa_core`, with nothing to ship alongside.
 
 **A dead TODO.** The comment above `onAddReloadListener` proposes migrating to
-`data/<ns>/recipe/*.json` and points at a "TODO / Roadmap" section of this page. That section does
-not exist, and the convention below is the opposite of it. Treat the comment as dead text.
+`data/<ns>/recipe/*.json` and points at a "TODO / Roadmap" section of `docs/custom_crafting_recipes.md`.
+Neither is still there: that page was this one before the docs rebuild moved it to `docs/modules/`,
+and the section it names went in the same rebuild. The convention below is the opposite of what the
+comment proposes. Treat it as dead text.
 
 ### Convention: recipes and block loot are always done in code
 

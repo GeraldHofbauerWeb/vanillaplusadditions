@@ -91,7 +91,8 @@ takes the whole stack in one click (in creative, one item), into a 3 × 3 food c
 
 A cat whose timer has run out walks to its bowl and, within two blocks, eats one fish: the timer is
 set to `fed_duration_ticks` (6000 ticks = five minutes), it makes the vanilla eating sound and gets
-Regeneration II for five seconds. At a station that same moment also triggers a loot hand-over.
+Regeneration II for five seconds. At a station that same moment also triggers a loot hand-over. The
+walk only starts while the bowl actually holds fish — at an empty bowl the cat stays where it is.
 
 The timer runs down in real time — ten ticks per pass — whatever else the cat is doing, including
 while it flees or walks home.
@@ -108,7 +109,7 @@ are in the tag anyway when the [Flying Fish](flying_fish.md) module is on).
 
 | State | Entered when | Behaviour |
 |---|---|---|
-| Unfed | the fed timer hits 0 | walks to the bowl and eats |
+| Unfed | the fed timer hits 0 | walks to the bowl and eats — only while the bowl holds fish; at an empty bowl it stays put |
 | Fed | a fish was eaten | scans the guard box, engages, sits at the bowl when there is nothing to do |
 | Returning | a target was lost, or nothing reachable was found | walks home; hands loot and XP over on arrival |
 | Fleeing | health below 20 % | drops every target, runs home, sits and heals |
@@ -124,11 +125,11 @@ five loot slots are full — then the trip is finished first, because a full cat
 anything up anyway. It ends within four blocks of the bowl, or after 1200 accumulated ticks so a
 failed path can never strand the cat.
 
-**Healing only happens at home.** A resting guardian with no target, within four blocks of its
-bowl, regains 0.2 HP per pass — one heart every five seconds, the rate of Regeneration I. Together
-with the full heal from a hand-fed fish and the Regeneration II burst a cat gets from eating at its
-bowl, that is how a guardian recovers: mobs have no natural regeneration, and armored cats never
-take damage to heal in the first place.
+**Passive healing only happens at home.** A resting guardian with no target, within four blocks of
+its bowl, regains 0.2 HP per pass — one heart every five seconds, the rate of Regeneration I.
+Together with the full heal from a hand-fed fish and the Regeneration II burst a cat gets from
+eating at its bowl, that is how a guardian recovers: mobs have no natural regeneration, and armored
+cats never take damage to heal in the first place.
 
 ### Picking a target
 
@@ -158,9 +159,11 @@ surfaces.
 
 Retaliation bypasses the search cooldown — but only for an armored cat. A `Monster` that hits the
 cat inside the zone triggers an immediate re-target, but the handler that does it (`onCatHurt`)
-returns early for a cat that wears no cat armor. An unarmored guardian never retaliates at all,
-because vanilla's `HurtByTargetGoal` is stripped from guardians as well. A fleeing cat ignores the
-trigger either way.
+returns early for a cat that wears no cat armor. An unarmored guardian gets no instant reaction at
+all — it has to wait for the ordinary scan to find its attacker again, because a guardian has no
+retaliation goal of its own either: vanilla cats never register a `HurtByTargetGoal`, and
+`suppressFollowingBehaviors` strips any that another mod adds. A fleeing cat ignores the trigger
+either way.
 
 Guardians are land animals here. They may cross shallow water (the water pathfinding malus is
 cleared for them, the border malus lowered to 2), but vanilla's float goal keeps them at the
@@ -180,10 +183,13 @@ Path-finding around a base is the part that fails silently, so several things he
 * **Fences are walkable** for guardians. Otherwise the pathfinder rejects those nodes outright and
   hides shorter routes through a fenced base. Pet cats keep avoiding them, so a penned cat stays in.
 * **Ledge hop.** A moving guardian that bumps into something hops 0.5 upward with 0.28 forward
-  carry along the *path* direction, not the bee-line. As long as it has a path direction to hop
-  along, it refuses to hop without a solid block to clear, without headroom above take-off and
-  landing, and one block higher at a water edge, so it does not leap over banks it could walk
-  around. With no usable direction it simply hops in place, unchecked.
+  carry, following the live path where there is one, otherwise a path it recomputes toward its goal
+  every ten ticks, and only as a last resort the straight line to the target or bowl. As long as it
+  has a direction to hop along, it refuses to hop without a solid block to clear, without headroom
+  above take-off and landing, and one block higher at a water edge, so it does not leap over banks
+  it could walk around. Only when even that straight line is under 0.6 blocks — the cat is
+  practically on top of its goal — does it fall through and hop with whatever horizontal velocity
+  is left, unchecked.
 * **Pathless nudge.** When navigation produces no route at all, the cat is pushed 0.18 toward the
   bowl so it can work its way out of a narrow spot.
 
@@ -424,7 +430,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Requires `flying_fish` in practice | The fish check falls through to `FlyingFishModule`'s item holders for any item that is not already in `#minecraft:fishes`. With `cat_guardian` on and `flying_fish` off those holders are never bound, and right-clicking a cat with a non-fish item is expected to throw. The standalone jar declares `vpa_flying_fish` as a module dependency for exactly this reason. <!-- TODO: code-structure risk read off the source; not reproduced in game. --> |
 | Goggles overlay can be unreachable standalone | The overlay accepts Create's goggles or the `vanillaplusadditions:arm_goggles` tag — and that tag's JSON ships with the `arm_target_overlay` module, not with this one. Standalone, without Create and without that module, neither branch can be satisfied. |
 | Sharpness at a table needs the bundle | The `enchantable/sharp_weapon` tag file ships only in the combined jar. In the standalone jar Sharpness has to come from an anvil and a book. |
-| Repairs are invisible without JEI | The anvil repair lives in `isValidRepairItem`, and JEI's built-in anvil list is hardcoded vanilla. The bundled JEI plugin adds the armadillo-scute repair back; the repair with the tier's own ingot or gem is not registered and stays invisible even with JEI. Without JEI both still work, they are just undiscoverable. |
+| Anvil repairs barely show up in JEI | The anvil repair lives in `isValidRepairItem`, and JEI's built-in anvil list is hardcoded vanilla. The bundled JEI plugin adds the armadillo-scute repair back; the repair with the tier's own ingot or gem is not registered and stays invisible even with JEI. Without JEI both still work, they are just undiscoverable. |
 | Sable contraptions | With [Sable](https://modrinth.com/mod/sable) installed, bowls and stations are registered as Sable-aware variants and associated cats are teleported into the sublevel when a ship assembles. Without Sable a bowl on a moving contraption simply loses its cats, which then re-associate the usual way. |
 | `association_radius` fallback | `CatGuardianConfig#getAssociationRadius` falls back to 8.0 while the static accessor falls back to 64.0. Only reachable before the config spec is loaded, but the two disagree. |
 

@@ -85,17 +85,20 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | A modded `BucketPickup` that yields without a fluid source | Predicted as "nothing there", so the bucket is held back although vanilla would have picked something up. Disable the module if a mod does this. |
 | `emptyContents` failing *after* its placement check (`setBlock` refused) | Not predicted — vanilla ejects as before. |
+| A bucket behaviour registered *after* common setup | Never wrapped. `installGuards` runs once, from the `FMLCommonSetupEvent` listener, and nothing re-scans the registry afterwards — that bucket keeps vanilla's ejection. |
 | Milk bucket | Has no dispense behaviour at all in vanilla; it is thrown like any other item, unchanged. |
 | Module disabled at startup | The wrapper is never installed, so enabling it later needs a restart. Toggling it while the server runs works in the other direction, because the check happens per dispense. |
 
 ## Under the hood
 
 `DispenserBlock.DISPENSER_REGISTRY` is public, so there is no mixin and no access transformer. At
-`FMLCommonSetupEvent` — enqueued onto the main thread, because the registry is a plain map filled
-during class init — every entry whose item is a `BucketItem` or `SolidBucketItem` is replaced by a
-`BucketDispenseGuard` wrapping the previous behaviour. Wrapping rather than replacing keeps whatever
-another mod registered for the same item, and the guard skips entries it has already wrapped, so it
-can never stack.
+`FMLCommonSetupEvent` — enqueued onto the main thread, because the registry is a plain,
+non-concurrent map (a fastutil `Object2ObjectOpenHashMap`) that vanilla fills during
+`Bootstrap.bootStrap()`, while common setup itself runs on the parallel mod-loading threads — every
+entry whose item is a `BucketItem` or `SolidBucketItem` is replaced by a `BucketDispenseGuard`
+wrapping the previous behaviour. Wrapping rather than replacing keeps whatever another mod
+registered for the same item, and the guard skips entries it has already wrapped, so it can never
+stack.
 
 ### Predicting the failure
 
@@ -104,7 +107,9 @@ succeeding, and `emptyContents` places the fluid. The guard therefore mirrors th
 
 **Empty bucket** — vanilla's implementations hand out a filled bucket exactly when a fluid *source*
 sits there (`LiquidBlock` wants `LEVEL == 0`, a waterloggable block wants `WATERLOGGED == true`);
-powder snow is the one block that always yields:
+powder snow is the one block that yields although its own `getFluidState` reports no source, which
+is what the explicit `instanceof` is for. A bubble column always yields as well, but its
+`getFluidState` reports a water source, so `isSource()` already covers it:
 
 ```java
 if (!(state.getBlock() instanceof BucketPickup)) {
@@ -124,12 +129,17 @@ state.isAir()
 ```
 
 `Items.BUCKET` is itself a `BucketItem`, carrying `Fluids.EMPTY` — which is not a `FlowingFluid`.
-That single check routes the empty bucket to the pickup branch and every filled one to the placement
-branch, modded buckets included.
+That single check routes the empty bucket to the pickup branch and every `BucketItem` whose content
+really flows to the placement branch, modded buckets included. A filled **`BucketItem`** carrying
+something that is not a `FlowingFluid` takes the pickup branch instead — vanilla's `emptyContents`
+gives up on the very same test, so that bucket was never going to place anything either. (The powder
+snow bucket is not a `BucketItem` at all — see below.)
 
-**Everything unknown delegates.** A `SolidBucketItem` needs plain air (`isEmptyBlock`); any other
-item the wrapper cannot model returns "would succeed" and is handed to the original behaviour
-untouched. The guard can therefore only ever *prevent* an ejection, never cause one.
+**Everything unknown delegates.** A `SolidBucketItem` — the powder snow bucket — needs plain air
+inside the world bounds (`isInWorldBounds` + `isEmptyBlock`), the same pair its own `emptyContents`
+checks; any other item the wrapper cannot model returns "would succeed" and is handed to the
+original behaviour untouched. The guard can therefore only ever *prevent* an ejection, never cause
+one.
 
 ## See also
 

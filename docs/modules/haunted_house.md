@@ -55,8 +55,8 @@ Every path in the module starts with the same question, and it is asked at chunk
 *references* of the chunk the position sits in:
 
 ```java
-public Map<Structure, LongSet> getAllStructuresAt(BlockPos p_220523_) {
-    SectionPos sectionpos = SectionPos.of(p_220523_);
+public Map<Structure, LongSet> getAllStructuresAt(BlockPos pos) {
+    SectionPos sectionpos = SectionPos.of(pos);
     return this.level.getChunk(sectionpos.x(), sectionpos.z(), ChunkStatus.STRUCTURE_REFERENCES).getAllReferences();
 }
 ```
@@ -77,7 +77,13 @@ for (String targetStructure : targetStructures.get()) {
 ```
 
 `dungeons_and_taverns:witch_villa` therefore also matches a hypothetical `…:witch_villa_annex`, and a
-short entry such as `witch` would match every structure with that word in its id.
+deliberately short entry such as `dungeons_and_taverns:witch` would match every structure in that
+namespace whose id starts with `witch`. A one-word entry is not possible: the list validator
+`isValidStructureEntry` insists on exactly two colon-separated parts, logs *Invalid structure entry
+format* for anything else and lets the entry be corrected back to the default — a bare `witch` never
+reaches the matcher. One shorter form does slip through: `:witch` still splits into two parts, and
+unlike the entity-id validator this one does not reject blank halves, so it matches that path prefix
+in *every* namespace.
 
 The fog handler goes one step further and adds a vertical test, because a villa spans several chunks
 and its start is rarely under your feet: for every start-chunk key in the reference set it looks the
@@ -86,9 +92,10 @@ bounding box. Horizontally it is still the chunk test.
 
 ### Cave, house or garden
 
-Three heuristics decide whether a position is a plausible haunted spot, all of them counting blocks
-in a box around it (`material_scan_horizontal_radius` 2, `material_scan_vertical_radius` 1 — a 5 × 3 × 5
-box, 75 samples per pass).
+Three heuristics decide whether a position is a plausible haunted spot. The two material tests count
+blocks in a box around it (`material_scan_horizontal_radius` 2, `material_scan_vertical_radius` 1 — a
+5 × 3 × 5 box, 75 samples per pass); the roof test reads no box at all and walks a single column
+upwards.
 
 | Test | What it counts | Passes when |
 |---|---|---|
@@ -196,9 +203,11 @@ module ever re-applies invisibility to an entity that has been seen.
 
 ### The dark
 
-The fog handler runs once a second per player (`tickCount % 20`), server-side, and it is skipped
-outright for **creative and spectator players** — which makes the module look broken when you test it
-in creative.
+The fog handler runs once a second per player (`tickCount % 20`), server-side. For **creative and
+spectator players** the structure detection is skipped, so they always read as being outside: no fog
+build-up, no cache refresh, no direct spawns. The handler itself keeps running and drops them into its
+leave branch, which drains whatever fog trail they still carry. Testing the module in creative therefore
+looks exactly like a broken module.
 
 Inside, the zone is read from the module's own spot cache: every cached spot within
 `fog_cache_proximity_radius` (3 blocks) votes, sky-access spots for *garden*, the rest for *indoor*, and
@@ -226,8 +235,9 @@ out of a short garden instance.
 Everything the direct spawning and the fog zones need comes from one cache per dimension, built from
 where players walk. Once a second, for a player inside the villa, `updateCacheFromPlayerMovement` looks
 at the step since the last pass. Standing still or moving one block scans around the current position;
-a longer jump is interpolated into at most `movement_interpolation_max_steps` (10) samples, each of
-which can trigger its own scan — a teleport therefore costs up to eleven scans in one tick.
+a longer jump is interpolated into at most `movement_interpolation_max_steps` (10) steps — eleven
+sample positions, both ends included — each of which can trigger its own scan, so a teleport costs up to
+eleven scans in one tick.
 
 A scan walks a grid of `area_scan_radius` (8) at `cache_scan_step` (3) — six offsets per axis — over five
 Y-levels (−2 to +2): 180 candidate positions. Known spots have their expiry pushed out; new ones are
@@ -242,8 +252,10 @@ Entries live for `cache_ttl_seconds` (180) and the per-dimension cache is capped
 
 `spawn_preset` decides seven of the tuning values, and **only `custom` reads what you wrote in the
 config file**. Every other preset hardcodes them in the getter, so on a default install the effective
-witch boost is 78 %, not the 50.0 sitting in the file. An unrecognised value falls back to
-`structure_focused` without complaint.
+witch boost is 78 %, not the 50.0 sitting in the file. An unrecognised value is not swallowed silently:
+the validator logs *Invalid spawn preset '…'. Expected: custom, balanced, structure_focused, courtyard*
+and the key is corrected back to its default, `structure_focused`; the getter falls back to the same
+preset if it ever sees one anyway.
 
 | Key | `custom` | `balanced` | `structure_focused` (default) | `courtyard` |
 |---|---|---|---|---|
@@ -278,7 +290,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `cave_material_threshold` | int | `8` | 1 ~ 128 | Minimum number of cave-like blocks near a position to treat it as a likely cave. A structure-material hit at or above structure_material_threshold always wins over this. |
 | `direct_spawn_attempt_chance` | double | `35.0` | 0.0 ~ 100.0 | Chance per interval to attempt a direct haunted spawn for a player standing in a haunted area. |
 | `direct_spawn_candidate_samples` | int | `10` | 1 ~ 64 | How many cached spawn spots are sampled when picking a direct haunted spawn (at most one spawn per attempt). |
-| `direct_spawn_interval_ticks` | int | `40` | 20 ~ 1200 | Tick interval between direct spawn attempts (20 ticks = 1 second). Checked as player.tickCount % interval == 0, and the player tick handler itself only runs every 20 ticks, so values that are not multiples of 20 effectively never fire. |
+| `direct_spawn_interval_ticks` | int | `40` | 20 ~ 1200 | Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect rather than cancel: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval) - with 30 that is every 60 ticks. No value silently stops the spawner. |
 | `direct_spawn_max_player_distance` | int | `36` | 4 ~ 128 | Maximum distance to the player for direct haunted spawns (forced to at least min + 2). |
 | `direct_spawn_min_player_distance` | int | `8` | 0 ~ 64 | Minimum distance to the player for direct haunted spawns. |
 | `direct_spawn_replacement_chance` | double | `85.0` | 0.0 ~ 100.0 | Chance that a direct haunted spawn becomes the configured replacement entity (invisible) instead of a plain, fully visible witch. |
@@ -324,7 +336,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `enable_fog_effect = false` | Turns off far more than the fog. The player tick returns before the cache refresh **and** before direct area spawning, so the spot cache is never filled and direct spawns stop with it. |
 | Creative and spectator | Structure detection is skipped for them, so no fog, no cache refresh and no direct spawns. Testing in creative looks exactly like a broken module. |
 | Non-witch entries in `target_mobs` | `setSpawnCancelled` does not cancel the event — it only calls `getEntity().setSpawnCancelled(cancel)` — so the `HIGH` handler still runs after the `HIGHEST` one and does not test `isSpawnCancelled()`. With the shipped defaults this cannot bite, because the boost skips witches and witches are the only target. Add e.g. `minecraft:zombie:50` and one cancelled zombie can yield a boosted witch **and** a replacement entity. |
-| `direct_spawn_interval_ticks` not a multiple of 20 | The player tick handler itself only runs every 20 ticks, and the interval is tested as `tickCount % interval == 0`, so an interval such as 30 effectively never fires. The same throttle makes `cache_refresh_interval_ticks` below 20 meaningless. |
+| `direct_spawn_interval_ticks` not a multiple of 20 | Stretched, not disabled. The two throttles intersect: the player tick handler runs at `tickCount % 20 == 0` and the attempt additionally demands `tickCount % interval == 0`, so attempts land on the multiples of `lcm(20, interval)` — 30 fires every 60 ticks, 50 every 100, 21 every 420. No value in the 20–1200 range ever stops firing altogether. The same 20-tick throttle does make `cache_refresh_interval_ticks` below 20 meaningless. |
 | `debug_logging` on a live server | `MessageBroadcaster` pushes a grey italic `[DEBUG]` chat line to **every player on the server**, and *Step 1: Detected mob spawn* fires for every mob spawn in the world, not only in the villa. Leave it off outside a test world. |
 | `/hauntedhouse whereami` | Registered by the bundle only, and with no permission gate — any player can run it. It does not exist in the standalone jar. |
 | Untracked entities | The pending set is pruned only when the entity itself ticks. An entity that unloads while still invisible leaves its UUID behind for the rest of the server's uptime, as do the per-player fog and position maps of players who log out. Bounded and harmless, but never zero. |

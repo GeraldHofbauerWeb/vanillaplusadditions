@@ -11,7 +11,7 @@
 | **Side** | Client + Server |
 | **Requires** | — |
 | **Works with** | [Create](https://modrinth.com/mod/create) <sub>tested 6.0.10</sub>, [Create Aeronautics](https://modrinth.com/mod/create-aeronautics) |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_mob_cart_loader.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mob_cart_loader.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.mob_cart_loader]` |
 | **Since** | `v1.0.0-beta.53` |
 <!-- vpa:meta:end -->
@@ -95,9 +95,10 @@ Per scan, each block does exactly one of two things:
 | Empty | Takes the nearest mob out of the pen, stores it, ends the scan | Takes the first mob passenger out of the parked cart, stores it, ends the scan |
 | Holding a mob | Releases it into a parked empty cart (or a carriage seat) once the output side is clear | Releases it into the pen once the output side is clear |
 
-Capture and release never happen in the same scan, so a mob needs at least two of them — ten ticks
-at the default interval — to travel from the pen into the cart. A block that already holds a mob
-ignores the pen entirely; there is exactly one slot.
+Capture and release never happen in the same scan, so a mob needs at least two of them. Two scans
+are one interval apart: at the default five, the release follows the capture five ticks later, and
+at most ten ticks pass counting from the moment the mob walks into the pen. A block that already
+holds a mob ignores the pen entirely; there is exactly one slot.
 
 "Unobstructed" means the output block's collision shape is empty: air and rails qualify, a slab or
 an extended piston head does not. Create tracks are exempt from that test by name — they do have a
@@ -107,7 +108,7 @@ collision shape, but they are a target rather than a gate.
 
 | | Mob Loader | Mob Unloader |
 |---|---|---|
-| Where it looks for the mob | The input block plus the block above it, a 1 × 2 × 1 box; every mob whose hitbox overlaps it counts, nearest to the box centre wins | The passenger list of the cart at the input side |
+| Where it looks for the mob | The input block plus the block above it, a 1 × 2 × 1 box; every mob whose hitbox overlaps it counts, nearest to the centre of the **input block** wins — the box reaches a block higher, but the distance is measured from the input block's own centre | The passenger list of the cart at the input side |
 | What counts | `Mob`, alive, not already riding something | The first `Mob` among the passengers |
 | Which cart | A plain rideable `Minecart`, empty and parked | Any `AbstractMinecart`, parked, carrying a mob |
 | Where the cart may be | A 1.8-block box around the output position | The same box around the input position |
@@ -156,10 +157,12 @@ out is the same entity that went in, not a copy of it. The tag lives in the bloc
 `StoredMob` and is written only in `saveAdditional` — never in the update tag — so it persists
 across a restart and never travels to a client.
 
-Release puts the mob at the centre of the output block. Water-breathers are treated separately:
-anything that is a `WaterAnimal` or an `Axolotl`, or whose `canBreatheUnderwater()` is true, is
-re-aimed at a water block at the output position or one of its six direct neighbours. If there is
-no water in reach it is released dry anyway.
+Release puts the mob where the target is: the loader hands it to the cart's own position, or to the
+seat's position on a Create train; the unloader sets it down at the centre of the output block, and a
+broken block at the centre of its own position. Those last two go through `releaseStoredNear`, which
+treats water-breathers separately: anything that is a `WaterAnimal` or an `Axolotl`, or whose
+`canBreatheUnderwater()` is true, is re-aimed at a water block at the release position or one of its
+six direct neighbours. If there is no water in reach it is released dry anyway.
 
 Breaking the block releases the stored mob at the block's own position, so a buffered mob is never
 lost. A change of `POWERED` is not a removal and does not trigger that path.
@@ -200,7 +203,10 @@ mobs shrink to fit. Its shadow is switched off and the render box is generous
 
 The goggles panel appears when you wear Create's Engineer's Goggles — helmet slot or a Curios slot —
 or any head item in `#vanillaplusadditions:arm_goggles`, whose two optional entries are
-`create:goggles` and `aeronautics:aviators_goggles`. It draws below and right of the crosshair:
+`create:goggles` and `aeronautics:aviators_goggles`. That tag file ships with `arm_target_overlay`
+(`build.gradle:388`) rather than with this module, so in a standalone install without that jar the
+tag does not exist and only Create's own goggles item opens the panel. It draws below and right of
+the crosshair:
 
 | Row | Content |
 |---|---|
@@ -208,8 +214,9 @@ or any head item in `#vanillaplusadditions:arm_goggles`, whose two optional entr
 | While sneaking | A heart plus the rounded `health/maxHealth` of the stored mob |
 
 The health values are the ones captured at storage time and do not change while the mob sits
-inside — nothing in there ticks. Mobs without a spawn egg (the ender dragon, the wither, an iron golem) get
-the name without an icon.
+inside — nothing in there ticks. Mobs without a spawn egg get the name without an icon — in vanilla
+1.21.1 that is only the giant and the illusioner; every other mob type, the ender dragon and the
+wither included, has an egg registered for `SpawnEggItem.byId` to find.
 
 ## Items, blocks and recipes
 
@@ -233,15 +240,18 @@ cart for the loader; cart, saddle, ejector for the unloader:
  G G G
 ```
 
-Being shaped recipes, the middle row is fixed: a mirrored arrangement does not craft. Per the
-project convention both are registered in code rather than as datapack JSON — see the
-[Custom Crafting Recipes module](custom_crafting_recipes.md) for the reasoning — and the same
-applies to the drop: `getDrops` returns one of the block itself, with no loot table.
+The glass frame and the 3 × 3 shape are fixed, the left-to-right order is not: vanilla matches a
+shaped recipe against its horizontally mirrored layout too, as long as the pattern is not itself
+symmetrical — neither of these is. `GGG/MSH/GGG` therefore crafts the loader just as well, and
+`GGG/DSM/GGG` the unloader. Per the project convention both are registered in code rather than as
+datapack JSON — see the [Custom Crafting Recipes module](custom_crafting_recipes.md) for the
+reasoning — and the same applies to the drop: `getDrops` returns one of the block itself, with no
+loot table.
 
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.mob_cart_loader]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.mob_cart_loader]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_mob_cart_loader-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -257,7 +267,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| No Create installed | The `create:tracks` tag does not exist, so the track test is always false and the track lookup returns before any Create type is resolved. The blocks work on plain minecarts exactly as before. |
+| No Create installed | In the bundle the `create:tracks` tag resolves empty — the tag file is the mod's own (in the standalone split it belongs to `train_chunk_loading`, `build.gradle:469`), and its only entry, `chunk_loader_track`, is optional and never registered, because that module does not initialise without Create. The standalone `vpa_mob_cart_loader.jar` declares no `dataGlobs` at all and a module jar ships only its own (`build.gradle:662`), so there the tag simply never exists. Either way the track test is always false, and the track lookup returns on the `ModList` gate before any Create type is resolved. The blocks work on plain minecarts exactly as before. |
 | `create_trains.enabled = false` | Same result on purpose: the track lookup returns immediately, and the blocks are minecart-only. Minecart handling is untouched either way. |
 | Moving carts and moving trains | Ignored, by design. Nothing happens until the cart or the train has come to rest. |
 | A cart at the unloader's input that carries no mob | Blocks that scan entirely. Any minecart at the input — including a chest or furnace cart, which is never ridden — makes the unloader return before it would look for a Create track. |
@@ -267,8 +277,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Turning the module off after building with it | The `enabled` key is read at startup, and a disabled module is never initialised: blocks, items and block-entity types are not registered at all, and a world that contains them meets unknown ids on load. This is not a supported way to pause the machines — use redstone. |
 | Turning the module off at runtime | Only the recipe injection is gated on `isModuleEnabled()`. The block-entity tick is not, so blocks already in the world keep loading and unloading; the recipes disappear at the next datapack reload. |
 | Module disabled, client setup | `MobCartLoaderClientSetup` is an FML-scanned `@EventBusSubscriber` and is not gated on the module, yet it dereferences both block-entity holders. A disabled module never reaches `onInitialize`, so those holders are never bound. The same pattern exists in `end_conduit`, `cat_guardian` and `axolotl_guardian`, so it is repo-wide rather than specific to this module. Deduced from the source, not reproduced. |
-| The goggles panel without Create | Its own javadoc says nothing breaks, but it reaches Create through `GogglesUtil` in `debug_overlay`, and that class holds both the `ModList` gate and a `GogglesItem` reference in a method body — the precise shape `CreateCompat` warns about. There is no standalone jar for this module and the bundle always ships with Create, so the path may never have been exercised. Flagged, not reproduced. |
-| Bundle only | There is no `vpa_mob_cart_loader.jar`; the two blocks ship in the bundle. |
+| The goggles panel without Create | Its own javadoc says nothing breaks, but it reaches Create through `GogglesUtil` in `debug_overlay`, and that class holds both the `ModList` gate and a `GogglesItem` reference in a method body — the precise shape `CreateCompat` warns about. Create is only an `optional` dependency of the bundle (`neoforge.mods.toml`), so the bundle can run without it — but in practice it has never been run that way here, and the standalone `vpa_mob_cart_loader.jar` has not been tried against a Create-less pack either, so the path may never have been exercised. Flagged, not reproduced. |
 
 ## Under the hood
 
@@ -322,15 +331,27 @@ key arrives, which is what lets the disk-only field survive the client update pa
 registered with `.noOcclusion()`. Without the latter the mini-mob renders into a black void behind
 the glass.
 
-**Stale javadoc warning.** The class javadocs on `MobLoaderBlock` and on `MobCartLoaderModule` still
-describe the pre-`v1.0.0-beta.54` design — a cart on the facing side, the *pen candidate* as the
-displayed mob. The block entities are authoritative: `FACING` is the input face, and the displayed
-mob is the one actually stored inside.
+**Stale javadoc warning.** Several class javadocs still describe the pre-`v1.0.0-beta.54` design — a
+cart on the facing side, the *pen candidate* as the displayed mob. `MobLoaderBlock` is stale on both
+counts. `MobCartLoaderModule` is stale only on the first — its "minecart on its facing side" and
+"face the rail (FACING)" describe the old orientation, while its "shows the relevant mob" is vague
+rather than wrong. `MobCartBER` is stale too: it says the mini-mob hovers *above* the block, when
+the renderer draws it at the block centre (`poseStack.translate(0.5, 0.5, 0.5)`), and it still calls
+the displayed mob the loader's pen candidate or the unloader's cart passenger. `MobUnloaderBlock` is
+half stale — its facing sentence holds, since the unloader's input face really is the rail side, but
+its display sentence does not. The block entities are authoritative: `FACING` is the input face, and
+the displayed mob is the one actually stored inside.
 
-**Cross-module coupling.** The goggles panel imports `GogglesUtil` from `debug_overlay`. There is no
-standalone jar here, so `build.gradle` carries no `moduleDeps` entry for it; if one is ever added it
-will need `moduleDeps: ['vpa_debug_overlay']`, as `minecart_chunk_loading`, `stationary_chunk_loader`,
-`train_chunk_loading` and `axolotl_guardian` do.
+**Cross-module coupling.** The goggles panel imports `GogglesUtil` from `debug_overlay`, but
+`build.gradle:450` registers `vpa_mob_cart_loader` with no `moduleDeps` — it needs
+`moduleDeps: ['vpa_debug_overlay']`, as `minecart_chunk_loading`, `stationary_chunk_loader`,
+`train_chunk_loading` and `axolotl_guardian` have. **The jar as built today is therefore mis-wired**,
+and the Download row at the top of this page understates it: a module jar packs only its own
+`modules/<id>/**` and `standalone/<id>/**` (`build.gradle:655-662`), `GogglesUtil` lives in
+`modules/debug_overlay/client`, and `MobCartGogglesClientHandler.onRenderGui` calls
+`GogglesUtil.isWearingGoggles` unconditionally on every `RenderGuiEvent.Post`. Install
+`vpa_debug_overlay` alongside the standalone jar — with only `vpa_core`, as the Download row lists,
+the client throws `NoClassDefFoundError` on the first rendered frame.
 
 **Testing.** This repository has no unit tests, and nothing here was exercised in a dev run — the
 Create-dependent half cannot be, given the NeoForge version gap in `runClient`/`runServer`.

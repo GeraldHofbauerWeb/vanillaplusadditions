@@ -11,7 +11,7 @@
 | **Side** | Client only |
 | **Requires** | — |
 | **Works with** | — |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_static_fov.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_static_fov.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.static_fov]` |
 | **Since** | `v1.0.0-beta.37` |
 <!-- vpa:meta:end -->
@@ -47,8 +47,10 @@ f *= ((float)this.getAttributeValue(Attributes.MOVEMENT_SPEED) / this.getAbiliti
 
 A player's `movement_speed` base and `Abilities.walkingSpeed` are both `0.1F`, so the second factor
 is "half of one plus however many times faster than a walk you currently are". Sprinting adds a
-transient `+30 %` modifier, the Speed effect `+20 %` per level, Soul Speed a flat `+0.0405` per
-level while you stand on soul sand — every one of them widens the view.
+transient `+30 %` modifier, the Speed effect `+20 %` per level, Soul Speed an `ADD_VALUE` bonus of
+`+0.0405` at level I and `+0.0105` for every level above that — `+0.0510` at II, `+0.0615` at III —
+while you stand on a block in `#minecraft:soul_speed_blocks` (soul sand or soul soil). Every one of
+them widens the view.
 
 Vanilla does have a switch for this: the **FOV Effects** slider in Accessibility,
 `fovEffectScale`, default 100 %. But it is applied as a lerp toward 1.0 over the *finished*
@@ -88,7 +90,11 @@ The last two rows are the point of the clamp being one-sided. The `1.55 → 1.5`
 ceiling, from `GameRenderer.tickFov`, and 105° is as wide as the view can ever get at a 70° setting.
 
 Everything in the table assumes FOV Effects at 100 %. At 50 % the vanilla column moves halfway back
-toward 70° — in both directions — and the module's column does not move at all.
+toward 70° — in both directions; only the Soul Speed III row is an exception, because the slider
+halves the raw 1.55 (to 1.275 → 89.3°) before `tickFov`'s 1.5 ceiling ever applies. Every row the
+module clamps still reads 70°, because whatever the slider leaves above 1.0 the clamp takes; the two
+narrowing rows move with the slider exactly as they do in vanilla, to 67.4° for Slowness I and
+64.8° at full bow draw.
 
 ### Where the clamp sits
 
@@ -142,7 +148,7 @@ is what the vanilla FOV Effects slider is for — at the cost of halving the bow
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.static_fov]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.static_fov]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_static_fov-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -158,14 +164,14 @@ This module has no settings of its own.
 | Spyglass | Bypasses the event entirely in first person (see above). Unchanged with the module on or off. |
 | Anything outside `ComputeFovModifierEvent` | Untouched. The fluid and death-animation factors in `GameRenderer.getFov`, and any mod that widens the view through `ViewportEvent.ComputeFov` or its own renderer, are past this hook. |
 | A mod listening at a lower priority | The handler runs at the default `NORMAL` priority. A listener at `LOW` or `LOWEST` can raise the modifier again afterwards, and the clamp will not see it. |
-| Elytra | Vanilla's expression has no elytra term: gliding neither sets `abilities.flying` nor changes `movement_speed`, so the FOV does not widen during a glide and there is nothing to clamp. The README's "sprinting, Speed, elytra/flight" is loose on that point. (Read off the 1.21.1 source; not re-checked in game.) |
-| `debug_logging` | Inert for this module. Neither file contains a logger call, so `ON` produces no output. The only lines that ever name the module are `AbstractModule`'s own lifecycle messages. |
-| No standalone jar | `static_fov` is not in `build.gradle`'s `standaloneModules`, so there is no `vpa_static_fov.jar`; the feature ships inside the bundle only. The generated configuration note above mentions a standalone toml that is never built. |
-| Module registered but not enabled | The event handler is attached regardless (see below) and asks per event. The cost of a disabled module is two map lookups per client tick. |
+| Elytra | Vanilla's expression has no elytra term: gliding is the shared entity flag that `LivingEntity.isFallFlying()` reads (`getSharedFlag(7)`), not `abilities.flying` — that one comes from creative/spectator flight and the server's abilities packet, never from a glide — and it adds no `movement_speed` modifier. So the FOV does not widen during a glide and there is nothing to clamp. (Read off the 1.21.1 source; not re-checked in game.) |
+| `debug_logging` | Inert for this module. None of its files contains a logger call, so `ON` produces no output. The only lines that ever name the module are `AbstractModule`'s own lifecycle messages — plus, in the standalone jar, the boot line in `StandaloneModuleBootstrap`. |
+| Standalone jar | `static_fov` is listed in `build.gradle`'s `standaloneModules`, so the module also builds as `vpa_static_fov` (entrypoint `StaticFovStandalone`, needs `vpa_core`) next to the bundle. |
+| Module registered but not enabled | The event handler is attached regardless (see below) and asks per event. The cost of a disabled module is a static-field read, a config-value read and one map lookup (the runtime-override map) per client tick. |
 
 ## Under the hood
 
-Two files, 71 lines together, and the entire behaviour is three lines of it:
+Three files, 94 lines together, and the entire behaviour is three lines of it:
 
 ```java
 if (event.getNewFovModifier() > 1.0f) {
@@ -176,7 +182,8 @@ if (event.getNewFovModifier() > 1.0f) {
 | Class | Role |
 |---|---|
 | `modules/static_fov/StaticFovModule` | Id, display name, description, `AbstractModuleConfig::createDefault`. `onInitialize()` is empty on purpose. |
-| `modules/static_fov/client/StaticFovClientEvents` | The listener, the clamp, and a null-safe module lookup. |
+| `modules/static_fov/client/StaticFovClientEvents` | The listener, the clamp, and the null check around the module lookup. |
+| `standalone/static_fov/StaticFovStandalone` | `@Mod("vpa_static_fov")` entrypoint of the standalone jar; hands the module to `StandaloneModuleBootstrap`. |
 
 **No mixin, no access transformer.** NeoForge already fires `ComputeFovModifierEvent` at exactly the
 right place, so there is nothing to patch — `grep fov` over `vanillaplusadditions.mixins.json` and
@@ -199,10 +206,14 @@ FOV computation, flipping `enabled` takes effect on the next tick instead of the
 override map from `/vpa module enable|disable|clear` before the config value — the same chain every
 other module uses, just read from the client side here.
 
-**A missing module is inert, not fatal.** `getModule()` looks the module up by the string id
-`"static_fov"` and returns `null` if it is absent or of another type; the handler then returns
-without touching the event. In a build where the module was never registered, the client code does
-nothing at all rather than throwing on every frame.
+**A missing module is inert, not fatal.** `StaticFovModule.getInstance()` hands back the static
+reference the module's constructor stores, or `null` if the module has never been constructed; the
+handler then returns without touching the event. In a build that ships these classes without ever
+constructing the module — not registered in the bundle, no standalone entrypoint — the client code
+does nothing at all rather than throwing on every client tick. The lookup is deliberately module-local
+rather than `ModuleManager.getModule("static_fov")`: the standalone jar boots through
+`StandaloneModuleBootstrap`, which leaves the manager's registry empty, so an id lookup would report
+the module as absent while it is running.
 
 ## See also
 

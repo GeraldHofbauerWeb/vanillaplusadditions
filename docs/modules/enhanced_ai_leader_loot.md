@@ -11,7 +11,7 @@
 | **Side** | Server only |
 | **Requires** | [Enhanced AI](https://modrinth.com/mod/enhanced-ai) <sub>tested 4.2.2.1</sub> |
 | **Works with** | — |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_enhanced_ai_leader_loot.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_enhanced_ai_leader_loot.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.enhanced_ai_leader_loot]` |
 | **Since** | `v1.0.0-beta.73` |
 <!-- vpa:meta:end -->
@@ -131,13 +131,14 @@ repository.)
 
 The table is built inside the `LootTableLoadEvent` handler, and that event only fires when the
 server loads or reloads its resources. Editing `leader_bonus_loot`, flipping `enabled` or running
-`/vpa module disable enhanced_ai_leader_loot` therefore changes nothing on its own — the table
+`/vpa module disable enhanced_ai_leader_loot` (bundle only; the standalone jar ships no `/vpa`
+command) therefore changes nothing on its own — the table
 already in memory stays as it is until `/reload`, a world rejoin or a restart.
 
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.enhanced_ai_leader_loot]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.enhanced_ai_leader_loot]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_enhanced_ai_leader_loot-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -150,7 +151,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| Enhanced AI not installed | `shouldInitialize()` is false, so `onInitialize()` never runs and the handler is never registered — the module is completely inert. It is still registered, still writes its config section and still appears in `/vpa module status`, and nothing warns you: `enhancedai` is not declared in `neoforge.mods.toml`, the gate is runtime only. |
+| Enhanced AI not installed | `shouldInitialize()` is false, so `onInitialize()` never runs and the handler is never registered — the module is completely inert. It is still registered, still writes its config section and — in the bundle — still appears in `/vpa module status`, and nothing really points at the missing mod: `enhancedai` is not declared in `neoforge.mods.toml`, so NeoForge never complains. The only trace is one INFO line at startup — `Module 'Enhanced AI Leader Loot' is disabled and will not be initialized` — which blames the module rather than the absent mod; the gate is runtime only. |
 | Leaders switched off in Enhanced AI's own config | No leaders, no rolls. This module supplies the contents of a table; it never decides who becomes a leader or when the table is rolled. |
 | Enhanced AI renaming or dropping `enhancedai:leader_mob` | The match is a hardcoded `ResourceLocation` comparison, so the handler simply stops firing. No crash and no warning — the bonus loot would just be gone. |
 | A datapack carrying its own `enhancedai/leader_mob.json` | Overwritten. `event.setTable(...)` replaces whatever was loaded under that name, datapack contents included. |
@@ -158,17 +159,19 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Config changed at runtime | Takes effect at the next resource reload only — see above. |
 | `max_count` above the item's stack size | Accepted. The validator only requires `max_count ≥ min_count`, and `SetItemCountFunction` sets the count outright instead of capping it at the stack limit. <!-- TODO: whether an oversize stack is then split into several depends on which getRandomItems overload Enhanced AI calls; not verified for 4.2.2.1. --> |
 | Ordinary Enhanced AI mobs | Untouched. Only the leader table is replaced. |
-| Standalone jars | There is none. This module ships in the bundle jar only. |
+| Standalone jar | `vpa_enhanced_ai_leader_loot` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. It carries no compile-time dependency on Enhanced AI either way — the leader table is replaced through `LootTableLoadEvent` by resource-location name, so the jar loads and stays inert when Enhanced AI is absent. |
 
 ## Under the hood
 
-Two files, 158 lines together. No mixin, no client code, no assets, no data files, no registry
-entries, no command, no keybind and no lang key — nothing user-visible beyond the config comments.
+Two files, 158 lines together, plus a 23-line standalone entrypoint. No mixin, no client code, no
+assets, no data files, no registry entries, no command, no keybind and no lang key — nothing
+user-visible beyond the config comments.
 
 | File | Role |
 |---|---|
 | `modules/enhanced_ai_leader_loot/EnhancedAiLeaderLootModule.java` | the mod gate, the event handler, the table builder |
 | `modules/enhanced_ai_leader_loot/config/EnhancedAiLeaderLootConfig.java` | `leader_bonus_loot` and its validator |
+| `standalone/enhanced_ai_leader_loot/EnhancedAiLeaderLootStandalone.java` | `@Mod("vpa_enhanced_ai_leader_loot")`, boots through `StandaloneModuleBootstrap` |
 
 `onInitialize()` does exactly one thing, `NeoForge.EVENT_BUS.register(this)`, and it is only reached
 when `shouldInitialize()` finds `enhancedai` in the `ModList`. Everything else hangs off one

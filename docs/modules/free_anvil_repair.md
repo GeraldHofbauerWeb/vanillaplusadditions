@@ -60,8 +60,8 @@ j += (long)itemstack.getOrDefault(DataComponents.REPAIR_COST, Integer.valueOf(0)
 and every completed operation raises that stored value for next time:
 
 ```java
-public static int calculateIncreasedRepairCost(int p_39026_) {
-    return (int)Math.min((long)p_39026_ * 2L + 1L, 2147483647L);
+public static int calculateIncreasedRepairCost(int oldRepairCost) {
+    return (int)Math.min((long)oldRepairCost * 2L + 1L, 2147483647L);
 }
 ```
 
@@ -84,8 +84,8 @@ paid for once.
 
 ```java
 @Override
-protected boolean mayPickup(Player p_39023_, boolean p_39024_) {
-    return (p_39023_.hasInfiniteMaterials() || p_39023_.experienceLevel >= this.cost.get()) && this.cost.get() > 0;
+protected boolean mayPickup(Player player, boolean hasStack) {
+    return (player.hasInfiniteMaterials() || player.experienceLevel >= this.cost.get()) && this.cost.get() > 0;
 }
 ```
 
@@ -95,7 +95,7 @@ creative mode included. That one clause is the whole reason this module ships a 
 ### A trident and a bow have no repair material
 
 ```java
-public boolean isValidRepairItem(ItemStack p_41402_, ItemStack p_41403_) {
+public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
     return false;
 }
 ```
@@ -131,7 +131,7 @@ no rename may be in flight. Then one of two paths:
 | Path | Condition | Result |
 |---|---|---|
 | **Material** | `left.getItem().isValidRepairItem(left, right)` **or** the pair appears in `extra_repair_materials` | repaired by the material, gated on `free_material_repair` |
-| **Sacrifice** | the right stack is the same item, damageable, and carries neither `ENCHANTMENTS` nor `STORED_ENCHANTMENTS` | durability merge, gated on `free_combine_repair` |
+| **Sacrifice** | the right stack is the same item, damageable, and free of enchantments — no `STORED_ENCHANTMENTS` component and an *empty* `ENCHANTMENTS` component | durability merge, gated on `free_combine_repair` |
 
 The kept item may be enchanted, named and as worn as it likes — only the *sacrifice* has to be plain.
 An enchanted sword repaired with a second, unenchanted sword keeps every enchantment, because the
@@ -179,8 +179,8 @@ there is no material there to make go further.
 | Item | Material | What vanilla does |
 |---|---|---|
 | All nine netherite tools and armour pieces | Diamond | repairs with a netherite ingot only |
-| `create:netherite_diving_helmet` / `_boots` | Diamond | repairs with its own base material |
-| `create:copper_diving_helmet` / `_boots` | Copper ingot | repairs with its own base material |
+| `create:netherite_diving_helmet` / `_boots` | Diamond | repairs with a netherite ingot only (vanilla `ArmorMaterials.NETHERITE`) |
+| `create:copper_diving_helmet` / `_boots` | Copper ingot | repairs with a copper ingot already (Create's own `COPPER` material) |
 | `minecraft:trident` | Prismarine shard | **no repair material at all** |
 | `minecraft:bow` | Stick | **no repair material at all** |
 
@@ -189,9 +189,13 @@ several materials. An entry whose item or material is not installed is skipped i
 line only, and only with `debug_logging` on) — that is what happens to the four Create entries in a
 pack without Create. A malformed entry is logged with a warning and ignored.
 
-The Create entries are insurance rather than new behaviour: the diving gear already repairs with its
-own base material through the ordinary path, and would already be free. The netherite entries are
-the real saving — a diamond instead of a netherite ingot.
+Only the two **copper** entries are insurance. Create's copper diving gear carries Create's own
+`COPPER` armour material, whose repair ingredient is a copper ingot, so that combination already
+goes through the ordinary material path and is already free. The netherite diving pieces are built
+on vanilla's `ArmorMaterials.NETHERITE`, whose repair ingredient is a netherite ingot — the same
+ingot the nine plain netherite pieces want (armour through `ArmorMaterials.NETHERITE`, tools
+through `Tiers.NETHERITE`). So their entry is the same real saving as the other nine: a diamond
+instead of a netherite ingot.
 
 **`free_material_repair = false` switches the extra materials off entirely**, not just their price.
 Both branches sit inside the same `if`:
@@ -237,9 +241,9 @@ int base = Math.max(
 result.set(DataComponents.REPAIR_COST, AnvilMenu.calculateIncreasedRepairCost(base));
 ```
 
-Note what this does **not** do: it never lowers a penalty an item has already accumulated. An item
-sitting at 63 stays at 63 — it simply becomes repairable again, while enchanting it still runs into
-the same wall.
+Note what neither setting does: lower a penalty an item has already accumulated. With the default
+`false` an item sitting at 63 stays at 63; with `true` it keeps climbing, 63 → 127. Either way the
+item simply becomes repairable again, while enchanting it still runs into the same wall.
 
 <!-- vpa:config:start -->
 ## Configuration

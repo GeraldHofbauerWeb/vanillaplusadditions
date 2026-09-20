@@ -87,24 +87,29 @@ if (configDefault == -1) {
     durationTicks = Integer.MAX_VALUE;
     isInfinite = true;
 } else {
-    durationTicks = configDefault * 20;   // seconds → ticks
+    durationTicks = configDefault * 20; // Convert seconds to ticks
 }
 ```
 
 `Integer.MAX_VALUE` ticks is 107,374,182 seconds — about 3.4 years at 20 tps. Vanilla's real
-infinite marker is `MobEffectInstance.INFINITE_DURATION = -1`, which this module never uses, so the
-effect ticks down and the HUD shows a counting number instead of the infinity symbol. Long enough in
-practice; not the same thing.
+infinite marker is `MobEffectInstance.INFINITE_DURATION = -1`, which this module never uses, so
+`isInfiniteDuration()` stays false and the effect really does tick down towards an expiry, where a
+vanilla-infinite one never expires. Nobody ever reads that number off the effects HUD: players
+cannot be targeted at all, and a mob's remaining duration never reaches anyone's HUD — the effect
+packet `LivingEntity.sendEffectToPassengers` sends to a rider is addressed to the *mob's* entity
+id, not the player's. The finite count shows up only in server-side data, e.g. `/data get entity
+<uuid> active_effects`. Long enough in practice; not the same thing.
 
 Set `default_duration` to anything else and the word `infinite` stops meaning infinite: the branch
 falls through to `configDefault * 20`, `isInfinite` stays false, and chat reports "for N seconds".
 `max_duration` is not consulted on that path, so `default_duration = 99999` with
 `max_duration = 3600` applies 99999 seconds unchallenged.
 
-Both multiplications are unguarded `int` arithmetic. A large `default_duration`, or a large typed
-duration with `max_duration = 0` ("no limit"), overflows to a negative tick count and lands in the
-"nothing glows" case above — `/mobglow minecraft:zombie 999999999` with the limit off works out to
-−1,474,836,500 ticks.
+Both multiplications are unguarded `int` arithmetic, so a large `default_duration`, or a large typed
+duration with `max_duration = 0` ("no limit"), wraps around — and where it lands depends on the
+number. `/mobglow minecraft:zombie 999999999` with the limit off works out to −1,474,836,500 ticks,
+the "nothing glows" case above. `default_duration = 214748365` wraps the other way, to +4 ticks: a
+fifth of a second of glow, announced as "for 0 seconds".
 
 ### Re-applying never shortens a glow
 
@@ -139,6 +144,8 @@ number is filtered:
 
 ```java
 livingEntity.addEffect(glowEffect);
+
+// Track this mob
 trackedGlowingMobs.put(entity.getUUID(), entityType);
 totalWithEffectCount.incrementAndGet();
 
@@ -220,10 +227,12 @@ One `.requires` on the command root, and nothing else:
 
 It is read live, so flipping `require_op` takes effect without a restart. It also gates every
 subcommand at once: `require_op = false` hands `/mobglow all clear` to every player on the server.
-Two TODO comments in the source acknowledge the missing per-subcommand check. Note that vanilla only
-re-sends a player's command tree through `PlayerList.sendPlayerPermissionLevel` — on join, on respawn,
-on an op change and on `/reload` — so tab completion can lag a live change of `require_op` even
-though typing the command already works.
+Two TODO comments in the source acknowledge the missing per-subcommand check. Note that the command
+tree reaches a player again only through `Commands.sendCommands`, which has exactly two callers.
+`PlayerList.sendPlayerPermissionLevel` covers join, respawn, a dimension change, an op change and —
+via a NeoForge patch in `MinecraftServer.reloadResources` — `/reload`; the other is
+`IntegratedServer.publishServer`, in singleplayer, when the world is opened to LAN. So tab
+completion can lag a live change of `require_op` even though typing the command already works.
 
 <!-- vpa:config:start -->
 ## Configuration

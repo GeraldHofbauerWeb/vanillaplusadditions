@@ -1,8 +1,9 @@
 # End Oxygen
 
 > **TL;DR** — The End has no breathable air: your bubbles drain the whole time you are there and you
-> start taking damage once they run out, unless you carry a Create backtank or stand in Conduit
-> Power.
+> start taking damage once they run out, unless you stand in Conduit Power — or carry a Create
+> backtank, which out of the box first needs `backtank.requires_full_set = false` or a datapack
+> (see [below](#the-diving-helmet-no-tag-defines)).
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -87,7 +88,7 @@ if (player.tickCount % totalInterval == 0) {
 `effectBonus` is `(amplifier + 1) × water_breathing_effect_interval_bonus`, so a Water Breathing
 potion widens the gap between depletion steps instead of stopping it:
 
-| Water Breathing | Interval | Ticks from full to empty | Real time |
+| Water Breathing | Interval | Ticks from full to air 1 | Real time |
 |---|---|---|---|
 | none | 2 | 598 | ~30 s |
 | I (amplifier 0) | 6 | 1 794 | ~90 s |
@@ -136,8 +137,13 @@ ordinary damage source where vanilla drowning is a special one:
 | Exhaustion per hit | 0.0 | 0.1 |
 
 Invulnerability frames apply as well: `LivingEntity.hurt` drops a hit of equal strength while
-`invulnerableTime > 10`, and a hit sets that to 20. `damage_tick` below 11 therefore does not
-actually raise the damage rate, it just gets swallowed.
+`invulnerableTime > 10`, and a hit that lands sets that to 20. For a player the counter is
+decremented in `ServerPlayer.tick`, which the server runs before the breathe hook, so the handler
+sees 20 minus the ticks since the last hit — after ten ticks it reads exactly 10, and the next hit
+gets through. `damage_tick = 10` therefore still doubles the damage rate; nothing below it goes any
+faster, and because only a hit that lands resets the counter, a shorter interval can come out
+slower: at `damage_tick = 9` every second attempt is swallowed and the damage arrives every 18
+ticks.
 
 The other consequence of step 5 living outside the `else`: walk into the End with an empty bar and a
 working backtank and you can still be hit **once**, on the arrival tick, if that tick happens to be a

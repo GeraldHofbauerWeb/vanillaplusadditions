@@ -13,7 +13,7 @@
 | **Works with** | — |
 | **Download** | [`vpa_mob_drops.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mob_drops.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.mob_drops]` |
-| **Since** | the next release |
+| **Since** | `v1.0.0-beta.87` |
 <!-- vpa:meta:end -->
 
 ## What it does
@@ -178,12 +178,13 @@ one that was genuinely new.
 
 The move went half way. `WitherSkeletonModule` lost its `LivingDropsEvent` handler and is a Nether
 spawn blocker today and nothing else, but `new MobDropsModule()` never reached `registerModules()`:
-`git log --all -S"new MobDropsModule"` finds no commit that ever added it, and both `build.gradle`
-and `AGENTS.md` carried a note saying the module was deliberately absent. An unregistered module is
+no commit before `v1.0.0-beta.87` ever added it, and both `build.gradle` and `AGENTS.md` carried a note
+saying so — `build.gradle` with "mob_drops is intentionally absent — it is not registered in the
+bundle", `AGENTS.md` with "exists, but is not currently registered". An unregistered module is
 never initialised, never subscribes to the event bus, and gets no config section at all, because
 `ModulesConfig` builds the spec from the registered modules only.
 
-So from v0.12.0 until this release, wither skeletons dropped no skull, no golden apple and no
+So from v0.12.0 until `v1.0.0-beta.87`, wither skeletons dropped no skull, no golden apple and no
 netherite scrap beyond vanilla's own, and the warden rule never fired once. Registering the module
 is what put them back.
 
@@ -215,13 +216,14 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `max_drops` above the item's stack size | Not clamped. `ItemStack(item, count)` takes the count as given, so a rule like `…;minecraft:totem_of_undying;1;5` produces one oversized stack. |
 | Another mod cancelling `LivingDropsEvent` | Our drops vanish with everything else — the cancel is checked after every handler has run. |
 | Modded mobs and items | Work, by id. The cache is rebuilt at common setup, which runs after the registries are populated, so a modded id resolves there even if the config was read earlier. |
-| Module disabled at startup | `reloadMobDropsCache()` clears the cache and returns early, so re-enabling it with `/vpa module enable mob_drops` flips the per-drop gate but leaves the cache empty. Touch the config file (or restart) to rebuild it. The other direction — disabling a running module — takes effect immediately. |
+| Module disabled at startup | In the bundle the module is never initialised — no handler, no cache. `/vpa module enable mob_drops` only writes a runtime override; it cannot subscribe the handler, so a restart is needed. In the standalone jar the handler is subscribed but `reloadMobDropsCache()` returned early, so touch the config file to rebuild the cache. The other direction — disabling a running module — takes effect immediately. |
 | Nothing is shown in game | No lang keys, no commands, no chat feedback. The only visible effect is the item on the floor; everything else is in the log. |
 
 ## Under the hood
 
-Two files, 254 lines, no mixins, no commands, no keybinds, no network packets, no items, blocks or
-entities, and not a single data or resource file.
+Three files, 273 lines: 254 for the module itself, 19 for the standalone entry point. No mixins, no
+commands, no keybinds, no network packets, no items, blocks or entities, and not a single data or
+resource file.
 
 | Class | Role |
 |---|---|
@@ -229,10 +231,13 @@ entities, and not a single data or resource file.
 | `modules/mob_drops/config/MobDropsConfig` | The `mob_drops` list, its defaults and the spec validator |
 | `standalone/mob_drops/MobDropsStandalone` | `@Mod("vpa_mob_drops")` entry point for the standalone jar |
 
-`onInitialize` does one thing — `NeoForge.EVENT_BUS.register(this)`. Note that `AbstractModule`
-gates that on `shouldInitialize()`, which this module leaves at the default `true` and which is not
-tied to the config flag, so the handler is always subscribed. The real gate is the
-`isModuleEnabled()` check at the top of `onEntityDrop`, which is also what makes
+`onInitialize` is two statements — `NeoForge.EVENT_BUS.register(this)` and one `info` line that
+prints at default log level. `AbstractModule` gates the method on `shouldInitialize()`, which this
+module leaves at the default `true`. In the bundle that is not the last word, though:
+`ModuleManager.initializeModules()` only calls `initialize()` for the modules the config has enabled,
+so a module switched off at startup never subscribes at all. The standalone jar differs —
+`StandaloneModuleBootstrap.boot` initialises unconditionally. Once the handler is subscribed, the
+gate is the `isModuleEnabled()` check at the top of `onEntityDrop`, which is what makes
 `/vpa module disable mob_drops` take effect on the next death.
 
 **Cache lifecycle.** `reloadMobDropsCache()` runs from `onCommonSetup()` and from
@@ -248,8 +253,8 @@ count, mob type and block position. Both registry-lookup warnings sit behind the
 misspelt item id is invisible at default log levels; a malformed line, by contrast, always warns, and
 an exception during parsing is always logged as an error.
 
-**Side.** Server. `LivingDropsEvent` only ever fires from `LivingEntity.die` on a `ServerLevel`, and
-the module references nothing client-side at all.
+**Side.** Server. `LivingDropsEvent` has exactly one call site, `LivingEntity.dropAllDeathLoot`,
+which only ever runs with a `ServerLevel`, and the module references nothing client-side at all.
 
 ## See also
 

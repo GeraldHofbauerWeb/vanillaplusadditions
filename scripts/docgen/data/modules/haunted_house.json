@@ -197,7 +197,7 @@
       "type": "int",
       "defaultValue": "40",
       "range": "20 ~ 1200",
-      "effect": "Tick interval between direct spawn attempts (20 ticks = 1 second). Checked as player.tickCount % interval == 0, and the player tick handler itself only runs every 20 ticks, so values that are not multiples of 20 effectively never fire."
+      "effect": "Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect rather than cancel: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval) - with 30 that is every 60 ticks. No value silently stops the spawner."
     },
     {
       "key": "direct_spawn_replacement_chance",

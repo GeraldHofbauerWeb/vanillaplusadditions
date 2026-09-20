@@ -31,8 +31,10 @@ This module does it from the config file instead, in two ways:
   sheet where the hat occupies a known corner and the face does not. The shipped default covers
   62 such rectangles across 38 zombie, drowned and husk skins.
 
-Both work by handing Minecraft a modified copy at load time. The original file is never read again
-for the entries you list, never written to, and stays intact for anything else that wants it.
+Both work by handing Minecraft a modified copy at load time. A killed texture's original is never
+read again. An erased texture's original *is* re-read, from the packs below, on every resource
+reload — the eraser needs an unmodified image to blank the rectangles on. Neither file is ever
+written to, and both stay intact for anything else that wants them.
 
 The module is client-side. A server neither needs it nor notices it.
 
@@ -42,8 +44,10 @@ The module is client-side. A server neither needs it nor notices it.
 
 Everything is served by a single generated pack, `vanillaplusadditions:texture_kill`, registered in
 `AddPackFindersEvent` with `PackSource.BUILT_IN`, pack format 34 (the 1.21.1 client format) and
-`Pack.Position.TOP`, so it sits above every other pack in the list. It has no files: every lookup
-is answered from memory, in this order.
+`Pack.Position.TOP`, so it is inserted at the high-priority end of the pack list — above vanilla's
+own pack and above the mod packs already in the list, but below a server-supplied resource pack,
+which vanilla pins there with `fixedPosition = true`. Nothing keeps it in that place afterwards —
+see the Compatibility table. It has no files: every lookup is answered from memory, in this order.
 
 | Lookup | Answer |
 |---|---|
@@ -83,18 +87,33 @@ from. The original dimensions are preserved, which is the practical difference f
 whole file.
 
 **The clear-first trick.** `prepare()` begins with `CACHE.clear()`. Without it the eraser would read
-its own output from the previous reload — the pack sits at the top of the stack, so it is the first
-thing `ResourceManager` asks — and each F3+T would erase the rectangles again on an already-erased
-image. Clearing first makes the pack fall through to the packs below, so the eraser always works
-from an unmodified original. The reasoning is written into the code at `TextureRegionEraser`
-lines 28–31 and 50–52.
+its own output from the previous reload — the pack sits near the top of the stack, above the packs
+the originals come from, so it is asked before them — and each F3+T would erase the rectangles again
+on an already-erased image. Clearing first makes the pack fall through to the packs below, so the
+eraser always works from an unmodified original. The reasoning is written into the code at
+`TextureRegionEraser` lines 28–31 and 50–52.
 
 **The second registration.** `apply()` also decodes each result into a `NativeImage`, wraps it in a
 `DynamicTexture` and registers it with Minecraft's `TextureManager` under the same
-`ResourceLocation`. The comment above it calls this belt-and-suspenders and names Entity Texture
-Features as the reason: a mod that caches entity textures outside `ResourceManager` would otherwise
-keep serving the unerased image. Without such a mod the extra registration is redundant and
-harmless.
+`ResourceLocation`. The comment above it calls this belt-and-suspenders and names ETF — presumably
+the Entity Texture Features mod — as the reason: a mod that caches entity textures outside
+`ResourceManager` would otherwise keep serving the unerased image.
+
+It is load-bearing without any such mod too, on the session's **first** resource load. A pack only
+joins a namespace's lookup chain if `getNamespaces()` named that namespace when the
+`ResourceManager` was built, and `getNamespaces()` derives the erase-side namespaces from `CACHE` —
+which is still empty at that moment, because it is filled afterwards, in `apply()`. The
+killed-texture half of `getNamespaces()` is not affected — it reads the config directly — but the
+shipped `killed_textures` are both `create:`, so nothing else puts `minecraft` into the pack's
+namespace set. All 62 shipped erase entries are `minecraft:`, so on that first load none of them can
+be served through `ResourceManager`. For the one path a vanilla renderer binds directly,
+`minecraft:textures/entity/zombie/drowned.png` — `DrownedRenderer`'s `DROWNED_LOCATION` — the
+`TextureManager` registration is what puts the erased image on screen. The other 61 entries — 54
+OptiFine-style `optifine/mob/zombie/` paths plus the seven `drowned_necromancer.png` and
+`zombie_ollie.png` entries, which are resource-pack additions no vanilla renderer binds — reach a
+screen only through a mod like ETF, and the registration helps there only as far as that mod itself
+reads from `TextureManager`. From the next reload on the `ResourceManager` path works as well,
+because `CACHE` is still populated when the following manager is built.
 
 ### Writing an entry
 
@@ -166,7 +185,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `debug_logging` | Does not gate this module's messages. Both the warnings and the "Prepared N region-erased textures" line go through the global `Vpa.LOGGER`, not through the module's own helper. |
 | Same path in both lists | `killed_textures` wins — `getResource` checks it first. The eraser still runs, but during the reload its "original" is the 1×1 stand-in the pack serves, so it caches a 1×1 copy that is never read. |
 | Dedicated server | The config section `[modules.texture_kill]` appears there, because the spec is registered as `ModConfig.Type.COMMON`. Every line of behaviour is behind `@EventBusSubscriber(value = Dist.CLIENT)`, so it is inert. |
-| Another pack above ours | Not possible for a normal pack: ours is added with `Pack.Position.TOP`. The exact guarantee behind the two booleans in `new PackSelectionConfig(true, Pack.Position.TOP, false)` is a vanilla record detail and is not provable from this repository. |
+| Another pack above ours | Possible. The three arguments of `new PackSelectionConfig(true, Pack.Position.TOP, false)` are `required`, `defaultPosition` and `fixedPosition`. What `required = true` buys is that the pack cannot be switched off — `PackRepository.rebuildSelected` forces a required pack back into the list and `PackSelectionModel.canUnselect` refuses it. Its *place* in the list is not pinned, because `fixedPosition = false`: a server-supplied resource pack, which vanilla creates with `fixedPosition = true`, is inserted above ours, and in the resource-pack screen the player can move another pack past it. The effect differs per mechanism: a pack above ours answers the lookup first — `FallbackResourceManager.getResource` walks its pack list backwards — so a `killed_textures` entry that pack also contains silently stops working; an `erase_regions` entry does not break, because `prepare()` reads whatever image is topmost through the `ResourceManager` and blanks the rectangles on that, and the `TextureManager` registration in `apply()` puts the result on screen regardless. |
 
 ## Under the hood
 
@@ -195,8 +214,8 @@ nothing; a list of several hundred entries would be paying for the parse repeate
 
 **Create is not a dependency.** It appears only as text inside the two shipped default strings.
 There is no `ModList.isLoaded` check, no `compileOnly` dependency and no compat class anywhere in the
-module; without Create those two entries simply never match a lookup. The same holds for Entity
-Texture Features, which is named in a comment and nowhere else.
+module; without Create those two entries simply never match a lookup. The same holds for ETF,
+which appears in two comment lines and nowhere else — not even as a `neoforge.mods.toml` entry or a mod id.
 
 ## See also
 

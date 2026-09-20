@@ -8,7 +8,7 @@ hier ist eine Fundliste, keine Änderung.
 haben sich in den Stichproben als zuverlässig erwiesen, aber ein Agent kann irren, und ein
 Kommentar, der falsch *klingt*, ist manchmal nur knapp formuliert.
 
-Insgesamt **39 Befunde** in **13 Modulen**.
+Insgesamt **39 Befunde** in **13 Modulen** — plus **18 weitere** im Nachtrag am Ende der Datei.
 
 ## `chunk_reset`
 
@@ -87,3 +87,113 @@ Insgesamt **39 Befunde** in **13 Modulen**.
 - src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:49-50 - the shortDescription passed to super() says the module 'broadcasts messages about blocked spawns' without qualification, but broadcastSkeletonBlockedMessage returns immediately unless debug logging resolves to on (:146), and debug_logging defaults to AUTO (core/AbstractModuleConfig.java:66) over globalDebugLogging = false (core/ModulesConfig.java:63, :121). Out of the box nothing is ever broadcast.
 - src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:188-189 calls Mob#finalizeSpawn directly; that method is @Deprecated / @ApiStatus.OverrideOnly in NeoForge with the note 'External callers should call via net.neoforged.neoforge.event.EventHooks#finalizeMobSpawn' (Mob.java:1185-1191). Using EventHooks.finalizeMobSpawn would let other mods' FinalizeSpawnEvent handlers see the replacement (and cannot recurse into this handler, since WitherSkeleton is not a Skeleton, AbstractSkeleton.java:46 / WitherSkeleton.java:28).
 - src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/wither_skeleton/WitherSkeletonModule.java:149-160 - the chat message is a hardcoded English literal with emoji (no lang key exists), and its coordinate line carries a RUN_COMMAND click event for '/tp @p x y z', which requires permission level 2 (TeleportCommand.java:43, :157), so a normal player clicking it just gets an error.
+
+---
+
+# Nachtrag: Befunde aus der Reparatur-Runde (2026-09-20, abends)
+
+Beim Abarbeiten der 280 Doku-Befunde sind die Reparatur- und Pruef-Agenten erneut auf Dinge
+gestossen, die **nicht in der Doku, sondern im Code** falsch sind. Sie durften nichts davon
+anfassen (die Runde war ausdruecklich dokumentationsonly), also stehen sie hier.
+
+**Gleiche Warnung wie oben:** jeder Befund ist mit Datei und Zeile belegt, aber selbst
+nachpruefen, bevor etwas geaendert wird. Was in dieser Runde *widerlegt* wurde, steht bewusst
+nicht in der Liste.
+
+**18 Befunde** in **8 Modulen**. Einer davon ist ein echter Datenverlust.
+
+## `create_water_wheel_unstucker`
+
+- **WaterWheelStallManager.java:465-492 — Datenverlust.** `processPendingReplaces` entfernt den
+  Eintrag bei :471 **vor** `replaceWheel()`; `replaceWheel` steigt bei :489-491 aus, wenn die Luecke
+  weder Luft noch Fluessigkeit ist. Der erfasste BlockState samt Material ist dann weg: kein Drop,
+  keine WARN-Zeile, kein `pendingVerify`-Eintrag. Minimal: WARN auf dem frühen Return. Besser:
+  `boolean` zurueckgeben und nur bei Erfolg entfernen — oder das Rad als Item fallen lassen.
+- WaterWheelKinetics.java:306-309 — Javadoc von `clearUnloadedStressAccounting` sagt, der
+  Tally-Drop werde "only ever reached from the explicit /vpaunstuck command". `isTallyClearable()`
+  (WaterWheelStallManager.java:419-426) gibt fuer eine verwaiste Tally in **beiden** Modi `true`
+  zurueck, und `checkWheel()` ruft `resolveOverstress(..., SWEEP)` bei :223. Die Seite sagt es
+  richtig, der Javadoc nicht.
+- WaterWheelStallManager.java:352-372 — `resolveOverstress`-Javadoc nennt `@param
+  allowPhantomClear`, die Signatur nimmt aber `StressMode mode`; `@return` fehlt, obwohl eine
+  `StressAction` zurueckkommt; Schritt 2 sagt weiterhin "command-only". Kein CI-Kosten (dieses Repo
+  hat keine Javadoc-Pruefung), aber falsch.
+- WaterWheelStallManager.java:429-435 — `beginReinit`-Javadoc behauptet, Create lese "only a
+  non-zero flow score while the water is actually moving, and then keeps it". In
+  `libs/create-1.21.1-6.0.9.jar` gegengeprueft: `lazyTick` → `determineAndApplyFlowScore` →
+  `setFlowScoreAndUpdate`, alle 60 Ticks.
+
+## `train_chunk_loading`
+
+- **TrainChunkLoadingModule.java:112 (`onCommonSetup`) und :118 (`onClientSetup`) laufen auch,
+  wenn `shouldInitialize()` false war.** `AbstractModule.initialize()` steigt bei :96-99 aus, ohne
+  das zu vermerken; `ModuleManager` baut `enabledModules` allein aus dem Config-Flag (:88-99) und
+  verteilt `commonSetup()`/`clientSetup()` an alle (:121-135 / :161-176);
+  `StandaloneModuleBootstrap.java:63-65` haengt die Listener ohne try/catch ein. Config-aktiv +
+  Create fehlt ⇒ NPE auf einem ungebundenen Holder im commonSetup und `NoClassDefFoundError`
+  (PonderIndex) im clientSetup. Das ist ein **Framework-Fehler**, nicht nur einer dieses Moduls:
+  entweder ein `initialized`-Flag in `AbstractModule.initialize()` setzen und
+  `commonSetup()`/`loadComplete()`/`clientSetup()` kurzschliessen, oder in beiden Methoden
+  `if (!ModList.get().isLoaded("create")) return;` wiederholen.
+- ChunkLoaderTrackCompat.java:67 — der Kommentar "Mirrors Create's own track properties
+  (AllBlocks.TRACK)" verspricht zu viel: `createBlock()` nutzt ein blankes
+  `BlockBehaviour.Properties.of()` mit mapColor(METAL)/strength(0.8f)/sound(METAL)/noOcclusion(),
+  also ohne Andesit-Basis (`SharedProperties::stone`) und ohne `forceSolidOn()`.
+
+## `stationary_chunk_loader`
+
+- StationaryChunkLoaderModule.java:79 — `forcingEnabled` wird auf Server-Stop nie zurueckgesetzt
+  (geschrieben nur bei :149 in `onServerTick`, kein ServerStopping/ServerStopped-Handler im
+  Modulpaket). Mit `only_while_players_online = false` feuert der Resume-Uebergang genau einmal pro
+  Spielprozess.
+- AnchorBorderRenderer — `anchors` (:36) und `lastScan` (:37) sind Instanzzustand eines Renderers,
+  der einmal in `onClientSetup` registriert wird und nur innerhalb von `scanAnchors` (:117)
+  geleert wird, gegated durch `now >= lastScan + SCAN_INTERVAL` bei :45.
+- StationaryChunkLoaderManager.java:119 — Kommentar "(tickets vanish with the level)" ist falsch.
+- ChunkAnchorData.java:13-15 — Javadoc behauptet, ein Anker halte seinen Chunk geladen "until the
+  block is broken"; `ChunkAnchorBlock.java:67-75` feuert `onAnchorInactive` schon bei abfallendem
+  Signal.
+
+## `hostile_endermen`
+
+- HostileEndermenConfig.java:82-86 — latenter NPE: der Guard prueft
+  `detectionRange != null && angerDuration != null && respectCarvedPumpkin != null`, Zeile 86
+  dereferenziert aber `suppressTeleportAttack.get()`.
+- HostileEndermenModule.java:40 — Javadoc "Static handle for the Enderman Overhaul compat mixin";
+  `instance` wird inzwischen von `suppressTeleportAttack` (:64), `suppressAntiCheeseTeleport`
+  (:92-94) und `logPlayerTeleport` (:121-123) gelesen.
+- HostileEndermenModule.java:138-139 — toter Filter: `PlayerTeleportDebugMixin` ist ein `@Inject`
+  in `ServerPlayer`, kein Stack-Frame kann je das Praefix `…vanillaplusadditions.mixin` tragen.
+
+## `mob_spawn_overlay`
+
+- SpawnOverlayRenderer.java:64-67 — die sechs `buffers.getBuffer(...)` werden vorab geholt statt
+  jeweils unmittelbar vor ihrer Verwendung (get-use-get-use, wie in BattleDogsArmorLayer.java:59/65).
+  Alternativ die Typen ueber `RegisterRenderBuffersEvent` registrieren. Danach im Spiel
+  gegenpruefen und die Status-Einschraenkung von der Modulseite nehmen.
+- SpawnScanner.java:24-34 — Javadoc listet die Pruefungen als Blocklicht → ON_GROUND → Kollision →
+  Lichttest; `scan()` (:78-87) macht Blocklicht → Lichttest → `fits()`, und `fits()` (:112-118)
+  erledigt ON_GROUND plus `noCollision`. Den `<li>`-Punkt zum Lichttest von Platz vier auf Platz
+  zwei ziehen.
+
+## `battle_dogs`
+
+- WolfSwingTimeMixin — der Javadoc ist falsch; die Modulseite traegt deshalb bei
+  `docs/modules/battle_dogs.md:359` noch einen TODO-Block. Der gehoert im selben Commit geloescht,
+  der den Javadoc richtigstellt.
+
+## `overpacked_extensions`
+
+- OverpackedExtensionsModule.java:14-25 — der Klassen-Javadoc kuendigt drei Features an, die
+  `<ol>` darunter listet zwei. Zusaetzlich zeigen :26, OverpackedExtensionsConfig.java:20 und
+  build.gradle:174 noch auf den alten Pfad `docs/overpacked_extensions.md`.
+- OverpackedGuiBridge.java:46-53 — zwei Javadoc-Kommentare stapeln sich auf `HELPER_TAG`, waehrend
+  `SESSIONS` (:53) undokumentiert bleibt. Der Kommentar bei :49 beschreibt ausserdem nur einen
+  Payload-Typ.
+
+## `custom_crafting_recipes`
+
+- CustomCraftingRecipesModule.java:49 — die an den `AbstractModule`-Konstruktor uebergebene
+  Beschreibung sagt "shaped crafting recipes", obwohl das Modul seit Einfuehrung des Schluessels
+  `shapeless_recipes` auch formlose Rezepte verarbeitet. Dieselbe Zeichenkette spiegelt die
+  `shortDescription` des Fakten-Blatts.

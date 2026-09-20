@@ -17,7 +17,7 @@
 
 ## What it does
 
-Hit somebody else's tamed animal by mistake and it turns on you, and vanilla offers no way back: the
+Hit somebody else's tamed wolf by mistake and it turns on you, and vanilla offers no way back: the
 only appeasement it knows is your own death. Here a thrown potion does the job instead. Splash or lob
 a potion of Healing or Regeneration at the animal and the anger towards you is cleared, with four
 heart particles and an amethyst chime to show that it worked. For the next ten seconds it will not
@@ -27,7 +27,7 @@ The pardon is aimed. Only the anger directed at the thrower is undone — an ani
 simultaneously hunting somebody else stays angry at them. You buy off your own mistake rather than
 pacifying a stranger's guard animal.
 
-The module also fixes the reason that throw usually fails. Aiming a splash potion at a tamed animal
+The module also fixes the reason that throw usually fails. Aiming a splash potion at a tamed wolf
 normally does nothing at all: the potion never leaves your hand. Beneficial splash and lingering
 potions now pass through the animal and are thrown as they should be. Drinkable potions are
 deliberately left alone, so holding an ordinary healing potion still lets you tell your own wolf to
@@ -69,7 +69,9 @@ You have to die, and `forgiveDeadPlayers` has to be on.
 
 ### The client eats the throw before the server hears about it
 
-On the client, `Wolf#mobInteract` never reaches any of its real branches and ends here:
+On the client, `Wolf#mobInteract` skips its real branches for anything but feeding a puppy — the
+guard is `!this.level().isClientSide || this.isBaby() && this.isFood(itemstack)` — so a potion ends
+up here:
 
 ```java
 boolean flag = this.isOwnedBy(player) || this.isTame() || itemstack.is(Items.BONE) && !this.isTame() && !this.isAngry();
@@ -101,7 +103,11 @@ Cancelling them with `InteractionResult.PASS` is enough: `Player#interactOn` han
 result straight back, nothing consumes the action, and the code above falls through to `useItem`.
 
 The wolf is the case that is provable in vanilla's source; other tamed animals have their own
-`mobInteract`. The pass-through applies to every owned animal regardless.
+`mobInteract`, and not all of them swallow the click. Someone else's tamed cat, for one, reaches
+`Cat#mobInteract`'s owner branch only when `isOwnedBy(player)` holds as well as `isTame()`, so it
+drops through `Animal#mobInteract` to `Mob#mobInteract` and returns `PASS` — that throw already
+works without this module. The pass-through applies to every owned animal regardless, which costs
+nothing where vanilla would have let the potion go anyway.
 
 ## In detail
 
@@ -140,9 +146,14 @@ are not tamables and so do not even get vanilla's owner exemption. Modded pets c
 
 Which of them can be angry at you at all is a narrower set. Only the wolf and the llama carry a
 `HurtByTargetGoal` (`Llama.LlamaHurtByTargetGoal`), and only the wolf is a `NeutralMob`. Cats,
-parrots and horses never target a player in vanilla, so for them calming has nothing to clear —
-which is exactly what happens: nothing, silently. They are covered for the sake of AI mods and
-modded pets that do make them fight back.
+parrots and every horse but the llama never take a player as their target in vanilla, so for them
+there is no targeting to undo. They can still come out of it counted as calmed, though:
+`LivingEntity#hurt` records `lastHurtByMob` on anything a player hits, and it is dropped again once
+the attacker stops being alive, or once `tickCount - lastHurtByMobTimestamp > 100`. Hit a cat and
+splash it within those five seconds and the third branch below fires — grace period, heart particles
+and chime included. The clearing just has no effect on their behaviour, because none of them owns a
+goal that reads the value — the llama, whose `LlamaHurtByTargetGoal` does, is the one horse where it
+bites. They are covered for the sake of AI mods and modded pets that do make them fight back.
 
 ### What calming does
 
@@ -152,12 +163,12 @@ modded pets that do make them fight back.
 |---|---|
 | Pet is a `NeutralMob` and its persistent anger target is the thrower's UUID | `stopBeingAngry()` — which itself clears last-hurt-by, anger target, current target and the anger timer |
 | Current target is the thrower | `setTarget(null)` |
-| Last-hurt-by is the thrower | `setLastHurtByMob(null)` — otherwise `HurtByTargetGoal` picks it straight back up |
+| Last-hurt-by is the thrower | `setLastHurtByMob(null)` — otherwise `HurtByTargetGoal` picks it straight back up. Vanilla sets this on *any* living entity a player hits, so this branch can match an animal that never had a target |
 
 If none of the three matched, the method returns before everything else: no grace period, no
-particles, no chime. A potion thrown at an animal that was never angry at you produces no feedback,
-which is the honest answer — there was nothing to forgive. The potion's own effects apply as usual
-either way; calming is added on top and replaces nothing.
+particles, no chime. A potion thrown at an animal that is not hunting you and carries no fresh hit
+from you produces no feedback, which is the honest answer — there was nothing to forgive. The
+potion's own effects apply as usual either way; calming is added on top and replaces nothing.
 
 There is no check that the thrower owns the animal. Anyone the pet is currently angry at can buy
 themselves off, owner or stranger.
@@ -186,10 +197,17 @@ Lingering potions return early here; they are handled through the cloud they lea
 
 ### Lingering clouds
 
-A lingering potion's cloud lasts 600 ticks (30 seconds) and starts at radius 3, so a pet that only
-wanders in later must be caught too. The cloud is picked up in `EntityJoinLevelEvent` when its owner
-is a `Player` and its contents are calming — read through the accessor mixin, because vanilla ships
-only a setter for `potionContents` — and stored as dimension plus thrower UUID.
+A lingering potion's cloud is created at radius 3 and lives for roughly 25 seconds, so a pet that
+only wanders in later must be caught too. Vanilla waits 10 ticks before it applies anything, but the
+radius is 3 from the first tick. Its nominal `duration` is 600 ticks, but that is not what ends it:
+`ThrownPotion#makeAreaOfEffectCloud` also sets `radiusPerTick` to `-radius / duration` = -0.005, and
+`AreaEffectCloud#tick` discards the cloud the moment the shrinking radius drops below 0.5 — those
+roughly 25 seconds if nothing ever stands in it, and less when something does, because
+`radiusOnUse = -0.5` takes half a block off for every entity the cloud applies its effects to.
+
+The cloud is picked up in `EntityJoinLevelEvent` when its owner is a `Player` and its contents are
+calming — read through the accessor mixin, because vanilla ships only a setter for `potionContents`
+— and stored as dimension plus thrower UUID.
 
 Every 10 ticks the sweep resolves the cloud again (`ServerLevel#getEntity(UUID)`) and calms
 everything owned inside it, mirroring `AreaEffectCloud#tick`'s own cylindrical test against the
@@ -213,7 +231,7 @@ sweep ignores all four, so an animal standing in a fresh cloud is calmed during 
 |---|---|
 | Thrower not in that level (offline, elsewhere) | Skips the cloud for this tick and keeps tracking it |
 | Cloud gone, dead, or its dimension unloaded | Drops it from the map |
-| Cloud leaves the level | `EntityLeaveLevelEvent` drops it at once |
+| Cloud leaves the level | `EntityLeaveLevelEvent` drops it at once — on either side, see the limits table |
 | Cloud with no player owner (dispenser, command, witch) | Never tracked in the first place |
 
 ### The grace period
@@ -255,7 +273,7 @@ When, and only when, anger was actually cleared and `calm_feedback` is on: four 
 | Half | Runs on | Gated by |
 |---|---|---|
 | Pass-through (`EntityInteract`, `EntityInteractSpecific`) | Client **and** server — no side guard, by design | `enabled` + `allow_throwing_at_pets` |
-| Calming, cloud tracking, grace period | Server only — explicit `isClientSide()` returns | `enabled` only |
+| Calming, cloud tracking, grace period | Server only — explicit `isClientSide()` returns in `onProjectileImpact`, `onEntityJoinLevel` and `onChangeTarget`. `onEntityLeaveLevel` is the exception and has none | `enabled` only |
 
 The asymmetry matters when reading the configuration: `allow_throwing_at_pets = false` takes away
 only the convenience of aiming at the animal. A potion thrown past it, or any lingering cloud, still
@@ -282,7 +300,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | One grace period per pet | `peaceWindows` maps the pet's UUID to a single player. If a second player calms the same animal, their window overwrites the first player's — two people cannot hold protection on the same wolf at once. |
 | Nothing is persisted | Both maps are plain in-memory `HashMap`s, cleared on `ServerStoppedEvent`. A restart drops every grace period. Whether a lingering cloud that outlives the restart is picked up again depends on `EntityJoinLevelEvent` firing for a deserialised cloud and its owner resolving to a player at that moment — not verified here. |
-| The pack is alerted separately | A wolf's `HurtByTargetGoal` has `setAlertOthers()`, which calls `setTarget(you)` on every wolf of the same owner within follow range. Those outside the splash were never calmed and hold no window of their own, so they still come for you. |
+| The pack is alerted separately | A wolf's `HurtByTargetGoal` has `setAlertOthers()`, which calls `setTarget(you)` on every wolf of the same owner that is nearby and not already busy with a target of its own. Those outside the splash were never calmed and hold no window of their own, so they still come for you. |
+| A client can drop a tracked cloud | `onEntityLeaveLevel` is the one cloud handler without an `isClientSide()` guard, and NeoForge posts `EntityLeaveLevelEvent` from `ClientLevel` as well. In single-player and on a LAN host the client and the integrated server share one module instance, and the client's copy of the cloud carries the same UUID — so when the client unloads it (chunk unload, or walking past the cloud's `clientTrackingRange` of 10 chunks) the entry is removed while the server-side cloud is still alive, and that cloud quietly stops calming. The asymmetry reads as an oversight rather than a decision: the matching join handler *is* guarded. |
 | No owner check on the thrower | Whoever the animal is angry at can calm it, including a player who is not its owner. |
 | Brain-driven mobs | The grace period hooks `Mob#setTarget`. A mob that keeps its target in `MemoryModuleType.ATTACK_TARGET` and overrides `getTarget()` with `getTargetFromBrain()` — no vanilla pet does, but modded ones might — bypasses both the `getTarget()` check in `calm` and the cancel. |
 | Potions with no player owner | A dispenser-fired or command-spawned potion has no owner (`new ThrownPotion(level, x, y, z)`), and a witch's has a witch. Neither calms anything, and their clouds are never tracked. |
@@ -302,7 +321,7 @@ event logic plus one accessor mixin.
 | `PlayerInteractEvent.EntityInteractSpecific` | game | The same for the positional right-click |
 | `ProjectileImpactEvent` | game | Splash calming; observed, never cancelled |
 | `EntityJoinLevelEvent` | game | Starts tracking a calming lingering cloud |
-| `EntityLeaveLevelEvent` | game | Drops a tracked cloud |
+| `EntityLeaveLevelEvent` | game | Drops a tracked cloud (no side guard — fires on the client too) |
 | `ServerTickEvent.Post` | game | Every 10th tick: expire grace periods, re-sweep clouds |
 | `LivingChangeTargetEvent` | game | Cancels a re-target of the protected player |
 | `ServerStoppedEvent` | game | Clears both maps |

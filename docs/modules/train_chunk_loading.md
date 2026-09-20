@@ -39,14 +39,21 @@ walks through this in game.
 ## Why it exists
 
 The carriage entity is created and destroyed with the chunk under it. Read out of Create 6.0.9's
-shipped bytecode — Create is a `compileOnly` jar here, not a source dependency:
+shipped bytecode — Create is here only as a binary jar
+(`implementation files("libs/create-1.21.1-6.0.9.jar")` in `build.gradle`), not as a source
+dependency:
 
 ```
 com.simibubi.create.content.trains.entity.Carriage
   public void manageEntities(Level level)     ← one call per carriage, out of Train.tick(Level)
-      CarriageEntityHandler.isActiveChunk(level, pos)
-          true  → dimensional.createEntity(level, …)
-          false → dimensional.removeAndSaveEntity(entity, …)
+      no entity yet:
+          CarriageEntityHandler.isActiveChunk(level, positionAnchor)
+              true → dimensional.createEntity(level, …)
+      entity present:
+          CarriageEntityHandler.validateCarriageEntity(entity)
+              !isActiveChunk(level, entity.blockPosition())  →  entity.leftTickingChunks = true
+          !isAlive() || leftTickingChunks || discard
+              → dimensional.removeAndSaveEntity(entity, …)
 ```
 
 `Train.tick` calls `Carriage.travel(…)` in the same pass, so the *travelling* never stops — the
@@ -163,7 +170,7 @@ overlay is live, so it costs nothing passively, but raising the scan radius is e
 
 | | Block / item | Details |
 |---|---|---|
-| <img src="../img/items/chunk_loader_track.png" width="40"> | **Chunk Loader Track** | `vanillaplusadditions:chunk_loader_track`. A `TrackBlock` with Create's own track properties (map colour `METAL`, strength 0.8, metal sound, no occlusion) on a custom `TrackMaterial` `vanillaplusadditions:chunk_loader`, track type `STANDARD`. The item is Create's `TrackBlockItem`, so placement — curves, bezier connections, the drag-to-connect preview — behaves exactly like the normal track. |
+| <img src="../img/items/chunk_loader_track.png" width="40"> | **Chunk Loader Track** | `vanillaplusadditions:chunk_loader_track`. A `TrackBlock` carrying the four properties Create's own track sets (map colour `METAL`, strength 0.8, metal sound, no occlusion), but built from a bare `BlockBehaviour.Properties.of()` rather than Create's andesite base and without Create's `forceSolidOn()`. On a custom `TrackMaterial` `vanillaplusadditions:chunk_loader`, track type `STANDARD`. The item is Create's `TrackBlockItem`, so placement — curves, bezier connections, the drag-to-connect preview — behaves exactly like the normal track. |
 
 **Recipe** — shaped, category *misc*, eight tracks in and eight out:
 
@@ -225,10 +232,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| Create absent | The module registers nothing at all: `shouldInitialize()` is `ModList.get().isLoaded("create")`, and every Create-typed class sits behind it. No block, no item, no handlers, no recipe. |
-| Standalone jar without Create | `vpa_train_chunk_loading` declares required dependencies on `vpa_core` and `vpa_debug_overlay` and **no dependency on `create`**, so it will happily load into a pack that has no Create. Registration is skipped as above, but client setup still instantiates `ChunkLoaderTrackBorderRenderer`, whose bytecode names `CarriageContraptionEntity`. Read off the source, not reproduced: install Create if you install this jar. |
+| Create absent | Nothing is registered: `onInitialize()` sits behind `shouldInitialize()`, which is `ModList.get().isLoaded("create")`. No block, no item, no handlers, no recipe. `onCommonSetup()` and `onClientSetup()` are *not* behind that gate — `ModuleManager` dispatches them to every config-*enabled* module — so they still run. `onCommonSetup()` dies on its own argument: `CHUNK_LOADER_TRACK.get()` on a register that was never bound to the bus throws `NullPointerException: Trying to access unbound value` before `ChunkLoaderTrackCompat` is entered. In the bundle `ModuleManager` wraps both calls in `catch (Exception …)`, which does swallow that unbound-holder NPE. `onClientSetup()` then runs on, and its two statements fare differently: registering `ChunkLoaderTrackBorderRenderer` with the overlay survives, because the renderer's only Create reference (`CarriageContraptionEntity`) sits inside `clientTick`, not in a field or the constructor — and `clientTick` is only dispatched while the overlay is switched on. The call after it, `ChunkLoaderTrackPonder.register()` → `PonderIndex.addPlugin`, resolves the `PonderPlugin` interface; those are `net.createmod.ponder` types, which ship inside Create's jar-in-jar, so without Create that is a `NoClassDefFoundError` — an `Error`, not an `Exception`, which the guard does not catch. The standalone jar has no guard at all (next row). |
+| Standalone jar without Create | `vpa_train_chunk_loading` declares required dependencies on `vpa_core` and `vpa_debug_overlay` and **no dependency on `create`**, so it will happily load into a pack that has no Create. Registration is skipped as above, but `StandaloneModuleBootstrap` forwards `FMLCommonSetupEvent` and `FMLClientSetupEvent` to the module with no `try`/`catch` at all, so the same `PonderIndex.addPlugin` call ends client setup — and had it got past that, the overlay's first tick would resolve `CarriageContraptionEntity`. Read off the source, not reproduced: install Create if you install this jar. |
 | Loader track in an unloaded chunk | Cannot see the train and never activates. This is the spacing rule, not a bug — Create's simulated train has no entity for anything to notice. |
-| Module disabled while the server runs | Every handler returns early on `isModuleEnabled()`, including the reconcile that would release chunks. Tickets already held stay held until the level unloads (the validation callback then drops them on the next world load). Disable it with nothing running, or restart. |
+| Module disabled while the server runs | The carriage scan, the reconcile, the player gate and the recipe listener all return early on `isModuleEnabled()`, including the reconcile that would release chunks. Tickets already held stay held until the level unloads (the validation callback then drops them on the next world load). Disable it with nothing running, or restart. |
 | Create updated, `validBlocks` reflection fails | Logged as a warning at common setup. The track still places, connects and loads chunks; only the block entities carrying **curved** connection data stop surviving a chunk reload, so bezier curves come back straight. That warning line is the symptom to look for after a Create update. |
 | Overlay colours | Mirrored client-side from visible carriages with no networking. Red means "this client thinks a carriage is on a track within the radius", not "the server has this chunk forced". |
 | Track broken while its position is persisted | `resume()` re-forces from the saved positions without checking that the block is still there. A stale entry holds its square for one timeout and is then cleaned up. |

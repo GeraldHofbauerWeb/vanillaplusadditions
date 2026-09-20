@@ -31,6 +31,9 @@ Freecam does not fly through blocks by turning off collision. It answers the col
 
 ```java
 if (context instanceof EntityCollisionContext ctx && ctx.getEntity() instanceof FreeCamera) {
+    if (ModConfig.INSTANCE.collision.alwaysCheck && !Freecam.isEnabled()) {
+        return;
+    }
     if (CollisionBehavior.isIgnored(this.getBlock())) {
         cir.setReturnValue(Shapes.empty());
     }
@@ -60,12 +63,12 @@ Sable takes over sub-level collision by redirecting the `Entity.collide(Vec3)` c
 `Entity.move`. Vanilla only reaches that call in the second half of the method:
 
 ```java
-public void move(MoverType type, Vec3 movement) {
+public void move(MoverType type, Vec3 pos) {
     if (this.noPhysics) {
-        this.setPos(this.getX() + movement.x, this.getY() + movement.y, this.getZ() + movement.z);
+        this.setPos(this.getX() + pos.x, this.getY() + pos.y, this.getZ() + pos.z);
     } else {
         ...
-        Vec3 vec3 = this.collide(movement);   // ← Sable's @Redirect sits here
+        Vec3 vec3 = this.collide(pos);   // ← Sable's @Redirect sits here
 ```
 
 So `noPhysics` cuts off the world collision and Sable's redirect in one step — and it does so without
@@ -83,9 +86,11 @@ camera ever moves. It has to be set at HEAD of `Entity.move` itself, which is th
 that `if` is read. The alternative, injecting into
 `SubLevelEntityCollision.getSubLevelEntityCollisionShape` to restore the missing context, would be
 more faithful (Freecam's own per-block rules would keep working), but it targets a private method
-whose signature carries two Sable-internal types, and this repository compiles against Sable 1.2.2
-while the pack runs 2.0.5. A signature that has moved in between does not crash; it silently does
-nothing, which is the worst of the three outcomes.
+whose signature carries three Sable types (`Pose3dc`, `LevelAccelerator`, `LevelReusedVectors`), and
+this repository compiles against Sable 1.2.2 while the pack runs 2.0.5. That signature happens to be
+identical in both jars, so nothing is broken today — but a private method is free to move, and a
+signature that has moved does not crash; it silently does nothing, which is the worst of the three
+outcomes.
 
 ## Compatibility and known limits
 
@@ -118,9 +123,10 @@ on, so `Minecraft.getInstance().getCameraEntity()` is the camera while freecam o
 reference comparison against `Minecraft.getInstance().getCameraEntity()`; every other entity leaves
 immediately. The mixin is client-only and is never applied on a dedicated server.
 
-**Testing.** This repository has no unit tests, and the dev run cannot load Sable (see
-[Testing](../guides/testing.md)), so this module has to be checked in a real 1.21.1 instance: switch
-freecam on aboard an airship and fly through the hull.
+**Testing.** This repository has no unit tests, and the dev run cannot load Sable: the jars are on
+`compileOnly` and `localRuntime` in `build.gradle`, but `neo_version` is `21.0.167` while Sable
+requires NeoForge `[21.1.219,)`, so it refuses to load there. This module therefore has to be checked
+in a real 1.21.1 instance: switch freecam on aboard an airship and fly through the hull.
 
 <!-- vpa:config:start -->
 ## Configuration

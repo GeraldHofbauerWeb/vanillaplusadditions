@@ -35,13 +35,16 @@ While you are up there:
 * it **swims** instead of walking along the bottom;
 * the HUD shows its armour durability and collapses its health into one row.
 
-With the defaults **no naturally occurring wolf qualifies**: the scale gate wants `generic.scale`
-≥ 2.0 and a vanilla wolf is 1.0. The module was built around **Sif**, the giant wolf from *Grim
+With the defaults **no naturally occurring wolf qualifies**: the scale gate wants `generic.scale` ≥
+2.0 and a vanilla wolf is 1.0. The module was built around **Sif**, the giant wolf from *Grim
 Kingdoms: structures & ruins* — who turned out not to be a mod entity at all, but a plain
 `minecraft:wolf` on a spawn egg with `generic.scale = 3.25`, 350 max health, 25 attack damage,
-armour 12 and permanent Resistance IV. There is no code integration with that mod and no dependency
-on it; any sufficiently large wolf works, and [*Getting a wolf that
-qualifies*](#getting-a-wolf-that-qualifies) below summons one from a command.
+armour 12 and permanent Resistance IV. Only the first two of those figures appear anywhere in this
+repository — 3.25 in the `eligibility.min_scale` comment, and "a 350 HP wolf" in the
+`hud.compact_mount_health` comment, which does not name him. The attack damage, the armour value and
+the Resistance IV were read off that spawn egg in game, not off a source file here. There is no code
+integration with that mod and no dependency on it; any sufficiently large wolf works, and [*Getting
+a wolf that qualifies*](#getting-a-wolf-that-qualifies) below summons one from a command.
 
 ## Why it exists
 
@@ -50,19 +53,25 @@ corrected before the ride was worth having.
 
 ### Your own sweep kills your own wolf
 
-`Player.attack` hits every living thing in the swept box that is not you, not the main target and
-not on your team — a tamed wolf is none of those:
+`Player.attack` hits every living thing in the swept box that is not you, not the main target and not
+on your team, and that stands inside your entity reach — a tamed wolf beside you fails none of those
+exclusions and is well inside the reach check:
 
 ```java
 for (LivingEntity livingentity2 : this.level()
-        .getEntitiesOfClass(LivingEntity.class, p_36347_.getBoundingBox().inflate(1.0, 0.25, 1.0))) {
-    if (livingentity2 != this && livingentity2 != p_36347_ && !this.isAlliedTo(livingentity2) && …) {
+        .getEntitiesOfClass(LivingEntity.class, itemstack.getSweepHitBox(this, target))) {
+    double entityReachSq = Mth.square(this.entityInteractionRange());
+    if (livingentity2 != this && livingentity2 != target && !this.isAlliedTo(livingentity2)
+            && … && this.distanceToSqr(livingentity2) < entityReachSq) {
         float f5 = this.getEnchantedDamage(livingentity2, f7, damagesource) * f2;
         livingentity2.knockback(0.4F, …);      // ← knockback first
         livingentity2.hurt(damagesource, f5);  // ← damage second
     }
 }
 ```
+
+The box is a NeoForge patch point — `getSweepHitBox` is an item extension, and its default is the
+target's bounding box inflated by 1.0 / 0.25 / 1.0, which an item may widen or narrow.
 
 Two things follow from that order. Cancelling the damage cannot undo the shove, which is why
 knockback is suppressed separately. And the same `damagesource` instance is reused for the direct
@@ -74,11 +83,11 @@ Goals tick in `Mob.serverAiStep`, which is **server-side only** — and `serverA
 it could not have been overridden anyway. A ridden entity is driven by the other side:
 
 ```java
-private void travelRidden(Player p_278244_, Vec3 p_278231_) {
-    Vec3 vec3 = this.getRiddenInput(p_278244_, p_278231_);
-    this.tickRidden(p_278244_, vec3);
+private void travelRidden(Player player, Vec3 travelVector) {
+    Vec3 vec3 = this.getRiddenInput(player, travelVector);
+    this.tickRidden(player, vec3);
     if (this.isControlledByLocalInstance()) {   // ← the client, while a player rides
-        this.setSpeed(this.getRiddenSpeed(p_278244_));
+        this.setSpeed(this.getRiddenSpeed(player));
         this.travel(vec3);
 ```
 
@@ -88,8 +97,8 @@ on the client, so a ridden wolf walks along the bottom of the lake.
 ### Vanilla refuses to let a wolf touch a creeper
 
 ```java
-public boolean wantsToAttack(LivingEntity p_30389_, LivingEntity p_30390_) {
-    if (p_30389_ instanceof Creeper || p_30389_ instanceof Ghast || p_30389_ instanceof ArmorStand) {
+public boolean wantsToAttack(LivingEntity target, LivingEntity owner) {
+    if (target instanceof Creeper || target instanceof Ghast || target instanceof ArmorStand) {
         return false;
 ```
 
@@ -104,13 +113,15 @@ Overhaul's whole family extends vanilla `Creeper`.
 displaced by a goal with a *better* priority number:
 
 ```java
-public boolean canBeReplacedBy(WrappedGoal p_26003_) {
-    return this.isInterruptable() && p_26003_.getPriority() < this.getPriority();
+public boolean canBeReplacedBy(WrappedGoal other) {
+    return this.isInterruptable() && other.getPriority() < this.getPriority();
 }
 ```
 
 So the first mob that hits the rider owns the mount for the rest of the fight: it keeps snapping at
-an archer 25 blocks away while a zombie stands in its face. The other half of the problem is what a
+an archer fifteen blocks away while a zombie stands in its face. Further out it does not even manage
+that: `TargetGoal.canContinueToUse` drops a target beyond the wolf's `generic.follow_range` of 16 and
+`stop()` clears it, so vanilla simply loses the archer. The other half of the problem is what a
 tamed wolf attacks unprompted at all — goal 7, `NearestAttackableTargetGoal<>(this,
 AbstractSkeleton.class, false)`, and nothing else.
 
@@ -238,8 +249,11 @@ mention that.
 
 **Clearing the flag again is not optional.** The only thing that normally lowers `jumping` on a mob
 is `JumpControl.tick()`, which is also server-only. Left raised on the client, `LivingEntity.aiStep`
-answers it with `jumpFromGround()` on every grounded tick — the mount would hop nonstop after its
-first swim.
+answers it with `jumpFromGround()` on every grounded tick where `noJumpDelay` has run down — and the
+jump resets it to 10, so the mount hops again the moment it is back on the ground with the delay
+expired, forever, after its first swim. The delay is not what sets the pace: a 0.42 jump is still in
+the air when those ten ticks are up, so the hang time does. A plain ballistic integration puts the
+landing around tick twelve; nothing in this repository measures it.
 
 ### Protection from its own owner
 
@@ -296,7 +310,9 @@ Overhaul's family extends vanilla `Creeper`, that override covers those too.
 A single incoming hit or a strike of your own only re-points the mount within `defend_rider_radius`
 (32). If it already holds a live, still-attackable target, the new one has to be `retarget_margin`
 (3.0) blocks closer to win — pure hysteresis, so two mobs at roughly the same distance cannot make
-it flip-flop and bite neither.
+it flip-flop and bite neither. That comparison sits behind `target_nearest` as well: with that switch
+off, neither of these two paths ever displaces a live target, however much closer the newcomer is —
+the mount stays on what it has until that target dies or becomes off-limits.
 
 **The sweep** is the half vanilla cannot do. It scans out to `max(defend_rider_radius,
 hostile_scan_radius)`, drops a target that has died, become off-limits or left that radius, and
@@ -320,15 +336,23 @@ bites made from under a rider.
 
 Two rows on the right, above the hotbar.
 
-**The armour bar is the important one.** With `battle_dogs` armour the wolf's *health does not move
-at all*: that module absorbs 100 % of the damage and drains one durability point per damage point,
-so durability is the real health pool — and when it runs out the armour breaks,
-`dismount_when_armor_removed` fires and the rider is dropped mid-fight. Ten icons, tinted by tier
-(an explicit dye wins; otherwise the tier is read off the item id, so third-party canine armour gets
-a sane colour for free). Below `armor_warning_threshold` (0.25) the row pulses red on a 900 ms sine
-and the rider gets one action-bar line — once per damage run, not once per frame; the latch re-arms
-when the armour is healthy again or the ride ends. Armour that is absent or undamageable draws
-nothing and consumes no row.
+**The armour bar is the important one.** While the wolf wears vanilla `minecraft:wolf_armor` or
+`battle_dogs` armour its *health does not move at all*: `battle_dogs` armour absorbs 100 % of the
+damage in its own handler and drains one durability point per damage point, and vanilla
+`minecraft:wolf_armor` does the same inside `Wolf.actuallyHurt`, except for the
+`BYPASSES_WOLF_ARMOR` damage types (drowning, suffocation, cramming, magic, wither, freeze,
+starvation and Thorns among them — thirteen in all), which go past vanilla's absorption straight to
+the health bar; `battle_dogs` never consults that tag, so its own armour eats even those. Durability
+is therefore the real health pool, and when it runs out the armour breaks,
+`dismount_when_armor_removed` fires and the rider is dropped mid-fight. Third-party canine armour
+passes the mount gate but has no absorber behind it — `Wolf.hasArmor()` only recognises
+`minecraft:wolf_armor`, and the `battle_dogs` handler only its own item — so for that armour the bar
+is decoration and health is still the real pool. Ten icons, tinted by tier (an explicit dye wins;
+otherwise the tier is read off the item id, so third-party canine armour gets a sane colour for
+free). Below `armor_warning_threshold` (0.25) the row pulses red on a 900 ms sine and the rider gets
+one action-bar line — once per damage run, not once per frame; the latch re-arms when the armour is
+healthy again or the ride ends. Armour that is absent or undamageable draws nothing and consumes no
+row.
 
 **The health row is collapsed.** `Gui.getVehicleMaxHearts` caps at 30 hearts, so a 350 HP wolf fills
 three rows that never visibly move — 30 px of screen spent on a constant. `compact_mount_health`
@@ -336,7 +360,7 @@ cancels vanilla's layer and draws a single ten-heart row showing health as a fra
 and vanilla's rows come back with the armour bar stacked on top of them.
 
 The armour row fills **left to right**, the heart row above it right to left. That mismatch is
-vanilla's: `Gui.renderVehicleHealth` counts `l - l1 * 8 - 9` while the armour bar counts `x + i * 8`,
+vanilla's: `Gui.renderVehicleHealth` counts `l - l1 * 8 - 9` while the armour bar counts `x + k * 8`,
 and the shared `armor_half` sprite is filled on its *left* half. Drawing armour with the heart
 geometry points the half icon's filled side away from the full icons beside it, which reads as a hole
 in the bar.
@@ -418,7 +442,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | The config is a NeoForge **COMMON** config | NeoForge does not sync it, and the client is authoritative for a ridden entity. `enabled` and every `movement.*` key must be identical on client and server: a mismatch either freezes the mount or trips the server's "moved too quickly" check. The `hud` section is the documented exception — it is read client-side only and may differ. |
 | `dismount_when_armor_removed` with `require_body_armor` off | Does nothing. The handler returns early unless **both** are on, whatever `dismount_when_armor_removed` says, and `stillEligible` stops testing for armour as well. The config comment does not mention it. |
-| `hostile_scan_radius`, `target_recheck_ticks`, `attack_creepers` with `defend_rider` or `target_nearest` off | Dead. The sweep runs only when `defend_rider` **and** `target_nearest` are both true, and `attack_creepers` is only ever consulted from the defend and sweep paths. |
+| `hostile_scan_radius`, `target_recheck_ticks` with `defend_rider` or `target_nearest` off | Dead. The sweep is the only thing that reads either of them, and it runs only when `defend_rider` **and** `target_nearest` are both true. |
+| `attack_creepers` with `defend_rider` off | Dead. It is only ever read from the defend paths and the sweep, and the two defend paths are gated on `defend_rider` alone — turning `target_nearest` off silences the sweep but still lets them set a creeper as the target. |
 | `defend_rider_radius` above 16 | An upper bound, not a promise. A wolf's `generic.follow_range` is 16, and while any vanilla target goal is running, `TargetGoal.canContinueToUse` clears a target further away than that on its next tick. Read off vanilla's code, not measured. |
 | Owner immunity with the defaults | Covers every tamed wolf you own at or above `min_scale`, not only the one you are riding — and every tamed wolf you own at all if `require_large_scale` is off. |
 | An **unridden** owned wolf and your sweep | Still receives the harmless 0.4-strength nudge. It takes no damage. Removing the shove would mean mixing into `Player.attack` itself, which is far more invasive than the symptom warrants. |
@@ -426,9 +451,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `rider_reach_bonus` | Applied by `EntityMountEvent` to any player mounting any wolf, eligible or not. Setting it to 0 removes the modifier instead of adding one. |
 | Module disabled | The keybind is registered regardless, so *Mount Wolf* still appears in the Controls screen; and the mixin is still applied, so every wolf in the game answers `instanceof PlayerRideableJumping`. Nothing else runs: `ModuleManager` never initialises a disabled module, the static instance stays null, and `isModuleActive()` is false. |
 | Enabling the module at runtime | Needs a restart: a module that was off at startup was never initialised. Disabling at runtime takes effect immediately instead — every handler and the mixin re-read the config, so a ride in progress stops responding to its rider. |
-| Vanilla wolf armour and the armour bar | The bar shows durability, which is the health pool only for `battle_dogs` armour. Vanilla `minecraft:wolf_armor` goes through vanilla's own absorption, so the wolf's health moves as well. |
+| Vanilla wolf armour and the armour bar | The bar shows durability, which is the real health pool for both of the armours that have an absorber (vanilla's and `battle_dogs`'). `Wolf.actuallyHurt` skips `super.actuallyHurt` outright while `minecraft:wolf_armor` is worn and drains `ceil(damage)` durability instead; `battle_dogs` does the equivalent in its own handler. With vanilla armour the wolf's health still moves for damage tagged `BYPASSES_WOLF_ARMOR` (drowning, suffocation, cramming, magic, wither, freeze, starvation and Thorns among them — thirteen in all); `battle_dogs` never consults that tag, so its armour absorbs even those — either way health moves once the armour has broken. Third-party canine armour has neither absorber, so its durability never moves and the bar above it is decoration. The genuine difference is elsewhere: vanilla's absorption is hard-wired to `Items.WOLF_ARMOR` through `hasArmor()`, which is why `battle_dogs` needs a handler of its own. |
 | Grim Kingdoms | Not required and not integrated. It only supplies a conveniently large wolf; with the default `min_scale` of 2.0 you otherwise have to scale one up yourself. |
-| Testing | This repository has no unit tests, and none of the numbers above were measured in game. Everything on this page is read off the source. |
+| Testing | This repository has no unit tests, and none of the numbers above were measured in game. Everything on this page is read off the source, except three of Sif's attribute values — his attack damage, his armour and his Resistance IV — which were read off his spawn egg in game rather than measured. |
 
 ## Under the hood
 
@@ -492,9 +517,12 @@ wolf's feet for a pose that fits.
 | `RenderGuiLayerEvent.Pre` / `.Post` | game, client | Compact health row, armour row |
 
 **Why the damage hook is `LivingIncomingDamageEvent`.** `battle_dogs` uses `LivingDamageEvent.Pre`,
-which fires far later — past the i-frame bookkeeping, past `setLastHurtByMob`, past armour
-absorption. The two modules compose cleanly precisely because they hook different points of the same
-call: when the immunity cancels, the `battle_dogs` handler is never reached.
+which fires far later — past the i-frame bookkeeping and past armour absorption, from inside
+`LivingEntity.actuallyHurt`. Zeroing the damage there would still not stop the wolf registering its
+owner as an attacker: `hurt()` carries on to `setLastHurtByMob` afterwards whatever the damage ended
+up being, and only cancelling at `LivingIncomingDamageEvent` makes it return false before that line.
+The two modules compose cleanly precisely because they hook different points of the same call: when
+the immunity cancels, the `battle_dogs` handler is never reached.
 
 **The reach modifier** is transient, so it is never written to disk; the worst case for a leaked
 modifier is a single session, and the recheck tick heals it anyway (logout while mounted, dimension

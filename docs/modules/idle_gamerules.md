@@ -88,10 +88,30 @@ protected void tickTime() {
 }
 ```
 
-So redstone, scheduled block ticks, hoppers, furnaces, crops and mob spawning carry on exactly as
-before — in whatever chunks are still loaded, which on an empty vanilla server is the spawn chunks
-and anything force-loaded. Pair the module with a chunk loader and your factory keeps running
-overnight while the sun does not move; that is the intended combination, not an accident.
+So redstone, scheduled block ticks, hoppers and furnaces carry on exactly as before — in whatever
+chunks are still ticking, which on an empty vanilla server is the spawn chunks and anything
+force-loaded. That is a smaller area than it sounds: the spawn-chunk ticket is a `START` ticket of
+radius `spawnChunkRadius` + 1 (3 by default), and `DistanceManager.addRegionTicket` files it at
+chunk level `33 - 3 = 30`, with the level climbing by one per chunk of distance from the centre.
+Block ticking ends at level 32, so of the 7×7 chunks the ticket loads only the inner 5×5 tick
+blocks — the inner 3×3 tick entities on top of that, and the outermost ring is loaded and nothing
+more.
+
+Crops and mob spawning are the exception, and not because of anything this module does: they need
+more than a ticking chunk. `ServerChunkCache` runs natural spawning and `tickChunk` — the random
+ticks — only for a chunk that has a player close enough for spawning **or** a force-*ticking*
+ticket:
+
+```java
+if ((this.level.isNaturalSpawningAllowed(chunkpos)
+            && this.chunkMap.anyPlayerCloseEnoughForSpawning(chunkpos))
+        || this.distanceManager.shouldForceTicks(chunkpos.toLong())) {
+```
+
+With nobody online the player check is false everywhere, and vanilla `/forceload` does not set the
+force-ticks flag either — NeoForge's `forceChunk(..., ticking = true)` does, which is what
+[Stationary Chunk Loader](stationary_chunk_loader.md) uses. Pair the module with a chunk loader of
+that kind and your factory keeps running overnight while the sun does not move.
 
 `doWeatherCycle` is a **freeze, not a clear**. The entire rain/thunder counter block in
 `ServerLevel.advanceWeatherCycle` lives inside the rule:
@@ -129,14 +149,18 @@ backup restore. While the module is installed and enabled that costs nothing —
 the restart sets everything back to `true`.
 
 It becomes permanent the moment the module stops running in that state. Remove the jar, or set
-`enabled = false`, while the server is empty and the world keeps a frozen sun and frozen weather
-with nothing left to undo it. There is no shutdown hook, no `ServerStopping` handler and no
-"restore on disable" path anywhere in the module. Two commands undo it:
+`enabled = false`, while the server is empty and the world keeps a frozen sun, frozen weather — and
+a frozen season clock, if Serene Seasons is in the pack — with nothing left to undo it. There is no
+shutdown hook, no `ServerStopping` handler and no "restore on disable" path anywhere in the module.
+It takes one command per rule in your list — with the defaults, three:
 
 ```
 /gamerule doDaylightCycle true
 /gamerule doWeatherCycle true
+/gamerule doSeasonCycle true
 ```
+
+(No Serene Seasons, no `doSeasonCycle` — that third command just fails, harmlessly.)
 
 ### Rule names are never checked
 
@@ -190,8 +214,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 ## Under the hood
 
 Two files, 62 + 38 lines, plus a 19-line standalone entrypoint. No mixins, no commands, no
-keybinds, no registry entries, no assets, no data files and no lang keys — the module produces no
-player-visible text at all, only the one INFO line per transition.
+keybinds, no registry entries, no assets, no data files and no lang keys — the module brings no
+in-game text of its own beyond the display name that the core prints in `/vpa module status` and the
+comments it writes into the config file. At runtime it produces one INFO line per transition and
+nothing else.
 
 | File | Role |
 |---|---|

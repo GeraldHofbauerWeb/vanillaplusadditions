@@ -31,14 +31,21 @@ Damage and rate stay exactly vanilla: **4 magic damage every 2 seconds, to one m
 is a nuisance to a drowned, not a death ray. What changes is that the nuisance now exists at all,
 and that it covers the water you actually swim in rather than the block you are standing on.
 
-The attack animation works at the new range too — the stream of nautilus particles between conduit
-and victim, which vanilla draws only for targets within 8 blocks.
+The attack animation works at the new range too: the nautilus sparkle that vanilla draws *on the
+victim*, and only for targets within 8 blocks, now appears for far targets as well. There is a catch
+that is not the module's doing — nautilus particles are culled beyond 32 blocks from your camera, so
+you have to be near the mob, not near the conduit, to see it.
 
 ## Why it exists
 
-Both limits sit as literals in `ConduitBlockEntity.updateDestroyTarget`:
+Both limits sit as literals in `ConduitBlockEntity.updateDestroyTarget` (quoted lightly reformatted
+throughout this section — vanilla's generated identifiers shortened, casts dropped, and the leading
+`LivingEntity livingentity = blockEntity.destroyTarget;` snapshot elided: vanilla compares that
+snapshot against the new target at the end of the same method to decide whether to
+`sendBlockUpdated`, which is how the client learns of a new target at all):
 
 ```java
+// ...
 int i = positions.size();
 if (i < 42) {                                   // MIN_KILL_SIZE — a complete frame
     blockEntity.destroyTarget = null;
@@ -131,18 +138,38 @@ anything:
 The whole attack cycle runs on vanilla's clock: `serverTick` does its work when
 `level.getGameTime() % 40 == 0`, so one target decision and one hit per 40 game ticks.
 
-### The particle stream
+### The particle on the victim
 
-The visible attack is a spray of `ParticleTypes.NAUTILUS` spawned in `animationTick` around the
-target's eye position and drifting back toward the conduit. It is drawn only when the **client** has
-resolved `destroyTarget` — and the client only ever receives the target's **UUID** in the block
-entity update packet. It resolves that UUID through `findDestroyTarget`, which looks inside
-`getDestroyRangeAABB(pos)`: the same fixed 8-block box.
+The visible attack is one `ParticleTypes.NAUTILUS` per client tick, spawned in `animationTick` at
+the target's eye position and given a random offset as its speed triple. Nautilus is a
+`FlyTowardsPositionParticle`: it starts at spawn point *plus* offset and interpolates back to the
+spawn point as it ages. The particles therefore start at random points in a box around the mob —
+`(-0.5 + rand) × (3.0 + bbWidth)` per horizontal axis, so about 1.8 blocks to either side of a
+drowned, and `-1.0 + rand × bbHeight` vertically, from one block below the eye up to body height —
+and sink inward **onto its body**: the interpolation target is the eye position, minus a 1.2-block
+droop the particle picks up as it ages. It is a sparkle on the victim, not a link to the conduit —
+the conduit's own sparkle is a separate loop in the same method that flies a particle in from each
+*frame* block, and nothing is ever drawn on the line between conduit and mob.
 
-So without a fourth edit a mob damaged at 30 blocks would take damage in silence, with no particles
-anywhere. The mixin widens that one lookup to `maxHostileRadius()` — the hostile radius at 42
-frames, 48 blocks by default. Because `hostileRadius` only grows with the frame count, that bound
-covers every conduit in the world, whatever size it is.
+The victim particle is drawn only when the **client** has resolved `destroyTarget` — and the client
+only ever receives the target's **UUID** in the block entity update packet. It resolves that UUID
+through `findDestroyTarget`, which looks inside `getDestroyRangeAABB(pos)`: the same fixed 8-block
+box.
+
+So without a fourth edit a mob damaged at 30 blocks would still be hit, and would still make the
+attack sound: `updateDestroyTarget` plays `SoundEvents.CONDUIT_ATTACK_TARGET` at the target's own
+coordinates on every hit, server-side and regardless of what the client resolved — though that is an
+ordinary variable-range sound event, so the server only sends it to players within 16 blocks of the
+mob, and like the sparkle you have to be near the victim rather than at the conduit to notice it.
+Only the sparkle on the mob would be missing — the conduit itself would keep sparkling as usual.
+The mixin widens that one lookup to `maxHostileRadius()` — the hostile radius at 42 frames, 48
+blocks by default. Because `hostileRadius` only grows with the frame count, that bound covers every
+conduit in the world, whatever size it is.
+
+Resolving the target is not the same as seeing it. `ParticleTypes.NAUTILUS` is registered with
+`overrideLimiter = false`, so the client throws away any nautilus particle spawned more than 32
+blocks from the camera. Stand at the conduit and a hit at the default full-frame 48 blocks shows you
+nothing; you have to be near the mob.
 
 The widened box is not a per-tick cost. `updateClientTarget` calls `findDestroyTarget` only when the
 UUID it has is not the one already resolved, and clears the UUID when the lookup comes back empty —

@@ -27,11 +27,13 @@ You build it the way you build a conduit. Block in the middle, 16 frame blocks i
 blocks out. It comes up with the conduit's own activation sound, the cage starts turning, nautilus
 particles drift in from the frame, and every player within 32 blocks has Conduit Power.
 
-Conduit Power on its own is underwater night vision and a mining-speed bonus, which is not much use
-on dry End stone. The reason to build this block is the [End Oxygen](end_oxygen.md) module: with
-`conduit_power_grants_air` left on, Conduit Power refills a player's air every tick in the End. One
-End Conduit therefore turns a patch of End stone into a base you can stand in without a backtank,
-indefinitely and without line of sight to anything.
+Conduit Power on its own is water breathing, underwater night vision and a mining-speed bonus. On
+dry End stone only the mining bonus survives: vanilla consults the water-breathing branch only when
+your head is *not* in air, and the night vision scales with `getWaterVision()`, which is zero out of
+water. Breaking End stone 20% faster is not why you build this block — the reason is the
+[End Oxygen](end_oxygen.md) module: with `conduit_power_grants_air` left on, Conduit Power refills a
+player's air every tick in the End. One End Conduit therefore turns a patch of End stone into a base
+you can stand in without a backtank, indefinitely and without line of sight to anything.
 
 It is crafted from four chorus fruit, four eyes of ender and an ordinary conduit, so a Heart of the
 Sea and its nautilus shells are still the entry price and the End trip comes on top.
@@ -110,7 +112,9 @@ Three things must hold for the block to light up:
 1. at least `min_frames` of the ring's 42 positions carry a frame block (default 16),
 2. `level.dimension() == Level.END`,
 3. the module is enabled — `EndConduitModule.isModuleActive()`, which resolves through the module
-   manager on every call, so `/vpa module disable end_conduit` takes effect at the next check.
+   manager on every call, so `/vpa module disable end_conduit` takes effect at the next check *on the
+   side that ran the command* — `/vpa` is server-side, so on a dedicated server the client keeps its
+   own answer; see the compatibility table.
 
 All three are re-tested **only when `gameTime % 40 == 0`**, so finishing the last frame block, or
 walking back into a chunk, can take up to two seconds to register. Nothing is written to NBT — the
@@ -125,6 +129,7 @@ need no packet; see the compatibility table for what it costs.
 
 ```java
 public static int effectRadius(int frames) {
+    EndConduitModule module = instance;
     int divisor = module != null ? Math.max(1, module.getConfig().getEffectRadiusDivisor()) : 1;
     return Math.max(1, frames / 7 * 16 / divisor);
 }
@@ -255,7 +260,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | **The standalone jar does not work** | `vpa_end_conduit.jar` is built and published, but there is no `standalone/end_conduit/` package in the source tree, so the jar carries no `@Mod` entry point. Nothing constructs `EndConduitModule`, `onInitialize` never runs, no register is ever attached to a mod bus — the jar ships no block, no item and no recipe. Use the bundle. Read off `build.gradle` (the descriptor at line 422, the jar task's `standalone/${entrypointPkg}/**` include) and a `git log` that has never seen that package; not tried in a real instance. |
 | Modded conduit frame blocks | Vanilla asks `isConduitFrame`, which any mod can answer; this module tests a fixed four-block array. A modded block that works in a vanilla conduit frame will not work here. |
 | `enabled = false` is not a content switch | Registration happens before the config spec exists (`ModuleManager.initializeModules` runs at `VanillaPlusAdditions.java:114`, `registerConfig` at `:131`), so `isEnabled()` still falls back to the module default at that point and block, item, block entity type and particle type are **always** registered. Disabling the module stops activation — no Conduit Power, no particles, a dark shell — and stops the recipe injection on the next reload. Placed blocks stay placed, keep dropping themselves, and the item stays in the creative tab. |
-| Toggling at runtime | `/vpa module enable\|disable end_conduit` resolves on every check, so activation follows immediately. The recipe follows only at the next datapack reload. |
+| Toggling at runtime | `/vpa module enable\|disable end_conduit` resolves on every check, so activation follows immediately — **on the server**. The command is a runtime override kept in that JVM's `ModuleManager`, and `/vpa` is registered server-side only, so on a dedicated server the client keeps rendering the conduit active (cage turning, particles) while the server has already stopped granting Conduit Power. In singleplayer both sides share one manager, so there it matches. The recipe follows only at the next datapack reload. |
 | Config is not synced to the client | `min_frames` and the enabled flag live in a **common** config, which is per installation. Both sides evaluate activation for themselves, so a client whose local file disagrees with the server renders the conduit active when it is not, or the other way round. Derived from the code; not reproduced in game. |
 | Break and step particles are white | `models/block/end_conduit.json` carries nothing but `"particle": "minecraft:block/sea_lantern"`. Mining it throws sea-lantern-white particles, not violet ones. The item model does point at our tinted `base` sprite. |
 | It glows in the dark everywhere | `lightLevel` is 15 with no state test — inactive, in the Overworld, in a chest room, it is still a full light source. |
@@ -276,14 +281,14 @@ files — the module is four registrations and a block entity ticker.
 | `modules/end_conduit/client/EndConduitBER` | The placed block, near-verbatim vanilla `ConduitRenderer` |
 | `modules/end_conduit/client/EndConduitItemRenderer` | The inventory item, as the tinted 3D shell |
 | `modules/end_conduit/client/EndConduitTextures` | The six sprite materials |
-| `modules/end_conduit/client/EndConduitClientSetup` | Binds all three of the above |
+| `modules/end_conduit/client/EndConduitClientSetup` | Registers the BER, the `end_nautilus` particle provider and the item renderer (`EndConduitTextures` is read by the renderers, not bound here) |
 
 | Registry | Id |
 |---|---|
 | Block | `vanillaplusadditions:end_conduit` |
 | Item | `vanillaplusadditions:end_conduit` (plain `BlockItem`) |
 | Block entity type | `vanillaplusadditions:end_conduit` |
-| Particle type | `vanillaplusadditions:end_nautilus` (`SimpleParticleType`, limiter off) |
+| Particle type | `vanillaplusadditions:end_nautilus` (`SimpleParticleType`, `overrideLimiter = false` — it respects the client's particle limiter) |
 
 | Event | Bus | Purpose |
 |---|---|---|
@@ -307,8 +312,9 @@ camera, and an inactive conduit draws the shell alone, turned to its last rotati
 `cage`, `wind`, `wind_vertical`, `open_eye`, `closed_eye` — violet and endstone-gold recolours of the
 vanilla conduit's. They sit under `block/`, so the vanilla block atlas stitches them without any
 registration; `EndConduitTextures` only names them. Both wind sprites carry a `.mcmeta` with
-`frametime: 3` over a 32-pixel-high strip. The particle is a seventh tinted sprite,
-`textures/particle/end_nautilus.png`, wired up through `particles/end_nautilus.json`.
+`frametime: 3` and `height: 32` — 32-pixel-high frames down a 64×704 strip, so 22 frames each. The
+particle is a seventh tinted sprite, `textures/particle/end_nautilus.png`, wired up through
+`particles/end_nautilus.json`.
 
 **Version trail.** The module landed in `v1.0.0-beta.46` (`d73a4b0`) as a working but
 vanilla-looking conduit. The tinted block and item textures and the 3D item renderer arrived one day

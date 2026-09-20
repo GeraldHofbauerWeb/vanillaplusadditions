@@ -91,8 +91,13 @@ fails them gets no weapon and no potion effect either.
 | `below_zero` | gold 10, iron 30, leather 10, diamond 30 | gold 10 %, iron 27 %, leather 6.3 %, diamond 17.0 % — **nothing 39.7 %** |
 | `nether_end` | netherite 30 | netherite 30 % — **nothing 70 %** |
 
-Order matters, because of the `break`: moving `leather;20` to the front of the `above_zero` list
-would make leather the most common material by a wide margin and gold nearly extinct.
+Order matters, because of the `break`: the first entry gets its full percentage, every later one
+only what the misses in front of it leave over. Moving `leather;20` to the front of the `above_zero`
+list lifts leather from 16.2 % to 20 % and pushes gold from 10 % to 8 % and chainmail from 9 % to
+7.2 % — leather was already the most common material, and gold barely notices. The **nothing** share
+does not move at all: 64.8 % is the product of the same three misses whatever the order. What
+starves the entries behind it is a big number in front — `leather;90` first leaves gold 1 % and
+chainmail 0.9 %.
 
 ### Armour
 
@@ -135,9 +140,11 @@ remaining 40 — the entries share one 0–99 roll rather than each getting thei
 | `nether_end` | 45 % | 35 % | 20 % | 14 % / 11 % |
 
 **Swords and axes use their own material.** `WEAPON_TYPES` is a genuinely weighted pick — the
-weights are summed and normalised, so as long as the list is non-empty it always returns a material.
-That is the opposite of `GEAR_TYPES`, and only the shipped weights summing to 100 in every zone
-hides the difference: halve them all and the shares stay exactly the same.
+weights are summed and normalised, so as long as the list is non-empty *and* its weights add up to
+more than zero, it always returns a material. Each weight is floored at 0, and a list that sums to
+zero returns nothing at all — the weapon then falls back to the gear material. Otherwise it is the
+opposite of `GEAR_TYPES`, and only the shipped weights summing to 100 in every zone hides the
+difference: halve them all and the shares stay exactly the same.
 
 | Zone | Weapon material |
 |---|---|
@@ -152,10 +159,17 @@ wooden** sword or axe. `bow`, `crossbow` and `trident` are recognised too and ig
 entirely. If the weapon material produces nothing, the code retries once with the gear material
 before giving up.
 
-**A skeleton handed a sword stops being an archer.** Vanilla gives every skeleton a bow in
-`populateDefaultEquipmentSlots`; setting the main hand replaces it, and the module then calls
-`reassessWeaponGoal()`, which swaps the bow goal for the melee goal because the hand no longer holds
-`Items.BOW`. That is the single most noticeable thing this module does.
+**A skeleton handed a sword stops being an archer.** Vanilla gives skeletons, strays and bogged a
+bow in `AbstractSkeleton#populateDefaultEquipmentSlots`; the fourth subclass, wither skeleton,
+overrides it and starts with a stone sword instead. Setting the main hand replaces whatever is
+there, and the module then calls `reassessWeaponGoal()` — redundantly, because
+`AbstractSkeleton#setItemSlot` already fires it on every server-side slot write. Either way the bow
+goal gives way to the melee goal, because `reassessWeaponGoal()` keeps the bow goal only while the
+hand holds a `BowItem`. The `crossbow` and `trident` the weapon randomiser can also hand out are no
+`BowItem`s either — `CrossbowItem` extends `ProjectileWeaponItem`, `TridentItem` plain `Item` — so
+both put the skeleton on the melee goal too, and it could not fire a crossbow in any case:
+`canFireProjectileWeapon` accepts only `Items.BOW`. That is the single most noticeable thing this
+module does.
 
 ### Enchantments
 
@@ -217,11 +231,17 @@ so a piece is never handed out already broken. The weapon takes its remaining du
 remaining durability in percent, and is read **only** inside the weapon branch. The shipped default
 of 100 means the weapon spawns pristine.
 
-Neither number is observable in ordinary play, and this is worth knowing before tuning them:
+Neither number matters nearly as much as it looks, and this is worth knowing before tuning them:
 
-* **Mobs never wear their gear down.** `LivingEntity#hurtArmor` and `#hurtHelmet` are empty bodies;
-  only `Player` overrides them, and `Mob#doHurtTarget` never damages the held item. Armour value
-  does not depend on damage either, so a helmet at 5 % protects exactly as well as a new one.
+* **Mobs barely wear their gear down.** `LivingEntity#hurtArmor` and `#hurtHelmet` are empty bodies
+  and no `Monster` overrides either of them — `Player` overrides both, `Wolf` overrides `hurtArmor`
+  for its `BODY` slot, and that is the whole list. `Mob#doHurtTarget` never damages the held item
+  either. The one exception is `thorns`, which every shipped zone rolls onto all four armour slots:
+  its `POST_ATTACK` effect on the wearer carries `DamageItem(2)`, and `DamageItem#apply` passes the
+  wearer to `hurtAndBreak` only when it is a `ServerPlayer`, otherwise `null` — the durability still
+  comes off, so a thorns piece loses 2 per proc (15 % chance per level) on a mob exactly as on a
+  player. Nothing else touches mob equipment durability. Armour
+  value does not depend on damage, so a helmet at 5 % protects exactly as well as a new one.
 * **Vanilla re-rolls the damage when the piece drops.** In `Mob#dropCustomDeathLoot`:
 
   ```java
@@ -270,11 +290,11 @@ XORed with `0x5EED`. A given mob therefore always produces exactly the same kit,
 happen to share their low UUID bits are twins. There is no per-spawn variation beyond the UUID.
 
 One exception. The four armour-enchantment groups are iterated out of a `Map.of(...)`, whose
-iteration order is explicitly unspecified and which OpenJDK randomises once per JVM start — four
-different orders showed up across eight runs of a four-entry map on the JDK 21 that builds this
-project. All four groups draw from the same stream, so **which rolls land on the helmet and which on
-the boots can change when the server restarts**. The number of draws is the same either way, so the
-levels, durability, effects and weapon enchantments that follow are unaffected.
+iteration order is explicitly unspecified and which OpenJDK randomises once per JVM start, so it can
+come out differently from one server start to the next. All four groups draw from the same stream,
+so **which rolls land on the helmet and which on the boots can change when the server restarts**.
+The number of draws is the same either way, so the levels, durability, effects and weapon
+enchantments that follow are unaffected.
 
 ### Writing a zone list
 
@@ -316,9 +336,10 @@ WEAPON_RANDOMIZER;<mob_id>;<weapon_type>;<chance>      # the one four-part form
 With `debug_logging = ON` — or `AUTO` while `globalDebugLogging` is true — every equipped spawn does
 more than write a log line: it sends a chat message to **all players on the server**, carrying a
 hover tooltip with the full gear list and a click action that runs `/tp @s <x> <y> <z>`. On a
-populated server this is a flood, not a diagnostic. The message itself is German, and it is the only
-player-visible string the module has; there are no lang entries. The `/tp` runs as the clicking
-player, so it needs their own permission for the command.
+populated server this is a flood, not a diagnostic. The chat line is hardcoded German, the hover
+body it describes hardcoded English; the module ships no lang entries at all, so neither can be
+translated. The `/tp` runs as the clicking player, so it needs their own permission for the
+command.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -343,11 +364,11 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Limit | Effect |
 |---|---|
 | `minecraft:shulker` in the default list | A permanent no-op. Only `Monster` subclasses pass the type check, and `Shulker extends AbstractGolem` — it merely *implements* `Enemy`. Verified against the 1.21.1 class files. |
-| Modded and other vanilla mobs | Listing an id does nothing unless that entity extends `net.minecraft.world.entity.monster.Monster`. Animals, golems and most bosses never qualify. Ids are not validated, so a typo or an unloaded mod's id is silently never matched. |
+| Modded and other vanilla mobs | Listing an id does nothing unless that entity extends `net.minecraft.world.entity.monster.Monster`. Animals and golems never qualify; of the bosses only the Ender Dragon is out (`EnderDragon extends Mob`), while the Wither, the Warden and the Elder Guardian are all `Monster` subclasses. Ids are not validated, so a typo or an unloaded mod's id is silently never matched. |
 | `POTION_EFFECTS;haste` | Not a recognised name; it is in all three shipped defaults and does nothing. |
 | Effect strength | Always level I, always `Integer.MAX_VALUE` ticks, always with particles. Neither is configurable. |
-| A bow or crossbow on a non-skeleton | `reassessWeaponGoal()` is only called on `AbstractSkeleton`. Any other mob given a ranged weapon keeps its melee AI and holds the bow without using it. |
-| Armour and weapon durability | Not observable in play — mobs do not wear gear down, and vanilla re-rolls the damage value when the piece drops. See above. |
+| A ranged weapon on a non-skeleton | `reassessWeaponGoal()` is only called on `AbstractSkeleton`, which in the shipped `enabled_mobs` means skeleton, stray and wither skeleton — and even there redundantly, because `AbstractSkeleton#setItemSlot` re-assesses by itself. Only `AbstractSkeleton` re-assesses at all, because its bow goal and melee goal are added and removed once instead of being re-checked. Mobs whose ranged goal tests the held item every time it is evaluated use the weapon anyway: drowned with a trident, pillager with a crossbow, illusioner with a bow. Mobs with no ranged goal at all — zombie, husk, zombified piglin, spider — hold it without using it. |
+| Armour and weapon durability | Barely observable in play — only a `thorns` proc wears a mob's gear down (2 durability, 15 % chance per level), and at the shipped 5–20 % remaining that can break a leather helmet within a few procs; vanilla also re-rolls the damage value when the piece drops. See above. |
 | `max_durability = 1` | `setDamageValue(max - max * percent / 100)` has no clamp and uses integer division. On a wooden sword (59 uses) that is damage 59 — zero remaining. Only the armour path clamps. |
 | Nether and End share one list | `nether_end` covers both, at every height. There is no way to separate them; the TODO in `BetterMobsConfig` says so. Modded dimensions fall into the `above_zero`/`below_zero` split by Y. |
 | `below_zero`'s own config comment | Reads "Configuration for mobs spawned below Y=0 or in the Nether/End". The Nether/End half is wrong — both are routed to `nether_end` first and never reach `below_zero`. |

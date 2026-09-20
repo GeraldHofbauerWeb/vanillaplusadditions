@@ -1,0 +1,36 @@
+{
+ "moduleId": "dispenser_bucket_guard",
+ "claimsChecked": 57,
+ "problems": [
+  {
+   "quote": "powder snow is the one block that always yields:",
+   "issue": "Wrong: powder snow is not the only vanilla `BucketPickup` that always hands out a bucket. `BubbleColumnBlock` implements `BucketPickup` too and its `pickupBlock` unconditionally returns a water bucket (BubbleColumnBlock.java:225-228), exactly like `PowderSnowBlock.pickupBlock` (PowderSnowBlock.java:138-145). The guard is still correct there, but for a reason the page did not give: `BubbleColumnBlock.getFluidState` returns `Fluids.WATER.getSource(false)` (BubbleColumnBlock.java:92-94), so the `state.getFluidState().isSource()` half of `canPickUp` (BucketDispenseGuard.java:102) already covers a bubble column. Powder snow is the one block that yields *without* reporting a fluid source, which is why it needs the explicit `instanceof`. The four vanilla implementations are LiquidBlock, SimpleWaterloggedBlock, PowderSnowBlock and BubbleColumnBlock.",
+   "correction": "\"powder snow is the one block that yields with no fluid source under it, which is what the explicit `instanceof` is for. A bubble column always yields as well, but its `getFluidState` reports a water source, so `isSource()` already covers it:\" — applied.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "That single check routes the empty bucket to the pickup branch and every filled one to the placement branch, modded buckets included.",
+   "issue": "Wrong as a generalisation, in two ways. (a) `wouldSucceed` routes by `bucket.content instanceof FlowingFluid` (BucketDispenseGuard.java:80-82), not by \"empty vs. filled\": a filled `BucketItem` whose content is not a `FlowingFluid` takes the *pickup* branch. Vanilla treats it the same way — `BucketItem.emptyContents` returns false on the identical test before doing anything else (BucketItem.java:109-110) — so the guard still never causes an ejection, but the page's rule does not describe the code. (b) The powder snow bucket is a filled bucket and reaches neither branch: `SolidBucketItem` extends `BlockItem`, not `BucketItem` (SolidBucketItem.java:16), so it falls to the separate branch at BucketDispenseGuard.java:84-86.",
+   "correction": "\"… and every `BucketItem` whose content really flows to the placement branch, modded buckets included. A filled bucket carrying something that is not a `FlowingFluid` takes the pickup branch instead — vanilla's `emptyContents` gives up on the very same test, so that bucket was never going to place anything either.\" — applied; the `SolidBucketItem` case is named in the following paragraph.",
+   "severity": "wrong"
+  },
+  {
+   "quote": "enqueued onto the main thread, because the registry is a plain map filled during class init",
+   "issue": "Misleading on both halves. `DISPENSER_REGISTRY` is not a plain `HashMap` but a fastutil `Object2ObjectOpenHashMap` with a default return value (DispenserBlock.java:51-53), and it is not filled during class initialization: the static initializer only sets `defaultReturnValue(DEFAULT_BEHAVIOR)`, while every entry is put by `DispenseItemBehavior.bootStrap()` (DispenseItemBehavior.java:72ff), which `Bootstrap.bootStrap()` calls (Bootstrap.java:54). The conclusion is right, but the reason that carries it is that the map is non-concurrent while common-setup listeners run on the parallel mod-loading threads — not when it was filled. (The module's own comment, DispenserBucketGuardModule.java:47-49, and CHANGELOG.md:234-235 carry the same imprecision; the Java was left untouched.)",
+   "correction": "\"… because the registry is a plain, non-concurrent map (a fastutil `Object2ObjectOpenHashMap`) that vanilla fills during `Bootstrap.bootStrap()`, while common setup itself runs on the parallel mod-loading threads …\" — applied.",
+   "severity": "misleading"
+  },
+  {
+   "quote": "**Everything unknown delegates.** A `SolidBucketItem` needs plain air (`isEmptyBlock`); any other item the wrapper cannot model returns \"would succeed\"",
+   "issue": "Incomplete: the prediction is `level.isInWorldBounds(front) && level.isEmptyBlock(front)` (BucketDispenseGuard.java:85), two checks, not one. That pair is not decoration — it is verbatim the condition in `SolidBucketItem.emptyContents` (SolidBucketItem.java:53), which is the whole point of the mirror. A reader comparing the page against the method would find a check the page does not mention.",
+   "correction": "\"A `SolidBucketItem` — the powder snow bucket — needs plain air inside the world bounds (`isInWorldBounds` + `isEmptyBlock`), the same pair its own `emptyContents` checks; …\" — applied.",
+   "severity": "style"
+  },
+  {
+   "quote": "## Compatibility and known limits",
+   "issue": "The table misses the limit that follows straight from the install path: `installGuards` runs exactly once, from the `FMLCommonSetupEvent` listener registered in `onInitialize` (DispenserBucketGuardModule.java:50, 80-96), and nothing ever re-scans `DISPENSER_REGISTRY`. A mod that calls `DispenserBlock.registerBehavior` for a bucket after common setup — or that overwrites a wrapped entry later — is not guarded, and the page's own claim that wrapping \"keeps whatever another mod registered for the same item\" only holds for registrations that already exist at that moment. The table already lists two narrower prediction gaps, so the reader is entitled to this one.",
+   "correction": "Added one row: \"| A bucket behaviour registered *after* common setup | Never wrapped. `installGuards` runs once, from the `FMLCommonSetupEvent` listener, and nothing re-scans the registry afterwards — that bucket keeps vanilla's ejection. |\" — applied.",
+   "severity": "misleading"
+  }
+ ]
+}

@@ -60,11 +60,12 @@ if (!blockstate.isPathfindable(PathComputationType.LAND)) {
 }
 ```
 
-`BLOCKED` carries a malus of `-1.0F`, and `findAcceptedNode` only creates a node where the malus is
-`>= 0`. The cell is therefore not merely expensive — it does not exist for the A\* search at all, so
-no malus or step-height tuning on the mob reaches it. `getPathTypeOfMob` widens the damage for
-anything taller than one block: it scans the whole mob bounding box, and the first cell with a
-negative malus is returned as the type of the entire node.
+`BLOCKED` carries a malus of `-1.0F`, and `findAcceptedNode` only creates a node where
+`mob.getPathfindingMalus(type)` is `>= 0`. That malus is a per-mob value and can be overridden, but
+no vanilla mob overrides it for `BLOCKED`, so the cell is not merely expensive — it does not exist
+for the A\* search at all. `getPathTypeOfMob` widens the damage for anything taller than one block:
+it scans the whole mob bounding box, and the first cell with a negative malus is returned as the type
+of the entire node.
 
 For two of the four cases Create's `false` is in fact right, and the module keeps it:
 
@@ -81,9 +82,11 @@ them `false`.
 
 ### What gets handed back
 
-`BlockStateBaseCopycatMixin` injects at HEAD of `BlockBehaviour.BlockStateBase.isPathfindable` and,
-where it answers at all, answers with vanilla's own expression from that same method — copied, not
-approximated:
+`BlockStateBaseCopycatMixin` injects at HEAD of `BlockBehaviour.BlockStateBase.isPathfindable`,
+which does nothing but delegate to the block. Where the mixin answers at all, it answers with
+vanilla's own expressions from the block-level default
+`BlockBehaviour.isPathfindable(BlockState, PathComputationType)` — the very implementation Create
+overrides — copied, not approximated:
 
 | Block | `LAND` | `WATER` | `AIR` |
 |---|---|---|---|
@@ -124,9 +127,18 @@ return fromPlate == step || toPlate == step.getOpposite();
 ```
 
 A straight move costs exactly two block lookups no matter how many axes change, because both plate
-faces are fetched once and then tested per axis. The diagonal variant checks all three legs — root to
-x-neighbour, root to z-neighbour, and root to the diagonal cell `(xNode.x, root.y, zNode.z)` — which
-is the cell vanilla actually produces, since `findAcceptedNode` only ever shifts a node in y.
+faces are fetched once and then tested per axis. The diagonal variant checks three legs — root to the
+one neighbour, root to the other, and root to `(xNode.x, root.y, zNode.z)`.
+
+That third leg reaches the actual diagonal cell for only half of the diagonals. Vanilla calls
+`isDiagonalValid(node, reusableNeighbors[dir], reusableNeighbors[dir.getClockWise()])`, so the pairs
+handed in are (north, east), (east, south), (south, west) and (west, north) — the parameter named
+`xNode` is *not* always the x-axis neighbour. For (east, south) and (west, north) the expression is
+the diagonal cell; for (north, east) and (south, west) it collapses to `root` itself, every delta is
+then zero and `crosses` answers false, so that leg does nothing. The two straight legs are checked
+for all four diagonals, the cell itself only for two of them — see the limits table below. (Within a
+leg the x and z coordinates are the ones vanilla produces: `findAcceptedNode` only ever shifts a node
+in y.)
 
 Both checks are injected at `RETURN` of `WalkNodeEvaluator.isNeighborValid` and
 `isDiagonalValid(Node, Node, Node)` and act only on a `true` return, so they can only ever remove a
@@ -197,9 +209,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Pure water mobs | Fish, dolphins and guardians use `SwimNodeEvaluator`, whose `isNodeValid(Node)` sees only the neighbour and no source node. They get the waterlogged fix but no direction awareness, and swim straight through a plate. |
 | Flying mobs | Parrots, bees and allays go through `FlyNodeEvaluator.isOpen(Node)` — same shape, same limitation. |
 | Jump and fall diagonals | Checked between source and target cell only, never for the cells passed on the way: `crosses` looks at the sign of the y delta, not at its size. In practice the mob lands on the plate a little earlier. |
+| North-east and south-west diagonals | Only the two straight legs are checked there, because `blocksDiagonal`'s third leg collapses to `root` for those two neighbour pairs (see above). A plate sitting in the diagonal cell itself is not seen, so a mob can still be routed diagonally into it. The other two diagonals are covered. |
 | Ceiling panels and tall mobs | The cell becomes walkable although a mob two blocks high does not quite fit under the plate. Irrelevant for cats and axolotls. |
 | Floor panel on a damaging block | Vanilla gives an *open* cell above magma, fire or a lit campfire `DAMAGE_FIRE` from the switch over the cell below. The promotion here only excludes `OPEN`/`WATER`/`LAVA`/`WALKABLE` and then calls `checkNeighbourBlocks`, whose 3×3×3 scan deliberately skips the column directly below, so a floor panel laid on magma reads as ordinary walkable ground. Read off the source; nothing in this repository tests it. |
-| `create:copycat_bars` | Not a copycat block at all — it is registered as a plain `WrenchableDirectionalBlock`, never overrode `isPathfindable`, and is already passable. Untouched. |
+| `create:copycat_bars` | Not a copycat block at all — a plain `WrenchableDirectionalBlock` that overrides neither `isPathfindable` nor its shape, so it keeps the default full collision cube and vanilla answers `BLOCKED` for it on its own. That is the correct answer here: the block is solid, mobs cannot pass it physically either. It also carries no block item — the builder chain never calls `.item()` and its loot table drops `minecraft:air` — and the only place Create's own code touches it is `CopycatPanelModel`, which borrows its default state to draw a panel filled with iron bars. Untouched. |
 | Create's orientation convention changes | The self-check disables every panel fix and logs a `WARN`. Note the asymmetry: only the *panel* reference is nulled, so the `water_pathfinding` repair for `copycat_step` keeps running while the waterlogged-*panel* half goes silent with it. |
 | Registry lookup fails | `ensureResolved` sets its `resolved` flag before the lookups, so any failure inside leaves both references `null` and the module inert for the rest of the session. Fail-safe, but entirely silent — only the orientation mismatch above logs anything. |
 | No Create | Both references stay `null`, all three hooks fall through on the first comparison, and the jar loads and runs inert. The bundle declares Create as `type="optional"`; the generated standalone `vpa_copycat_pathfinding` declares no Create dependency at all. |

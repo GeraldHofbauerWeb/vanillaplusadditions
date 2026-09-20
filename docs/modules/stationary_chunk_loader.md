@@ -35,9 +35,9 @@ that switches the machine.
 </table>
 
 **The redstone signal is not optional.** An anchor with no signal is an ordinary decorative block: it
-loads nothing, and it is not even written to the save file. Any vanilla-style signal does — a lever,
-a comparator, a Create Redstone Link receiver — because the block only ever asks
-`level.hasNeighborSignal(pos)`.
+loads nothing, and its position never enters the module's list of anchors — the chunk-loading
+machinery never hears about it. Any vanilla-style signal does — a lever, a comparator, a Create
+Redstone Link receiver — because the block only ever asks `level.hasNeighborSignal(pos)`.
 
 The second condition is easy to miss: by default the whole system only runs **while at least one
 player is online**, anywhere on the server. Log off for the night and every anchor in every dimension
@@ -61,7 +61,9 @@ The player gate is deliberately blunt: it counts players on the server
 (`server.getPlayerList().getPlayerCount() > 0`) and asks nothing about dimensions or distance. An
 anchor in the Nether keeps loading while its owner is in the Overworld, and stops when the last
 person leaves the server. Set the key to `false` and the anchors run on an empty server as well —
-which is the point for an overnight farm, and the reason the key exists.
+which is the point for an overnight farm, and the reason the key exists. On a dedicated server that
+is the whole story; in single-player the same key has a sting in the tail, which the limits table
+below spells out.
 
 ### The radius counts chunks, not blocks
 
@@ -96,9 +98,9 @@ takes effect on the next release/resume cycle, of which there are three:
 
 ### Pause, resume and restart
 
-Nothing about the chunk tickets survives on its own. The module registers its ticket controller with
-a validation callback that **drops every block ticket it owns whenever a world loads**, and rebuilds
-the whole set from persistent data instead:
+No chunk ticket is trusted across a world load. NeoForge would reinstate the ones it persisted, but
+the module registers its ticket controller with a validation callback that **drops every block ticket
+it owns whenever a world loads**, and rebuilds the whole set from persistent data instead:
 
 ```java
 (level, helper) -> new ArrayList<>(helper.getBlockTickets().keySet())
@@ -127,11 +129,13 @@ every Chunk Anchor within 8 chunks draws the area it forces as a box: **green** 
 **grey** while it has no signal. The box is 24 blocks tall above and below the anchor rather than a
 full chunk column, which keeps it readable indoors.
 
-Two caveats. The box is drawn from the **client's** `chunk_load_radius`, and the config is not synced —
+Three caveats. The box is drawn from the **client's** `chunk_load_radius`, and the config is not synced —
 on a server whose value differs, the drawn square is the wrong size and the server's value is the one
-that counts. And the search behind it is brute force: every 20 ticks it walks all non-air sections of
+that counts. The search behind it is brute force: every 20 ticks it walks all non-air sections of
 a 17×17 chunk area block by block — up to some 28 million block-state reads, once a second. It only
-runs while the overlay is actually on, but it is not free.
+runs while the overlay is actually on, but it is not free. And the renderer keeps both its last scan
+time and its last result across a world change, so joining a world whose game time is lower than that
+of the one you left leaves the old world's boxes on screen until the new clock passes that timestamp.
 
 ## Items, blocks and recipes
 
@@ -172,15 +176,16 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| No redstone signal | The anchor does nothing at all and is not persisted. Its own module javadoc says "permanently keeps the chunk it stands in loaded" and forgets to mention this; the block's javadoc and the README get it right. |
+| No redstone signal | The anchor does nothing at all and its position never enters the saved anchor set. Its own module javadoc says "permanently keeps the chunk it stands in (plus a configurable radius) loaded" and forgets to mention the signal, and the README does not mention it either; the block's javadoc spells it out, as do the manager's and the border renderer's. The module-level description omits it, and `ChunkAnchorData`'s javadoc goes further and contradicts it, claiming an anchor "keeps its chunk loaded until the block is broken" when losing the signal releases it too. |
 | Empty server | With the default `only_while_players_online = true`, every anchor pauses when the last player logs out. Overnight production needs `false`. |
+| `only_while_players_online = false` in single-player | The gate is a plain field on the module object, and that object lives as long as the game process does. With the key off the gate is permanently on, so the transition that calls `resume` can fire only once per launch: open another world — or the same one again — without quitting the game and its stored anchors are never re-forced, until each one is unpowered and powered again. Only restarting the game clears the flag; a dedicated server starts a fresh process with the world and is unaffected. |
 | `chunk_load_radius` edited at runtime | Anchors already loading keep the radius they were forced with. Needs a release/resume cycle — see above. |
 | A stale entry in the saved data | Force-loads chunks forever, invisibly. No command lists or clears them; the file has to be removed by hand. |
 | Turning the module off | Block *and* item are only registered for an enabled module, so a world built with anchors meets unknown block ids on the next load. Use redstone to switch an anchor off, not the config. |
 | Two anchors with overlapping areas | Each anchor owns its own tickets (the owner is the anchor's block position), so switching one off releases only its own chunks; the overlap stays loaded for the other one. |
 | The overlay without `debug_overlay` | The border renderer plugs into that module's framework, which is why the standalone jar hard-requires `vpa_debug_overlay`. The force-loading itself never touches it. |
 | The overlay without Create | The goggles check falls back to the `vanillaplusadditions:arm_goggles` item tag on the head slot (Create: Aeronautics' aviator's goggles), and in a standalone install that tag ships only with `vpa_arm_target_overlay`. Chunk loading is unaffected — this module holds no Create reference and no compile dependency on it. |
-| A dimension unloading | In-memory tracking for that level is dropped without releasing; the tickets die with the level. The saved set is untouched, so the anchors come back on the next resume. |
+| A dimension unloading | In-memory tracking for that level is dropped without releasing. The tickets themselves were persisted by NeoForge in the level's own forced-chunk data and are handed back when the level loads again — where the validation callback above drops them. The saved anchor set is untouched, but nothing re-forces it at load time: the module has no `LevelEvent.Load` handler, so a dimension that comes back mid-session stays unanchored until the next player-gate transition or a server restart. |
 | A ticking ticket is not a player | The module asks the chunk system to load and tick an area. Whatever a given farm needs beyond that is outside its reach. <!-- TODO: exactly which vanilla systems (mob spawning, spawn-eligibility) a forced ticking chunk does and does not cover cannot be proven from this repository --> |
 | Bundle vs. standalone | The jar is `vpa_stationary_chunk_loader` ("Vanilla Plus: Chunk Anchor") and needs `vpa_core` **and** `vpa_debug_overlay`; it is declared incompatible with the all-in-one bundle, where `debug_overlay` sits in the same jar anyway. |
 
@@ -228,6 +233,12 @@ item model, one texture and a single lang key (`block.vanillaplusadditions.chunk
 which live in `vpa_core` for a standalone install. The block's javadoc promises the active state
 "shows a red glowing centre" — the red is real, the glow is not: the powered model is a plain
 `cube_bottom_top` with no emissive flag, and the block sets no light level.
+
+**Two more stale comments.** `StationaryChunkLoaderManager.forgetLevel` says the tickets "vanish with
+the level" — they do not; NeoForge has already written them into the level's own forced-chunk data,
+and it is the module's own validation callback that removes them at the next load. And
+`ChunkAnchorData`'s javadoc says an anchor "keeps its chunk loaded until the block is broken" — it
+also stops the moment the redstone signal drops.
 
 **Testing.** This repository has no unit tests, and nothing here records a runtime test of this
 module. Its whole directory was written in one commit and never touched again.

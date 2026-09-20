@@ -62,10 +62,11 @@ Two consequences follow from that, and they are the two things people trip over:
   `isModuleEnabled()`, but that gate is only ever evaluated during mod loading. A runtime override
   set afterwards arrives too late, in both directions.
 
-The handler subscribes at `EventPriority.LOWEST`, the priority NeoForge's own javadoc on this event
-recommends for a listener that cares what the other mods did. `event.modify` writes its patch
-straight into the item, so running last means that where two mods set the same item's
-`MAX_STACK_SIZE`, this module's value is the one left standing.
+The handler subscribes at `EventPriority.LOWEST`. NeoForge's javadoc recommends that priority on
+`modifyMatching`, for a listener that patches items based on their *current* default components;
+this module does not — it calls `event.modify` with an absolute value. Running last still buys it
+the last word: `event.modify` writes its patch straight into the item, so where two mods set the
+same item's `MAX_STACK_SIZE`, this module's value is the one left standing.
 
 ### The four potion items
 
@@ -113,14 +114,15 @@ try {
 
 A malformed entry is dropped **without a log line of any kind**, at any log level. An entry that
 parses but names an item no mod registered is dropped too, this time with a `warn` — but only when
-`debug_logging` is on, so by default that is silent as well. A typo in the config looks exactly like
-a working config.
+`debug_logging` is on, so by default that is silent as well. A typo that gets *past* the validator —
+`a:b:c:64` is the realistic case — looks exactly like a working config.
 
 ### What actually changes
 
 Ids and stack sizes below were read out of the jars this pack is built against — vanilla 1.21.1, and
-`libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` and `libs/create-1.21.1-6.0.9.jar`. All eighteen
-shipped entries resolve to real items.
+`libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` and `libs/create-1.21.1-6.0.9.jar`. That Create jar
+is the compile-time one; the played pack runs 6.0.10, which is the version the table at the top
+names — `builders_tea` is `stacksTo(16)` in both. All eighteen shipped entries resolve to real items.
 
 | Entry | Default without this module | With it |
 |---|---|---|
@@ -202,8 +204,13 @@ The config spec and the runtime parser apply different rules to the same string.
 | `minecraft:egg:0` / `:999` | **rejected** — the validator requires 1 ≤ n ≤ 64 | any `int` accepted |
 
 The validator is the stricter of the two and runs first, so the loose cases in the right-hand column
-cannot normally be reached. What NeoForge does with an element its spec rejects — drop that entry or
-reset the whole list to the default — is not visible from this repository.
+cannot normally be reached. What NeoForge does with an element its spec rejects is drop that one
+entry: `defineList` corrects the list with `list.removeIf(elementValidator.negate())`, and falls back
+to the whole default list only if the value is not a list at all, or if the removal leaves it empty —
+the overload this config uses passes `ListValueSpec.NON_EMPTY` as the allowed size range. One bad
+line costs you that line; a list in which every line is bad costs you the list. The correction is not
+silent: FML logs `Configuration file … is not correct. Correcting` at WARN, backs the file up and
+writes it back without the rejected line.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -226,7 +233,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Config edited while the game runs | No effect until restart. The event that does the patching fires once during mod loading. |
 | `/vpa module enable\|disable stackables` | Same — the enabled check happens during mod loading, so a runtime override never reaches this module. |
 | Tough As Nails or Create absent | Their entries find no item in the registry and are skipped. A `warn` is logged, but only with `debug_logging` on. Nothing else changes. |
-| A typo in `stackable_items` | Dropped without any log line at all. The config spec catches most malformed entries first, but a well-formed id that no mod provides is only reported with debug logging on. |
+| A typo in `stackable_items` | Entries the config spec rejects are removed with a WARN and a config backup; the ones that slip past it are dropped by the parser without any log line at all. A well-formed id that no mod provides is only reported with debug logging on. |
 | New Tough As Nails items | Not picked up automatically. The auto-detection is dead code — add the id to the list by hand. |
 | `default_potion_stack_size = 1` | Yields 2, not 1. Use `enabled = false` to get vanilla's unstackable potions back. |
 | Lowering `default_potion_stack_size` | Also lowers tipped arrows, which vanilla already stacks to 64. |
@@ -275,17 +282,19 @@ place where the number **16** still appears — three of the four construct
 `new Item.Properties().stacksTo(16)` — which is where the old README's "default 16" came from. The
 live default has been 64 since `v0.9.3`.
 
-**Logging.** Almost every line in the module is gated on `shouldDebugLog()`. Three are not: the two
-failure paths (`Failed to patch potion default components` at WARN, `✗ Failed to patch {}` at ERROR)
-and, in `StackablesConfig.onConfigLoad`, an unconditional INFO line —
+**Logging.** Almost every line in the module is gated on `shouldDebugLog()`. Four are not, and all
+four log at INFO or above: the mod-event-bus fallback in `onInitialize` and `Failed to patch potion
+default components`, both at WARN, `✗ Failed to patch {}` at ERROR, and, in
+`StackablesConfig.onConfigLoad`, an unconditional INFO line —
 
 ```
 StackablesConfig loaded - potion stack size: 64, stackable items count: 18
 ```
 
-Both config getters also fall back to the hardcoded defaults (`DEFAULT_STACKABLES` and 64) if the
-`ConfigValue` is still null or throws, with a debug-level note, so the module patches something
-sensible even if it runs before the config file is read.
+Both config getters also fall back to the hardcoded defaults (`DEFAULT_STACKABLES` and 64):
+silently while the `ConfigValue` field is still null, and — when `get()` throws — with a debug-level
+note that is itself ungated, so it prints whenever the log level allows it, `debug_logging` or not.
+Either way the module patches something sensible even if it runs before the config file is read.
 
 **Standalone jar.** `vpa_stackables` carries no mixins and no data files; its generated
 `neoforge.mods.toml` declares only `vpa_core`, `neoforge` and `minecraft` as required, plus the

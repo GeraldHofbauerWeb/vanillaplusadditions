@@ -54,8 +54,10 @@ whole numbers and never the fractional death position.
 
 The finished component is sent once per online player with `ServerPlayer.sendSystemMessage`, then a
 copy goes to `MinecraftServer.sendSystemMessage`, which puts the same line in the console and the
-server log. There is no receiver-side filter of any kind: everyone online sees every death, in every
-dimension, at any distance.
+server log. The module applies no receiver-side filter: everyone online sees every death, in every
+dimension, at any distance. Vanilla applies one, though — `ServerPlayer.sendSystemMessage(Component)`
+passes `bypassHiddenChat = false`, and a player whose chat visibility is `HIDDEN` is dropped before
+the line reaches them.
 
 **It is a second line, not a replacement.** Nothing here touches vanilla's own death message, and
 nothing reads the `showDeathMessages` gamerule. Both lines therefore normally appear, and the
@@ -64,9 +66,9 @@ coordinate line still appears when `showDeathMessages` is off. The order is fixe
 before vanilla broadcasts anything —
 
 ```java
-public void die(DamageSource p_9035_) {
+public void die(DamageSource cause) {
     this.gameEvent(GameEvent.ENTITY_DIE);
-    if (net.neoforged.neoforge.common.CommonHooks.onLivingDeath(this, p_9035_)) return;
+    if (net.neoforged.neoforge.common.CommonHooks.onLivingDeath(this, cause)) return;
     boolean flag = this.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES);
 ```
 
@@ -109,11 +111,24 @@ coordinates — the children carry their own colours but inherit the click and h
 
 `/execute in <dimension>` is what makes the teleport cross dimensions; `/tp` alone cannot. The
 dimension in the command is the raw id (`minecraft:the_nether`), deliberately, because that is what
-`/execute in` expects — the readable name is display only. The coordinates go in raw as well, so the
-teleport lands on the block corner and puts you wherever the death was, lava and void included.
+`/execute in` expects — the readable name is display only. The coordinates go in as plain integers,
+which `/tp` then centre-corrects itself: it parses its position with `Vec3Argument.vec3()`, and an
+**absolute** argument written without a decimal point gets `+0.5` on the horizontal axes only — a
+`~`-relative coordinate is never centre-corrected. So `tp @s 112 63 -408` lands at X=112.5, Y=63.0,
+Z=-407.5 — the middle of the death block, standing on its floor. Nothing makes that spot *safe*,
+though: it puts you wherever the death was, lava and void included.
 
-The `@s` in the `tp` is load-bearing. It was `@p` until `v0.13.4`, which meant clicking teleported
-whichever player happened to be nearest to the clicker instead of the clicker themselves.
+The `@s` is load-bearing in both places. Until `v0.13.4` the command read
+`/execute in %s as @p run tp @p %d %d %d`. A bare `@p` is not limited to one dimension — a selector
+only becomes world-limited when it carries a `distance`, `x`/`y`/`z` or `dx`/`dy`/`dz` option — so it
+ranked *every* online player by raw distance to the command source's position, and `as` swaps the
+executing entity without moving that position, so both `@p` resolved to the same player. What
+`in <dimension>` changes is the position itself: `CommandSourceStack.withLevel` leaves it alone when
+the dimension is the same, and otherwise scales X and Z by the teleportation scale — a division by 8
+on the way into the Nether. A clicker already in the death dimension therefore sat at distance zero
+from their own position and got themselves, so the command usually did the right thing; clicking from
+elsewhere moved the reference point, and whichever player happened to be numerically closest to it
+was teleported instead.
 
 ### Dimension names
 
@@ -187,7 +202,8 @@ line per player death rather than a DEBUG one. `onCommonSetup` uses `.debug()` c
 **Standalone jar.** `vpa_death_coordinates` is `vpa_core` plus this one class: no mixins, no data
 globs, no module dependencies. Entry point
 `standalone/death_coordinates/DeathCoordinatesStandalone`, `@Mod("vpa_death_coordinates")`. In the
-bundle it is registered at `VanillaPlusAdditions.java:156`; nothing else in `src/` references it.
+bundle it is registered at `VanillaPlusAdditions.java:160`; apart from that and the standalone entry
+point, nothing in `src/` references it.
 
 ## See also
 

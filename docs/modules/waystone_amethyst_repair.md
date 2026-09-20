@@ -11,7 +11,7 @@
 | **Side** | Server only |
 | **Requires** | — |
 | **Works with** | [Waystones](https://modrinth.com/mod/waystones) <sub>tested 21.1.41</sub> |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_waystone_amethyst_repair.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_waystone_amethyst_repair.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.waystone_amethyst_repair]` |
 | **Since** | `v1.0.0-beta.33` |
 <!-- vpa:meta:end -->
@@ -131,8 +131,10 @@ if (this.cost.get() >= 40 && !this.player.getAbilities().instabuild) {
 ```
 
 None of that runs here. Handing the event a non-empty output makes NeoForge's hook write the result
-and return `false`, which ends `createResult` on the spot — so the prior-work sum, the 40-level wall
-and the penalty bump at the bottom of the method are all skipped for this combination.
+and return `false`, which ends `createResult` on the spot — everything quoted above sits below that
+return. The prior-work sum is still added up (the hook receives it as the base cost), but it never
+reaches the price, and the 40-level wall and the penalty bump at the bottom of the method are
+skipped along with it.
 
 The practical consequences:
 
@@ -161,8 +163,9 @@ rename. Repair in one anvil operation, rename in the next.
 
 ### Live configuration
 
-All three keys are resolved lazily and cached against the config value they were parsed from, so a
-changed id takes effect on the next anvil update without a restart:
+The two id keys are resolved lazily and cached against the config value they were parsed from;
+`repair_percent_per_unit` is simply read from the config on every repair. All three therefore take
+effect on the next anvil update, without a restart:
 
 * `target_item` is re-parsed only when the string stops equalling the cached one. An id that does not
   parse, or that is not installed, leaves the target `null` and the module inert — no error, no crash.
@@ -170,8 +173,10 @@ changed id takes effect on the next anvil update without a restart:
   trimmed, resolved through `BuiltInRegistries.ITEM.containsKey`, and skipped individually when the
   item is not installed. Every accepted material repairs at the same rate; there is no per-material
   weighting.
+* `repair_percent_per_unit` gets neither resolution nor cache: `applyRepair` reads it from the
+  config every time it computes `perUnit`, so a new percentage applies to the very next repair.
 
-Both failure paths log one line each, and only with `debug_logging` on.
+Both id failure paths log one line each, and only with `debug_logging` on.
 
 One small asymmetry: material entries are trimmed before parsing, the target id is not. Neither can
 be reached with stray whitespace in practice, because both config validators already reject anything
@@ -180,7 +185,7 @@ be reached with stray whitespace in practice, because both config validators alr
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.waystone_amethyst_repair]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.waystone_amethyst_repair]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_waystone_amethyst_repair-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -195,32 +200,39 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| No Waystones installed | The handler is registered anyway — there is no `ModList.isLoaded` check and no `shouldInitialize` gate. `waystones:warp_stone` fails `containsKey`, the target stays `null`, and the module is inert. Nothing breaks, and `target_item` can be pointed at any other installed damageable item instead. |
+| No Waystones installed | The handler is registered anyway — there is no `ModList.isLoaded("waystones")` check and no `shouldInitialize` gate (the module's only `ModList` call asks after the sibling `vpa_free_anvil_repair` jar, not after Waystones). `waystones:warp_stone` fails `containsKey`, the target stays `null`, and the module is inert. Nothing breaks, and `target_item` can be pointed at any other installed damageable item instead. |
 | Waystones' `teleports.enableDurability = false` | The Warp Stone never takes damage, so gate 3 never passes and there is never anything to repair. |
-| Bundle only | This module has no standalone jar and no entry in `build.gradle`'s `standaloneModules`. It ships inside `vanillaplusadditions` alone. |
+| Standalone jar | `vpa_waystone_amethyst_repair` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. Run that way, `ModuleManager` has no modules registered at all — `StandaloneModuleBootstrap` skips it deliberately — so the free-price check falls back to `ModList.isLoaded("vpa_free_anvil_repair")`, which sees that jar's presence and not its `enabled` flag. That is a real trap: install the jar and then set its `enabled = false`, and this module still prices the repair at 0 while Free Anvil Repair's mixin — which reads its own live config — refuses the pickup, leaving a result the player can see but not take. |
 | Repair and rename in one click | No output at all, not merely a priced one — see above. |
 | JEI / EMI | The module has no JEI plugin, and JEI's anvil list is a hardcoded vanilla one that cannot discover a code-only repair. Warp Stone plus amethyst appears in no recipe viewer; the only place it is written down is this page. |
-| Module disabled at startup | `ModuleManager.initializeModules` only calls `initialize()` for modules that were enabled when the config was first read, and only `onInitialize` registers the handler. Enabling the module at runtime therefore needs a restart. Turning it **off** works immediately, because `isModuleEnabled()` is re-checked on every event. |
+| Module disabled at startup | `ModuleManager.initializeModules` only calls `initialize()` for modules that were enabled when the config was first read, and only `onInitialize` registers the handler. Enabling the module at runtime therefore needs a restart — in the bundle. The standalone jar does not have this asymmetry: `StandaloneModuleBootstrap` initializes the module unconditionally, so the handler is always registered and both directions take effect on the next anvil update. Turning it **off** works immediately either way, because `isModuleEnabled()` is re-checked on every event. |
 | `free_anvil_repair` switched off by editing the config file while the game runs | The zero-cost path and the pickup permission read different sources — see *Under the hood*. The window is an anvil result priced at 0 that the player cannot take out. A `/vpa` runtime override moves both together and is the safe way to toggle. Derived from the code paths; not reproduced in game. |
 | `waystones:warp_stone=minecraft:amethyst_shard` added to `free_anvil_repair`'s `extra_repair_materials` | Both modules then claim the same combination and neither inspects the event's existing output, so whichever handler runs last wins. That order is not readable from the source (see below). With the default configs there is no overlap. |
 | Tests | This repository has no unit tests. Everything here is read off the module source, the decompiled 1.21.1 `AnvilMenu` and NeoForge 21.0.167's `CommonHooks`, plus the Waystones jar named above. |
 
 ## Under the hood
 
-Two files, 259 lines together. No registries, no items, no blocks, no commands, no keybinds, no
-network payloads, no mixin, no lang keys, no datapack files.
+Two files, 281 lines together, plus a 30-line `@Mod` entrypoint for the standalone jar. No
+registries, no items, no blocks, no commands, no keybinds, no network payloads, no mixin, no lang
+keys, no datapack files.
 
 | File | Role |
 |---|---|
 | `modules/waystone_amethyst_repair/WaystoneAmethystRepairModule.java` | the one event handler, the arithmetic and the id resolution |
 | `modules/waystone_amethyst_repair/config/WaystoneAmethystRepairConfig.java` | the three keys and their validators |
 
-`onInitialize` does nothing but `NeoForge.EVENT_BUS.register(this)`. `AnvilUpdateEvent` is the
-module's only subscription, at default priority.
+`onInitialize` does nothing but `NeoForge.EVENT_BUS.register(this)` and one info log line.
+`AnvilUpdateEvent` is the module's only subscription, at default priority.
 
-**Why a non-empty output wins.** NeoForge's hook is the first thing `createResult` does:
+**Why a non-empty output wins.** `createResult` asks NeoForge before it decides anything itself: it
+reads the left slot, sets `cost` to 1, zeroes its counters and sums both items' stored prior-work
+penalty into the base cost — and then, still ahead of every branch that could build a result, calls
+the hook:
 
 ```java
+AnvilUpdateEvent e = new AnvilUpdateEvent(left, right, name, baseCost, player);
+if (NeoForge.EVENT_BUS.post(e).isCanceled())
+    return false;
 if (e.getOutput().isEmpty())
     return true;
 
@@ -231,9 +243,11 @@ return false;
 ```
 
 and `createResult` answers that with `if (!CommonHooks.onAnvilChange(...)) return;`. The call sits
-inside `if (!itemstack.isEmpty())` and **before** the `EnchantmentHelper.canStoreEnchantments`
-branch that guards the rest of the method, so a non-empty left slot is the only precondition the
-module inherits from vanilla.
+inside `if (!itemstack.isEmpty() && EnchantmentHelper.canStoreEnchantments(itemstack))`, so the
+module inherits two preconditions from vanilla: a non-empty left slot, and a left item that carries
+the enchantment component. The second one is all but free — `canStoreEnchantments` is a plain
+`stack.has(...)` and `DataComponents.COMMON_ITEM_COMPONENTS` puts an empty `ENCHANTMENTS` on every
+item — but an item some mod strips it from would never reach the handler at all.
 
 **Material consumption.** `setMaterialCost(unitsUsed)` becomes `AnvilMenu.repairItemCountCost`. On
 take, vanilla shrinks the right stack by that amount when `count > cost` and clears the whole slot
@@ -244,7 +258,7 @@ fires.
 **The free price is borrowed.** This module never frees anything by itself:
 
 ```java
-boolean free = ModuleManager.getInstance().isModuleEnabled(FREE_REPAIR_MODULE_ID);
+boolean free = freeAnvilRepairActive();
 event.setOutput(result);
 event.setMaterialCost(unitsUsed);
 event.setCost(free ? 0 : unitsUsed);
@@ -253,12 +267,17 @@ event.setCost(free ? 0 : unitsUsed);
 A zero-cost anvil result is otherwise un-takeable — `AnvilMenu.mayPickup` ends in
 `&& this.cost.get() > 0`, which fails in creative too. What rescues it is `free_anvil_repair`'s
 `AnvilMenuFreeRepairMixin`, which permits the pickup of any non-empty cost-0 result while *that*
-module is enabled. Setting the cost to 0 under the same condition is therefore deliberate, not a
-convenience.
+module is enabled. Inside the bundle, setting the cost to 0 under the same condition is therefore
+deliberate, not a convenience.
 
-The gates are not quite the same check, though. `ModuleManager.isModuleEnabled(String)` consults the
-runtime override map and otherwise `moduleEnabledState`, a snapshot taken at registration and
-rewritten once in `initializeModules`; the mixin's `allowFreePickup()` goes through
+`freeAnvilRepairActive()` asks `ModuleManager` whenever the manager knows a module under that id,
+and falls back to `ModList.isLoaded("vpa_free_anvil_repair")` when it does not — see the standalone
+row above.
+
+Inside the bundle the gates are not quite the same check, though.
+`ModuleManager.isModuleEnabled(String)` consults the runtime override map and otherwise
+`moduleEnabledState`, a snapshot taken at registration and rewritten once in `initializeModules`;
+the mixin's `allowFreePickup()` goes through
 `AbstractModule.isModuleEnabled()`, which resolves the **live** per-module config. A `/vpa` override
 moves both, because both consult the override map first. Editing `free_anvil_repair`'s `enabled`
 flag in the config file at runtime moves only the live value — the snapshot stays `true`, this

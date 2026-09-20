@@ -170,8 +170,15 @@ just set:
 this.saturationLevel = Mth.clamp(saturationLevel + this.saturationLevel, 0.0F, (float)this.foodLevel);
 ```
 
-So the practical effect is not a broken number but a flattened one: every configured food saturates to
-the maximum its nutrition allows, and the distinction between a cookie and a rabbit stew is gone.
+So the ceiling is real, but it does not fall the same way on everyone on the list. The six large
+values — the golden foods and the three stews — are far above 20, the highest that cap can ever be,
+so eating one always leaves saturation pinned at the hunger level the bite just produced; what the
+inflated numbers buy is nothing — 4 800 and 614.4 collapse to the same rule. The ceiling itself
+still differs, because nutrition does: a rabbit stew restores 10 hunger, an enchanted golden apple
+4. The three small ones stay on the other side of the line: cookie, glow berries and melon slice
+simply saturate four times as much as in vanilla (1.6 / 1.6 / 4.8) and are cut back only when the
+running saturation total would pass the current hunger level — the ceiling vanilla puts on every
+food.
 
 **Two of the six fields are dropped.** The record is `(nutrition, saturation, canAlwaysEat, eatSeconds,
 usingConvertsTo, effects)`; the builder chain above sets four of them, so `usingConvertsTo` and
@@ -240,7 +247,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Config edit, always edible | Needs a game restart. `ModifyDefaultComponentsEvent` fires once during mod loading; the effect and thirst caches reload with the config, the `FOOD` component does not. |
 | Module disabled at runtime | Effects and thirst stop at once (the caches are cleared and the handlers check `isModuleEnabled()`), but the rewritten `FOOD` components stay as they are until the next start. |
 | Stews return no bowl | See above: the rebuilt `FOOD` component drops `usingConvertsTo`. Hits mushroom stew, rabbit stew and beetroot soup on the shipped defaults. |
-| Saturation is flattened | See above. Every configured food saturates to the maximum; `FoodData` clamps the inflated value, so it looks generous rather than broken. |
+| Saturation is multiplied once per line | See above. The golden foods and the stews end up far above the cap, so `FoodData` clamps them to the hunger level — each simply tops saturation up to whatever hunger level its own nutrition leaves you at; cookie, glow berries and melon slice land at four times their vanilla saturation (1.6 / 1.6 / 4.8) and keep their differences. |
 | `debug_logging` is loud and public | With it on, **every** finished use-item — any eating or drinking, configured or not — broadcasts `[DEBUG] Consumed food item: …`, then the cache size, then one chat line per cached item, and `MessageBroadcaster` sends to the whole player list, not just the level. On the defaults with Create, TAN and Rotten Creatures installed that is about 20 lines per bite for everyone online; in pure vanilla, four. |
 | Bad config lines | An unknown item or effect id is dropped **silently**; the warning only appears with `debug_logging` on. A line that fails to parse is logged at error level, except inside the always-edible pass, where the exception is swallowed entirely. |
 | Standalone jar + TAN, thirst tooltip | The `ClientTooltipComponent` factory for `ThirstTooltipData` is registered only in `VanillaPlusAdditions.ClientModEvents`, and that class ships in neither `vpa_core` nor `vpa_food_effects`. Hovering a thirst-configured item there hands `ClientTooltipComponent.create` a component with no factory, which throws `IllegalArgumentException("Unknown TooltipComponent")`. Read off the build script and the decompiled sources; not reproduced in game. The bundle jar is unaffected. |
@@ -275,9 +282,10 @@ disabled module leaves them empty.
 
 **The Tough As Nails split** follows the rule the rest of this repository uses: the *question* lives in
 the module (`ModList.get().isLoaded("toughasnails")`, cached in `onInitialize`), and every TAN type is
-confined to `compat/TANIntegration`, which is a four-line utility class. TAN is `implementation
-files("libs/ToughAsNails-…jar")` in `build.gradle` — compile and dev runtime only, nothing is shipped —
-and `neoforge.mods.toml` declares it `type="optional"`, `versionRange="[10.1.0,)"`, `ordering="NONE"`.
+confined to `compat/TANIntegration`, whose only method is the two-statement `applyThirst`. TAN is
+`implementation files("libs/ToughAsNails-…jar")` in `build.gradle` — compile and dev runtime only,
+nothing is shipped — and `neoforge.mods.toml` declares it `type="optional"`,
+`versionRange="[10.1.0,)"`, `ordering="NONE"`.
 
 **Classes.**
 

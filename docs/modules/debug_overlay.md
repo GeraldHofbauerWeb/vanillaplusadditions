@@ -37,7 +37,7 @@ What then shows up depends on which modules are installed:
 | | Overlay | From |
 |---|---|---|
 | <img src="../img/items/chunk_loader_rail.png" width="40"> | Every nearby chunk holding a Chunk Loader Rail, outlined — blue while idle, red while it is actually force-loading | [Minecart Chunk Loading](minecart_chunk_loading.md) |
-| <img src="../img/items/chunk_loader_track.png" width="40"> | The same for Chunk Loader Tracks and the carriage running over them | [Train Chunk Loading](train_chunk_loading.md) |
+| <img src="../img/items/chunk_loader_track.png" width="40"> | The same for Chunk Loader Tracks — blue while idle, red while a carriage the client can see is holding them loaded: within the load radius (2 chunks by default), and for 15&nbsp;s by default (`active_timeout_seconds`) after it has passed. The state is computed client-side, so it approximates the server's forced set rather than reading it. The carriage itself gets no box | [Train Chunk Loading](train_chunk_loading.md) |
 | <img src="../img/blocks/chunk_anchor.png" width="40"> | A Chunk Anchor's whole forced area as one box — green while powered, grey while it is not | [Chunk Anchor](stationary_chunk_loader.md) |
 | — | A guardian cat's or axolotl's outline, its current target, the guard box at its bowl and its live navigation path | [Cat Guardian](cat_guardian.md), [Axolotl Guardian](axolotl_guardian.md) |
 
@@ -66,8 +66,9 @@ explicitly, and none of the three in-repo renderers does.
 
 **The keybind is consumed before that gate**, not after it. The `consumeClick` loop sits at the top
 of `onClientTick` and `active()` is only asked afterwards, so numpad&nbsp;+ flips the state and
-prints its action-bar line even with a bare head — and, as the next section shows, even when the
-module is switched off in the config.
+prints its action-bar line even with a bare head — and, as [the section on the `enabled`
+switch](#the-enabled-switch-does-not-switch-it-off) shows, even when the module is switched off in
+the config.
 
 ### What counts as goggles
 
@@ -113,8 +114,12 @@ one of those modules is switched off.
 | `axolotl_guardian` | same | same |
 | `mob_cart_loader` | own handler, reads **only** `GogglesUtil` | its goggles panel is not on this toggle at all — goggles plus looking at a loader is enough, overlay on or off |
 
-`arm_target_overlay` and `item_vault_viewer` are goggles overlays as well, but neither goes through
-`GogglesUtil`: each carries its own copy of the check. Only the six modules above touch this module.
+`arm_target_overlay` and `item_vault_viewer` are goggles overlays as well, and neither goes through
+`GogglesUtil` — but not in the same way. `arm_target_overlay` keeps its own copy of the dual check,
+Create's predicate and then the `arm_goggles` tag. `item_vault_viewer` calls Create's
+`GogglesItem.isWearingGoggles` directly and has no tag fallback at all — it requires Create anyway —
+so a tagged Aeronautics aviator's goggles opens this overlay but not the vault viewer. Only the six
+modules above touch this module.
 
 ### The `enabled` switch does not switch it off
 
@@ -147,7 +152,7 @@ This module has no settings of its own.
 | Limit | Effect |
 |---|---|
 | Neither Create nor Create: Aeronautics | Both tag entries are `required: false`, so the tag is empty and no item can satisfy the goggles check. The toggle works, the message prints, nothing is ever drawn. Applies to the bundle as well. |
-| Standalone `vpa_debug_overlay` without `vpa_arm_target_overlay` | `arm_goggles.json` is assigned to the **arm_target_overlay** jar in `build.gradle`, and `vpa_core` ships only `assets/**`, never `data/**`. In a standalone install without that jar the tag has no content at all, so Create's own goggles are the only way in. Read off the build script, not reproduced. |
+| Standalone `vpa_debug_overlay` without `vpa_arm_target_overlay` | `arm_goggles.json` is assigned to the **arm_target_overlay** jar in `build.gradle`, and `vpa_core` carries no module's own data files — beyond the framework classes it ships `assets/vanillaplusadditions/**`, `logo.png` and the third-party compat tags under `data/sable/**`. In a standalone install without that jar the tag has no content at all, so Create's own goggles are the only way in. Read off the build script, not reproduced. |
 | Curios | Only through Create's predicate. The tag fallback reads `EquipmentSlot.HEAD` and nothing else, so a tagged non-Create goggles item in a Curios slot does not count. |
 | `enabled = false` | Does not remove the keybind, the toggle or the message — see above. |
 | Not an x-ray view | All three registered renderers draw with the depth-tested render types, so their boxes are hidden behind terrain. The see-through outlines around a guardian cat come from that module's own private render type, not from this one. |
@@ -169,9 +174,11 @@ nor mixins.
 
 ### The world-render pass
 
-`onRenderLevelStage` filters on `AFTER_TRANSLUCENT_BLOCKS` and returns early when the registry is
-empty, so a pack with nothing plugged in pays a stage comparison and a list check. Otherwise it
-pushes a pose translated by `-cameraPos`:
+`onRenderLevelStage` filters on `AFTER_TRANSLUCENT_BLOCKS` and then returns early when the gate
+fails or the registry is empty — in that order. With the toggle off that costs one boolean; with it
+on, the goggles check runs before the list is even looked at, and with Create loaded a bare head
+runs both of its branches — so a pack with nothing plugged in still pays for that check every
+frame. Otherwise it pushes a pose translated by `-cameraPos`:
 
 ```java
 pose.pushPose();

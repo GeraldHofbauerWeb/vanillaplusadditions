@@ -10,7 +10,7 @@
 | **Side** | Client + Server |
 | **Requires** | — |
 | **Works with** | [JEI](https://modrinth.com/mod/jei) |
-| **Download** | bundle only — no standalone jar |
+| **Download** | [`vpa_tipped_arrows.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_tipped_arrows.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.tipped_arrows]` |
 | **Since** | `v1.0.0-beta.73` |
 <!-- vpa:meta:end -->
@@ -61,10 +61,14 @@ the eight-arrow result with `POTION_CONTENTS` copied across — mirrors what van
 | The centre slot | `minecraft:potion` or `minecraft:lingering_potion` | **Splash** potions are not accepted — same as vanilla. |
 | Any slot | must not be empty | A partly filled grid never matches. |
 
-The grid has to be exactly 3×3 (`input.width() != 3 || input.height() != 3` → no match), so the 2×2
-inventory grid is out. `canCraftInDimensions` is the more generous `width >= 3 && height >= 3`,
-which is the same asymmetry vanilla's recipe carries: a modded grid bigger than 3×3 advertises the
-recipe but `matches()` still refuses it.
+`matches()` wants a 3×3 grid (`input.width() != 3 || input.height() != 3` → no match), but the grid
+it is handed is not the table's: vanilla crops the `CraftingInput` down to the bounding box of the
+non-empty slots before a recipe ever sees it (`CraftingInput.ofPositioned`, reached through
+`CraftingContainer.asPositionedCraftInput`). What has to be exactly 3×3 is therefore the *filled*
+area. The same 3×3 block placed anywhere inside a larger modded grid still matches; a stray tenth
+item outside the block grows the bounding box and breaks the match; and the 2×2 inventory grid,
+which can never crop up to 3×3, is out. `canCraftInDimensions` is the more generous
+`width >= 3 && height >= 3`, copied verbatim from vanilla's recipe.
 
 ### What comes out
 
@@ -102,7 +106,7 @@ is on.
 <!-- vpa:config:start -->
 ## Configuration
 
-Section `[modules.tipped_arrows]` in `config/vanillaplusadditions-common.toml`.
+Section `[modules.tipped_arrows]` in `config/vanillaplusadditions-common.toml` (or `config/vpa_tipped_arrows-common.toml` if you run the standalone jar).
 
 Every module also has the universal `enabled` and `debug_logging` keys — see the [Configuration Guide](../guides/configuration.md).
 
@@ -126,8 +130,9 @@ fills a slot quickly. There is no code link between the two modules in either di
 
 ## Under the hood
 
-Three Java files, no mixins, no access transformer, no assets, no lang keys, no data files — the
-module is the recipe and its two pieces of plumbing.
+Four Java files, no mixins, no access transformer, no assets, no lang keys, no data files — the
+recipe, its two pieces of plumbing, and the one-line `@Mod` entrypoint `TippedArrowsStandalone`
+that boots the same module out of the `vpa_tipped_arrows` jar.
 
 **The replacement.** `AddReloadListenerEvent` (the module's only event handler, and it returns
 early unless `isModuleEnabled()`) adds a `PreparableReloadListener` named
@@ -135,7 +140,7 @@ early unless `isModuleEnabled()`) adds a `PreparableReloadListener` named
 every recipe currently in the `RecipeManager` into a `LinkedHashMap`, overwrites the single key
 `ResourceLocation.withDefaultNamespace("tipped_arrow")` — `LinkedHashMap.put` keeps the original
 insertion position — and calls `recipeManager.replaceRecipes(...)`. This snapshot-and-replace dance
-is house style rather than a one-off: twelve other modules do the same thing, and because each
+is house style rather than a one-off: thirteen other modules do the same thing, and because each
 listener snapshots when its own task runs on the game thread, they compose instead of clobbering one
 another. JSON datapack recipes do not load reliably in this mod, which is why every recipe here is
 built in code — see [Custom Crafting Recipes](custom_crafting_recipes.md).
@@ -158,8 +163,10 @@ contents) under ids `vanillaplusadditions:tipped_arrow_display/<potion path>`. T
 `registration.addRecipes(RecipeTypes.CRAFTING, ...)` and never enter the `RecipeManager`. JEI is
 `compileOnly` plus `localRuntime` and appears in no dependency block of `neoforge.mods.toml`; the
 `@JeiPlugin` class is only ever loaded by JEI's own annotation scan, so no `ModList.isLoaded` gate is
-needed. The plugin re-checks `isModuleEnabled("tipped_arrows")` itself, so a disabled module shows
-nothing.
+needed. The plugin gates on `TippedArrowsModule.isModuleActive()` — a static that goes through the
+module instance rather than a `ModuleManager` lookup by id, because that singleton is only filled by
+the bundle's entrypoint and comes back empty in the standalone jar. A module that is off (or never
+initialised) shows nothing.
 
 **Testing.** This repository has no unit tests, and nothing in it records an in-game test of this
 module.

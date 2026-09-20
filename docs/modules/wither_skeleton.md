@@ -1,7 +1,8 @@
 # Wither Skeleton Enforcer
 
-> **TL;DR** — Inside a Nether fortress a plain skeleton never gets to spawn: it is turned away and a
-> wither skeleton takes its place. The rest of the Nether is left exactly as it is.
+> **TL;DR** — In a chunk that belongs to a Nether fortress a plain skeleton never gets to spawn: it
+> is turned away and a wither skeleton takes its place. The rest of the Nether is left exactly as it
+> is.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -47,9 +48,11 @@ public static final WeightedRandomList<MobSpawnSettings.SpawnerData> FORTRESS_EN
 );
 ```
 
-A weight of two out of twenty-eight, so roughly one fortress monster in fourteen is an ordinary bow
-skeleton standing between the blazes, worth a bone and two arrows. That is what this module removes,
-by turning exactly those spawns into the mob the group next to them already is.
+A weight of two out of twenty-eight, so about one fortress spawn roll in fourteen picks the plain
+skeleton — and that entry asks for five of them at once. Weighted by the group sizes in the list
+above, roughly one fortress monster in eleven is an ordinary bow skeleton standing between the
+blazes, worth a bone and two arrows. That is what this module removes, by turning exactly those
+spawns into the mob the group next to them already is.
 
 ## In detail
 
@@ -94,7 +97,8 @@ That is wider than the region vanilla itself calls a fortress spawn. Vanilla onl
 ```java
 // NaturalSpawner.isInNetherFortressBounds
 if (category == MobCategory.MONSTER && level.getBlockState(pos.below()).is(Blocks.NETHER_BRICKS)) {
-    Structure structure = ...getOrThrow(BuiltinStructures.FORTRESS);
+    Structure structure = structureManager.registryAccess()
+            .registryOrThrow(Registries.STRUCTURE).get(BuiltinStructures.FORTRESS);
     return structure == null ? false : structureManager.getStructureAt(pos, structure).isValid();
 }
 ```
@@ -222,8 +226,11 @@ enchantments, group data — and is only dropped when it tries to join the level
 `EntityType.WITHER_SKELETON.create(level)`, copies position and rotation from the skeleton with
 `moveTo`, calls `finalizeSpawn` with the local difficulty and the *original* `MobSpawnType`, and
 adds it with `level.addFreshEntity`. That `finalizeSpawn` call is what hands it the stone sword and
-sets `ATTACK_DAMAGE` to 4.0; passing the original spawn type is what keeps persistence and despawn
-behaviour in line with the spawn it replaced. The whole block sits in a `try`/`catch (Exception)`.
+sets `ATTACK_DAMAGE` to 4.0. The spawn type it is handed changes nothing about persistence or
+despawning: `Mob.finalizeSpawn` only records it on the mob — readable as `Mob#getSpawnType`, saved
+as the `neoforge:spawn_type` NBT tag — and nothing in the wither skeleton's `finalizeSpawn` chain
+reads it or sets `persistenceRequired`. The replacement despawns like any other non-persistent mob.
+The whole block sits in a `try`/`catch (Exception)`.
 
 | File | Contents |
 |---|---|

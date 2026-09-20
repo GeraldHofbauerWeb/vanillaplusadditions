@@ -243,9 +243,10 @@ an id that has since disappeared.
 
 **The Sable reflection surface** is resolved once, behind a double-checked `reflectionInitialized`
 flag, and consists of `SubLevelContainer.getContainer/queryIntersecting`, `SubLevel.logicalPose/getLevel`,
-and `BoundingBox3d`'s two constructors plus `transform`, `transformInverse`, `toMojang` and the six
-`minX`…`maxZ` accessors. Nothing in this module compile-depends on Sable, unlike the other Sable
-integrations in this mod.
+`BoundingBox3d`'s two constructors plus `transform`/`transformInverse`, and the `BoundingBox3dc`
+interface's `toMojang` and six `minX`…`maxZ` accessors — plus `Pose3dc`, looked up only as the
+parameter type of the two transform methods. Nothing in this module compile-depends on Sable,
+unlike the other Sable integrations in this mod.
 
 There is one trap the source calls out in a comment: `BoundingBox3d.transformInverse(Pose3dc)`
 mutates in place, JOML style. A single query box reused across sub-levels would carry the previous

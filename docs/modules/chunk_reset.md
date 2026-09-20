@@ -18,7 +18,8 @@
 ## What it does
 
 Stand where the terrain should go away and type `/chunkreset`. Nothing is deleted yet: the command
-prints a warning with the chunk coordinates, the number of chunks and two clickable buttons.
+prints a warning with the chunk coordinates and two clickable buttons. Only a radius greater than 0
+gets the chunk count and the `s×s` side length as well — this is what `/chunkreset 1` prints:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -27,6 +28,9 @@ prints a warning with the chunk coordinates, the number of chunks and two clicka
 All blocks, entities and structures will be LOST!
 [✓ Confirm Reset]  [✗ Cancel]
 ```
+
+Plain `/chunkreset` is the same block with a singular middle line: `Chunk [x=12, z=-4] will be
+PERMANENTLY deleted and regenerated.`
 
 Click `[✓ Confirm Reset]` — or type `/chunkreset confirm`, the buttons only run that same command —
 and the chunks' entries are cleared from the region file. The next time something loads one of those
@@ -176,9 +180,11 @@ from the source, not reproduced in game.
 ### Chunks that stay loaded anyway
 
 Step 1 above removes a **vanilla `/forceload` ticket and nothing else**. `ServerLevel.setChunkForced`
-only edits `ForcedChunksSavedData`. Every other reason a chunk might be loaded survives:
-NeoForge chunk tickets, the spawn chunks, a nearby player, a Create train — and this mod's own
-[Stationary Chunk Loader](stationary_chunk_loader.md), [Minecart Chunk
+only touches vanilla's forceload bookkeeping: it drops the position from `ForcedChunksSavedData` and,
+when the position really was in there, calls `ServerChunkCache.updateChunkForced`, which removes the
+matching `FORCED` ticket from the `DistanceManager`. Nothing beyond that. Every other reason a chunk
+might be loaded survives: NeoForge chunk tickets, the spawn chunks, a nearby player, a Create train —
+and this mod's own [Stationary Chunk Loader](stationary_chunk_loader.md), [Minecart Chunk
 Loading](minecart_chunk_loading.md) and [Train Chunk Loading](train_chunk_loading.md). A chunk held
 by one of those never unloads, which puts it squarely in the rewrite case above.
 
@@ -232,7 +238,7 @@ This module has no settings of its own.
 | No translations | Every message is a hardcoded English `Component.literal`; the module owns no lang keys at all. |
 | Disabled in the config at startup (bundle) | The module is never initialised, never subscribes, and `/vpa module enable chunk_reset` cannot bring the command back — the subscription does not exist. Restart with `enabled = true`. |
 | Disabled at runtime (bundle or standalone jar) | `isModuleEnabled()` is only consulted while commands are being registered, so the already-registered `/chunkreset` keeps working until the next command re-registration. |
-| Not verified in game | This module has had no code change since `v1.0.0-beta.2` and this repository has no tests. Every statement on this page is read off the module and off vanilla's decompiled 1.21.1 sources. |
+| Not verified in game | The module's logic has not changed since `v1.0.0-beta.2` (the standalone entry point followed in `v1.0.0-beta.23`) and this repository has no tests. Every statement on this page is read off the module and off vanilla's decompiled 1.21.1 sources. |
 
 ## Under the hood
 
@@ -274,8 +280,8 @@ for (Method m : ChunkStorage.class.getDeclaredMethods()) {
 
 The comment in the code gives the reason: the method name is not hardcoded, so a mapping difference
 does not break the call. In 1.21.1 `write(ChunkPos, CompoundTag)` is the only declared method with
-that shape, which makes "first match" deterministic there. The two field hops on the way —
-`ServerChunkCache.chunkMap` — need no accessor, because the field is `public final` and `ChunkMap`
+that shape, which makes "first match" deterministic there. The one field hop on the way —
+`ServerChunkCache.chunkMap` — needs no accessor, because the field is `public final` and `ChunkMap`
 is a public subclass of `ChunkStorage`; there is no Mixin dependency anywhere in this module. The
 cache is written without synchronisation, which is harmless: two threads would resolve the same
 `Method`. If no such method is found, the `NoSuchMethodException` is caught per chunk in

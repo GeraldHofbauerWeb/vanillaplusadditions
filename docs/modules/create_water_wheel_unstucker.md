@@ -100,9 +100,9 @@ A member that is *removed* while its chunk is unloaded never comes back and neve
 stress haunts the network for as long as the server runs. Because the three values are clamped
 separately, the tally can end up charging stress for zero unloaded members — numbers that no machine
 anywhere can be behind. That is precisely the case this repository confirmed in the field
-([CHANGELOG, `v1.0.0-beta.66`](../../CHANGELOG.md)): a wheel whose network read `capacity=256
-stress=384` with the unloaded tally at `members=0` but `stress=256`. Real demand was 128 against a
-capacity of 256.
+([CHANGELOG, `v1.0.0-beta.66`](../../CHANGELOG.md)): a wheel whose network carried
+`unloadedStress=256` at `unloadedMembers=0` — stress charged for *zero* unloaded members. Dropping
+that tally left the wheel spinning at 8.0.
 
 A server restart clears it, which is why it is so hard to catch on purpose.
 
@@ -205,13 +205,28 @@ The fix for a flow stall is a break and a re-place, done by code:
 5. 20 ticks later, log whether the wheel actually restarted (`re-init RECOVERED` or `re-init did NOT
    restart`).
 
-Step 2 is the part that matters, and it is why an earlier version of this module did not work.
-Create already re-runs `determineAndApplyFlowScore()` from `lazyTick`, and
-`WaterWheelBlockEntity`'s constructor sets that rate to 60 ticks — so every three seconds the score
-is recomputed anyway, and asking for one more recompute, which is exactly what the old soft kick did,
-changes nothing at all. The score is read from the fluids' **flow vectors**, and settled
-water has none. Only water that is genuinely in motion produces a score, and flooding a gap is how
-you get water in motion.
+Step 2 is the part that matters, and it is why this module's original flow-score kick was reworked
+into a break and a re-place. Create already re-runs `determineAndApplyFlowScore()` from `lazyTick`,
+and `WaterWheelBlockEntity`'s constructor sets that rate to 60 ticks — so every three seconds the
+score is recomputed anyway, and asking for one more recompute (the flow-score half of the old soft
+kick) changes nothing at all. The score is read from the fluids' **flow vectors**, and a flow vector
+is a pure function of the fluid heights around a block: a level pool of source blocks has no height
+difference and yields zero. What produces a score is a gradient that runs *with* the wheel:
+each of the four sampled neighbours counts only where its flow points along the wheel's tangent
+there (`|dot| > 0.5`), and the four signs are summed — flow that misses the tangent, or that is
+symmetric on opposite sides, still adds up to zero. A running stream has such a gradient
+permanently, a gap being flooded has one while it fills. Removing the wheel gives the blocks Create
+actually samples somewhere to flow into — `determineAndApplyFlowScore()` reads `getOffsetsToCheck()`,
+for a small wheel the four neighbours in the plane perpendicular to its axis, never the wheel's own
+position — so it is those neighbours that briefly carry a gradient while the gap fills.
+
+A score won that way is not banked. Every run of `determineAndApplyFlowScore()` ends in
+`setFlowScoreAndUpdate(...)` with the score it just derived, so 60 ticks later the wheel is judged
+again by whatever its neighbours are doing then. The re-placed wheel starts that clock from scratch —
+`setLazyTickRate(60)` in the constructor sets the rate *and* the counter. What the flood buys is a
+restart, not a guarantee that it lasts: the outcome log fires 20 ticks after the replace, well
+before that first lazy tick, so it can only confirm the restart — whether the wheel is still
+turning three seconds later is what the "unproven" row below is about.
 
 A pending replace whose chunk unloads in the meantime is kept and retried when the chunk comes back,
 rather than dropped.
@@ -277,9 +292,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Large (3×3) wheels | Their centres are tracked and checked like any other wheel, and the stress cures apply unchanged. The re-init is another matter: it removes and restores the **centre block only**, and its own javadoc says "Sized for small (single-block) wheels". What it does to a large wheel is demonstrated nowhere in this repository — treat it as unverified. |
 | A block placed in the gap during a re-init | The wheel is restored only into air or fluid, never over a block a player may have put there. In that case it is gone for good: no drop, no log line. The window is `reinit_flood_ticks` — 0.3 s by default, but real. |
 | Level unload or server stop during a re-init | The pending replace lives in memory only and is dropped by both, so the wheel is lost the same way. A **chunk** unload is safe: that state is deliberately kept and retried on reload. |
+| A check landing inside the re-init window | While the wheel is removed, its tracked position holds air, so a sweep or post-load check that falls into that window fails `isStillWheel` and drops the position from the registry. `replaceWheel` puts the block back but does not re-register it — a `setBlock` fires no place event — so that wheel stays invisible to the sweep and to `/vpaunstuck` until its chunk unloads and loads again. Unlikely with the defaults (a 6-tick window against a 100-tick sweep), unavoidable once `reinit_flood_ticks` (up to 40) is set above `check_interval_ticks` (down to 20). |
 | A genuine flow stall produces no log at all | With the default config the "STALLED wheel …" line is unreachable: it sits behind the `auto_fix` early return *and* behind `debug_logging`. A detected-but-untouched stall is silent. Use `/vpaunstuck`, which logs unconditionally. |
 | No force-loading, ever | A wheel in an unloaded chunk is not checked, not fixed and not reported. `/vpaunstuck` covers loaded chunks only. |
-| Module disabled in the config at startup | It never initialises, so no event handler and no command exist — `/vpaunstuck` is simply an unknown command rather than a command that answers "module is disabled". That reply is only reachable if the module started enabled and was switched off afterwards. |
+| Module disabled in the config at startup | Depends on the jar. In the **bundle**, `ModuleManager` only initialises modules whose config says `enabled`, so no event handler and no command exist and `/vpaunstuck` is simply an unknown command. The **standalone** jar boots through `StandaloneModuleBootstrap`, which initialises the module whenever Create is present — `shouldInitialize()` asks about Create, not about `enabled` — so there the command exists and answers "Water Wheel Unstucker module is disabled." — the registration handler itself only asks whether Create is loaded, the `isModuleEnabled()` check sits inside the command. The three gated handlers (chunk load, block place, server tick) return on their own `isModuleEnabled()` check, and the four cleanup handlers simply run against state that never fills. In the bundle that same reply is reachable by switching the module off at runtime. |
 | Create not installed | `shouldInitialize()` returns `ModList.get().isLoaded("create")`, so the module registers nothing. In the bundle Create is declared as an optional dependency (`[6.0,)`, ordering `AFTER`); the standalone jar declares it not at all and gates purely at runtime. |
 | A future Create version renaming things | One warning, `isAvailable()` turns false, and every accessor degrades to a neutral no-op. No crash, but also no function. See the reflection table below for the three levels this happens at. |
 | Lava counts as water | `hasNearbyFluid` accepts any non-empty fluid. Create's lava wheels need that; the cost is that a decorative wheel beside lava is treated as fixable rather than dry. |
@@ -332,9 +348,15 @@ earlier one:
 
 | Stage | Resolved | If it fails |
 |---|---|---|
-| Core | `getSpeed`, `getGeneratedSpeed`, `isOverStressed`, `detachKinetics`, `removeSource`, `attachKinetics`, `updateGeneratedRotation`, `determineAndApplyFlowScore`, the public `material` field | One warning, `isAvailable()` false, no wheel is ever recognised — the module is inert |
+| Core | `getSpeed`, `getGeneratedSpeed`, `isOverStressed`, `detachKinetics`, `removeSource`, `attachKinetics`, `updateGeneratedRotation`, `determineAndApplyFlowScore` | One warning, `isAvailable()` false, no wheel is ever recognised — the module is inert |
 | Network | `hasNetwork`, `getOrCreateNetwork`, `updateNetwork`, `sync`, `calculateCapacity`, `calculateStress`, the public `sources` / `members` maps | Warning "stale-stress recovery disabled". Detection and re-init keep working; no stress cure and no numbers |
 | Private fields | `unloadedCapacity` / `unloadedStress` / `unloadedMembers` on the network, `capacity` / `stress` on the block entity, via `setAccessible` | Warning "phantom-overload recovery disabled". The recompute still runs; the tally cannot be read or dropped, and the stats fall back to `calculateCapacity()` / `calculateStress()` |
+
+The public `material` field sits outside those stages: it is resolved in a nested `try` of its own,
+with a `NoSuchFieldException` leaving it null rather than failing the Core stage. Losing it therefore
+costs only the plank material — `getMaterial()`/`setMaterial()` turn into no-ops and a re-initialised
+wheel comes back with Create's constructor default, spruce planks — while detection, the stress cures
+and the re-init keep working.
 
 Two details in that layer worth knowing when editing it. `readNetworkStats` prefers the `capacity` and
 `stress` the wheel was **last told** over `calculate*()`, because those are the numbers its
@@ -345,7 +367,8 @@ without one returns no stats.
 Failures inside the accessors go through a `warnOnce` guarded by a single static flag, so only the
 very first one is ever printed for the whole class.
 
-**What ends up in the log.** Two lines are unconditional, the rest need `debug_logging = true`:
+**What ends up in the log.** Only the last three lines need `debug_logging = true`; everything above
+them is printed regardless — the backoff WARN just never comes up without `auto_fix`:
 
 | Line | Needs |
 |---|---|

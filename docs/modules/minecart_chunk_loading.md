@@ -94,8 +94,11 @@ cart rides slightly above the rail it is on. If it finds one, the rail is stampe
 walks its active set. A rail that has just become active forces its square; a rail whose last stamp
 is older than `active_timeout_seconds × 20` ticks unforces its square and is dropped.
 
-**Release.** Nothing else releases chunks. Breaking a loader rail, picking the cart up or derailing
-it all end the same way: the stamp stops being refreshed and the square falls away after the timeout.
+**Release.** Nothing else *in the loop* releases chunks. Breaking a loader rail, picking the cart up
+or derailing it all end the same way: the stamp stops being refreshed and the square falls away after
+the timeout. Two paths release chunks outside the loop: the players-online pause below — `releaseAll`
+unforces a level's chunks at once and does not wait for any timeout — and, on world load, the
+`LoadingValidationCallback` under *Across a restart*, which drops every ticket the controller owns.
 
 The square is Chebyshev — a `(2R+1) × (2R+1)` block of chunks centred on the rail's own chunk:
 
@@ -146,7 +149,7 @@ Only the two transitions do any work:
 
 | Transition | What happens |
 |---|---|
-| off → on (server start, or the first player joining) | `resume(level, radius)` on every level: re-forces every rail in the persisted set and stamps each one active *now* |
+| off → on (server start with `only_while_players_online = false`, or the first player joining — in single player normally once per game session) | `resume(level, radius)` on every level: re-forces every rail in the persisted set and stamps each one active *now* |
 | on → off (the last player leaving) | `releaseAll(level)` on every level: unforces everything and clears the in-memory active set, but **keeps** the persisted set |
 
 With the default `only_while_players_online = true` an empty server forces nothing at all — carts
@@ -172,7 +175,9 @@ giving up. Only an expired timeout takes a rail out of the set.
 The rebuild is self-healing. `resume` stamps every recorded rail as active at the current game time,
 so a rail whose cart vanished while the server was down holds its chunks for one
 `active_timeout_seconds` window, finds no cart to refresh it, expires and drops itself from the
-record. Nothing accumulates.
+record. Nothing accumulates. It only happens on the off → on transition, though, and in single
+player that transition may not fire again for a second world in the same game session — see
+*Second world in the same game session* below.
 
 ### Seeing what is loaded
 
@@ -250,8 +255,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | A loader rail in an already-unloaded chunk | Never activates — the cart that would stamp it is not ticking either. This is the spacing rule above, and it is the usual reason a line "does not work". |
 | Only `AbstractMinecart` counts | Anything that is not a minecart subclass is ignored. Create trains have their own [Train Chunk Loading](train_chunk_loading.md); a loader with no vehicle at all is [Stationary Chunk Loader](stationary_chunk_loader.md). |
+| Second world in the same game session (single player) | `forcingEnabled` is a module-instance field that no handler resets when the integrated server stops — it is written only in `ServerTickEvent.Post`. If the shutdown does not include one server tick with zero players, the flag is still `true` when the next world starts, so the off → on transition does not fire: `resume` is skipped, the persisted set is not re-forced, and a cart parked in an unloaded chunk stays unloaded until a player comes near or the game is restarted. A dedicated server is unaffected — fresh JVM per start. Read off the source; not reproduced. |
 | Module disabled while chunks are forced | The reconcile and the players-online handler are both gated on `isModuleEnabled()`, and nothing else releases a ticket. Chunks already forced stay forced until the world is reloaded, where the validation callback drops them. Read off the source; not reproduced. |
-| Module disabled at startup | `onInitialize` never runs, so `vanillaplusadditions:chunk_loader_rail` is not registered and rails already placed in the world become unknown blocks. Do not use `enabled = false` to switch a built network off — `only_while_players_online` or taking the carts off the rails are the safe ways. |
+| Module disabled at startup (bundle) | In the all-in-one jar `ModuleManager` initializes only the enabled modules, so `onInitialize` never runs, `vanillaplusadditions:chunk_loader_rail` is not registered and rails already placed in the world become unknown blocks. Do not use `enabled = false` to switch a built network off — `only_while_players_online` or taking the carts off the rails are the safe ways. In the **standalone** jar `StandaloneModuleBootstrap` initializes the module regardless of `enabled`, so the rail stays registered there and only the handlers (and the recipe) go quiet. |
 | Overlay without Create or Create: Aeronautics | Unreachable. The overlay renders only while the player wears goggles, and the accepted items are Create's Engineer's Goggles (helmet or a Curios slot) or an item in `vanillaplusadditions:arm_goggles`, which lists `create:goggles` and `aeronautics:aviators_goggles`. The chunk loading itself is completely unaffected. |
 | Overlay colours on a server | Client-side approximation from visible carts and the client's own unsynced `COMMON` config. Treat red as "this is roughly what the server should be doing". |
 | Structure blocks and block-state rotation | `ChunkLoaderRailBlock` overrides neither `rotate` nor `mirror`, and `BaseRailBlock` does not either, so both fall through to `BlockBehaviour`'s identity default, where vanilla's `RailBlock` overrides both. A rotated or mirrored copy keeps its original rail shape and has to be re-laid. |
@@ -275,8 +281,13 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 The client-side chunk borders hang off no event of their own: `onClientSetup` registers a
 `ChunkLoaderBorderRenderer` with `DebugOverlayRegistry`, and the shared `DebugOverlayClientEvents`
 drives it from `ClientTickEvent.Post` and `RenderLevelStageEvent` at stage
-`AFTER_TRANSLUCENT_BLOCKS`. `ModuleManager.clientSetup()` runs `onClientSetup` only for enabled
-modules, so a disabled module registers no renderer.
+`AFTER_TRANSLUCENT_BLOCKS`. In the bundle `ModuleManager.clientSetup()` walks only the enabled
+modules, so a disabled module registers no renderer. The standalone jar does not go through
+`ModuleManager`'s lifecycle: `StandaloneModuleBootstrap` calls `clientSetup()` straight from
+`FMLClientSetupEvent`, and `AbstractModule.clientSetup()` carries no enabled check — so there the
+renderer is registered even with `enabled = false`. Only the drawing, though; the server-side
+handlers still check `isModuleEnabled()` and force nothing — and that check itself resolves through
+`ModuleManager.resolveModuleEnabled` in either jar.
 
 **Classes.**
 

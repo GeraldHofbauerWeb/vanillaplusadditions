@@ -110,7 +110,9 @@ present, frequently with amount 0.
 
 The config value is read per tick, so a config reload takes effect immediately. Switching the module
 off at runtime makes the handler return at once and leaves Overpacked's own modifier in place, because
-the `NORMAL`-priority handler writes it again on the next tick.
+the `NORMAL`-priority handler writes it again on the next tick. On a pack **without** Overpacked
+nothing rewrites it: the last amount we wrote stays on the attribute until the player relogs (it is a
+transient modifier) — nothing at the `0.0` default, a residual slowdown above it.
 
 **What the override does not cover: the backpack you wear.** That penalty comes from a different
 route. `GiantBackpackItem` implements Curios' `ICurioItem` and returns a `MOVEMENT_SPEED` modifier from
@@ -123,11 +125,16 @@ play.
 
 ### B — opening a worn backpack
 
-| Keybind | Compartment | Slots | Default |
+| Keybind | Compartment | Slots in the GUI | Default |
 |---|---|---|---|
-| Open Backpack (main compartment) | centre, `inv_id` 0 | 55 | `B` |
-| Open Backpack (right compartment) | right, `inv_id` 1 | 28 | unbound |
-| Open Backpack (left compartment) | left, `inv_id` 2 | 28 | unbound |
+| Open Backpack (main compartment) | centre, `inv_id` 0 | 54 | `B` |
+| Open Backpack (right compartment) | right, `inv_id` 1 | 27 | unbound |
+| Open Backpack (left compartment) | left, `inv_id` 2 | 27 | unbound |
+
+Those are the slots you see, not the container sizes: `GiantBackpackMenu` sets
+`rows = inv_id == 0 ? 6 : 3` and adds `rows * 9` `ShulkerBoxSlot`s, while `CreateInventory` allocates
+55/28/28. The centre container's last slot is the sleeping bag (`SetSleepingBag` writes
+`inv[0].getContainerSize() - 1`), which the backpack screen never shows.
 
 A keypress runs the whole chain server-side:
 
@@ -149,7 +156,9 @@ All three messages go to the action bar (`displayClientMessage(…, true)`).
 horizontal look vector, turned to face you (`yRot + 180`). If that spot is not free
 (`level.noCollision`), it spawns inside you instead: out of the crosshair, so it cannot steal the pick
 from an item frame on the wall behind it and cannot become an accidental hit target — Overpacked's
-`GiantBackpack.hurt` drops the entire backpack as an item and discards the entity. It is spawned with
+`GiantBackpack.hurt` adds `amount × 10` to a damage counter that ticks back down by 1, and once that
+counter passes 40 — or at once on a hit from a creative player — it discards the entity and, with
+`doEntityDrops`, drops the whole backpack as an item. The helper is spawned with
 `setNoGravity(true)` and `noPhysics = true`, so it neither falls nor is shoved about.
 
 Its contents are restored the way Overpacked's own place-a-backpack code does it: colour from the
@@ -181,8 +190,9 @@ upgrades, and the unlock is encoded as the mere **presence** of `RightCell` / `L
 value — `getByte(key) == 0` is true for every backpack, locked or not, and would reject them all.
 Pressing a locked compartment's key reports the message instead of opening, because the helper's
 `CreateInventory` builds all three containers (55/28/28) regardless of the unlock, so opening one
-would hand out the upgrade for free. Overpacked 1.x has no such concept; there every compartment
-always exists.
+would hand out the upgrade for free. On 1.x `isCompartmentLocked` returns false before it ever reads
+the tag, so both side compartments always open — that is read off our own gate; no 1.x jar is in
+`libs/` to confirm what Overpacked 1.x stores on the item.
 
 ### Sorting and searching — Quark's job
 
@@ -207,8 +217,8 @@ same `GiantBackpackScreen`, the buttons appear in both, and the close-write-back
 the worn item. It is a client-side feature, so ship the line in the modpack's config.
 
 This module contains **no** Quark code, no Quark type and no `ModList` check for Quark. Its own
-description string and the README still advertise a "Quark-style sort button"; that is a leftover from
-a feature that was dropped in favour of the config line above.
+description string still advertises a "Quark-style sort button"; that is a leftover from a feature
+that was dropped in favour of the config line above.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -231,17 +241,17 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | The backpack you **wear** | Its penalty is a Curios attribute modifier under `curios:<slot><index>`, not `overpacked:speed`, so `slowdown_multiplier` does not touch it. Only carried and offhand backpacks are rescaled. |
 | Any item with `CUSTOM_DATA` `Count` ≥ 27 | Counted as a loaded backpack. Overpacked's own handler has the same blind spot, so this only matters on a pack **without** Overpacked, where ours is the sole handler and `slowdown_multiplier > 0`. |
 | `slowdown_multiplier` above ~3.3 | The range allows up to 10. An `ADD_MULTIPLIED_TOTAL` of −1.0 cancels the whole base movement speed, so a single fully loaded backpack at a high multiplier pins you in place. |
-| Overpacked 1.x | Supported. No side-pocket concept there, so both side compartments always open; the helper is restored by hand instead of through `Load`. |
+| Overpacked 1.x | Has its own path: with `isV2()` false the lock check is skipped, so both side compartments always open, and the helper is restored by hand (`SetSleepingBagColor` + `LoadInventory`) instead of through `Load`. Only `overpacked-2.0.1` sits in `libs/`, so that path is not exercised here. |
 | Keybind clash, Overpacked 2.x | `key.overpacked.take_off_backpack` also defaults to **B**. Ours uses the four-argument `KeyMapping` constructor, i.e. the `UNIVERSAL` conflict context, so on a fresh profile both fire. Rebind one of them. |
 | Keybinds with the module off | `BackpackKeybinds` and `BackpackKeysClientEvents` are plain `@EventBusSubscriber(Dist.CLIENT)` classes with no module gate: all three mappings always appear in Controls and a keypress always sends. The server-side handler is what drops it. |
 | Module disabled on only one side | The payload is registered in `onInitialize`, which a disabled module never reaches, and the registrar is not `optional()`. A client and a server that disagree about this module should therefore fail NeoForge's channel negotiation. Read off the source, not reproduced. |
-| Someone hits the helper entity | Overpacked's `hurt` spawns `get_stack()` as an item and discards the entity; the close that follows still writes the same contents back into the worn item. The spawn-inside-the-player fallback exists to keep the helper out of the crosshair, but another player can still reach it. Read off the source, not reproduced. |
-| Hard crash or restart with the GUI open | The edited items sit on the transient entity in the world rather than in the worn item. Recoverable in-world, but not where you would look for them. The helper itself no longer survives: it carries the entity tag `vpa_backpack_helper`, and `EntityJoinLevelEvent` discards any tagged helper that comes back from disk. **Before `v1.0.0-beta.87` it did survive**, with two consequences worth knowing if an old world still has one: it sits inside the player, where Overpacked's `place_predicate` silently refuses every in-hand backpack placement, and its contents are a copy of the worn backpack's — breaking it duplicates them. Observed in play on 2026-09-20, after two server restarts. |
+| Someone hits the helper entity | `hurt` adds `amount × 10` to a counter that decays by 1 per tick; once it passes 40 — or at once on a hit from a creative player — the entity is discarded, after spawning `get_stack()` as an item if `doEntityDrops` is on. That is about eight full-strength bare-hand hits: the counter loses 1 per tick and an empty hand needs 5 ticks to recharge, so every swing after the first nets roughly +5. A single swing of anything dealing more than 4 damage (stone sword upwards) does it at once. The close that follows still writes the same contents back into the worn item. The spawn-inside-the-player fallback exists to keep the helper out of the crosshair, but another player can still reach it. Read off the source, not reproduced. |
+| Hard crash or restart with the GUI open | The edited items sit on the transient entity in the world rather than in the worn item. Recoverable in-world, but not where you would look for them. The helper itself no longer survives: it carries the entity tag `vpa_backpack_helper`, and `EntityJoinLevelEvent` discards any tagged helper that comes back from disk. **Before `v1.0.0-beta.87` it did survive**, with two consequences worth knowing if an old world still has one: it sits inside the player, where Overpacked's `place_predicate` silently refuses every in-hand backpack placement, and its contents are a copy of the worn backpack's — breaking it duplicates them. Observed in play on 2026-09-20. |
 | Upgrade across `v1.0.0-beta.56` | This module was merged out of `overpacked_slowdown` (v0.7.0) and `overpacked_backpack_keys` (v1.0.0-beta.31). The old config sections are not migrated — `slowdown_multiplier` has to be set again in the new section. |
 
 ## Under the hood
 
-No mixins, no items, no blocks, no commands, no recipes — one network payload and six event handlers.
+No mixins, no items, no blocks, no commands, no recipes — one network payload and seven event handlers.
 
 | Class | Role |
 |---|---|
@@ -294,7 +304,8 @@ bundle it — it is a separate download for anyone running Overpacked 2.x, not s
 adds.
 
 **Standalone jar.** `vpa_overpacked_extensions` ships no mixins and no data files; it declares only
-`vpa_core`, which carries the keybind and message translations in all six languages.
+`vpa_core`, NeoForge and Minecraft, plus the usual `incompatible` entry for the all-in-one bundle.
+`vpa_core` carries the keybind and message translations in all six languages.
 
 ## See also
 

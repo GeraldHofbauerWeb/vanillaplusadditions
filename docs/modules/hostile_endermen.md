@@ -47,16 +47,22 @@ applyAngerTime(enderman);
 The UUID is the whole trick. Vanilla's `EndermanLookForPlayerGoal` builds its target predicate from
 
 ```java
-this.isAngerInducing = p -> (enderman.isLookingAtMe((Player)p) || enderman.isAngryAt(p))
-        && !enderman.hasIndirectPassenger(p);
+this.isAngerInducing = p_325811_ -> (enderman.isLookingAtMe((Player)p_325811_) || enderman.isAngryAt(p_325811_))
+        && !enderman.hasIndirectPassenger(p_325811_);
 ```
 
-and `NeutralMob.isAngryAt` is a UUID comparison:
+and `NeutralMob.isAngryAt` is a UUID comparison behind a `canAttack` guard:
 
 ```java
-return p.getType() == EntityType.PLAYER && this.isAngryAtAllPlayers(p.level())
-    ? true
-    : p.getUUID().equals(this.getPersistentAngerTarget());
+default boolean isAngryAt(LivingEntity target) {
+    if (!this.canAttack(target)) {
+        return false;
+    } else {
+        return target.getType() == EntityType.PLAYER && this.isAngryAtAllPlayers(target.level())
+            ? true
+            : target.getUUID().equals(this.getPersistentAngerTarget());
+    }
+}
 ```
 
 So the pathing, the teleporting closer and the melee are vanilla's, unchanged. No AI goal is added
@@ -74,8 +80,9 @@ public void startPersistentAngerTimer() {
 }
 ```
 
-Called after `applyAngerTime` instead of before it, that random 400–799 ticks would overwrite the
-configured `anger_duration` every single time.
+`rangeOfSeconds(20, 39)` is `UniformInt.of(400, 780)`, and `sample` is inclusive. Called after
+`applyAngerTime` instead of before it, that random 400–780 ticks would overwrite the configured
+`anger_duration` every single time.
 
 ### When the module looks
 
@@ -139,9 +146,14 @@ if (chasingPlayer) {
 }
 ```
 
-The revenge memory has to go with it. `HurtByTargetGoal` sits at target-selector priority 2 and
-works off the enderman's 64-block follow range, not our 16 — leave `lastHurtByMob` standing and
-walking out of `detection_range` would end nothing.
+The revenge memory goes with it. `HurtByTargetGoal` sits at target-selector priority 2, and its
+acquisition check is not bounded by our 16 at all: the `HURT_BY_TARGETING` conditions are
+`forCombat().ignoreLineOfSight().ignoreInvisibilityTesting()` and never call `.range(...)`. What that
+check does need is a fresh hit — `canUse` compares `getLastHurtByMobTimestamp()` against the value
+`start()` stored — so a stale memory on its own never re-fires it. What keeps the hunt alive after
+the module drops the target is `TargetGoal.canContinueToUse`: with `targetMob` still set it
+re-applies `setTarget` every tick, bounded by the enderman's 64-block follow range and, because
+`HurtByTargetGoal` is built with `mustSee`, by `reducedTickDelay(300)` = 150 ticks out of sight.
 
 Two consequences follow from that line:
 
@@ -159,7 +171,7 @@ while the current target is a player:
 
 ```java
 if (this.getRemainingPersistentAngerTime() > 0
-        && (livingentity == null || livingentity.getType() != EntityType.PLAYER || !p_21668_)) {
+        && (livingentity == null || livingentity.getType() != EntityType.PLAYER || !updateAnger)) {
     this.setRemainingPersistentAngerTime(this.getRemainingPersistentAngerTime() - 1);
 ```
 
@@ -210,6 +222,7 @@ The mixin wraps that one call:
         at = @At(value = "INVOKE", target = "…ModUtils;teleportTarget(…)V", remap = false),
         remap = false)
 private boolean vpaAllowTeleportAttack(Level level, LivingEntity victim, int range) {
+    LivingEntity self = (LivingEntity) (Object) this;
     return !HostileEndermenModule.suppressTeleportAttack(self, victim);
 }
 ```
@@ -269,16 +282,27 @@ the source comment puts a single session at 20 000+ log lines.
 @Inject(method = "teleportTo(DDD)V", at = @At("HEAD"))
 ```
 
-`ServerPlayer#teleportTo(double, double, double)` is where every in-dimension displacement of a
-player ends up, `LivingEntity.randomTeleport` included — chorus fruit, ender pearls and both mods
-above all route through it. The log line carries the distance, the from and to coordinates and the
-dimension, followed by up to 14 caller frames with the module's own class and everything under
-`net.geraldhofbauer.vanillaplusadditions.mixin` filtered out, so the first frame printed is the
-foreign caller.
+`ServerPlayer#teleportTo(double, double, double)` is where `LivingEntity.randomTeleport` lands, and
+that is the route chorus fruit and both mods above take — Enderman Overhaul's
+`ModUtils.teleportTarget` and EnhancedAI's anti-cheese goal both end in `randomTeleport`. The log
+line carries the distance, the from and to coordinates and the dimension, followed by up to 14
+caller frames with the module's own class filtered out.
 
-Two things to know about it. It only sees teleports *within* a dimension — the cross-dimension
-`teleportTo(ServerLevel, …)` is a different method and is not hooked. And it ignores the module
-switch: unlike the two suppression hooks it never asks `isModuleEnabled()`.
+Three things to know about it.
+
+It is not a universal teleport hook. The two `teleportTo(ServerLevel, …)` overloads handle the
+same-dimension case themselves: each compares the target level against `this.level()` and, when they
+match, calls `this.connection.teleport(…)` directly, without ever going through
+`teleportTo(double, double, double)`. That is the path `/tp` takes, and `changeDimension` — an ender
+pearl landing, for one — does the same, so those displacements go unlogged.
+
+The frame filter does not open the log at the foreign caller. It also drops everything under
+`net.geraldhofbauer.vanillaplusadditions.mixin`, but no frame ever carries that package: Mixin
+merges an `@Inject` handler into its target, so both the merged handler and the method it was
+injected into report as `net.minecraft.server.level.ServerPlayer`. Those two are the first frames
+printed; the foreign caller is the third.
+
+And it ignores the module switch: unlike the two suppression hooks it never asks `isModuleEnabled()`.
 
 ```java
 public static void logPlayerTeleport(ServerPlayer player, double x, double y, double z) {
@@ -298,7 +322,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `anger_duration` | int | `600 (DEFAULT_ANGER_DURATION)` | -1 ~ 2147483647 (INDEFINITE_ANGER ~ Integer.MAX_VALUE) | How long endermen stay angry in ticks (-1 for indefinite, applied as Integer.MAX_VALUE ticks), refreshed every second while a player stays within detection_range. |
-| `debug_teleport_tracking` | boolean | `false` | — | Diagnostics: logs every player teleport together with up to 14 caller frames (VPA's own frames filtered out), which identifies the mod/feature that moved the player. Fires even while the module is disabled. |
+| `debug_teleport_tracking` | boolean | `false` | — | Diagnostics: logs every player teleport together with up to 14 caller frames (VPA's own frames filtered out), which identifies the mod/feature that moved the player. `logPlayerTeleport` checks only the config flag, not `isModuleEnabled()` (HostileEndermenModule.java:123), so it keeps logging after a runtime `/vpa module disable hostile_endermen`. A module disabled at startup is a different case: `ModuleManager.initializeModules` initialises enabled modules only (ModuleManager.java:104-106), so `instance` is never set and the hook returns immediately. |
 | `detection_range` | int | `16 (DEFAULT_DETECTION_RANGE)` | 1 ~ 128 | Range in blocks in which endermen in the End automatically become hostile, and beyond which they calm down again; the hard ceiling is the vanilla enderman follow range of 64, so larger values are capped by vanilla targeting anyway. |
 | `respect_carved_pumpkin` | boolean | `true` | — | Keeps the vanilla carved pumpkin protection: players wearing a carved pumpkin (or a modded ender mask) are not attacked automatically; checked via NeoForge's CommonHooks.shouldSuppressEnderManAnger, so EnderManAngerEvent cancels also count. |
 | `suppress_anticheese_teleport` | boolean | `true` | — | EnhancedAI compat: stops its "Teleport anti-cheese" goal from dragging players over to an enderman in the End as long as the player has not hit that enderman back (5 s window); no effect without EnhancedAI installed. |
@@ -311,8 +335,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | Overworld and Nether | Untouched by design. `appliesTo` tests `Level.END` literally; there is no per-dimension list. |
 | An enderman with no line of sight | Stands still, however angry. The vanilla goal has to see you once to acquire you; only after that does `ignoreLineOfSight` take over. |
-| Carved pumpkin after you struck first | A pumpkin-wearer is not a valid target, so the once-per-second pass calms the enderman — and `calmDown` clears `lastHurtByMob` too. An enderman you attacked in the End therefore forgets you within a second while you wear one, where vanilla would have kept it hunting. Read off the source; not reproduced in this repository. |
+| Carved pumpkin after you struck first | A pumpkin-wearer is not a valid target, so the once-per-second pass calms the enderman — and `calmDown` clears `lastHurtByMob` too. An enderman you attacked in the End therefore drops that memory within a second while you wear one, where vanilla would have held on to it for the usual 100 ticks — but a revenge hunt already running outlives the clearing, because `TargetGoal.canContinueToUse` falls back to its own `targetMob`. Read off the source; not reproduced in this repository. |
 | `detection_range` above 64 | Accepted (the range goes to 128) and pointless: the vanilla goal is bounded by the enderman's 64-block follow range. Nothing in the code clamps it; only the config comment says so. |
+| Eye height versus centre | The two range checks do not measure from the same point. `findNearestTarget` searches from `getEyeY()` — 2.55 blocks up on an enderman — while `isInRange` compares position to position. At the default 16 the eye offset shifts the boundary by only about 0.2 blocks (`√(16² + 2.55²) − 16`), so it never shows — but it is an inconsistency, not a deliberate hysteresis. It only bites at a very small `detection_range`: at 2 or less the 2.55-block offset exceeds the range itself, so `findNearestTarget` stops finding a player standing at the enderman's feet while `isInRange` still calls them in range. |
 | Sneaking or invisible at a large `detection_range` | Vanilla multiplies its own range by `getVisibilityPercent` — 0.8 while crouching — before comparing, while the module's range check does not. Only bites if `detection_range` is pushed near 64. |
 | Disabling the module at runtime | Stops new anger, calms nothing down. Both handlers gate per event, so already-angry endermen keep hunting until vanilla's own timer expires — with `anger_duration = -1` that is effectively never. |
 | `debug_teleport_tracking` | Ignores the module switch, and its mixin targets a vanilla class, so it is always applied. Leave the flag off in normal play. |
@@ -335,10 +360,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 **No content surface.** No items, blocks, entities, commands, keybinds, recipes or loot; no `data/`
 or `assets/` files and not one lang key. The only switch in game is core's `/vpa`.
 
-**Lifecycle.** `onInitialize()` does one thing, `NeoForge.EVENT_BUS.register(this)`; `onCommonSetup()`
-only debug-logs. Both handlers therefore live on the instance registered to the game bus, and the
-three mixins reach it through a static `instance` field assigned in the constructor. All three
-static hooks null-check it.
+**Lifecycle.** `onInitialize()` does one thing of substance, `NeoForge.EVENT_BUS.register(this)`
+(plus one info log); `onCommonSetup()` only debug-logs. Both handlers therefore live on the instance
+registered to the game bus, and the three mixins reach it through a static `instance` field assigned
+in the constructor. All three static hooks null-check it.
 
 **Side.** Server. `appliesTo` rejects `isClientSide` in both handlers, the only mixin against a
 vanilla class targets `ServerPlayer`, and nothing in the module's six files touches a client class.

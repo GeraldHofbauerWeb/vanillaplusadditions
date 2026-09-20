@@ -4,6 +4,15 @@
 > red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a
 > spider fits there too.
 
+> **Status:** on this build, switching the overlay on crashes the client. `SpawnOverlayRenderer`
+> fetches the stripe and outline vertex consumers (and the shimmer's too, unless
+> `display.shimmer_strength` is 0) from the shared buffer source before the marker loop starts, so
+> the first write throws an uncaught `IllegalStateException: Not building!` inside
+> `RenderLevelStageEvent` and the game goes straight to a crash report — see
+> [Compatibility and known limits](#compatibility-and-known-limits). Do not press F3 + M until it is
+> fixed. Everything below describes what the renderer is written to draw, read off the source rather
+> than reproduced in game.
+
 <!-- vpa:meta:start -->
 |  |  |
 |---|---|
@@ -18,14 +27,15 @@
 
 ## What it does
 
-Press **F3 + M** and every position around you where a hostile mob could stand lights up as a flat
-striped field lying on the floor. Red fields spawn mobs right now, yellow ones once it gets dark, and
-a violet outline marks a spot roomy enough for a spider. The same combo switches it off again; an
-action-bar line — *Mob spawn overlay: ON* / *OFF* — confirms either way.
+Press **F3 + M** — which, on this build, crashes the client rather than drawing anything, see the
+status note above — and every position around you where a hostile mob could stand is meant to light
+up as a flat striped field lying on the floor. Red fields spawn mobs right now, yellow ones once it
+gets dark, and a violet outline marks a spot roomy enough for a spider. The same combo switches it off
+again; an action-bar line — *Mob spawn overlay: ON* / *OFF* — confirms either way.
 
-This is the spawn view OptiFine's `F7` used to give you and that Sodium/Iris do not bring along. It
-is built for spawn-proofing: light a room, walk through it, and the fields that are still there tell
-you where the torches are missing.
+This is meant to be the spawn view OptiFine's `F7` used to give you and that Sodium/Iris do not bring
+along. It is built for spawn-proofing: light a room, walk through it, and the fields that are still
+there tell you where the torches are missing.
 
 The check mirrors vanilla's own spawn code — ground placement, block and sky light, hitbox clearance
 — and reads its light limits from the dimension instead of assuming a hardcoded 0–7, so the Nether
@@ -71,9 +81,10 @@ if (flag3 && key == 292) {
 
 NeoForge's `InputEvent.Key` fires *after* that `|=` and cannot be cancelled, so a handler there would
 toggle the overlay and then additionally open the debug screen when you let go of F3. Hooking
-`handleDebugKeys` and returning `true` sets the flag, exactly as vanilla's own F3+G does. The same
-line also clears the key mapping (`KeyMapping.set(key, false)`), so whatever you have M bound to does
-not fire alongside it.
+`handleDebugKeys` and returning `true` sets the flag, exactly as vanilla's own F3+G does. `flag5` is
+then read a second time further down in `keyPress`: while no screen is open, a set `flag5` makes
+vanilla call `KeyMapping.set(inputconstants$key, false)` instead of `set(…, true)` plus `click(…)`,
+so whatever you have M bound to does not fire alongside it.
 
 ## In detail
 
@@ -264,13 +275,14 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
+| F3 + M crashes the client | `SpawnOverlayRenderer.render` fetches its `VertexConsumer`s (stripes, the shimmer when `display.shimmer_strength > 0`, and the outline) from the shared `MultiBufferSource.BufferSource` before the marker loop starts. None of the six render types is registered through `RegisterRenderBuffersEvent`, so they all land on the same `ByteBufferBuilder`, and `getBuffer` ends the previous shared batch before handing out the next one — `BufferBuilder.build()` leaves the earlier builder with `building = false`. The first write to the already-ended stripe consumer therefore hits `ensureBuilding()` and throws `IllegalStateException: Not building!` inside `RenderLevelStageEvent`, which nothing catches — `ClientHooks.dispatchRenderStage` is a bare `NeoForge.EVENT_BUS.post`, so it unwinds out of `LevelRenderer.renderLevel` into the `catch (Throwable)` in `Minecraft.run` and the client goes to a crash report — as soon as the overlay is on with at least one marker. The rest of this page describes what the renderer is written to draw; read off vanilla's source, not reproduced in game. |
 | It cannot say *which* mob spawns | `Biome.NETWORK_CODEC` strips `MobSpawnSettings`, so the client never receives a biome's spawn lists. The answer is "is this a valid ground-spawn position for monsters", not "what spawns here" — a biome with no monsters in its list still lights up. |
 | One stand-in hitbox | Every position is tested with `EntityType.ZOMBIE` as the 1-wide monster, plus `EntityType.SPIDER` for the outline. Mobs with other dimensions are only approximated. |
 | Ground spawners only | Only `SpawnPlacementTypes.ON_GROUND` is evaluated. Drowned and other `IN_WATER` mobs, striders, phantoms and anything with `NO_RESTRICTIONS` are not represented at all. |
 | Thunderstorms | While it thunders, vanilla substitutes a fixed darkening of 10 (`getMaxLocalRawBrightness(pos, 10)`); the scanner always uses the plain form. During a storm a sky-lit position can therefore spawn mobs that the overlay leaves unmarked. |
 | Mob cap and the 24-block radius | Not checked, by design. A marked position need not be spawning anything at this moment. |
 | Truncated scans are silent | `SpawnOverlayState.isTruncated()` is written by the scanner but read nowhere in the repository. Nothing tells you that `max_markers` cut the scan short. |
-| Module disabled while the overlay is on | `onClientTick` checks `isActiveClientSide()`, `onRenderLevelStage` does not. Switch the overlay on and then disable the module (config key `enabled`, or the core module command): the last scan's markers keep rendering, no rescan happens, and the F3 combo is dead because the mixin bails out too. Only a restart clears them. Read off the source, not reproduced. |
+| Module disabled while the overlay is on | `onClientTick` checks `isActiveClientSide()`, `onRenderLevelStage` does not. Switch the overlay on and then disable the module (config key `enabled`, or the core module command): the last scan's markers keep rendering, no rescan happens, and the F3 combo is dead because the mixin bails out too. Re-enabling the module revives both — the timer rescans and F3 + M answers again, so switching the overlay off clears the list; short of that, only a restart. Read off the source, not reproduced. |
 | The toggle is a session-wide static | `SpawnOverlayState.enabled` has no world-unload or disconnect hook, so it stays on across world changes. Switching it off does clear the marker list; leaving the world does not. |
 | `toggle_key` set to a code vanilla uses | The mixin injects at HEAD, so our toggle wins and vanilla's own F3 shortcut for that key never runs. Codes below 32 cannot be configured at all (the range is 32–348). |
 | Dedicated server | The module registers nothing server-side; `onInitialize` only logs. Its config is still a common config, so the keys exist in the server's file and do nothing. |
@@ -292,7 +304,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `mixin/mob_spawn_overlay/KeyboardHandlerDebugKeyMixin.java` | F3 + M |
 | `standalone/mob_spawn_overlay/MobSpawnOverlayStandalone.java` | `@Mod("vpa_mob_spawn_overlay")` |
 
-Those nine files are the module in full: no registries, no commands, no network payloads, no `data/`
+Those ten files are the module in full: no registries, no commands, no network payloads, no `data/`
 files. There is no `KeyMapping` and no `RegisterKeyMappingsEvent` anywhere in it, so the combo does
 **not** appear in the vanilla Controls screen — it is rebound through the `toggle_key` config value
 and nowhere else.
@@ -300,7 +312,7 @@ and nowhere else.
 **The mixin** is client-only. `KeyboardHandler` does not exist on a dedicated server, so it is listed
 in the `"client"` block of `vanillaplusadditions.mixins.json` and as `clientMixins` in the standalone
 jar definition in `build.gradle`; a dedicated server skips it instead of failing on a missing class.
-It is nine lines of body:
+It is eight lines of body:
 
 ```java
 @Inject(method = "handleDebugKeys", at = @At("HEAD"), cancellable = true)
@@ -318,12 +330,12 @@ private void vpaToggleSpawnOverlay(int key, CallbackInfoReturnable<Boolean> cir)
 `Stage.AFTER_TRANSLUCENT_BLOCKS`. The pose stack is translated by `-cameraPos` once and every marker
 is then emitted in absolute world coordinates.
 
-**Six render types**, each in a depth-tested and an x-ray variant: `POSITION_TEX_COLOR` quads with
-translucent blending for the stripes, the same with additive blending for the shimmer, and
-`POSITION_COLOR_NORMAL` lines for the spider outline. All of them use `VIEW_OFFSET_Z_LAYERING`, the
-item-entity output target, a colour-only write mask (so markers never occlude each other) and
-`NO_CULL` (so a field is visible from below as well). They are not part of vanilla's sorted batch,
-which is why the render handler flushes them itself:
+**Three render types**, each in a depth-tested and an x-ray variant — six constants in all:
+`POSITION_TEX_COLOR` quads with translucent blending for the stripes, the same with additive blending
+for the shimmer, and `POSITION_COLOR_NORMAL` lines for the spider outline. All of them use
+`VIEW_OFFSET_Z_LAYERING`, the item-entity output target, a colour-only write mask (so markers never
+occlude each other) and `NO_CULL` (so a field is visible from below as well). They are not part of
+vanilla's sorted batch, which is why the render handler flushes them itself:
 
 ```java
 for (var type : SpawnOverlayRenderTypes.all(config.isSeeThroughBlocks())) {
