@@ -23,10 +23,12 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Create companion module: stops Factory Gauges from ordering against a stock level they cannot yet
@@ -61,8 +63,21 @@ public class CreateStockLinkKeepaliveModule
     private static final ResourceLocation GAUGE_BLOCK =
             ResourceLocation.fromNamespaceAndPath("create", "factory_gauge");
 
+    /**
+     * The blocks that carry a {@code LogisticallyLinkedBehaviour}, i.e. the ones whose presence in
+     * Create's one-second link cache decides whether a network can report its stock at all.
+     */
+    private static final Set<ResourceLocation> LINK_BLOCKS = Set.of(
+            ResourceLocation.fromNamespaceAndPath("create", "stock_link"),
+            ResourceLocation.fromNamespaceAndPath("create", "stock_ticker"),
+            ResourceLocation.fromNamespaceAndPath("create", "packager"),
+            ResourceLocation.fromNamespaceAndPath("create", "repackager"),
+            ResourceLocation.fromNamespaceAndPath("create", "redstone_requester"));
+
     private TrackedPositionRegistry registry;
+    private TrackedPositionRegistry linkRegistry;
     private PostLoadScheduler scheduler;
+    private int keepAliveCountdown;
 
     /** Per dimension, the game time until which a gauge's panels are held back. */
     private final Map<ResourceKey<Level>, Map<BlockPos, Long>> holdUntil = new HashMap<>();
@@ -98,6 +113,16 @@ public class CreateStockLinkKeepaliveModule
         return GAUGE_BLOCK.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
     }
 
+    /**
+     * Whether a block state is one of Create's logistics link blocks.
+     *
+     * @param state The block state to test
+     * @return true for a block that may carry a logistics link behaviour
+     */
+    private static boolean isLinkBlock(BlockState state) {
+        return LINK_BLOCKS.contains(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+    }
+
     @Override
     protected boolean shouldInitialize() {
         return isCreateLoaded();
@@ -106,10 +131,12 @@ public class CreateStockLinkKeepaliveModule
     @Override
     protected void onInitialize() {
         registry = new TrackedPositionRegistry(CreateStockLinkKeepaliveModule::isGaugeBlock);
+        linkRegistry = new TrackedPositionRegistry(CreateStockLinkKeepaliveModule::isLinkBlock);
         scheduler = new PostLoadScheduler();
         NeoForge.EVENT_BUS.register(this);
-        getLogger().info("Create Stock Link Keepalive module initialized (Create reflection available: {})",
-                FactoryPanelAccess.isAvailable());
+        getLogger().info("Create Stock Link Keepalive module initialized "
+                        + "(panel access: {}, link access: {})",
+                FactoryPanelAccess.isAvailable(), LogisticsLinkAccess.isAvailable());
     }
 
     /**
@@ -127,7 +154,11 @@ public class CreateStockLinkKeepaliveModule
         if (!(event.getLevel() instanceof ServerLevel level) || !(event.getChunk() instanceof LevelChunk chunk)) {
             return;
         }
+        List<BlockPos> links = linkRegistry.discoverChunk(level, chunk);
         List<BlockPos> found = registry.discoverChunk(level, chunk);
+        if (found.isEmpty() && links.isEmpty()) {
+            return;
+        }
         if (found.isEmpty()) {
             return;
         }
@@ -150,6 +181,7 @@ public class CreateStockLinkKeepaliveModule
         }
         ChunkPos chunkPos = event.getChunk().getPos();
         registry.forgetChunk(level, chunkPos);
+        linkRegistry.forgetChunk(level, chunkPos);
         scheduler.forgetChunk(level, chunkPos);
         Map<BlockPos, Long> byLevel = holdUntil.get(level.dimension());
         if (byLevel != null) {
@@ -169,6 +201,7 @@ public class CreateStockLinkKeepaliveModule
             return;
         }
         registry.onBlockPlaced(level, event.getPos(), event.getPlacedBlock());
+        linkRegistry.onBlockPlaced(level, event.getPos(), event.getPlacedBlock());
     }
 
     /**
@@ -181,6 +214,7 @@ public class CreateStockLinkKeepaliveModule
         if (registry == null || !(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
+        linkRegistry.onBlockBroken(level, event.getPos(), event.getState());
         if (registry.onBlockBroken(level, event.getPos(), event.getState())) {
             scheduler.forget(level, event.getPos());
             Map<BlockPos, Long> byLevel = holdUntil.get(level.dimension());
@@ -212,8 +246,44 @@ public class CreateStockLinkKeepaliveModule
         // where reading the level's game time is safe. The window itself starts right here.
         scheduler.runDue(event.getServer(), 0, (level, pos) -> openWindow(level, pos, config.getGraceTicks()));
 
+        boolean refreshLinks = --keepAliveCountdown <= 0;
+        if (refreshLinks) {
+            keepAliveCountdown = config.getKeepAliveIntervalTicks();
+        }
         for (ServerLevel level : event.getServer().getAllLevels()) {
+            if (refreshLinks) {
+                keepLinksAlive(level);
+            }
             holdPanels(level, config);
+        }
+    }
+
+    /**
+     * Re-stamps every tracked logistics link in this level, from our own server tick.
+     *
+     * <p>This is the heart of the module, and the reason for its name. Create's link cache expires
+     * one second after a link last refreshed it, and only the link's own {@code lazyTick()} does
+     * that - which stops the moment its chunk stops ticking. A player disconnecting takes their chunk
+     * tickets with them, so the chunks stop ticking immediately while staying loaded for a good while
+     * longer. Any absence longer than that one second therefore empties the network summary, while
+     * the block entities were never unloaded and Create's own guard consequently still reports a
+     * complete network. The gauge then reads zero stock from a full vault.</p>
+     *
+     * <p>Our {@code ServerTickEvent} keeps running regardless of which chunks tick, so refreshing
+     * from here closes the gap for any length of absence.</p>
+     *
+     * @param level The server level
+     */
+    private void keepLinksAlive(ServerLevel level) {
+        for (BlockPos pos : new ArrayList<>(linkRegistry.positionsIfPresent(level))) {
+            if (!level.isLoaded(pos)) {
+                continue;
+            }
+            if (!linkRegistry.isStillTracked(level, pos)) {
+                linkRegistry.remove(level, pos);
+                continue;
+            }
+            LogisticsLinkAccess.keepAlive(level.getBlockEntity(pos));
         }
     }
 
@@ -249,13 +319,6 @@ public class CreateStockLinkKeepaliveModule
         while (it.hasNext()) {
             Map.Entry<BlockPos, Long> entry = it.next();
             BlockPos pos = entry.getKey();
-            if (entry.getValue() <= now) {
-                if (config.shouldDebugLog()) {
-                    logWindowClosed(level, pos);
-                }
-                it.remove();
-                continue;
-            }
             if (!level.isLoaded(pos)) {
                 continue;
             }
@@ -264,26 +327,45 @@ public class CreateStockLinkKeepaliveModule
                 it.remove();
                 continue;
             }
-            FactoryPanelAccess.holdTimers(level.getBlockEntity(pos));
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            long deadline = entry.getValue();
+            boolean pastGrace = deadline <= now;
+            // Beyond the fixed window the hold continues only while the network has said nothing at
+            // all. A fixed wait is a guess; contributingLinks == 0 is the fact the guess stood for.
+            boolean stillBlind = pastGrace
+                    && config.isHoldUntilNetworkReportsEnabled()
+                    && now < deadline + config.getMaxHoldTicks()
+                    && FactoryPanelAccess.networkHasNotReported(blockEntity);
+            if (pastGrace && !stillBlind) {
+                if (config.shouldDebugLog()) {
+                    logWindowClosed(level, pos, now - (deadline - config.getGraceTicks()));
+                }
+                it.remove();
+                continue;
+            }
+            FactoryPanelAccess.holdTimers(blockEntity);
         }
     }
 
     /**
-     * Logs what the panels see at the moment their grace window closes - the value that Create would
-     * have acted on had the module not held them.
+     * Logs what the panels see at the moment they are released - the value Create would have acted
+     * on had the module not held them - together with how long the hold actually lasted. That
+     * duration is the interesting number: it says how far a fixed grace window would have had to
+     * reach on this particular load.
      *
-     * @param level The server level
-     * @param pos   The gauge position
+     * @param level      The server level
+     * @param pos        The gauge position
+     * @param heldTicks  How many ticks this gauge was held in total
      */
-    private void logWindowClosed(ServerLevel level, BlockPos pos) {
+    private void logWindowClosed(ServerLevel level, BlockPos pos, long heldTicks) {
         if (!level.isLoaded(pos)) {
             return;
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
         String state = FactoryPanelAccess.describe(blockEntity);
         if (!state.isEmpty()) {
-            getLogger().info("[create_stock_link_keepalive] window closed at {} in {}: {}",
-                    pos, level.dimension().location(), state);
+            getLogger().info("[create_stock_link_keepalive] released {} in {} after {} ticks: {}",
+                    pos, level.dimension().location(), heldTicks, state);
         }
     }
 
@@ -298,6 +380,7 @@ public class CreateStockLinkKeepaliveModule
             return;
         }
         registry.forgetLevel(level);
+        linkRegistry.forgetLevel(level);
         scheduler.forgetLevel(level);
         holdUntil.remove(level.dimension());
     }
@@ -313,6 +396,7 @@ public class CreateStockLinkKeepaliveModule
             return;
         }
         registry.clearAll();
+        linkRegistry.clearAll();
         scheduler.clearAll();
         holdUntil.clear();
     }

@@ -29,12 +29,16 @@ final class FactoryPanelAccess {
     private static final String RESET_TIMER = "resetTimer";
     private static final String GET_LEVEL_IN_STORAGE = "getLevelInStorage";
     private static final String SATISFIED_FIELD = "satisfied";
+    private static final String NETWORK_FIELD = "network";
 
     private static final Class<?> BLOCK_ENTITY_TYPE;
     private static final Field PANELS;
     private static final Method RESET;
     private static final Method LEVEL_IN_STORAGE;
     private static final Field SATISFIED;
+    private static final Field NETWORK;
+    private static final Method SUMMARY_OF_NETWORK;
+    private static final Field CONTRIBUTING_LINKS;
     private static final boolean AVAILABLE;
 
     static {
@@ -43,6 +47,9 @@ final class FactoryPanelAccess {
         Method reset = null;
         Method levelInStorage = null;
         Field satisfied = null;
+        Field network = null;
+        Method summaryOfNetwork = null;
+        Field contributingLinks = null;
         boolean ok = false;
         try {
             beType = Class.forName(BE_CLASS);
@@ -53,6 +60,15 @@ final class FactoryPanelAccess {
             reset = behaviourType.getMethod(RESET_TIMER);
             levelInStorage = behaviourType.getMethod(GET_LEVEL_IN_STORAGE);
             satisfied = behaviourType.getField(SATISFIED_FIELD);
+            network = behaviourType.getField(NETWORK_FIELD);
+
+            Class<?> logisticsManager = Class.forName(
+                    "com.simibubi.create.content.logistics.packagerLink.LogisticsManager");
+            summaryOfNetwork = logisticsManager.getMethod(
+                    "getSummaryOfNetwork", java.util.UUID.class, boolean.class);
+            contributingLinks = Class.forName(
+                    "com.simibubi.create.content.logistics.packager.InventorySummary")
+                    .getField("contributingLinks");
             ok = true;
         } catch (Throwable t) {
             ok = false;
@@ -62,6 +78,9 @@ final class FactoryPanelAccess {
         RESET = reset;
         LEVEL_IN_STORAGE = levelInStorage;
         SATISFIED = satisfied;
+        NETWORK = network;
+        SUMMARY_OF_NETWORK = summaryOfNetwork;
+        CONTRIBUTING_LINKS = contributingLinks;
         AVAILABLE = ok;
     }
 
@@ -114,6 +133,48 @@ final class FactoryPanelAccess {
             return held;
         } catch (Throwable t) {
             return 0;
+        }
+    }
+
+    /**
+     * Whether the logistics network behind this gauge has not reported in yet.
+     *
+     * <p>This is the real condition the module cares about, and it beats any fixed waiting time.
+     * {@code InventorySummary.contributingLinks} counts how many links actually fed the summary. At
+     * zero the network has said nothing at all - which is NOT the same as "the network holds none of
+     * this item", even though {@code getLevelInStorage()} reports 0 for both. Acting on that number
+     * is what makes a gauge re-order a full vault.</p>
+     *
+     * <p>The summary comes from Create's twenty-tick cache, so this can stay true for up to a second
+     * after the links have really returned. Holding a moment too long costs nothing; letting go a
+     * moment too early costs a crafting run.</p>
+     *
+     * @param blockEntity The factory panel block entity
+     * @return true if no link contributed to the network summary (or the state cannot be read)
+     */
+    static boolean networkHasNotReported(BlockEntity blockEntity) {
+        if (!isPanelBlock(blockEntity)) {
+            return false;
+        }
+        try {
+            Object value = PANELS.get(blockEntity);
+            if (!(value instanceof Map<?, ?> panels)) {
+                return false;
+            }
+            for (Object behaviour : panels.values()) {
+                if (behaviour == null) {
+                    continue;
+                }
+                Object network = NETWORK.get(behaviour);
+                if (network == null) {
+                    continue;
+                }
+                Object summary = SUMMARY_OF_NETWORK.invoke(null, network, false);
+                return summary == null || CONTRIBUTING_LINKS.getInt(summary) <= 0;
+            }
+            return false;
+        } catch (Throwable t) {
+            return false;
         }
     }
 

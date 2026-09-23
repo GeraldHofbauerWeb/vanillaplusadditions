@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 242 module-specific keys across 50 modules,
+Every setting of every module — 245 module-specific keys across 50 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -167,12 +167,15 @@ Redstone Links that quietly stopped reaching their receivers after a chunk reloa
 
 ## `create_stock_link_keepalive` — Create Stock Link Keepalive
 
-Factory Gauges stop ordering a fresh batch of something the vault is already full of every time the area loads, because they are held back for a moment until the logistics network has reported what is actually in storage. · [full page](../modules/create_stock_link_keepalive.md)
+Factory Gauges stop ordering a fresh batch of something the vault is already full of after you rejoin, because the logistics links are kept reporting their contents even while nobody is nearby to make their chunks tick. · [full page](../modules/create_stock_link_keepalive.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `grace_ticks` | integer | `60` | 0-600 | How long factory panels are kept from placing orders after their chunk loads. The blind window measured on the live server is about 20 ticks; 60 covers it with room to spare. A larger value delays a genuinely needed order by that much (plus up to one Create factoryGaugeTimer interval) after a chunk load, and nothing else. |
-| `hold_on_chunk_load` | boolean | `true` | — | Whether the panels are held at all. This is the module's only effect; the key exists so the behaviour can be compared without editing the module list. |
+| `grace_ticks` | integer | `60` | 0-600 | How long factory panels are held after their chunk loads, before the condition below takes over. Covers the case where the chunks really did unload and the links have to register from scratch. |
+| `hold_on_chunk_load` | boolean | `true` | — | Whether the chunk-load hold runs at all. The keepalive above is unaffected by this key. |
+| `hold_until_network_reports` | boolean | `true` | — | Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait is always a guess; this is the fact the guess stood for. Bounded by max_hold_ticks. |
+| `keepalive_interval_ticks` | integer | `5` | 1-19 | How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks - one second - after a link last refreshed it, and only the link's own lazyTick() does that, which needs a TICKING chunk. Must stay below 20; 5 leaves a margin of four. |
+| `max_hold_ticks` | integer | `600` | 60-6000 | Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links - measured on five gauges whose network has none at all. They are then released and Create decides for itself again. |
 
 ## `create_water_wheel_unstucker` — Create Water Wheel Unstucker
 

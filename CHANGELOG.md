@@ -4,6 +4,37 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.90] - 2026-09-23
+
+### Changed
+- **`create_stock_link_keepalive` haelt jetzt nach Bedingung statt nach Uhr.** Die feste Frist von
+  60 Ticks war geraten, und Raten reicht hier nicht: sie hielt bei einem Rejoin und war beim
+  naechsten zu kurz, weil die Links je nach Serverlast unterschiedlich lange brauchen, bis sie sich
+  zurueckmelden. Nach Ablauf des Fensters wird ein Gauge nur noch losgelassen, wenn sein Netzwerk
+  tatsaechlich etwas gemeldet hat — gemessen an `InventorySummary.contributingLinks`. Eine
+  Uebersicht, zu der kein einziger Link beigetragen hat, ist kein Beleg fuer ein leeres Lager,
+  auch wenn `getLevelInStorage()` in beiden Faellen 0 zurueckgibt. Genau diese Verwechslung laesst
+  das Gauge gegen ein volles Vault bestellen.
+  Neue Schluessel: `hold_until_network_reports` (Standard an) und `max_hold_ticks` (Standard 600)
+  als Notbremse, damit ein wirklich verschwundenes Netzwerk kein Gauge einfriert.
+- **`create_stock_link_keepalive` haelt jetzt die Links selbst am Leben — das ist der eigentliche
+  Fehler.** Ein Link zaehlt nur zum Netzwerkbestand, solange er in Creates `LINKS`-Cache steht, und
+  der verfaellt **20 Ticks — also eine Sekunde** — nach der letzten Auffrischung. Aufgefrischt wird
+  er ausschliesslich vom `lazyTick()` des Links, und der braucht einen **tickenden** Chunk. Verlaesst
+  ein Spieler den Server, verschwinden seine Chunk-Tickets sofort: die Chunks hoeren auf zu ticken,
+  bleiben aber noch lange geladen. Jede Abwesenheit ueber einer Sekunde leert damit die
+  Bestandsuebersicht, waehrend die Block-Entities nie entladen wurden und Creates eigener Waechter
+  das Netzwerk folglich weiter fuer vollstaendig haelt. Das Gauge liest 0 aus einem vollen Vault und
+  bestellt. **Ein `ChunkEvent.Load` kommt dabei nie vor** — deshalb konnte kein Gnadenfenster, das am
+  Chunk-Load haengt, diesen Fall je fangen.
+  Das Modul frischt die Links nun aus dem eigenen `ServerTickEvent` auf, der unabhaengig davon laeuft,
+  welche Chunks ticken. Neuer Schluessel `keepalive_interval_ticks` (Standard 5, muss unter 20 bleiben).
+  Erfasst werden `stock_link`, `stock_ticker`, `packager`, `repackager` und `redstone_requester`.
+  Reproduziert am 2026-09-23: in den Nachbarchunk und zurueck, dann reconnecten — 1,4 Sekunden Pause
+  genuegten, und drei Gauges bestellten nach.
+- Das Debug-Log meldet beim Loslassen jetzt zusaetzlich die **tatsaechliche Haltedauer** — damit
+  laesst sich belegen, wie weit eine feste Frist haette reichen muessen.
+
 ## [1.0.0-beta.88] - 2026-09-23
 
 ### Added

@@ -3,15 +3,36 @@
   "commands": [],
   "configKeys": [
     {
+      "defaultValue": "5",
+      "effect": "How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks - one second - after a link last refreshed it, and only the link's own lazyTick() does that, which needs a TICKING chunk. Must stay below 20; 5 leaves a margin of four.",
+      "key": "keepalive_interval_ticks",
+      "range": "1-19",
+      "type": "integer"
+    },
+    {
       "defaultValue": "60",
-      "effect": "How long factory panels are kept from placing orders after their chunk loads. The blind window measured on the live server is about 20 ticks; 60 covers it with room to spare. A larger value delays a genuinely needed order by that much (plus up to one Create factoryGaugeTimer interval) after a chunk load, and nothing else.",
+      "effect": "How long factory panels are held after their chunk loads, before the condition below takes over. Covers the case where the chunks really did unload and the links have to register from scratch.",
       "key": "grace_ticks",
       "range": "0-600",
       "type": "integer"
     },
     {
       "defaultValue": "true",
-      "effect": "Whether the panels are held at all. This is the module's only effect; the key exists so the behaviour can be compared without editing the module list.",
+      "effect": "Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait is always a guess; this is the fact the guess stood for. Bounded by max_hold_ticks.",
+      "key": "hold_until_network_reports",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "600",
+      "effect": "Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links - measured on five gauges whose network has none at all. They are then released and Create decides for itself again.",
+      "key": "max_hold_ticks",
+      "range": "60-6000",
+      "type": "integer"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Whether the chunk-load hold runs at all. The keepalive above is unaffected by this key.",
       "key": "hold_on_chunk_load",
       "range": "",
       "type": "boolean"
@@ -35,8 +56,8 @@
   "mixins": [],
   "moduleDeps": [],
   "moduleId": "create_stock_link_keepalive",
-  "notes": "THE BUG, AS MEASURED. A Factory Gauge decides to order when its filter item is below target and Create's own guard waitingForNetwork is false. The two inputs come from unrelated bookkeeping with different lifetimes. Stock comes from LogisticsManager.getSummaryOfNetwork(), built from LogisticallyLinkedBehaviour.getAllPresent(), i.e. the static LINKS cache - a TickBasedCache(20, true) that each link refreshes from its own lazyTick() via keepAlive(). Right after a chunk load no link has re-registered, so the summary is empty and getLevelInStorage() returns 0. The guard comes from GlobalLogisticsManager.getUnloadedLinkCount(), i.e. totalLinks.size() - loadedLinks.size(). On the measured network that difference is 0 in EVERY sample, healthy or not, so waitingForNetwork can never become true and the guard is structurally dead there. Note also that getUnloadedLinkCount() returns 0 when the network object is absent entirely - a second silent way for the guard to vanish.\n\nCAPTURE (Factory Gauge at -3293/75/-2101, polled ~1 Hz, server steady at 20.00 TPS): healthy at 21:52:55 with panels at 2942/64/65/69 all satisfied; chunk gone 21:52:56-57; at 21:52:58 all four panels read LastLevel 0 with Waiting: 0b and LastUnloadedLinks: 0 in that same sample; stock back at 21:52:59; LastPromised climbs to 1 at 21:53:01 and 2 at 21:53:06 while the copper-ingot count falls 2942 -> 2939. The lasting damage was visible as overshoot elsewhere on the wall: 106 barrels against a target of 64, 78 fluid tanks against 64, 71 chests against 64 - and the planks, slabs and iron sheets those crafts consumed then read as deficits, which is easy to mistake for normal restocking.\n\nWHY resetTimer() AND NOT A FIELD. tickRequests() returns while timer > 0, BEFORE it reads any stock level, and resetTimer() is public. Calling it once per tick parks the panel without writing to a single piece of Create's own state - nothing is faked, and when the window closes the panel resumes exactly as designed. Setting waitingForNetwork directly would NOT work: tickStorageMonitor() recomputes it from getUnloadedLinks() earlier in the same tick, so the value would be overwritten before tickRequests() reads it.\n\nVERIFIED at grace_ticks = 60 on 2026-09-23: on a cold load all 14 gauges of the base logged their window closing with real stock and 'satisfied' on every panel, and nothing was re-ordered. This is a WORKAROUND, not a cure - the race is still there, we only keep anyone from acting during it. The real fix belongs upstream and is reported as Create issue #10774; if Create repairs the guard, this module becomes unnecessary.",
-  "oneLiner": "Factory Gauges stop ordering a fresh batch of something the vault is already full of every time the area loads, because they are held back for a moment until the logistics network has reported what is actually in storage.",
+  "notes": "THE ACTUAL BUG, AND TWO WRONG FIXES BEFORE IT. A Factory Gauge orders when its item is below target and Create's guard waitingForNetwork is false. Stock comes from LogisticsManager.getSummaryOfNetwork(), built from LogisticallyLinkedBehaviour.getAllPresent(), i.e. the static LINKS cache - a TickBasedCache(20, true), so an entry dies ONE SECOND after its last refresh. The only thing that refreshes it is the link's own lazyTick(), which requires the link's chunk to be TICKING. The guard meanwhile comes from totalLinks.size() - loadedLinks.size(), which was 0 in every single sample taken on this network, healthy or not - so it can never fire here. getUnloadedLinkCount() also returns 0 when the network object is absent entirely, a second silent way for the guard to vanish.\n\nTHE TRIGGER (reproduced by the server owner, 2026-09-23): step into the chunk diagonally NE of the stock link's chunk, step back, then reconnect. Log: left at 20:57:39.697, joined at 20:57:41.132 - a gap of 1.4 seconds. Chunks do NOT unload that fast, so NO ChunkEvent.Load fires at all; the module logged nothing for the whole run. But a disconnecting player takes their chunk tickets with them, so the chunks stop TICKING immediately while staying loaded. 1.4 s > 1.0 s, so the LINKS entries expire, the summary goes empty, and because nothing unloaded, loadedLinks still lists every link and the guard stays false. The gauge ticks on reconnect, reads 0 from a full vault, and orders. Confirmed by stock: fluid tank 81->82, oak chest 74->75, chain drive 108->109 across that single run. The absence can be ANY length over one second - it only has to be shorter than the chunk-unload delay.\n\nTWO FIXES THAT MISSED, AND WHY THEY ARE KEPT. (1) A fixed 60-tick hold after chunk load: held on one rejoin, was too short on the next. (2) The same hold extended while contributingLinks == 0: better, but still tied to ChunkEvent.Load - and the reproducible case has no chunk load whatsoever. Both remain in the module because they cover the OTHER regime, where the chunks really did unload and the links must register from scratch; 27 releases were logged during the successful verification run. The fix that actually closes the reproducible case is keepLinksAlive(), which re-stamps every tracked link from the module's own ServerTickEvent - that keeps running no matter which chunks tick, so the cache cannot run dry for any length of absence.\n\nVERIFIED 2026-09-23 over FIVE consecutive rejoins using the owner's exact reproduction: fluid tank 82, oak chest 75, barrel 104, chain drive 109 - unchanged to the item, LastPromised 0 on every panel, zero errors, 20.000 TPS. One passing run is NOT evidence for a timing-dependent fix; that lesson cost three premature all-clears in one evening.\n\nWHY resetTimer() AND NOT A FIELD: tickRequests() returns while timer > 0, before it reads any stock level, and resetTimer() is public. Setting waitingForNetwork directly would not work - tickStorageMonitor() recomputes it earlier in the same tick.\n\nUpstream: the guard half is reported as Create issue #10774. The cache-expiry half found here is not yet reported.",
+  "oneLiner": "Factory Gauges stop ordering a fresh batch of something the vault is already full of after you rejoin, because the logistics links are kept reporting their contents even while nobody is nearby to make their chunks tick.",
   "optionalMods": [],
   "recipes": [],
   "registeredInBundle": true,
