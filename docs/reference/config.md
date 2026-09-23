@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 236 module-specific keys across 48 modules,
+Every setting of every module — 242 module-specific keys across 50 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -153,6 +153,26 @@ Mobs use a passage whose wall, ceiling or floor is lined with Create Copycat Pan
 | `direction_aware` | boolean | `true` | — | Blocks only those movements that actually cross a panel's plate; false makes wall and ceiling panels passable from every side, which lets mobs walk into a panel wall and get stuck against it. |
 | `floor_panels_walkable` | boolean | `true` | — | Treats a floor panel (FACING=UP) resting on something solid as walkable ground instead of a wall, fixing passages only one block high, while a floor panel with air below stays as it is so mobs keep crossing free-standing panel bridges. |
 | `water_pathfinding` | boolean | `true` | — | Lets waterlogged panels and steps count as water for swimming mobs, like vanilla slabs do, where Create blocks them outright. |
+
+## `create_redstone_link_rebinder` — Create Redstone Link Rebinder
+
+Redstone Links that quietly stopped reaching their receivers after a chunk reload are found and reconnected, so buttons and levers on a frequency keep working instead of needing the transmitter block replaced by hand. · [full page](../modules/create_redstone_link_rebinder.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `auto_rebind_during_sweep` | boolean | `true` | — | Whether the periodic sweep may re-register missing links. This is the one that does the work in practice - turning it off effectively disables the module's automatic repair. |
+| `auto_rebind_on_chunk_load` | boolean | `true` | — | Whether the post-load check may re-register a missing link itself. Turning it off leaves only /vparelink. |
+| `check_interval_ticks` | integer | `100` | 20-1200 | How often all tracked links are swept. Only remembered positions in loaded chunks are read - never a world scan. This is the value that matters: every one of the ten links repaired after the cold load was found here. Lowering it shortens how long a door stays dead; raising it costs only reaction time. |
+| `post_load_delay_ticks` | integer | `20` | 0-600 | Ticks between a chunk with redstone links loading and the targeted check of those links. This is the early net, for links that never register at all. Measured on games2 on 2026-09-23: after a cold load ten links were missing from their network and NOT ONE was caught here - at 20 ticks they all still looked correct and dropped out afterwards. Do not tune this hoping to catch that case; the sweep does. |
+
+## `create_stock_link_keepalive` — Create Stock Link Keepalive
+
+Factory Gauges stop ordering a fresh batch of something the vault is already full of every time the area loads, because they are held back for a moment until the logistics network has reported what is actually in storage. · [full page](../modules/create_stock_link_keepalive.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `grace_ticks` | integer | `60` | 0-600 | How long factory panels are kept from placing orders after their chunk loads. The blind window measured on the live server is about 20 ticks; 60 covers it with room to spare. A larger value delays a genuinely needed order by that much (plus up to one Create factoryGaugeTimer interval) after a chunk load, and nothing else. |
+| `hold_on_chunk_load` | boolean | `true` | — | Whether the panels are held at all. This is the module's only effect; the key exists so the behaviour can be compared without editing the module list. |
 
 ## `create_water_wheel_unstucker` — Create Water Wheel Unstucker
 

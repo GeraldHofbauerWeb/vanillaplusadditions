@@ -1,0 +1,74 @@
+{
+  "blocks": [],
+  "commands": [
+    "/vparelink"
+  ],
+  "configKeys": [
+    {
+      "defaultValue": "20",
+      "effect": "Ticks between a chunk with redstone links loading and the targeted check of those links. This is the early net, for links that never register at all. Measured on games2 on 2026-09-23: after a cold load ten links were missing from their network and NOT ONE was caught here - at 20 ticks they all still looked correct and dropped out afterwards. Do not tune this hoping to catch that case; the sweep does.",
+      "key": "post_load_delay_ticks",
+      "range": "0-600",
+      "type": "integer"
+    },
+    {
+      "defaultValue": "100",
+      "effect": "How often all tracked links are swept. Only remembered positions in loaded chunks are read - never a world scan. This is the value that matters: every one of the ten links repaired after the cold load was found here. Lowering it shortens how long a door stays dead; raising it costs only reaction time.",
+      "key": "check_interval_ticks",
+      "range": "20-1200",
+      "type": "integer"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Whether the post-load check may re-register a missing link itself. Turning it off leaves only /vparelink.",
+      "key": "auto_rebind_on_chunk_load",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Whether the periodic sweep may re-register missing links. This is the one that does the work in practice - turning it off effectively disables the module's automatic repair.",
+      "key": "auto_rebind_during_sweep",
+      "range": "",
+      "type": "boolean"
+    }
+  ],
+  "displayName": "Create Redstone Link Rebinder",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.level.ChunkEvent.Load",
+    "net.neoforged.neoforge.event.level.ChunkEvent.Unload",
+    "net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent",
+    "net.neoforged.neoforge.event.level.BlockEvent.BreakEvent",
+    "net.neoforged.neoforge.event.tick.ServerTickEvent.Post",
+    "net.neoforged.neoforge.event.level.LevelEvent.Unload",
+    "net.neoforged.neoforge.event.server.ServerStoppedEvent",
+    "net.neoforged.neoforge.event.RegisterCommandsEvent"
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleDeps": [],
+  "moduleId": "create_redstone_link_rebinder",
+  "notes": "WHY THIS EXISTS, AND WHAT CHANGED DURING THE INVESTIGATION. Create builds its redstone-link network purely in memory, from LinkBehaviour.initialize(), which is reached only through SmartBlockEntity.tick() behind a non-persisted 'initialized' flag - so registration happens on the block entity's FIRST TICK and is rebuilt from scratch after every reload. A link that is not in the network still answers neighborChanged (no tick needed), so its Transmit field keeps tracking the lever beside it and the block looks perfectly healthy; only the receiver never hears it. That was measured first: a transmitter reading Transmit: 15 with its receiver stuck at Receive: 0 for as long as a lever was held, cured by replacing the TRANSMITTER.\n\nIMPORTANT CORRECTION, 2026-09-23: the original theory was 'the block entity never ticks, so it never registers'. The live measurement disproves it. On a cold load (empty server -> chunks unloaded -> first join) ten links were missing, including both staircase transmitters at -3274/83/-2114 and -3274/83/-2122 that previously had to be replaced by hand - and ALL TEN were found by the periodic sweep, NONE by the post-load check twenty ticks after the chunk load. Twenty ticks in they were still correctly registered. The registration is therefore removed AFTER it was established, not missed. Who removes it is still unknown; the leading suspicion is a late unload() from a stale block-entity instance dropping its own successor. This is why the sweep, built only as a safety net, is the part that actually works - do not let anyone 'simplify' it away.\n\nThe fix is idempotent by construction: the network bucket is a Set, and Create's own addToNetwork ends in updateNetworkOf, so a transmitter rejoining while it holds a signal pushes that signal to its receivers immediately - no extra nudge from us. Not yet reported upstream: a ticket needs the cause of the removal, and a half-diagnosed report gets closed.",
+  "oneLiner": "Redstone Links that quietly stopped reaching their receivers after a chunk reload are found and reconnected, so buttons and levers on a frequency keep working instead of needing the transmitter block replaced by hand.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [
+    "create_stock_link_keepalive",
+    "create_water_wheel_unstucker"
+  ],
+  "requiredMods": [
+    {
+      "evidence": "CreateRedstoneLinkRebinderModule.java - shouldInitialize() returns isCreateLoaded(), i.e. ModList.get().isLoaded(\"create\"). Without Create, AbstractModule.initialize() skips onInitialize() entirely, so no event handler is ever registered and the module is inert. No Create type is referenced at compile time anywhere in this module: block detection goes through BuiltInRegistries.BLOCK.getKey(state.getBlock()) compared against a ResourceLocation, and every block-entity access goes through the reflection-only bridge class. That is deliberate - Create's SmartBlockEntity hierarchy drags in Ponder, which is not safe to reference from a dedicated-server build (see the project's create-integration note). The bridge resolves all its handles in a static initializer that catches Throwable; if any lookup fails, isAvailable() returns false and the module stays inert instead of throwing. Create is therefore REQUIRED for this module to do anything.",
+      "modId": "create"
+    }
+  ],
+  "shortDescription": "Re-registers Create redstone links that dropped out of their frequency network after a chunk reload.",
+  "side": "server",
+  "sinceCommit": "13749b2",
+  "sinceVersion": "v1.0.0-beta.88"
+}

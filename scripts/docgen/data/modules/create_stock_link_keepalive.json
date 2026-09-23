@@ -1,0 +1,57 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "defaultValue": "60",
+      "effect": "How long factory panels are kept from placing orders after their chunk loads. The blind window measured on the live server is about 20 ticks; 60 covers it with room to spare. A larger value delays a genuinely needed order by that much (plus up to one Create factoryGaugeTimer interval) after a chunk load, and nothing else.",
+      "key": "grace_ticks",
+      "range": "0-600",
+      "type": "integer"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Whether the panels are held at all. This is the module's only effect; the key exists so the behaviour can be compared without editing the module list.",
+      "key": "hold_on_chunk_load",
+      "range": "",
+      "type": "boolean"
+    }
+  ],
+  "displayName": "Create Stock Link Keepalive",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.level.ChunkEvent.Load",
+    "net.neoforged.neoforge.event.level.ChunkEvent.Unload",
+    "net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent",
+    "net.neoforged.neoforge.event.level.BlockEvent.BreakEvent",
+    "net.neoforged.neoforge.event.tick.ServerTickEvent.Post",
+    "net.neoforged.neoforge.event.level.LevelEvent.Unload",
+    "net.neoforged.neoforge.event.server.ServerStoppedEvent"
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleDeps": [],
+  "moduleId": "create_stock_link_keepalive",
+  "notes": "THE BUG, AS MEASURED. A Factory Gauge decides to order when its filter item is below target and Create's own guard waitingForNetwork is false. The two inputs come from unrelated bookkeeping with different lifetimes. Stock comes from LogisticsManager.getSummaryOfNetwork(), built from LogisticallyLinkedBehaviour.getAllPresent(), i.e. the static LINKS cache - a TickBasedCache(20, true) that each link refreshes from its own lazyTick() via keepAlive(). Right after a chunk load no link has re-registered, so the summary is empty and getLevelInStorage() returns 0. The guard comes from GlobalLogisticsManager.getUnloadedLinkCount(), i.e. totalLinks.size() - loadedLinks.size(). On the measured network that difference is 0 in EVERY sample, healthy or not, so waitingForNetwork can never become true and the guard is structurally dead there. Note also that getUnloadedLinkCount() returns 0 when the network object is absent entirely - a second silent way for the guard to vanish.\n\nCAPTURE (Factory Gauge at -3293/75/-2101, polled ~1 Hz, server steady at 20.00 TPS): healthy at 21:52:55 with panels at 2942/64/65/69 all satisfied; chunk gone 21:52:56-57; at 21:52:58 all four panels read LastLevel 0 with Waiting: 0b and LastUnloadedLinks: 0 in that same sample; stock back at 21:52:59; LastPromised climbs to 1 at 21:53:01 and 2 at 21:53:06 while the copper-ingot count falls 2942 -> 2939. The lasting damage was visible as overshoot elsewhere on the wall: 106 barrels against a target of 64, 78 fluid tanks against 64, 71 chests against 64 - and the planks, slabs and iron sheets those crafts consumed then read as deficits, which is easy to mistake for normal restocking.\n\nWHY resetTimer() AND NOT A FIELD. tickRequests() returns while timer > 0, BEFORE it reads any stock level, and resetTimer() is public. Calling it once per tick parks the panel without writing to a single piece of Create's own state - nothing is faked, and when the window closes the panel resumes exactly as designed. Setting waitingForNetwork directly would NOT work: tickStorageMonitor() recomputes it from getUnloadedLinks() earlier in the same tick, so the value would be overwritten before tickRequests() reads it.\n\nVERIFIED at grace_ticks = 60 on 2026-09-23: on a cold load all 14 gauges of the base logged their window closing with real stock and 'satisfied' on every panel, and nothing was re-ordered. This is a WORKAROUND, not a cure - the race is still there, we only keep anyone from acting during it. The real fix belongs upstream and is reported as Create issue #10774; if Create repairs the guard, this module becomes unnecessary.",
+  "oneLiner": "Factory Gauges stop ordering a fresh batch of something the vault is already full of every time the area loads, because they are held back for a moment until the logistics network has reported what is actually in storage.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [
+    "create_redstone_link_rebinder",
+    "create_water_wheel_unstucker"
+  ],
+  "requiredMods": [
+    {
+      "evidence": "CreateStockLinkKeepaliveModule.java - shouldInitialize() returns isCreateLoaded(), i.e. ModList.get().isLoaded(\"create\"). Without Create, AbstractModule.initialize() skips onInitialize() entirely, so no event handler is ever registered and the module is inert. No Create type is referenced at compile time anywhere in this module: block detection goes through BuiltInRegistries.BLOCK.getKey(state.getBlock()) compared against a ResourceLocation, and every block-entity access goes through the reflection-only bridge class. That is deliberate - Create's SmartBlockEntity hierarchy drags in Ponder, which is not safe to reference from a dedicated-server build (see the project's create-integration note). The bridge resolves all its handles in a static initializer that catches Throwable; if any lookup fails, isAvailable() returns false and the module stays inert instead of throwing. Create is therefore REQUIRED for this module to do anything.",
+      "modId": "create"
+    }
+  ],
+  "shortDescription": "Stops Create Factory Gauges from re-ordering stock they already have, right after a chunk load.",
+  "side": "server",
+  "sinceCommit": "13749b2",
+  "sinceVersion": "v1.0.0-beta.88"
+}
