@@ -4,6 +4,32 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.88] - 2026-09-23
+
+### Added
+- **Neues Modul `create_redstone_link_rebinder`.** Creates Redstone Links melden sich nur im
+  **ersten Tick** ihrer Block-Entity am Frequenz-Netzwerk an, und diese Anmeldung wird nie
+  gespeichert. Faellt ein Link heraus, wirkt er trotzdem kerngesund: `neighborChanged` braucht
+  keinen Tick, also springt sein `Transmit` weiter brav auf 15 — nur hoert ihn niemand. Das Modul
+  merkt sich alle Link-Positionen beim Chunk-Load, prueft sie kurz danach und danach im Takt, und
+  traegt fehlende wieder ein. Dazu `/vparelink` fuer den Handbetrieb.
+  **Nachweis:** nach einem Kaltstart auf games2 fehlten **zehn** Links im Netzwerk, darunter beide
+  Treppen-Sender, die vorher von Hand ersetzt werden mussten. Alle zehn automatisch repariert.
+- **Neues Modul `create_stock_link_keepalive`.** Ein Factory Gauge entscheidet ueber eine
+  Bestellung anhand zweier Buchhaltungen, die nach einem Chunk-Load auseinanderlaufen: der Bestand
+  kommt aus einem Cache mit 20-Tick-Verfall, der Schutzschalter `waitingForNetwork` aus einer
+  voellig anderen Struktur — und der steht dauerhaft auf 0, kann also nie ausloesen. Eine Sekunde
+  lang liest das Panel deshalb Bestand 0 bei vollem Lager und bestellt dagegen. Das Modul haelt die
+  Panels fuer ein kurzes Fenster nach dem Chunk-Load per `resetTimer()` zurueck — ohne einen
+  einzigen Wert in Creates eigener Buchhaltung anzufassen.
+  **Nachweis:** vorher 42 ueberzaehlige Faesser und ein Kupferbestand, der beim Einloggen sank;
+  nachher melden alle 14 Gauges der Basis echte Bestaende und bestellen nichts nach.
+  Upstream gemeldet als [Create #10774](https://github.com/Creators-of-Create/Create/issues/10774).
+- **Gemeinsames Geruest `util/blocktracking`** (in `vpa_core`): `TrackedPositionRegistry` merkt sich
+  Block-Positionen aus der Block-Entity-Map beim Chunk-Load — nie ein Weltscan —, gepflegt ueber
+  Setzen, Abbauen und Entladen; `PostLoadScheduler` haengt eine gezielte Pruefung hinter den
+  Chunk-Load. Beide neuen Module bauen darauf auf.
+
 ## [1.0.0-beta.87] - 2026-09-20
 
 ### Added

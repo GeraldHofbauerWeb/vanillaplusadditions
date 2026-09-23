@@ -414,6 +414,8 @@ def standaloneModules = [
       mixins: ['copycat_pathfinding.BlockStateBaseCopycatMixin',
                'copycat_pathfinding.NodeEvaluatorContextAccessor',
                'copycat_pathfinding.WalkNodeEvaluatorCopycatMixin'] ],
+    [ moduleId: 'create_redstone_link_rebinder', displayName: 'Vanilla Plus: Create Redstone Link Rebinder' ],
+    [ moduleId: 'create_stock_link_keepalive', displayName: 'Vanilla Plus: Create Stock Link Keepalive' ],
     [ moduleId: 'create_water_wheel_unstucker', displayName: 'Vanilla Plus: Create Water Wheel Unstucker' ],
     [ moduleId: 'custom_crafting_recipes', displayName: 'Vanilla Plus: Custom Crafting Recipes' ],
     [ moduleId: 'death_coordinates', displayName: 'Vanilla Plus: Death Coordinates' ],

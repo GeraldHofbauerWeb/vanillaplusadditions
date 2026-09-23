@@ -46,6 +46,8 @@ import net.geraldhofbauer.vanillaplusadditions.modules.freecam_sublevel_noclip.F
 import net.geraldhofbauer.vanillaplusadditions.modules.mob_cart_loader.MobCartLoaderModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.MoArrowsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.copycat_pathfinding.CopycatPathfindingModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.create_redstone_link_rebinder.CreateRedstoneLinkRebinderModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.create_stock_link_keepalive.CreateStockLinkKeepaliveModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.CreateWaterWheelUnstuckerModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.debug_overlay.DebugOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.dispenser_bucket_guard.DispenserBucketGuardModule;
@@ -180,6 +182,8 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new OptionsModule());
         moduleManager.registerModule(new StaticFovModule());
         moduleManager.registerModule(new CreateWaterWheelUnstuckerModule());
+        moduleManager.registerModule(new CreateRedstoneLinkRebinderModule());
+        moduleManager.registerModule(new CreateStockLinkKeepaliveModule());
         moduleManager.registerModule(new ConduitAttackRangeModule());
         moduleManager.registerModule(new CopycatPathfindingModule());
         moduleManager.registerModule(new CompassOverhaulModule());
