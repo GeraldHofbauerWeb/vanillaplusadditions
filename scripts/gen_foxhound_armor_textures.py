@@ -22,6 +22,12 @@ Aufruf (Quark-Jar wird sonst in ``libs/`` gesucht)::
 
 Die Ergebnisse werden mitcommittet, damit weder Build noch CI das Quark-Jar brauchen.
 Braucht Pillow.
+
+**Erlaubnis liegt vor.** Die Vorlage gehört Vazkii, die Ergebnisse sind also abgeleitete Assets und
+nicht ohne Weiteres weiterzugeben. Vazkii wurde am 2026-09-24 per Discord-DM gefragt und hat
+zugestimmt ("yeah no problem"). Die Frage nannte genau dieses Verfahren - Umfärben je Stufe,
+gleiche Pixel, gleiche Schattierung, nur der Farbton verschoben -, die Zusage deckt also das, was
+hier wirklich herauskommt. Wer das Verfahren grundlegend ändert, fragt besser neu.
 """
 
 import io

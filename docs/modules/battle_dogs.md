@@ -335,6 +335,11 @@ throughout, so a brown strap the wolf version does not have would be the odd one
 
 Results are committed, so neither the build nor CI needs the Quark jar.
 
+**Permission.** Those four textures are derived from Quark's own `foxhound_armor.png`, so they are
+not ours to redistribute by default. Vazkii was asked directly and granted it — Discord DM,
+2026-09-24: *"yeah no problem"*. The question named exactly what was done (recoloured per tier, same
+pixels and shading, only the hue remapped) so the permission covers what actually ships.
+
 ## Under the hood
 
 | File | Role |

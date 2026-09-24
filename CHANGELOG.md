@@ -113,6 +113,8 @@ oder sein eigener Anspruch.
   Schattierung bleibt Pixel fuer Pixel erhalten, nur der Farbton wandert. Eigene Texturen sind
   noetig, weil Quarks Ruestungsmodell eine 64x64-UV-Belegung hat und unsere Wolfstextur 64x32 ist.
   Kein Riss-Overlay: die Vanilla-`crackiness`-Texturen passen auf das andere Modell nicht.
+  Die Texturen sind von Quarks Vorlage abgeleitet; Vazkii hat der Weitergabe am 2026-09-24 per
+  Discord-DM ausdruecklich zugestimmt.
 
 ### Changed
 - **Kommentare und Javadocs, die das Gegenteil dessen sagten, was der Code tut**, richtiggestellt:
