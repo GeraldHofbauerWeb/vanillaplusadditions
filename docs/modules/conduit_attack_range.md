@@ -208,7 +208,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| **The standalone jar ships no behaviour** | `vpa_conduit_attack_range.jar` is built and published, but there is no `standalone/conduit_attack_range` package and therefore no `@Mod` entry point in it. Nothing ever constructs `ConduitAttackRangeModule`, so its static `instance` stays null, `isActive()` returns false and all four injections hand back the vanilla values. Use the bundle. |
+| The standalone jar | Works. It was inert for a long time — the jar was built and published without a `standalone/conduit_attack_range` package, so nothing ever constructed `ConduitAttackRangeModule`, `instance` stayed null, `isActive()` returned false and all four injections handed back vanilla values. The missing `@Mod` entry point has since been added. Not yet confirmed in game. |
 | The angry eye still needs 42 frames | See above — `updateHunting` is untouched, so a sub-42 conduit attacks with a closed eye. |
 | Corner targets are hit half as often | Cube acquisition versus spherical retention, inherited from vanilla. See *How far*. |
 | `min_frames` outside 16–42 | Silently does nothing, or silently disables the attack. Nothing validates the value. |

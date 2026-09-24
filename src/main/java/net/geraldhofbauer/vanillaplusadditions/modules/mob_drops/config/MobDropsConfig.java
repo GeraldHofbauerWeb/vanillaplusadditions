@@ -49,7 +49,10 @@ public class MobDropsConfig extends AbstractModuleConfig<MobDropsModule, MobDrop
                     }
                     try {
                         float chance = Float.parseFloat(parts[2]);
-                        if (chance < 0.0f || chance > 1.0f) {
+                        // !(0 <= chance <= 1), so that NaN is rejected too: Float.parseFloat accepts
+                        // "NaN", every comparison against it is false, and the rule would then pass
+                        // validation and silently never fire (nextFloat() < NaN is never true).
+                        if (!(chance >= 0.0f) || !(chance <= 1.0f)) {
                             return false;
                         }
                         if (parts.length == 4) {

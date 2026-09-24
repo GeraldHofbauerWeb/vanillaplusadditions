@@ -11,8 +11,8 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 /**
- * Overpacked Extensions — a single module bundling three quality-of-life features for the Overpacked
- * giant-backpack mod. All three share this module's {@code enabled} flag but each has its own config
+ * Overpacked Extensions — a single module bundling two quality-of-life features for the Overpacked
+ * giant-backpack mod. Both share this module's {@code enabled} flag but each has its own config
  * toggle (see {@link OverpackedExtensionsConfig}):
  * <ol>
  *   <li><b>Slowdown override</b> ({@link SlowdownFeature}) — re-applies Overpacked's movement penalty
@@ -23,7 +23,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
  *
  * <p>Sorting + searching inside the backpack are intentionally <b>not</b> reimplemented here: Quark
  * already provides both, and its buttons appear on Overpacked's screen once its class is whitelisted
- * in Quark's {@code "Allowed Screens"} config (see {@code docs/overpacked_extensions.md}).
+ * in Quark's {@code "Allowed Screens"} config (see {@code docs/modules/overpacked_extensions.md}).
  *
  * <p>The backpack features are no-ops when Overpacked/Curios are absent: all references to those mods
  * live inside {@link OverpackedGuiBridge} / {@code CuriosBackpackAccess}, reached only after the

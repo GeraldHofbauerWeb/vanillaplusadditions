@@ -17,6 +17,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,10 +37,26 @@ public final class AnchorBorderRenderer implements DebugOverlayRenderer {
     private final Map<BlockPos, Boolean> anchors = new HashMap<>();
     private long lastScan = Long.MIN_VALUE;
 
+    /**
+     * The level the cached anchors were scanned in. Weak, so a disconnect is not kept alive by the
+     * overlay; the renderer itself is registered once and lives for the whole client run.
+     */
+    private WeakReference<Level> scannedLevel = new WeakReference<>(null);
+
     @Override
     public void clientTick(Minecraft mc) {
         if (mc.level == null || mc.player == null) {
+            anchors.clear();
+            scannedLevel = new WeakReference<>(null);
             return;
+        }
+        if (scannedLevel.get() != mc.level) {
+            // A different world: the cached positions belong to the old one, and its game time is
+            // unrelated to this one's - a lower time would otherwise hold off the next scan for as
+            // long as it takes to catch up, all the while drawing the previous world's anchors.
+            anchors.clear();
+            scannedLevel = new WeakReference<>(mc.level);
+            lastScan = Long.MIN_VALUE;
         }
         long now = mc.level.getGameTime();
         if (now >= lastScan + SCAN_INTERVAL) {

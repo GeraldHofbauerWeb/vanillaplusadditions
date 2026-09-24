@@ -146,28 +146,27 @@ Component message = Component
                 .literal("\nLocation: %d, %d, %d".formatted(position.getX(), position.getY(), position.getZ()))
 ```
 
-The coordinate line carries a `RUN_COMMAND` click event for `/tp @p x y z`, which needs permission
-level 2 — a normal player clicking it gets an error. The text is a hardcoded literal; there is no
-lang key for it, so it cannot be translated. Sending it also writes one unconditional `INFO` line to
-the log per blocked spawn.
+The coordinate line carries a `RUN_COMMAND` click event for `/tp @s x y z`, which needs permission
+level 2 — so it is attached per recipient, and players who could not run it get the same line
+without the click rather than an error on it. The text is a hardcoded English literal with no lang
+key: it is debug output, not a player-facing message, and with `debug_logging` off — the default —
+none of it is ever sent.
 
-### The code and the labels disagree
+### The labels used to say the opposite
 
-The module only ever acts **inside** fortress chunks, but most of the prose around it says the
-opposite:
+The module only ever acts **inside** fortress chunks. For a long time almost every piece of prose
+around it claimed otherwise, and in a way that is easy to trip over while reading the handler:
 
-| Where | What it says | What happens |
+| Where | What it said | What actually happens |
 |---|---|---|
 | Startup log, `onInitialize` | "Normal skeletons are now banned from the Nether!" | They are banned from fortress chunks only |
 | Debug line before the block | "Allowed normal skeleton spawn inside Nether Fortress at {}" | Eighteen lines later that same spawn is cancelled |
 | README, class javadoc | "optionally replaces them with Wither Skeletons" | The replacement is unconditional; no switch exists |
+| Module description | "broadcasts messages about blocked spawns" | Only with `debug_logging` on, which is off by default |
 
-The one piece of text that matches the code is the chat message itself: *"A normal skeleton tried to
-spawn in a Fortress but was blocked."*
-
-<!-- TODO: fortress-only is what the code does and what this page documents; whether the inverted
-     wording in the log lines, the javadoc and the README is the accident, or the scope is, needs a
-     decision from Gerry. -->
+All four have been corrected to describe the code. The scope itself was left alone: fortress-only
+is a defensible design — it is where a fortress spawner would otherwise dilute wither skeletons —
+and widening it to the whole Nether would be a gameplay decision, not a repair.
 
 <!-- vpa:config:start -->
 ## Configuration

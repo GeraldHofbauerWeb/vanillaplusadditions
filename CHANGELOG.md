@@ -4,6 +4,135 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.91] - 2026-09-24
+
+Abarbeitung der Quelltext-Fundliste aus dem Doku-Audit (`docs/internal/source-findings-2026-09-20.md`):
+54 der 57 Befunde repariert, die drei übrigen mit Begründung geschlossen. Kein Modul wurde in seinem
+Verhalten erweitert — repariert wurde, wo der Code etwas anderes tat als sein Kommentar, seine Doku
+oder sein eigener Anspruch.
+
+### Fixed
+- **Framework: `onCommonSetup`/`onClientSetup`/`onLoadComplete` liefen auch fuer Module, die
+  `shouldInitialize()` abgelehnt hatten.** `ModuleManager` baut seine Liste allein aus dem
+  Config-Flag und verteilte die drei Setup-Phasen an alle. Ein Modul, dem die noetige Fremd-Mod
+  fehlt, griff dabei weiter auf deren Typen zu. Im Bundle fing der `try/catch` das als geloggte
+  Ausnahme; `StandaloneModuleBootstrap` haengt seine Listener **ohne** Absicherung ein — dort nahm
+  `PonderIndex.addPlugin` (ein `NoClassDefFoundError`, kein `Exception`) das Spiel mit.
+  `AbstractModule` merkt sich jetzt, ob `onInitialize()` wirklich gelaufen ist, und schliesst die
+  drei Phasen sonst kurz. Sichtbar geworden an `train_chunk_loading` ohne Create.
+- **`mob_spawn_overlay` stuerzte den Client ab, sobald das Overlay an war.** Der Renderer hielt drei
+  `VertexConsumer` gleichzeitig und schrieb abwechselnd hinein; eine gemeinsame
+  `MultiBufferSource.BufferSource` beendet den laufenden Batch aber, sobald ein anderer Render-Typ
+  angefordert wird — der erste Schreibzugriff lief damit in ein `IllegalStateException: Not
+  building!` mitten im `RenderLevelStageEvent`. Jetzt ein Durchlauf je Render-Typ, der Consumer
+  jeweils zu Beginn seines eigenen Durchlaufs geholt.
+- **`chunk_reset`: Bestaetigen nach einem Dimensionswechsel loeschte die Chunks in der falschen
+  Welt.** Der gemerkte Auftrag kannte nur `ChunkPos` und Radius. Er merkt sich jetzt die Dimension
+  und verweigert die Ausfuehrung anderswo — mit Nennung beider Welten. Dazu: Erfolg wird nicht mehr
+  blind gemeldet (fehlgeschlagene Schreibvorgaenge und noch geladene Chunks werden benannt), der
+  Rettungs-Teleport sucht die Oberflaeche statt das alte Y zu behalten, ein verdraengter Auftrag
+  sagt es, und ein Logout raeumt ihn weg.
+- **`chunk_reset`: die Loeschung haelt jetzt — im Spiel bestaetigt.** Ein geladener Chunk wurde vom
+  naechsten Autosave, vom Unload-Save und beim Herunterfahren wieder ueber den geleerten
+  Region-Eintrag geschrieben (`ChunkMap.save` erreicht denselben `write`). Bei `radius 0` war das
+  kein Sonderfall, sondern der Normalfall — man steht ja darin.
+  Auf das Entladen zu warten loest das **nicht**: `ChunkMap.processUnloads` nimmt den Chunk aus der
+  Map, die `getVisibleChunkIfPresent` liest, und erst danach speichert `scheduleUnload` ihn. Auf
+  games2 (`view-distance=32`) war der Chunk ausserdem **291 ms** nach dem Entladen schon wieder
+  geladen. Stattdessen wird dem Chunk das Schreiben weggenommen: solange er in der Warteschlange
+  steht, wird er **jeden Tick** per `setUnsaved(false)` als gespeichert markiert, und
+  `ChunkMap.save` steigt bei `if (!chunk.isUnsaved()) return false;` aus. Kein Autosave, kein
+  Unload, kein Shutdown schreibt ihn mehr. Was jemand waehrenddessen hineinbaut, ist verworfen —
+  bei einem Reset genau der Zweck. Nach zehn Minuten wird der Halt mit WARN aufgegeben.
+  Gegengeprueft am 2026-09-24 auf dem Live-Server: der Region-Header des Testchunks ging von zwei
+  Sektoren auf einen, der frisch generierte Chunk ist kleiner als der Bau darin.
+- **`glider_water_repair`: die Reparatur erreichte die Clients nicht.** Der Stack wurde an Ort und
+  Stelle veraendert — also genau das Objekt im `DATA_ITEM`-Slot der Entity, das `SynchedEntityData`
+  daraufhin als unveraendert ansieht (`ItemStack` hat kein `equals`). Repariert wird jetzt eine
+  Kopie, zurueckgegeben ueber `setItem`.
+- **`death_coordinates`: der Teleport-Klick haengt jetzt am Leser, nicht am Toten.** Bisher
+  entschied der Rang des gestorbenen Spielers ueber eine Nachricht, die alle bekamen — ein
+  Op-Tod gab damit jedem einen Befehl, den der Server ihm verweigert, und der Tod eines normalen
+  Spielers blieb selbst fuer Ops unklickbar.
+- **`idle_gamerules` meldete Erfolg, auch wenn nichts passierte.** Die Regeln liefen ueber
+  `/gamerule` an einer Quelle mit unterdrueckter Ausgabe, die jeden Parse-Fehler verschluckt.
+  Jetzt werden sie namentlich nachgeschlagen und direkt geschrieben; ein unbekannter Name wird
+  benannt statt stillschweigend uebergangen. Ausserdem stellt das Modul die pausierten Regeln beim
+  Herunterfahren eines leeren Servers wieder her — sonst bleiben sie in `level.dat` aus, ohne dass
+  noch etwas da waere, das sie zurueckdreht.
+- **`mob_drops`: ein Tippfehler im `mob_id` haengte die Regel an Schweine.** `ENTITY_TYPE` ist eine
+  `DefaultedRegistry`, deren `get()` nie `null` liefert — der Null-Zweig samt Warnung war
+  unerreichbar. Jetzt `containsKey` zuerst. Dazu faellt `NaN` als Chance nicht mehr durch die
+  Validierung (jeder Vergleich mit `NaN` ist falsch, die Regel haette nie ausgeloest).
+- **`conduit_attack_range`: das Standalone-Jar enthielt keinerlei Verhalten.** Der Einstiegspunkt
+  `standalone/conduit_attack_range` hat nie existiert, obwohl `build.gradle` das Jar deklariert und
+  CI es veroeffentlicht — ohne `@Mod`-Klasse wurde das Modul nie konstruiert, `isActive()` blieb
+  false und alle vier Injections gaben Vanilla-Werte zurueck. Einstiegspunkt nachgetragen.
+- **`mo_arrows`: das Feuer landete nur auf flachem Boden.** Gesetzt wurde es immer an dem Block
+  **vor der getroffenen Flaeche** — beim Schuss in den Boden genau richtig, sonst haeufig nicht.
+  Seitlich in einen Busch bleibt der Pfeil *im* Laub stecken, nicht davor, und der Block vor der
+  Flaeche ist dann wieder Laub; `canBePlacedAt` steigt bei `!isAir()` aus. Eine Schneeschicht ist
+  zwei Pixel hoch, der Pfeil geht durch und trifft den Boden darunter — beide Kandidaten halten dann
+  Schnee statt Luft. Jetzt gilt: erst der Block vor der Flaeche, dann der Block, in dem der Pfeil
+  selbst steckt (die Luft, durch die er geflogen ist), und ein **ersetzbarer** Block darf dem Feuer
+  weichen, sofern es dort ueberlebt — Schnee ist in Vanilla als `replaceable()` deklariert, hohes
+  Gras und Farne ebenso. Im Spiel belegt am 2026-09-24 ueber 18 Treffer, keine Verweigerung.
+- **`mo_arrows`: der Werfer schoss den Fire Arrow nicht.** `FireArrowItem.asProjectile` war toter
+  Code, weil nie eine `ProjectileDispenseBehavior` registriert wurde. Jetzt im `commonSetup` per
+  `enqueueWork` nachgetragen.
+- **`stationary_chunk_loader`: `forcingEnabled` ueberlebte den Server.** Mit
+  `only_while_players_online = false` feuerte der Resume-Uebergang dadurch genau einmal pro
+  Spielprozess. Zuruecksetzen auf `ServerStopped`. Das Anker-Overlay vergisst seine Treffer
+  ausserdem beim Weltwechsel, statt sie weiterzuzeichnen, bis die Spielzeit der neuen Welt
+  aufgeholt hat.
+- **`waystone_amethyst_repair`: beide Gratis-Tore laufen jetzt synchron.**
+  `ModuleManager.isModuleEnabled(String)` las eine Momentaufnahme vom Start statt der Live-Config.
+  Wer `free_anvil_repair` zur Laufzeit in der Datei abschaltete, bekam einen Amboss-Ausgang zu
+  sehen, den er nicht nehmen durfte.
+- **`item_vault_viewer` zeigte frisch geladene Vaults als 20 Slots.** `getInventory` las Creates
+  Feld `itemCapability` direkt per Reflection — das baut Create aber **lazy**, naemlich aus dem
+  Capability-Lookup heraus. Ein Vault, das seit dem Chunk-Load niemand angefasst hatte, lieferte
+  darum `null`, und die Anzeige fiel still auf `getInventoryOfBlock()` zurueck: ein Block statt des
+  ganzen Multiblocks. Jetzt wird zuerst
+  `level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null)` gefragt — genau der Aufruf, der
+  `initCapability()` ausloest. Beide Reflection-Wege bleiben als Rueckfallebene.
+- **`hostile_endermen`:** latenter NPE im Config-Guard (`suppressTeleportAttack` wurde
+  dereferenziert, aber nicht geprueft) und ein toter Stacktrace-Filter auf das Mixin-Paket — ein
+  `@Inject` wird in seine Zielklasse kopiert, solche Frames kann es nicht geben.
+
+### Added
+- **`battle_dogs`: unsere Hunderuestung ist auf Quarks Foxhound jetzt sichtbar.** Bisher trug der
+  Foxhound sie unsichtbar — gleich zwei Tore waren zu. Quarks eigene Ruestungsschicht haengt an
+  `Wolf.hasArmor()`, und das ist `getBodyArmorItem().is(Items.WOLF_ARMOR)`, also das konkrete
+  Vanilla-Item statt des Typs. Und unsere Schicht haengt an `EntityType.WOLF`; der Foxhound erbt
+  zwar von `Wolf`, hat aber einen eigenen Renderer und ein eigenes Modell. Also eine zweite Schicht
+  an Quarks Renderer, hinter einem `ModList.isLoaded("quark")`-Tor in eigener, Quark-freier Klasse.
+  Vier neue Texturen, erzeugt von `scripts/gen_foxhound_armor_textures.py`: Quarks
+  `foxhound_armor.png` wird mit der Palette je Werkstoffstufe umgefaerbt, zugeordnet nach
+  Helligkeit. Das geht auf, weil beide Seiten genau elf undurchsichtige Farbtoene benutzen — die
+  Schattierung bleibt Pixel fuer Pixel erhalten, nur der Farbton wandert. Eigene Texturen sind
+  noetig, weil Quarks Ruestungsmodell eine 64x64-UV-Belegung hat und unsere Wolfstextur 64x32 ist.
+  Kein Riss-Overlay: die Vanilla-`crackiness`-Texturen passen auf das andere Modell nicht.
+
+### Changed
+- **Kommentare und Javadocs, die das Gegenteil dessen sagten, was der Code tut**, richtiggestellt:
+  `wither_skeleton` (sperrt Festungen, nicht den ganzen Nether; die Ersetzung ist nicht optional;
+  gemeldet wird nur mit Debug-Logging), `battle_dogs` (`swing()` verschluckt keine Bisse — es setzt
+  `swingTime = -1`, und der eigene Guard laesst das durch), `conduit_attack_range` (Vanilla zeichnet
+  keinen Strahl, sondern ein Nautilus-Partikel am Ziel), `create_water_wheel_unstucker` (Tally-Drop
+  ist nicht befehlsonly; Create liest den Flow-Score alle 60 Ticks nach),
+  `stationary_chunk_loader`, `train_chunk_loading`, `mob_spawn_overlay`, `overpacked_extensions`,
+  `freecam_sublevel_noclip`, `mob_drops`, `pathfinder_quills`, `custom_crafting_recipes` und
+  `AbstractModule`.
+- Der Startup-Hinweis fuer ein Modul, dem eine Fremd-Mod fehlt, sagt nicht mehr "is disabled" —
+  abgeschaltet hat es niemand, es ist nicht verfuegbar.
+- `docs/guides/testing.md` behauptet nicht mehr, das Projekt nutze JUnit. Es gibt kein `src/test`;
+  `./gradlew test` ist ein Nulldurchlauf, der immer gruen ist.
+- Tote Lang-Schluessel `message.vpa.death_coords[.hover]` aus allen sechs Sprachdateien entfernt
+  (in keiner Java-Datei referenziert, Rest der 0.10.3-Runde).
+- Veraltete Doku-Pfade (`docs/<modul>.md` statt `docs/modules/<modul>.md`) in sechs Java-Dateien,
+  `build.gradle` und `CLAUDE.md` nachgezogen.
+
 ## [1.0.0-beta.90] - 2026-09-23
 
 ### Changed

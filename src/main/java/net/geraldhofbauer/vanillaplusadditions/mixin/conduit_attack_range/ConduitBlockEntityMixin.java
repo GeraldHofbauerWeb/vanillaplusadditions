@@ -28,9 +28,12 @@ import java.util.List;
  * </ul>
  * A fourth edit widens {@code findDestroyTarget}'s search box to the maximum possible hostile radius.
  * That method resolves the target entity by UUID and is what the <em>client</em> uses (via
- * {@code updateClientTarget}) to render the vanilla attack beam; with the stock 8-block box a mob
- * damaged beyond 8 blocks stays unresolved client-side, so no beam is drawn. It has no
- * {@code positions} in scope, but since it matches an exact UUID a generously large box is safe.
+ * {@code updateClientTarget}) to show that a conduit is hunting: there is no beam in vanilla, just a
+ * single nautilus particle spawned at the target each client tick
+ * ({@code ConduitBlockEntity.animationTick}). With the stock 8-block box a mob damaged beyond 8
+ * blocks stays unresolved client-side, so that particle never appears and the attack is invisible.
+ * The method has no {@code positions} in scope, but since it matches an exact UUID a generously
+ * large box is safe.
  */
 @Mixin(ConduitBlockEntity.class)
 public class ConduitBlockEntityMixin {

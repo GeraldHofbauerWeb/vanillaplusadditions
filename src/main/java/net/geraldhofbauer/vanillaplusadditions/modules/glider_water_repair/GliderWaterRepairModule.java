@@ -79,10 +79,13 @@ public class GliderWaterRepairModule
      */
     @SubscribeEvent
     public void onItemEntityTick(EntityTickEvent.Post event) {
+        // The ServerLevel test comes before isModuleEnabled() on purpose: that call is a map
+        // lookup plus a config read, and this handler fires for every dropped item on both sides.
+        // In this order a client never gets past the second line.
         if (!(event.getEntity() instanceof ItemEntity itemEntity)
                 || itemEntity.tickCount % WATER_CHECK_INTERVAL != 0
-                || !isModuleEnabled()
                 || !(itemEntity.level() instanceof ServerLevel level)
+                || !isModuleEnabled()
                 || !itemEntity.isInWater()) {
             return;
         }
@@ -91,12 +94,19 @@ public class GliderWaterRepairModule
             return;
         }
 
-        stack.set(requireBrokenComponent(), false);
+        // Repair a COPY and hand it back via setItem. Mutating the stack in place would change
+        // the very object sitting in the entity's DATA_ITEM slot, and SynchedEntityData.set skips
+        // a value it considers unchanged (ItemStack has no equals override, so that check is
+        // identity) - the item would stay 'damaged_glider' on every tracking client until the
+        // entity was re-tracked or picked up.
+        ItemStack repaired = stack.copy();
+        repaired.set(requireBrokenComponent(), false);
+        itemEntity.setItem(repaired);
         level.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                 SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 1.2F);
         level.sendParticles(ParticleTypes.CLOUD, itemEntity.getX(), itemEntity.getY() + 0.2,
                 itemEntity.getZ(), 8, 0.2, 0.1, 0.2, 0.0);
-        getLogger().debug("Water freed {} from its broken state", stack.getItem());
+        getLogger().debug("Water freed {} from its broken state", repaired.getItem());
     }
 
     private static boolean isGlider(ItemStack stack) {

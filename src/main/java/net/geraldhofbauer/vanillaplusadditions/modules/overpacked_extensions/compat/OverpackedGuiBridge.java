@@ -43,13 +43,19 @@ import java.util.UUID;
  */
 public final class OverpackedGuiBridge {
 
-    /** Transient backpack entities we spawned, keyed by entity id → the slot to write back to. */
     /**
      * Markiert die Helfer-Entity im NBT, damit eine liegengebliebene beim Laden erkannt wird.
      * {@link Entity#addTag} landet in den {@code Tags} und ueberlebt Speichern und Neustart.
      */
     private static final String HELPER_TAG = "vpa_backpack_helper";
 
+    /**
+     * Transient backpack entities we spawned, keyed by entity id → the slot to write back to.
+     *
+     * <p>In-memory only, and deliberately so: a session is meaningful just as long as the screen is
+     * open. {@link #HELPER_TAG} is what survives a restart, and it exists so a helper entity left
+     * behind by a crash can be recognised and removed - not to resume anything.</p>
+     */
     private static final Map<Integer, Session> SESSIONS = new HashMap<>();
 
     private record Session(UUID playerUUID, String identifier, int index, ItemStack originalWorn) {

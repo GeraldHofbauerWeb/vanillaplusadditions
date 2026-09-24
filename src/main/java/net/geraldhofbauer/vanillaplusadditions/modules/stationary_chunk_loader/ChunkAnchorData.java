@@ -10,9 +10,11 @@ import java.util.Set;
 
 /**
  * Persistent per-level record of stationary Chunk Anchor positions (encoded as
- * {@code BlockPos.asLong()}). Unlike the minecart loader rails, anchors never time out: an anchor
- * keeps its chunk loaded until the block is broken. The set survives "no players online" pauses and
- * server restarts so the chunks can be force-loaded again on resume.
+ * {@code BlockPos.asLong()}). Unlike the minecart loader rails, anchors never time out - but they
+ * are not unconditional either: an anchor holds its chunk only while it is redstone-powered.
+ * {@code ChunkAnchorBlock} calls {@code onAnchorInactive} on the falling edge, breaking the block is
+ * merely the other way to get there. The set survives "no players online" pauses and server restarts
+ * so the chunks can be force-loaded again on resume.
  */
 public class ChunkAnchorData extends SavedData {
 

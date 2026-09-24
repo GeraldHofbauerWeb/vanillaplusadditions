@@ -4,14 +4,12 @@
 > red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a
 > spider fits there too.
 
-> **Status:** on this build, switching the overlay on crashes the client. `SpawnOverlayRenderer`
-> fetches the stripe and outline vertex consumers (and the shimmer's too, unless
-> `display.shimmer_strength` is 0) from the shared buffer source before the marker loop starts, so
-> the first write throws an uncaught `IllegalStateException: Not building!` inside
-> `RenderLevelStageEvent` and the game goes straight to a crash report — see
-> [Compatibility and known limits](#compatibility-and-known-limits). Do not press F3 + M until it is
-> fixed. Everything below describes what the renderer is written to draw, read off the source rather
-> than reproduced in game.
+> **Status:** switching the overlay on used to crash the client, and the cause is worth knowing if
+> you write another renderer in this repository — `SpawnOverlayRenderer` held all three vertex
+> consumers at once and wrote to them in turn, which is exactly what a shared
+> `MultiBufferSource.BufferSource` does not allow. It now draws one render type per pass and fetches
+> each consumer at the start of its own pass. **Not yet confirmed in game**; everything below
+> describes what the renderer is written to draw, read off the source.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -27,9 +25,8 @@
 
 ## What it does
 
-Press **F3 + M** — which, on this build, crashes the client rather than drawing anything, see the
-status note above — and every position around you where a hostile mob could stand is meant to light
-up as a flat striped field lying on the floor. Red fields spawn mobs right now, yellow ones once it
+Press **F3 + M** and every position around you where a hostile mob could stand lights up as a flat
+striped field lying on the floor. Red fields spawn mobs right now, yellow ones once it
 gets dark, and a violet outline marks a spot roomy enough for a spider. The same combo switches it off
 again; an action-bar line — *Mob spawn overlay: ON* / *OFF* — confirms either way.
 
@@ -275,7 +272,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| F3 + M crashes the client | `SpawnOverlayRenderer.render` fetches its `VertexConsumer`s (stripes, the shimmer when `display.shimmer_strength > 0`, and the outline) from the shared `MultiBufferSource.BufferSource` before the marker loop starts. None of the six render types is registered through `RegisterRenderBuffersEvent`, so they all land on the same `ByteBufferBuilder`, and `getBuffer` ends the previous shared batch before handing out the next one — `BufferBuilder.build()` leaves the earlier builder with `building = false`. The first write to the already-ended stripe consumer therefore hits `ensureBuilding()` and throws `IllegalStateException: Not building!` inside `RenderLevelStageEvent`, which nothing catches — `ClientHooks.dispatchRenderStage` is a bare `NeoForge.EVENT_BUS.post`, so it unwinds out of `LevelRenderer.renderLevel` into the `catch (Throwable)` in `Minecraft.run` and the client goes to a crash report — as soon as the overlay is on with at least one marker. The rest of this page describes what the renderer is written to draw; read off vanilla's source, not reproduced in game. |
+| One render type per pass, not per marker | `SpawnOverlayRenderer.render` used to fetch its three `VertexConsumer`s (stripes, the shimmer when `display.shimmer_strength > 0`, and the outline) before the marker loop and then write to them in turn. None of the render types is registered through `RegisterRenderBuffersEvent`, so they all land on the same `ByteBufferBuilder`, and `getBuffer` ends the previous shared batch before handing out the next one — `BufferBuilder.build()` leaves the earlier builder with `building = false`. The first write to the already-ended stripe consumer hit `ensureBuilding()` and threw `IllegalStateException: Not building!` inside `RenderLevelStageEvent`, which nothing catches — `ClientHooks.dispatchRenderStage` is a bare `NeoForge.EVENT_BUS.post`, so it unwound out of `LevelRenderer.renderLevel` into the `catch (Throwable)` in `Minecraft.run` and the client went to a crash report, as soon as the overlay was on with at least one marker. The renderer now walks the markers once per render type and takes each consumer at the start of its own pass, so only one batch is ever open. Not yet confirmed in game. |
 | It cannot say *which* mob spawns | `Biome.NETWORK_CODEC` strips `MobSpawnSettings`, so the client never receives a biome's spawn lists. The answer is "is this a valid ground-spawn position for monsters", not "what spawns here" — a biome with no monsters in its list still lights up. |
 | One stand-in hitbox | Every position is tested with `EntityType.ZOMBIE` as the 1-wide monster, plus `EntityType.SPIDER` for the outline. Mobs with other dimensions are only approximated. |
 | Ground spawners only | Only `SpawnPlacementTypes.ON_GROUND` is evaluated. Drowned and other `IN_WATER` mobs, striders, phantoms and anything with `NO_RESTRICTIONS` are not represented at all. |

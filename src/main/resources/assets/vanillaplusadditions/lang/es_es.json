@@ -18,8 +18,6 @@
   "command.vpa.mobglow.applied_new": "Efecto de brillo aplicado a %s nuevas entidades %s %s",
   "command.vpa.mobglow.infinite": "indefinidamente",
   "command.vpa.mobglow.for_seconds": "durante %s segundos",
-  "message.vpa.death_coords": "El jugador %s murió en las coordenadas: X=%d, Y=%d, Z=%d en la dimensión %s",
-  "message.vpa.death_coords.hover": "Haz clic para teletransportarte al lugar de la muerte",
   "entity.vanillaplusadditions.flying_fish": "Pez volador",
   "item.vanillaplusadditions.flying_fish": "Pez volador",
   "item.vanillaplusadditions.cooked_flying_fish": "Pez volador cocinado",

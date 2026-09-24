@@ -89,14 +89,14 @@ private record PendingReset(ChunkPos center, int radius) { }
 
 That has consequences worth knowing before the first click:
 
-* **The dimension is not part of it.** `executeConfirm` applies those coordinates to
-  `source.getLevel()` at the moment of confirming. Run `/chunkreset` in the Nether, walk through a
-  portal and click the button, and the *Overworld* chunks at the same `ChunkPos` are the ones that
-  get deleted.
-* **A pending reset never expires.** It is dropped only by a confirm, a cancel or a server restart —
-  not by logging out. Clicking a confirm button hours later still works.
-* **Only the newest one exists.** A second `/chunkreset` overwrites the first through `Map.put`; the
-  earlier square can no longer be confirmed, and nothing says so.
+* **The dimension is part of it.** The pending entry records the level the request was made in,
+  and the confirm refuses outright if you are somewhere else by then, naming both dimensions. Run
+  `/chunkreset` in the Nether, walk through a portal and click the button, and nothing happens
+  except a red line telling you why.
+* **A pending reset dies with the session.** Confirm, cancel or logging out all drop it. It does
+  still survive indefinitely while you stay online — clicking a confirm button hours later works.
+* **Only the newest one exists.** A second `/chunkreset` replaces the first, and says so: the
+  warning block names the square it just displaced.
 
 `cancel` answers either way: "Chunk reset cancelled." when there was something to drop, "No pending
 chunk reset to cancel." when there was not.
@@ -129,10 +129,11 @@ The write is asynchronous. `ChunkStorage.write` returns a `CompletableFuture` th
 on the floor, so the per-chunk "succeeded" count means *the deletion was queued*, not *the region
 file changed*. A failure inside the worker is logged by vanilla and never reaches chat.
 
-Nothing else is touched. No unload is forced, no flush is requested, the chunk in memory is left
-exactly as it is.
+Nothing else is touched. No unload is forced and no flush is requested — but the write only ever
+happens for a chunk that is **not** in memory, which is what makes it stick. See
+[waiting for the chunk](#waiting-for-the-chunk).
 
-### Why the deletion can undo itself
+### Why a write to a loaded chunk would undo itself
 
 The same `write` is what `ChunkMap.save(ChunkAccess)` calls to persist a chunk:
 
@@ -153,15 +154,61 @@ if (!chunk.isUnsaved()) {
 }
 ```
 
-So the deletion holds for a chunk that has not been modified since its last save, and is silently
+So a write would hold for a chunk that has not been modified since its last save, and be silently
 reverted for one that has. `LevelChunk.setBlockState` sets that flag, so does a light-section change
 and so does a freshly generated chunk. A crop growing, a leaf decaying or a single block placed
-between the reset and the unload is enough.
+between the reset and the unload would be enough.
 
-The command's own wording — "It will regenerate when next loaded" — therefore assumes the chunk
-really leaves memory without being written again, and the module does nothing to bring that about.
-This is read off vanilla's 1.21.1 sources; it has not been reproduced in game and nothing in this
-repository tests it.
+And the chunk you are standing in is loaded by definition, so for a `radius 0` reset this was not
+an edge case — it was the normal path.
+
+### Taking the write away
+
+Every target is cleared the moment the command runs. A chunk that is still in memory is then
+**held unsaved** for as long as it stays there:
+
+```java
+private static void holdClean(ServerLevel level, ChunkPos pos) {
+    LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+    if (chunk != null) {
+        chunk.setUnsaved(false);
+    }
+}
+```
+
+That is the entire mechanism, and it works because of the guard quoted above: `ChunkMap.save`
+returns `false` for a chunk that is not unsaved, so a chunk held clean is never written — not by
+the autosave, not by the unload, not at shutdown. The flag is cleared **every tick**, not on an
+interval, because the world sets it again on every block change and an autosave landing in the gap
+would undo the whole thing.
+
+Anything a player builds in such a chunk while it is held is discarded. For a chunk that is being
+reset, that is the point.
+
+**Two earlier attempts got this wrong**, and both are worth knowing about because the reasoning
+sounds right until you measure it:
+
+1. *Write immediately and warn if the chunk is loaded.* The write lands, then the next autosave puts
+   the chunk back over it. Silent and reliable — reliably wrong.
+2. *Wait for the chunk to unload, then write.* This cannot work.
+   `ChunkMap.processUnloads` removes the chunk from the map `getVisibleChunkIfPresent` reads, and
+   only afterwards does `scheduleUnload` call `save(chunkaccess)`. So "no longer loaded" arrives
+   **before** the write it is supposed to follow. Hooking `ChunkEvent.Unload` and waiting five ticks
+   does not save it either: measured on a server with `view-distance=32`, the chunk was back in
+   memory **291 ms** after unloading, long before the delay expired.
+
+The give-up timer is still there: after **ten minutes** of a chunk refusing to leave memory the hold
+is released with a WARN, because holding a chunk unsaved forever would quietly cost every change
+made in it.
+
+The queue is **not** gated on the module's `enabled` flag — what is in it was already confirmed by
+an operator, and switching the module off should stop it taking new orders, not make it forget one
+it accepted. It does not survive a restart, which does not matter: after a restart nothing has
+loaded the chunks yet, so the command takes the immediate path.
+
+**Verified in game** on 2026-09-24 against a live 1.21.1 server: `/chunkreset` on a chunk holding a
+small stone-brick build, then flying out and back. The region-file header entry for that chunk went
+from two sectors to one — the freshly generated chunk written in place of the build.
 
 ### What survives a reset
 
@@ -225,14 +272,17 @@ This module has no settings of its own.
 
 | Limit | Effect |
 |---|---|
-| A still-loaded chunk with unsaved changes | Written back over the deletion by the next autosave, by the unload save or at shutdown. The module neither unloads the chunks nor flushes anything. |
-| Confirming in a different dimension | The pending reset stores only `ChunkPos` and radius. The confirm deletes those coordinates in whichever level you are standing in at the time. |
+| A still-loaded chunk | Cleared at once and then held unsaved, so nothing writes it back — see [taking the write away](#taking-the-write-away). The blocks stay visible until the chunk leaves memory once; leave the area and come back and it has regenerated. |
+| Anything built in a held chunk | Discarded. The hold works by marking the chunk as already saved, so changes made while it is held are never written. |
+| A chunk that never leaves memory | After ten minutes the hold is released with a WARN, and from then on a save can write it back. Run the command again when the area is not loaded. |
+| The queue does not survive a restart | Outstanding entries are logged at shutdown and dropped. Run the command again afterwards; nothing has loaded the chunks yet, so it takes the immediate path. |
+| Confirming in a different dimension | Refused. The pending reset records its dimension and the confirm compares it against the level you are in. |
 | Entities and POIs | Not deleted — they live in `entities/` and `poi/`, which the module never touches, and the chat warning claims otherwise. |
 | Mod chunk loaders, spawn chunks, nearby players | Untouched: only a vanilla `/forceload` ticket is removed. Such a chunk cannot unload, so the deletion cannot stick. |
-| `radius 0` always reports success | The single-chunk branch prints the green "✓ Chunk … reset." unconditionally; only the radius > 0 branch prints `succeeded/total`. A chunk whose write threw shows up in the log and nowhere else. And even the `n/total` line keeps the green ✓ on a partial failure. |
-| The teleport is not a safe-landing search | Same Y, no collision check. A player can be put inside terrain or dropped from mid-air, and can walk back in immediately. |
-| A second `/chunkreset` before confirming | Silently replaces the pending square; the older one is unreachable. |
-| Pending resets never expire | Held in memory per player UUID until confirm, cancel or restart — logging out does not clear one. |
+| Failures are reported | A reset where every write threw prints a red line instead of the green ✓, and a partial one adds a red count of what did not make it. The reason stays in the log. |
+| The teleport lands on the surface | The destination column's height is looked up (`MOTION_BLOCKING_NO_LEAVES`), so nobody is dropped inside terrain or left in mid-air. Nothing stops a player from walking straight back in, though. |
+| A second `/chunkreset` before confirming | Replaces the pending square and names the one it displaced. Only the newest can be confirmed. |
+| Pending resets expire with the session | Held per player UUID until confirm, cancel, logout or restart. |
 | Console and command blocks | Rejected. All three handlers call `getPlayerOrException()`. |
 | Command name | Plain `chunkreset`, no mod namespace, so it can collide with another chunk-management mod's command. |
 | No translations | Every message is a hardcoded English `Component.literal`; the module owns no lang keys at all. |

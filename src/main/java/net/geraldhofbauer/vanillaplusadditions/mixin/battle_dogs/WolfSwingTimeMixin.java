@@ -17,12 +17,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * {@code attackAnim} is therefore pinned at 0 forever, which is also why vanilla ships no wolf
  * attack animation: the machinery an animation would read is never wound up.
  *
- * <p>The damage is worse than a missing animation. {@code swinging} is set by {@code swing()} and
- * cleared <em>only</em> inside {@code updateSwingTime()}, while {@code swing()} refuses to fire
- * again -- and therefore to broadcast its {@code ClientboundAnimatePacket} -- while the flag is
- * still up. Untended, the very first bite of a wolf's life latches the flag and every later bite is
- * silently swallowed. So this runs on <b>both</b> sides: the client to drive the animation, the
- * server to keep the packets coming.
+ * <p>What this does <em>not</em> fix is packet loss, and it is worth writing down because the
+ * opposite is easy to assume: {@code swinging} is set by {@code swing()} and cleared only inside
+ * {@code updateSwingTime()}, so on an untended wolf it stays up forever - but {@code swing()} does
+ * not care. It also writes {@code swingTime = -1} (LivingEntity.java:1865) and its own guard accepts
+ * {@code swingTime < 0} (LivingEntity.java:1864), so every bite re-enters and re-broadcasts its
+ * {@code ClientboundAnimatePacket} regardless. Bites were never swallowed; they were invisible.
+ * This still runs on <b>both</b> sides, because {@code attackAnim} is what the renderer reads and
+ * the server side keeps the two in step.
  *
  * <p>Two mixin constraints shape this class, and both cost a debugging round to learn:
  * <ul>

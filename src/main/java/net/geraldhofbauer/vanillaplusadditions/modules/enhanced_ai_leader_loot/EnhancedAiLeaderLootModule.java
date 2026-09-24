@@ -27,7 +27,7 @@ import net.neoforged.neoforge.event.LootTableLoadEvent;
  * ({@code {"type": "minecraft:empty"}}) as an intentional extension point. We replace that table
  * at load time via {@link LootTableLoadEvent}; no Enhanced AI class is referenced directly, so
  * this module needs no compile-time dependency, only the runtime {@link #shouldInitialize()}
- * gate. See {@code docs/enhanced_ai_leader_loot.md} for how this was reverse-engineered.
+ * gate. See {@code docs/modules/enhanced_ai_leader_loot.md} for how this was reverse-engineered.
  */
 public class EnhancedAiLeaderLootModule
         extends AbstractModule<EnhancedAiLeaderLootModule, EnhancedAiLeaderLootConfig> {

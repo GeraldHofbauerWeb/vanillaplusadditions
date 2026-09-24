@@ -25,7 +25,7 @@
   "recipes": [],
   "registeredInBundle": true,
   "requiredMods": [],
-  "shortDescription": "Prevents normal skeletons from spawning in the Nether and broadcasts messages about blocked spawns",
+  "shortDescription": "Keeps plain skeletons out of Nether fortresses and replaces them with Wither Skeletons (blocked spawns are announced only with debug logging on)",
   "side": "server",
   "sinceCommit": "441f105",
   "sinceVersion": "v0.1.0",

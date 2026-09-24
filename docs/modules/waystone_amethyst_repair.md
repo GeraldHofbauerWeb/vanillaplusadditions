@@ -202,7 +202,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | No Waystones installed | The handler is registered anyway — there is no `ModList.isLoaded("waystones")` check and no `shouldInitialize` gate (the module's only `ModList` call asks after the sibling `vpa_free_anvil_repair` jar, not after Waystones). `waystones:warp_stone` fails `containsKey`, the target stays `null`, and the module is inert. Nothing breaks, and `target_item` can be pointed at any other installed damageable item instead. |
 | Waystones' `teleports.enableDurability = false` | The Warp Stone never takes damage, so gate 3 never passes and there is never anything to repair. |
-| Standalone jar | `vpa_waystone_amethyst_repair` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. Run that way, `ModuleManager` has no modules registered at all — `StandaloneModuleBootstrap` skips it deliberately — so the free-price check falls back to `ModList.isLoaded("vpa_free_anvil_repair")`, which sees that jar's presence and not its `enabled` flag. That is a real trap: install the jar and then set its `enabled = false`, and this module still prices the repair at 0 while Free Anvil Repair's mixin — which reads its own live config — refuses the pickup, leaving a result the player can see but not take. |
+| Standalone jar | `vpa_waystone_amethyst_repair` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. Run that way, `ModuleManager` has no modules registered at all — `StandaloneModuleBootstrap` skips it deliberately — so the free-price check falls back to `ModList.isLoaded("vpa_free_anvil_repair")`, which sees that jar's presence and not its `enabled` flag. That is still a real trap here, and the one the bundle no longer has: install the jar and then set its `enabled = false`, and this module prices the repair at 0 while Free Anvil Repair's mixin — which reads its own live config — refuses the pickup, leaving a result the player can see but not take. |
 | Repair and rename in one click | No output at all, not merely a priced one — see above. |
 | JEI / EMI | The module has no JEI plugin, and JEI's anvil list is a hardcoded vanilla one that cannot discover a code-only repair. Warp Stone plus amethyst appears in no recipe viewer; the only place it is written down is this page. |
 | Module disabled at startup | `ModuleManager.initializeModules` only calls `initialize()` for modules that were enabled when the config was first read, and only `onInitialize` registers the handler. Enabling the module at runtime therefore needs a restart — in the bundle. The standalone jar does not have this asymmetry: `StandaloneModuleBootstrap` initializes the module unconditionally, so the handler is always registered and both directions take effect on the next anvil update. Turning it **off** works immediately either way, because `isModuleEnabled()` is re-checked on every event. |
@@ -274,14 +274,17 @@ deliberate, not a convenience.
 and falls back to `ModList.isLoaded("vpa_free_anvil_repair")` when it does not — see the standalone
 row above.
 
-Inside the bundle the gates are not quite the same check, though.
-`ModuleManager.isModuleEnabled(String)` consults the runtime override map and otherwise
-`moduleEnabledState`, a snapshot taken at registration and rewritten once in `initializeModules`;
-the mixin's `allowFreePickup()` goes through
-`AbstractModule.isModuleEnabled()`, which resolves the **live** per-module config. A `/vpa` override
-moves both, because both consult the override map first. Editing `free_anvil_repair`'s `enabled`
-flag in the config file at runtime moves only the live value — the snapshot stays `true`, this
-module keeps producing a cost-0 result, and the mixin has stopped allowing the pickup.
+Inside the bundle both gates are now the same check. `ModuleManager.isModuleEnabled(String)`
+consults the runtime override map and otherwise the module's **live** per-module config, which is
+exactly what the mixin's `allowFreePickup()` reaches through `AbstractModule.isModuleEnabled()`. So
+a `/vpa` override and an edit to `free_anvil_repair`'s `enabled` flag in the config file both move
+the two together.
+
+It used to read `moduleEnabledState` instead — a snapshot taken at registration and rewritten once
+in `initializeModules`. A `/vpa` override moved both (both consult the override map first), but
+editing the config file at runtime moved only the live value: the snapshot stayed `true`, this
+module kept producing a cost-0 result, and the mixin had already stopped allowing the pickup.
+An anvil output the player could see but not take.
 
 **Handler order is not source order.** Both this module and `free_anvil_repair` subscribe
 `AnvilUpdateEvent` at default priority and register on the bus in their own `onInitialize`, so bus

@@ -1,6 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker;
 
 import com.mojang.logging.LogUtils;
+import net.geraldhofbauer.vanillaplusadditions.modules.create_water_wheel_unstucker.config.CreateWaterWheelUnstuckerConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,9 +49,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *   <li><i>phantom unloaded tally</i> — Create keeps a stress/capacity total for members in unloaded
  *       chunks; a member removed while unloaded never subtracts its share, so the network reports an
  *       overload no existing machine causes. An <i>orphaned</i> tally (stress charged while the
- *       network claims zero unloaded members - nothing can be behind it) is dropped by the sweep on
- *       its own; a tally with actual unloaded members is a judgement call and stays with
- *       {@code /vpaunstuck}.</li>
+ *       network claims zero unloaded members - nothing can be behind it) is dropped by any caller.
+ *       A tally with actual unloaded members is a judgement call: {@code /vpaunstuck} takes it at
+ *       once, an automatic caller only once the tally has stopped moving for
+ *       {@link #TALLY_SETTLE_TICKS} while the network stayed overstressed.</li>
  *   <li><i>genuine overload</i> — survives both, with the wheel's own capacity counted in
  *       (generated speed != 0). Never touched; Create's stress mechanics win.</li>
  * </ul>
@@ -70,12 +73,90 @@ class WaterWheelStallManager {
     /** Retries before a removed wheel is dropped as an item rather than held forever. */
     private static final int REPLACE_MAX_RETRIES = 20;
 
-    /** Who is asking for an overstress to be resolved - decides how far the cure may go. */
-    private enum StressMode {
-        /** The periodic sweep: only provably safe cures, one short log line when one lands. */
+    /**
+     * Wait before the unloaded tally counts as settled: 200 ticks = 10 seconds.
+     *
+     * <p>Short on purpose - the wheel has been standing since the reload and a player watching it
+     * wants it back, not a minute of nothing. The wait exists at all because after a world load
+     * every network legitimately carries a tally that counts itself down as members arrive: ten
+     * quiet seconds say no further member is coming.</p>
+     *
+     * <p>That is weaker evidence than a full minute would be, and the failure it buys is bounded:
+     * clearing a tally that a genuinely unloaded machine was still behind makes that machine stop
+     * counting until its chunk loads, at which point {@code addSilently} registers it again with
+     * its real numbers. Every such clear is logged as a warning with the numbers it was based on,
+     * so if it ever does fire early, the log says so.</p>
+     */
+    private static final long TALLY_SETTLE_TICKS = 200L;
+
+    /** Shortest gap between two automatic re-inits of the same wheel: 1200 ticks = ~1 minute. */
+    private static final long MIN_REINIT_INTERVAL_TICKS = 1200L;
+
+    /** Exhausted backoff rounds before a wheel is left alone until someone runs the command. */
+    private static final int GIVE_UP_AFTER_BACKOFFS = 2;
+
+    /** Wait before retrying a post-load check that could not evaluate the wheel: 20 ticks = 1 second. */
+    private static final long POST_LOAD_RETRY_TICKS = 20L;
+
+    /** How long a post-load check may keep deferring before it is dropped: 600 ticks = 30 seconds. */
+    private static final long POST_LOAD_MAX_DEFER_TICKS = 600L;
+
+    /** Shortest gap between two large-wheel refusal log lines for the same wheel: 6000 ticks = ~5 min. */
+    private static final long REFUSAL_LOG_INTERVAL_TICKS = 6000L;
+
+    /** What triggered a check. Only used to pick a policy. */
+    private enum Trigger {
+        /** A chunk holding wheels finished loading - the situation the reload stall happens in. */
+        CHUNK_LOAD,
+        /** A player just placed a wheel. */
+        PLACEMENT,
+        /** The periodic safety-net sweep. */
         SWEEP,
-        /** {@code /vpaunstuck}: also the judgement call, with the full numbers logged. */
+        /** {@code /vpaunstuck}. */
         COMMAND
+    }
+
+    /** How far a stress cure may go. */
+    private enum StressMode {
+        /** Only the provably safe cure: recompute, plus a self-contradictory tally. */
+        SAFE,
+        /** Also the judgement call, but only once the tally has stopped moving. */
+        DEEP,
+        /** {@code /vpaunstuck}: the judgement call immediately, an operator is watching. */
+        COMMAND
+    }
+
+    /** What a check ended up doing. */
+    private enum WheelOutcome {
+        NOT_LOADED, REPLACE_PENDING, GONE, NO_BE, SPINNING, STRESS_CURED,
+        OVERSTRESSED_GENUINE, NO_FLUID, RATE_LIMITED, GAVE_UP, REINIT_STARTED, REINIT_REFUSED, DETECTED_ONLY
+    }
+
+    /**
+     * What a given trigger is allowed to do. One place to read the whole matrix.
+     *
+     * @param trigger     what asked for the check
+     * @param stressMode  how far the stress cure may go
+     * @param mayReinit   whether blocks may be mutated (break + re-place)
+     * @param rateLimited whether the backoff and the minimum re-init interval apply
+     */
+    private record FixPolicy(Trigger trigger, StressMode stressMode, boolean mayReinit, boolean rateLimited) {
+
+        static FixPolicy of(Trigger trigger, CreateWaterWheelUnstuckerConfig config) {
+            boolean deep = config.isAutoClearPhantomStressEnabled();
+            return switch (trigger) {
+                // The reload desync is exactly what this module exists for, so the targeted check
+                // after a chunk load gets the full cure - that is the point of the module.
+                case CHUNK_LOAD -> new FixPolicy(trigger, deep ? StressMode.DEEP : StressMode.SAFE,
+                        config.isAutoUnstickOnChunkLoadEnabled(), true);
+                // A wheel a player just placed has never been through a reload. Settling its stress
+                // bookkeeping is fine; breaking it open again a second later is not.
+                case PLACEMENT -> new FixPolicy(trigger, StressMode.SAFE, false, true);
+                case SWEEP -> new FixPolicy(trigger, deep ? StressMode.DEEP : StressMode.SAFE,
+                        config.isAutoFixEnabled(), true);
+                case COMMAND -> new FixPolicy(trigger, StressMode.COMMAND, true, false);
+            };
+        }
     }
 
     /** What {@link #resolveOverstress} actually did. */
@@ -86,7 +167,18 @@ class WaterWheelStallManager {
     }
 
     /** Hand-off entry from a (possibly off-thread) chunk-load event. */
-    private record PendingCheck(ResourceKey<Level> dimension, BlockPos pos) {
+    private record PendingCheck(ResourceKey<Level> dimension, BlockPos pos, Trigger trigger) {
+    }
+
+    /**
+     * A queued check.
+     *
+     * @param dueTick  the game time at which to run it
+     * @param trigger  what asked for it
+     * @param deadline the game time after which it is given up on, even if it never evaluated
+     * @param retry    true for a re-queued check, which must not pull a fresh one forward
+     */
+    private record ScheduledCheck(long dueTick, Trigger trigger, long deadline, boolean retry) {
     }
 
     /** Per-wheel escalation state. Mutable on purpose - server thread only. */
@@ -94,6 +186,20 @@ class WaterWheelStallManager {
         private int attempts;
         private long backoffUntil;
         private boolean warned;
+        /** Game time of the last re-init, so an automatic trigger cannot loop on one wheel. */
+        private long lastReinitTick;
+        /** Set once a wheel has proven it will not come back; only the command clears it. */
+        private boolean givenUp;
+        /** How often the ~5 minute backoff has already run out for this wheel. */
+        private int backoffsExhausted;
+        /** Game time of the last large-wheel refusal log, to keep it out of the tick loop. */
+        private long lastRefusalLog;
+        /** Last seen unloaded tally, and since when it has looked like this. */
+        private boolean tallyKnown;
+        private int tallyMembers;
+        private float tallyStress;
+        private float tallyCapacity;
+        private long tallySince;
     }
 
     /**
@@ -121,7 +227,7 @@ class WaterWheelStallManager {
     private final WaterWheelRegistry registry;
 
     private final Queue<PendingCheck> incomingPostLoad = new ConcurrentLinkedQueue<>();
-    private final Map<ResourceKey<Level>, Map<BlockPos, Long>> pendingPostLoad = new HashMap<>();
+    private final Map<ResourceKey<Level>, Map<BlockPos, ScheduledCheck>> pendingPostLoad = new HashMap<>();
     private final Map<ResourceKey<Level>, Map<BlockPos, FixState>> fixStates = new HashMap<>();
     private final Map<ResourceKey<Level>, Map<BlockPos, PendingReplace>> pendingReplace = new HashMap<>();
     /** Wheels awaiting a post-re-init outcome log (pos -> game time to check). */
@@ -141,8 +247,33 @@ class WaterWheelStallManager {
      * @param positions The wheel center positions to check
      */
     void enqueuePostLoadCheck(ServerLevel level, Collection<BlockPos> positions) {
+        enqueue(level, positions, Trigger.CHUNK_LOAD);
+    }
+
+    /**
+     * Queues a wheel a player has just placed. Deliberately a different entry point from
+     * {@link #enqueuePostLoadCheck}: a fresh wheel has never been through a reload, so its stress
+     * bookkeeping may be settled but it must never be broken open again a moment after placement.
+     *
+     * @param level     The server level the wheel is in
+     * @param positions The wheel center positions to check
+     */
+    void enqueuePlacementCheck(ServerLevel level, Collection<BlockPos> positions) {
+        enqueue(level, positions, Trigger.PLACEMENT);
+    }
+
+    /**
+     * Queues wheels for a targeted check, recording what asked for it. The trigger decides how far
+     * the check may go, so a chunk that just loaded and a wheel a player just placed must not share
+     * one entry - they used to, and the placement would have inherited the reload treatment.
+     *
+     * @param level     The server level the wheels are in
+     * @param positions The wheel center positions to check
+     * @param trigger   What asked for the check
+     */
+    private void enqueue(ServerLevel level, Collection<BlockPos> positions, Trigger trigger) {
         for (BlockPos pos : positions) {
-            incomingPostLoad.add(new PendingCheck(level.dimension(), pos));
+            incomingPostLoad.add(new PendingCheck(level.dimension(), pos, trigger));
         }
     }
 
@@ -161,7 +292,7 @@ class WaterWheelStallManager {
         if (server.getTickCount() % module.getConfig().getCheckIntervalTicks() == 0) {
             for (ServerLevel level : server.getAllLevels()) {
                 for (BlockPos pos : registry.positionsIfPresent(level)) {
-                    checkWheel(level, pos);
+                    checkWheel(level, pos, FixPolicy.of(Trigger.SWEEP, module.getConfig()));
                 }
             }
         }
@@ -175,56 +306,97 @@ class WaterWheelStallManager {
                 continue;
             }
             long due = level.getGameTime() + module.getConfig().getPostLoadDelayTicks();
+            ScheduledCheck scheduled = new ScheduledCheck(due, pending.trigger(),
+                due + POST_LOAD_MAX_DEFER_TICKS, false);
             pendingPostLoad.computeIfAbsent(pending.dimension(), key -> new HashMap<>())
-                    .putIfAbsent(pending.pos(), due);
+                    .merge(pending.pos(), scheduled, WaterWheelStallManager::mergeScheduled);
         }
     }
 
+    /**
+     * Combines two queued checks for the same wheel: the earlier due time wins, and CHUNK_LOAD
+     * outranks PLACEMENT - a wheel that was placed and then went through a reload has the reload
+     * problem, not the placement one.
+     *
+     * @param existing the entry already queued
+     * @param incoming the entry being added
+     * @return the entry to keep
+     */
+    private static ScheduledCheck mergeScheduled(ScheduledCheck existing, ScheduledCheck incoming) {
+        Trigger trigger = existing.trigger() == Trigger.CHUNK_LOAD || incoming.trigger() == Trigger.CHUNK_LOAD
+                ? Trigger.CHUNK_LOAD : existing.trigger();
+        // A fresh check wins over a retry outright: the post-load delay exists so Create can finish
+        // its own reload work, and taking the retry's earlier due time would skip that wait.
+        long due = existing.retry() != incoming.retry()
+                ? (existing.retry() ? incoming.dueTick() : existing.dueTick())
+                : Math.min(existing.dueTick(), incoming.dueTick());
+        return new ScheduledCheck(due, trigger, Math.max(existing.deadline(), incoming.deadline()),
+                existing.retry() && incoming.retry());
+    }
+
     private void runDuePostLoadChecks(MinecraftServer server) {
-        for (Map.Entry<ResourceKey<Level>, Map<BlockPos, Long>> byLevel : pendingPostLoad.entrySet()) {
+        for (Map.Entry<ResourceKey<Level>, Map<BlockPos, ScheduledCheck>> byLevel : pendingPostLoad.entrySet()) {
             ServerLevel level = server.getLevel(byLevel.getKey());
             if (level == null) {
                 byLevel.getValue().clear();
                 continue;
             }
             long now = level.getGameTime();
-            Iterator<Map.Entry<BlockPos, Long>> it = byLevel.getValue().entrySet().iterator();
+            Iterator<Map.Entry<BlockPos, ScheduledCheck>> it = byLevel.getValue().entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<BlockPos, Long> entry = it.next();
-                if (entry.getValue() <= now) {
+                Map.Entry<BlockPos, ScheduledCheck> entry = it.next();
+                if (entry.getValue().dueTick() <= now) {
+                    ScheduledCheck scheduled = entry.getValue();
+                    WheelOutcome outcome = checkWheel(level, entry.getKey(),
+                            FixPolicy.of(scheduled.trigger(), module.getConfig()));
+                    if (inconclusive(outcome) && now < scheduled.deadline()) {
+                        // The check could not evaluate the wheel at all - chunk not fully there, block
+                        // entity not built yet, or our own flood window still open. Consuming the one
+                        // post-load opportunity here would hand the wheel to the sweep, which does not
+                        // re-initialise unless auto_fix is on. Come back shortly instead.
+                        entry.setValue(new ScheduledCheck(now + POST_LOAD_RETRY_TICKS, scheduled.trigger(),
+                                scheduled.deadline(), true));
+                        continue;
+                    }
                     it.remove();
-                    checkWheel(level, entry.getKey());
                 }
             }
         }
     }
 
     /**
-     * The per-wheel state machine. Server thread only.
+     * The per-wheel state machine, and the only decision chain there is. {@code /vpaunstuck} runs
+     * the same chain with {@link Trigger#COMMAND}, which is what keeps the manual and the automatic
+     * cure identical instead of two copies that drift apart.
      *
-     * @param level The server level
-     * @param pos   The tracked wheel center position
+     * @param level  The server level
+     * @param pos    The tracked wheel center position
+     * @param policy What this trigger is allowed to do
+     * @return what the check ended up doing
      */
-    private void checkWheel(ServerLevel level, BlockPos pos) {
+    private WheelOutcome checkWheel(ServerLevel level, BlockPos pos, FixPolicy policy) {
         if (!isFootprintLoaded(level, pos)) {
             // Never force-load. Also skip when a neighboring footprint chunk is missing: evaluating
             // the flow with the water chunk absent would misread "no flow" and apply a wrong score.
-            return;
+            return WheelOutcome.NOT_LOADED;
         }
         if (hasPendingReplace(level, pos)) {
             // We removed the wheel ourselves and are holding it for the flood window; the air at this
             // position is ours, not a deleted wheel.
-            return;
+            return WheelOutcome.REPLACE_PENDING;
         }
         if (!registry.isStillWheel(level, pos)) {
             registry.remove(level, pos);
-            clearState(level, pos);
-            return;
+            // Hard removal, not clearState: the wheel is provably gone (exploded, /setblock, wrenched -
+            // none of which fire a BreakEvent), and a wheel built here later must not inherit its
+            // cooldown, its give-up flag or a tally sample from a different network.
+            forgetWheel(level, pos);
+            return WheelOutcome.GONE;
         }
         BlockEntity be = level.getBlockEntity(pos);
         if (be == null || !WaterWheelKinetics.isWaterWheelBE(be)) {
             // Block entity not materialized yet; the next sweep catches it.
-            return;
+            return WheelOutcome.NO_BE;
         }
 
         long now = level.getGameTime();
@@ -238,67 +410,109 @@ class WaterWheelStallManager {
                         pos.toShortString(), level.dimension().location(), speed);
             }
             clearState(level, pos);
-            return;
+            return WheelOutcome.SPINNING;
         }
+
+        FixState state = fixStates.computeIfAbsent(level.dimension(), key -> new HashMap<>())
+                .computeIfAbsent(pos, key -> new FixState());
+
         if (WaterWheelKinetics.isOverStressed(be)) {
-            // Settle the stress bookkeeping first - none of this changes a block, so auto_fix (which
-            // gates block mutation) does not apply. Only provably safe cures run here; anything that
-            // needs judgement is left to /vpaunstuck, whose log then carries the full numbers.
-            StressAction action = resolveOverstress(level, pos, be, StressMode.SWEEP);
+            // Settle the stress bookkeeping first - none of this changes a block, so mayReinit (which
+            // gates block mutation) does not apply.
+            StressAction action = resolveOverstress(level, pos, be, policy, state, now);
             if (WaterWheelKinetics.getSpeed(be) != 0.0f) {
                 if (action != StressAction.NONE) {
-                    LOGGER.info("[create_water_wheel_unstucker] Unstuck wheel at {} ({}): {} - now spinning at {}",
-                            pos.toShortString(), level.dimension().location(),
+                    LOGGER.info("[create_water_wheel_unstucker] Unstuck wheel at {} ({}) [{}]: {} - now spinning at {}",
+                            pos.toShortString(), level.dimension().location(), policy.trigger(),
                             action == StressAction.TALLY_DROPPED
-                                    ? "dropped an orphaned stress tally (charged stress for 0 unloaded members)"
+                                    ? "dropped a phantom unloaded-member stress tally"
                                     : "recomputed a stale kinetic network",
                             WaterWheelKinetics.getSpeed(be));
                 }
                 clearState(level, pos);
-                return;
+                return WheelOutcome.STRESS_CURED;
             }
             if (WaterWheelKinetics.isOverStressed(be) && WaterWheelKinetics.getGeneratedSpeed(be) != 0.0f) {
                 // Genuine overload, or an unloaded tally that may well be real machines: the wheel's
                 // flow is intact and it still contributes its capacity, the network simply demands
                 // more. Never fight Create's stress mechanics behind the operator's back.
                 clearState(level, pos);
-                return;
+                return WheelOutcome.OVERSTRESSED_GENUINE;
             }
         }
         if (!hasNearbyFluid(level, pos)) {
             // No water or lava anywhere around the wheel - a dry / decorative wheel; never fight it.
             clearState(level, pos);
-            return;
+            return WheelOutcome.NO_FLUID;
         }
 
-        // Command-only by default: detect but never touch blocks automatically. The /vpaunstuck
-        // command drives the fix on demand; set auto_fix = true to let the sweep do it too.
-        if (!module.getConfig().isAutoFixEnabled()) {
-            return;
+        if (!policy.rateLimited()) {
+            // An operator is asking in person: drop every brake this wheel has accumulated, the way
+            // /vpaunstuck always did. It must not feed the automatic escalation either - see below.
+            state.givenUp = false;
+            state.backoffUntil = 0L;
+            state.attempts = 0;
+            state.backoffsExhausted = 0;
+            state.warned = false;
+        }
+        if (!policy.mayReinit()) {
+            clearState(level, pos); // drops the entry unless it carries a tally sample or a cooldown
+            return WheelOutcome.DETECTED_ONLY;
+        }
+        if (policy.rateLimited()) {
+            if (state.givenUp) {
+                // Proven hopeless: a wheel that survived two full backoff rounds is not stalled,
+                // it is dry, decorative or half-built. Leave it to /vpaunstuck.
+                return WheelOutcome.GAVE_UP;
+            }
+            if (state.backoffUntil > now) {
+                return WheelOutcome.RATE_LIMITED;
+            }
+            if (state.lastReinitTick != 0L && now - state.lastReinitTick < MIN_REINIT_INTERVAL_TICKS) {
+                // Create recomputes a wheel's flow score on its own every 60 ticks; an automatic
+                // trigger that fires on every chunk load must not out-run that and keep breaking
+                // the same wheel open.
+                return WheelOutcome.RATE_LIMITED;
+            }
         }
 
-        FixState state = fixStates.computeIfAbsent(level.dimension(), key -> new HashMap<>())
-                .computeIfAbsent(pos, key -> new FixState());
-        if (state.backoffUntil > now) {
-            return;
+        if (!beginReinit(level, pos, be, state, policy)) {
+            return WheelOutcome.REINIT_REFUSED; // large wheel - do not burn an attempt on it
         }
+        // The minute floor applies to a manual re-init too - a wheel that was just broken open by
+        // hand should not be broken open again by the next chunk load.
+        state.lastReinitTick = now;
 
-        if (module.getConfig().shouldDebugLog()) {
-            LOGGER.info("[create_water_wheel_unstucker] STALLED wheel at {} ({}): speed 0, not overstressed,"
-                            + " generatedSpeed={} - re-initialising (attempt {})", pos.toShortString(),
-                    level.dimension().location(), WaterWheelKinetics.getGeneratedSpeed(be), state.attempts + 1);
+        if (module.getConfig().shouldDebugLog() && policy.rateLimited()) {
+            LOGGER.info("[create_water_wheel_unstucker] STALLED wheel at {} ({}) [{}]: speed 0, not overstressed,"
+                            + " generatedSpeed={} - re-initialised (attempt {})", pos.toShortString(),
+                    level.dimension().location(), policy.trigger(),
+                    WaterWheelKinetics.getGeneratedSpeed(be), state.attempts + 1);
         }
-
-        if (!beginReinit(level, pos, be)) {
-            return; // refused (large wheel) - do not burn an attempt on something we will never try
+        if (!policy.rateLimited()) {
+            // The command drives the fix itself and reports its own summary; it must not arm the
+            // automatic escalation, or three manual runs would silence the automatic cure for five
+            // minutes and log a warning about an escalation that never happened. That includes the
+            // attempt counter, which is why it is incremented below rather than above.
+            LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck: re-initialising stalled wheel at {} ({}),"
+                            + " generatedSpeed={}, overstressed={}", pos.toShortString(),
+                    level.dimension().location(), WaterWheelKinetics.getGeneratedSpeed(be),
+                    WaterWheelKinetics.isOverStressed(be));
+            return WheelOutcome.REINIT_STARTED;
         }
         state.attempts++;
-
         if (state.attempts >= module.getConfig().getMaxFixAttempts()) {
             // Exhausted: back off ~5 min, then allow a fresh re-init cycle.
             state.backoffUntil = now + STALL_BACKOFF_TICKS;
             state.attempts = 0;
-            if (!state.warned) {
+            state.backoffsExhausted++;
+            if (state.backoffsExhausted >= GIVE_UP_AFTER_BACKOFFS) {
+                state.givenUp = true;
+                LOGGER.warn("[create_water_wheel_unstucker] Water wheel at {} ({}) survived {} full backoff rounds"
+                                + " without restarting - it is most likely dry, decorative or unfinished rather than"
+                                + " stalled. Leaving it alone; run /vpaunstuck to try again.",
+                        pos.toShortString(), level.dimension().location(), state.backoffsExhausted);
+            } else if (!state.warned) {
                 state.warned = true;
                 LOGGER.warn("[create_water_wheel_unstucker] Water wheel at {} ({}) still stalled after {}"
                                 + " re-init attempts; backing off ~5 minutes",
@@ -306,6 +520,7 @@ class WaterWheelStallManager {
                         module.getConfig().getMaxFixAttempts());
             }
         }
+        return WheelOutcome.REINIT_STARTED;
     }
 
     /**
@@ -317,62 +532,31 @@ class WaterWheelStallManager {
      * @return the number of wheels a re-init was started for
      */
     int unstickAll(MinecraftServer server) {
-        int started = 0;
-        int stressFixed = 0;
-        int skippedOverstressed = 0;
-        int skippedNoFluid = 0;
-        int spinning = 0;
+        FixPolicy policy = FixPolicy.of(Trigger.COMMAND, module.getConfig());
+        EnumMap<WheelOutcome, Integer> tally = new EnumMap<>(WheelOutcome.class);
         for (ServerLevel level : server.getAllLevels()) {
-            // Copy: beginReinit mutates the world (setBlock), so don't iterate the live registry set.
+            // Copy: a re-init mutates the world (setBlock), so don't iterate the live registry set.
             for (BlockPos pos : List.copyOf(registry.positionsIfPresent(level))) {
-                if (!isFootprintLoaded(level, pos)) {
-                    continue;
-                }
-                BlockEntity be = level.getBlockEntity(pos);
-                if (be == null || !WaterWheelKinetics.isWaterWheelBE(be)) {
-                    continue;
-                }
-                if (WaterWheelKinetics.getSpeed(be) != 0.0f) {
-                    spinning++;
-                    continue;
-                }
-                if (!hasNearbyFluid(level, pos)) {
-                    skippedNoFluid++;
-                    continue;
-                }
-                if (WaterWheelKinetics.isOverStressed(be)) {
-                    // Try to talk the network out of its overload before touching a single block.
-                    resolveOverstress(level, pos, be, StressMode.COMMAND);
-                    if (WaterWheelKinetics.getSpeed(be) != 0.0f) {
-                        stressFixed++;
-                        clearState(level, pos);
-                        continue;
-                    }
-                    if (WaterWheelKinetics.isOverStressed(be) && WaterWheelKinetics.getGeneratedSpeed(be) != 0.0f) {
-                        // Survived the recompute with the wheel's own capacity counted in: a real
-                        // overload of loaded machines. Never fight Create's stress mechanics.
-                        LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck: wheel at {} ({}) genuinely"
-                                        + " overstressed, leaving it alone - {}", pos.toShortString(),
-                                level.dimension().location(), WaterWheelKinetics.readNetworkStats(be));
-                        skippedOverstressed++;
-                        continue;
-                    }
-                }
-                float generated = WaterWheelKinetics.getGeneratedSpeed(be);
-                LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck: re-initialising stalled wheel at {} ({}),"
-                        + " generatedSpeed={}, overstressed={}", pos.toShortString(), level.dimension().location(),
-                        generated, WaterWheelKinetics.isOverStressed(be));
-                if (!beginReinit(level, pos, be)) {
-                    continue;
-                }
-                clearState(level, pos); // fresh on-demand fix - drop any prior backoff
-                started++;
+                WheelOutcome outcome = checkWheel(level, pos, policy);
+                tally.merge(outcome, 1, Integer::sum);
             }
         }
+        int started = tally.getOrDefault(WheelOutcome.REINIT_STARTED, 0);
+        int stressFixed = tally.getOrDefault(WheelOutcome.STRESS_CURED, 0);
         LOGGER.info("[create_water_wheel_unstucker] /vpaunstuck summary: {} re-initialised, {} revived by clearing a"
                         + " stale stress state, {} already spinning, {} skipped (genuinely overstressed),"
-                        + " {} skipped (no water nearby). Re-init outcomes logged shortly.",
-                started, stressFixed, spinning, skippedOverstressed, skippedNoFluid);
+                        + " {} skipped (no water nearby), {} skipped (large wheel, see reinit_large_wheels),"
+                        + " {} skipped (not loaded), {} already being re-placed, {} no longer a wheel,"
+                        + " {} with no block entity yet. Re-init outcomes logged shortly.",
+                started, stressFixed,
+                tally.getOrDefault(WheelOutcome.SPINNING, 0),
+                tally.getOrDefault(WheelOutcome.OVERSTRESSED_GENUINE, 0),
+                tally.getOrDefault(WheelOutcome.NO_FLUID, 0),
+                tally.getOrDefault(WheelOutcome.REINIT_REFUSED, 0),
+                tally.getOrDefault(WheelOutcome.NOT_LOADED, 0),
+                tally.getOrDefault(WheelOutcome.REPLACE_PENDING, 0),
+                tally.getOrDefault(WheelOutcome.GONE, 0),
+                tally.getOrDefault(WheelOutcome.NO_BE, 0));
         return started + stressFixed;
     }
 
@@ -384,23 +568,33 @@ class WaterWheelStallManager {
      *   <li><b>Recompute</b> - {@code updateNetwork(); sync();} recalculates stress and capacity from
      *       the network's current members and pushes the result to all of them. Cures a network still
      *       carrying numbers from a state its members have long left.</li>
-     *   <li><b>Drop the phantom unloaded tally</b> (command-only, {@code clear_phantom_stress}) -
+     *   <li><b>Drop the phantom unloaded tally</b> ({@code clear_phantom_stress}, and for an
+     *       automatic caller additionally {@code auto_clear_phantom_stress}) -
      *       Create keeps a running stress/capacity total for members in unloaded chunks and subtracts
      *       a member's share when it loads again. A member removed while unloaded never subtracts,
      *       so its stress haunts the network forever. Only done when the loaded members alone would
-     *       fit the loaded capacity - i.e. when the unloaded tally is provably the sole cause.</li>
+     *       fit the loaded capacity - i.e. when the unloaded tally is provably the sole cause. An
+     *       automatic caller additionally waits for the tally to stop moving; see
+     *       {@link #tallySettled}.</li>
      * </ol>
      *
-     * @param level              The server level
-     * @param pos                The wheel center
-     * @param be                 The wheel block entity
-     * @param allowPhantomClear  Whether step 2 may run (command context only)
+     * @param level  The server level
+     * @param pos    The wheel center
+     * @param be     The wheel block entity
+     * @param policy What this trigger is allowed to do
+     * @param state  The wheel's escalation state, which carries the tally sample
+     * @param now    The current game time
+     * @return what this call actually did
      */
-    private StressAction resolveOverstress(ServerLevel level, BlockPos pos, BlockEntity be, StressMode mode) {
+    private StressAction resolveOverstress(ServerLevel level, BlockPos pos, BlockEntity be,
+                                           FixPolicy policy, FixState state, long now) {
+        StressMode mode = policy.stressMode();
         WaterWheelKinetics.NetworkStats before = WaterWheelKinetics.readNetworkStats(be);
         if (before == null) {
             return StressAction.NONE; // no network reflection / no network - nothing to reason about
         }
+        // Load-bearing order: recompute first, THEN re-read. overloadIsUnloadedOnly() is only exact
+        // on freshly recomputed capacity/stress, and an automatic caller now depends on it.
         WaterWheelKinetics.recomputeNetwork(be);
         if (!WaterWheelKinetics.isOverStressed(be)) {
             if (mode == StressMode.COMMAND) {
@@ -414,13 +608,25 @@ class WaterWheelStallManager {
             return StressAction.NONE;
         }
         WaterWheelKinetics.NetworkStats current = WaterWheelKinetics.readNetworkStats(be);
-        if (current == null || !isTallyClearable(current, mode)) {
-            return StressAction.NONE; // a real overload, or a call only an operator should make
+        if (current == null) {
+            return StressAction.NONE;
+        }
+        sampleTally(state, current, now);
+        if (!isTallyClearable(current, mode, state, now)) {
+            return StressAction.NONE; // a real overload, or a tally that is still moving
         }
         if (!WaterWheelKinetics.clearUnloadedStressAccounting(be)) {
             return StressAction.NONE;
         }
-        if (mode == StressMode.COMMAND) {
+        if (mode == StressMode.DEEP && !current.hasOrphanedTally()) {
+            // The judgement call, taken without a human: say so loudly, with the numbers it was
+            // taken on and how long the tally had stopped moving.
+            LOGGER.warn("[create_water_wheel_unstucker] Wheel at {} ({}) [{}]: dropped an unloaded-member stress"
+                            + " tally that had not changed for {} ticks while the network stayed overstressed"
+                            + " ({}). Set auto_clear_phantom_stress = false to leave this to /vpaunstuck.",
+                    pos.toShortString(), level.dimension().location(), policy.trigger(),
+                    now - state.tallySince, current);
+        } else if (mode == StressMode.COMMAND) {
             LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}): dropped a phantom unloaded-member stress"
                             + " tally ({}) - overstressed now {}", pos.toShortString(),
                     level.dimension().location(), current, WaterWheelKinetics.isOverStressed(be));
@@ -435,29 +641,88 @@ class WaterWheelStallManager {
      * <ul>
      *   <li><b>Sweep</b> - only a self-contradictory tally: stress charged while the network claims
      *       zero unloaded members. No machine can be behind those numbers, so dropping them cannot
-     *       take anything away from anyone. Safe without a human in the loop.</li>
-     *   <li><b>Command</b> - also the judgement call: a tally with actual unloaded members, where the
-     *       loaded members alone would fit the loaded capacity. Those members might be real machines
-     *       in unloaded chunks, which Create counts on purpose - so an operator has to ask for it.</li>
+     *       take anything away from anyone. Safe for every caller.</li>
+     *   <li><b>Command</b> - also the judgement call, immediately: a tally with actual unloaded
+     *       members, where the loaded members alone would fit the loaded capacity. Those members
+     *       might be real machines in unloaded chunks, which Create counts on purpose - but an
+     *       operator is watching and the log carries the numbers.</li>
+     *   <li><b>Deep</b> - the same judgement call for an automatic caller, but only after
+     *       {@link #tallySettled}: the tally is a one-way countdown, so one that is still shrinking
+     *       proves members are still arriving and must be left alone.</li>
      * </ul>
      *
      * @param stats The current network snapshot
-     * @param mode  Who is asking
+     * @param mode  How far this trigger may go
+     * @param state The wheel's escalation state, carrying the tally sample
+     * @param now   The current game time
      * @return true if the tally may be dropped
      */
-    private boolean isTallyClearable(WaterWheelKinetics.NetworkStats stats, StressMode mode) {
+    private boolean isTallyClearable(WaterWheelKinetics.NetworkStats stats, StressMode mode,
+                                     FixState state, long now) {
         if (stats.hasOrphanedTally()) {
             return true;
         }
-        return mode == StressMode.COMMAND && stats.hasUnloadedAccounting() && stats.overloadIsUnloadedOnly();
+        if (!stats.hasUnloadedAccounting() || !stats.overloadIsUnloadedOnly()) {
+            return false;
+        }
+        return switch (mode) {
+            case SAFE -> false;
+            case COMMAND -> true;
+            case DEEP -> tallySettled(state, now);
+        };
+    }
+
+    /**
+     * Records the current unloaded tally, restarting the clock whenever it changes.
+     *
+     * @param state The wheel's escalation state
+     * @param stats The freshly recomputed network snapshot
+     * @param now   The current game time
+     */
+    private static void sampleTally(FixState state, WaterWheelKinetics.NetworkStats stats, long now) {
+        boolean same = state.tallyKnown
+                && state.tallyMembers == stats.unloadedMembers()
+                && state.tallyStress == stats.unloadedStress()
+                && state.tallyCapacity == stats.unloadedCapacity();
+        if (!same) {
+            state.tallyKnown = true;
+            state.tallyMembers = stats.unloadedMembers();
+            state.tallyStress = stats.unloadedStress();
+            state.tallyCapacity = stats.unloadedCapacity();
+            state.tallySince = now;
+        }
+    }
+
+    /**
+     * Whether the unloaded tally has stopped moving long enough to act on it unattended.
+     *
+     * <p>This is what makes the automatic judgement call defensible. Create's unloaded tally is a
+     * one-way countdown: it is seeded once per network with the whole network's last-known totals -
+     * as if every member were unloaded - and from then on only shrinks, once per member that loads
+     * ({@code KineticNetwork.addSilently}). Nothing ever raises it again.</p>
+     *
+     * <p>So right after a world load every network legitimately carries a tally, and
+     * {@code overloadIsUnloadedOnly()} is trivially true while the members are still arriving.
+     * A tally that is still shrinking therefore proves the network is filling up and must be left
+     * alone; one that has not moved for {@link #TALLY_SETTLE_TICKS} while the network stays
+     * overstressed proves nobody else is coming.</p>
+     *
+     * @param state The wheel's escalation state
+     * @param now   The current game time
+     * @return true if the sample has been unchanged long enough
+     */
+    private static boolean tallySettled(FixState state, long now) {
+        return state.tallyKnown && now - state.tallySince >= TALLY_SETTLE_TICKS;
     }
 
     /**
      * Starts a break + re-place re-init: captures the wheel's full state (its orientation / axis) and
      * material, removes it so adjacent water floods the gap and re-establishes ACTIVE flow, then queues
      * the wheel to be placed back after {@code reinit_flood_ticks}. This is the only thing that revives
-     * a reload-stalled wheel - Create only reads a non-zero flow score while the water is actually
-     * moving, and then keeps it. Sized for small (single-block) wheels.
+     * a reload-stalled wheel: Create re-reads the flow score every 60 ticks ({@code lazyTick} to
+     * {@code determineAndApplyFlowScore}), but it reads the water as it is - standing water scores
+     * zero however often it is asked. Flooding the gap is what makes that reading non-zero.
+     * Sized for small (single-block) wheels.
      *
      * <p>The pending entry is recorded <i>before</i> the block is removed, never after: between the
      * two statements the wheel exists nowhere else, and anything that ends the tick in between - an
@@ -470,14 +735,23 @@ class WaterWheelStallManager {
      * @param level The server level
      * @param pos   The wheel center
      * @param be    The wheel block entity
+     * @param state  The wheel's escalation state, used to keep the refusal log out of the tick loop
+     * @param policy What this trigger is allowed to do
      * @return true if the wheel was removed and is now held for re-placement
      */
-    private boolean beginReinit(ServerLevel level, BlockPos pos, BlockEntity be) {
+    private boolean beginReinit(ServerLevel level, BlockPos pos, BlockEntity be, FixState state, FixPolicy policy) {
         BlockState wheelState = level.getBlockState(pos);
         if (WaterWheelRegistry.isLargeWheel(wheelState) && !module.getConfig().isReinitLargeWheelsEnabled()) {
-            LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}) is a large wheel; not re-initialising it."
-                            + " Set reinit_large_wheels = true to allow it.",
-                    pos.toShortString(), level.dimension().location());
+            long now = level.getGameTime();
+            // Throttled for automatic triggers, which come round constantly - but never for the
+            // operator, who asked this second and deserves an answer.
+            if (!policy.rateLimited() || state.lastRefusalLog == 0L
+                    || now - state.lastRefusalLog >= REFUSAL_LOG_INTERVAL_TICKS) {
+                state.lastRefusalLog = now;
+                LOGGER.info("[create_water_wheel_unstucker] Wheel at {} ({}) is a large wheel; not re-initialising"
+                                + " it. Set reinit_large_wheels = true to allow it.",
+                        pos.toShortString(), level.dimension().location());
+            }
             return false;
         }
         BlockState material = WaterWheelKinetics.getMaterial(be);
@@ -669,11 +943,41 @@ class WaterWheelStallManager {
         return byPos != null ? byPos.get(pos) : null;
     }
 
+    /**
+     * Resets a wheel's escalation after it recovered - but keeps {@code lastReinitTick}, which is the
+     * rate limiter. Create recomputes a wheel's flow score on its own every 60 ticks, so a wheel can
+     * look healthy for a moment and stall again; dropping the cooldown here would let an automatic
+     * trigger break the same wheel open over and over.
+     *
+     * @param level The server level
+     * @param pos   The wheel center
+     */
     private void clearState(ServerLevel level, BlockPos pos) {
         Map<BlockPos, FixState> byPos = fixStates.get(level.dimension());
-        if (byPos != null) {
-            byPos.remove(pos);
+        if (byPos == null) {
+            return;
         }
+        FixState state = byPos.get(pos);
+        if (state == null) {
+            return;
+        }
+        if (state.lastReinitTick == 0L && !state.tallyKnown) {
+            byPos.remove(pos); // nothing worth remembering
+            return;
+        }
+        state.attempts = 0;
+        state.backoffUntil = 0L;
+        state.warned = false;
+        // A wheel that reaches this point is not in a fixable stall right now - it spins, the
+        // network is genuinely overloaded, or the water is gone. Any of those disproves the
+        // give-up verdict, so the escalation starts from scratch if it stalls again later.
+        state.givenUp = false;
+        state.backoffsExhausted = 0;
+        // The tally sample deliberately survives: it is a measurement of Create's bookkeeping over
+        // time, not part of this wheel's escalation. Wiping it here restarted the settle clock on
+        // every single check, which made StressMode.DEEP unreachable for the case it exists for.
+        // It IS reset in forgetChunk, because a chunk reload rebuilds the network the sample was
+        // taken from.
     }
 
     /**
@@ -683,13 +987,41 @@ class WaterWheelStallManager {
      * @param chunkPos The unloading chunk
      */
     void forgetChunk(ServerLevel level, ChunkPos chunkPos) {
-        Map<BlockPos, Long> pending = pendingPostLoad.get(level.dimension());
+        Map<BlockPos, ScheduledCheck> pending = pendingPostLoad.get(level.dimension());
         if (pending != null) {
             pending.keySet().removeIf(pos -> inChunk(pos, chunkPos));
         }
+        Map<BlockPos, Long> verify = pendingVerify.get(level.dimension());
+        if (verify != null) {
+            // Nothing to verify once the chunk is gone; the entry would otherwise sit there forever.
+            verify.keySet().removeIf(pos -> inChunk(pos, chunkPos));
+        }
         Map<BlockPos, FixState> states = fixStates.get(level.dimension());
-        if (states != null) {
-            states.keySet().removeIf(pos -> inChunk(pos, chunkPos));
+        if (states == null) {
+            return;
+        }
+        long now = level.getGameTime();
+        Iterator<Map.Entry<BlockPos, FixState>> it = states.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<BlockPos, FixState> entry = it.next();
+            if (!inChunk(entry.getKey(), chunkPos)) {
+                continue;
+            }
+            FixState state = entry.getValue();
+            // The tally sample must NOT survive: Create tears the kinetic network down with the
+            // chunk and re-seeds it on reload, so a sample from before that describes a network
+            // that no longer exists - and would let the settle clock read as expired the moment
+            // the wheel comes back.
+            state.tallyKnown = false;
+            // The cooldown, the backoff and the give-up flag must survive: chunk load is precisely
+            // what drives the automatic cure, so dropping them here would disarm every brake on
+            // the one cycle they exist for.
+            boolean worthKeeping = state.givenUp
+                    || state.backoffUntil > now
+                    || (state.lastReinitTick != 0L && now - state.lastReinitTick < MIN_REINIT_INTERVAL_TICKS);
+            if (!worthKeeping) {
+                it.remove();
+            }
         }
     }
 
@@ -778,8 +1110,13 @@ class WaterWheelStallManager {
      * @param pos   The removed wheel center
      */
     void forgetWheel(ServerLevel level, BlockPos pos) {
-        clearState(level, pos);
-        Map<BlockPos, Long> pending = pendingPostLoad.get(level.dimension());
+        // Hard removal, not clearState: the wheel is gone, and a wheel placed here later must not
+        // inherit its cooldown, its give-up flag or a tally sample taken from a different network.
+        Map<BlockPos, FixState> states = fixStates.get(level.dimension());
+        if (states != null) {
+            states.remove(pos);
+        }
+        Map<BlockPos, ScheduledCheck> pending = pendingPostLoad.get(level.dimension());
         if (pending != null) {
             pending.remove(pos);
         }
@@ -795,6 +1132,19 @@ class WaterWheelStallManager {
     private boolean hasPendingReplace(ServerLevel level, BlockPos pos) {
         Map<BlockPos, PendingReplace> held = pendingReplace.get(level.dimension());
         return held != null && held.containsKey(pos);
+    }
+
+    /**
+     * Whether a check ended without ever getting to look at the wheel, so its queued slot is still
+     * worth something.
+     *
+     * @param outcome what the check returned
+     * @return true if nothing was actually evaluated
+     */
+    private static boolean inconclusive(WheelOutcome outcome) {
+        return outcome == WheelOutcome.NOT_LOADED
+                || outcome == WheelOutcome.NO_BE
+                || outcome == WheelOutcome.REPLACE_PENDING;
     }
 
     private static boolean inChunk(BlockPos pos, ChunkPos chunkPos) {

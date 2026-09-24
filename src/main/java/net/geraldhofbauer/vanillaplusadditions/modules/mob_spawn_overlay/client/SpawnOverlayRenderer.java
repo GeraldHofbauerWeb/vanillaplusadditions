@@ -61,33 +61,42 @@ public final class SpawnOverlayRenderer {
         float shimmerScroll = seconds * config.getScrollSpeed() * SHIMMER_SPEED_FACTOR * shimmerUvPerBlock;
 
         Matrix4f matrix = pose.last().pose();
+
+        // One pass per render type, and the buffer fetched at the start of its own pass.
+        // MultiBufferSource.BufferSource ends the running batch as soon as a different type is
+        // requested, which leaves the consumer handed out earlier pointing at a finished builder -
+        // so holding all three at once and writing to them in turn is exactly what must not happen.
         VertexConsumer stripes = buffers.getBuffer(SpawnOverlayRenderTypes.stripes(xray));
-        VertexConsumer shimmer = drawShimmer
-                ? buffers.getBuffer(SpawnOverlayRenderTypes.shimmer(xray)) : null;
-        VertexConsumer outline = buffers.getBuffer(SpawnOverlayRenderTypes.outline(xray));
-
         for (SpawnMarker marker : markers) {
-            float x0 = marker.x() + INSET;
-            float x1 = marker.x() + 1.0F - INSET;
-            float z0 = marker.z() + INSET;
-            float z1 = marker.z() + 1.0F - INSET;
-            float y = marker.surfaceY() + LIFT;
             float[] color = marker.spawnsNow() ? nowColor : nightColor;
+            quad(stripes, matrix, marker.x() + INSET, marker.surfaceY() + LIFT, marker.z() + INSET,
+                    marker.x() + 1.0F - INSET, marker.z() + 1.0F - INSET,
+                    stripeUvPerBlock, stripeScroll, color[0], color[1], color[2], color[3]);
+        }
 
-            quad(stripes, matrix, x0, y, z0, x1, z1, stripeUvPerBlock, stripeScroll,
-                    color[0], color[1], color[2], color[3]);
-
-            if (drawShimmer) {
+        if (drawShimmer) {
+            VertexConsumer shimmer = buffers.getBuffer(SpawnOverlayRenderTypes.shimmer(xray));
+            for (SpawnMarker marker : markers) {
                 // Additive blending multiplies rgb by alpha, so keeping the marker's hue here
                 // makes the glint match the field it sweeps over instead of washing it white.
-                quad(shimmer, matrix, x0, y, z0, x1, z1, shimmerUvPerBlock, shimmerScroll,
-                        color[0], color[1], color[2], shimmerStrength);
+                float[] color = marker.spawnsNow() ? nowColor : nightColor;
+                quad(shimmer, matrix, marker.x() + INSET, marker.surfaceY() + LIFT, marker.z() + INSET,
+                        marker.x() + 1.0F - INSET, marker.z() + 1.0F - INSET,
+                        shimmerUvPerBlock, shimmerScroll, color[0], color[1], color[2], shimmerStrength);
             }
+        }
 
-            if (marker.spiderRoom()) {
-                outlineRect(outline, pose, x0, y, z0, x1, z1,
-                        spiderColor[0], spiderColor[1], spiderColor[2], spiderColor[3]);
+        VertexConsumer outline = null;
+        for (SpawnMarker marker : markers) {
+            if (!marker.spiderRoom()) {
+                continue;
             }
+            if (outline == null) {
+                outline = buffers.getBuffer(SpawnOverlayRenderTypes.outline(xray));
+            }
+            outlineRect(outline, pose, marker.x() + INSET, marker.surfaceY() + LIFT, marker.z() + INSET,
+                    marker.x() + 1.0F - INSET, marker.z() + 1.0F - INSET,
+                    spiderColor[0], spiderColor[1], spiderColor[2], spiderColor[3]);
         }
     }
 

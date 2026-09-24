@@ -304,8 +304,14 @@ final class WaterWheelKinetics {
      * were removed while their chunk was unloaded and therefore never subtracted their share again.
      *
      * <p>Trade-off: machines that genuinely are unloaded stop counting until their chunk loads, at
-     * which point {@code addSilently} registers them again with their real numbers. That is why this
-     * is only ever reached from the explicit {@code /vpaunstuck} command.</p>
+     * which point {@code addSilently} registers them again with their real numbers.</p>
+     *
+     * <p>Who may call this is decided by the caller, not here, and it depends on the case. A tally
+     * that is <em>orphaned</em> - stress charged while the network itself claims zero unloaded
+     * members - contradicts itself, so nothing can be behind those numbers and every caller drops
+     * it, the periodic sweep included. A tally with actual unloaded members is a judgement call:
+     * {@code /vpaunstuck} takes it at once, an automatic caller only after the numbers have stopped
+     * moving for {@code TALLY_SETTLE_TICKS} and only with {@code auto_clear_phantom_stress} on.</p>
      *
      * @param be The water wheel block entity
      * @return true if unloaded accounting was present and has been cleared

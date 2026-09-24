@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * <p>(Sorting/searching inside the backpack come from Quark, not this module — see
- * {@code docs/overpacked_extensions.md}.)
+ * {@code docs/modules/overpacked_extensions.md}.)
  */
 public class OverpackedExtensionsConfig
         extends AbstractModuleConfig<OverpackedExtensionsModule, OverpackedExtensionsConfig> {

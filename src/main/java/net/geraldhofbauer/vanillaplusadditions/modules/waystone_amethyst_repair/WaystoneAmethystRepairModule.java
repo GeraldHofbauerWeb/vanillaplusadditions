@@ -182,6 +182,11 @@ public class WaystoneAmethystRepairModule
      * here. Someone who installs the jar and then disables it in the config therefore still gets
      * the free repair; that is the lesser of the two wrong answers.
      *
+     * <p>In the bundle the answer is exact: {@code ModuleManager.isModuleEnabled} resolves the same
+     * live config the sibling's own pickup gate reads. Both gates therefore move together, which
+     * matters - a cost-0 output the anvil then refuses to hand over is a result the player can see
+     * but never take.
+     *
      * @return true if repairs should cost no experience levels
      */
     private static boolean freeAnvilRepairActive() {

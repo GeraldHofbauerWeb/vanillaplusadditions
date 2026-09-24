@@ -18,8 +18,6 @@
   "command.vpa.mobglow.applied_new": "Effet de surbrillance appliqué à %s nouvelles entités %s %s",
   "command.vpa.mobglow.infinite": "indéfiniment",
   "command.vpa.mobglow.for_seconds": "pendant %s secondes",
-  "message.vpa.death_coords": "Le joueur %s est mort aux coordonnées : X=%d, Y=%d, Z=%d dans la dimension %s",
-  "message.vpa.death_coords.hover": "Cliquez pour vous téléporter au lieu de la mort",
   "entity.vanillaplusadditions.flying_fish": "Poisson volant",
   "item.vanillaplusadditions.flying_fish": "Poisson volant",
   "item.vanillaplusadditions.cooked_flying_fish": "Poisson volant cuit",

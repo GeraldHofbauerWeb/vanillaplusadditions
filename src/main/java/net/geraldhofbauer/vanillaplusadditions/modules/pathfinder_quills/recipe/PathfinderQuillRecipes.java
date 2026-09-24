@@ -13,6 +13,11 @@ import java.util.Map;
  * biome keys and color ints below are copied verbatim from that bytecode so crafted quills look
  * identical to traded ones), paired with a block that's thematically tied to each biome — each
  * biome's own leaves where it has a signature tree, a defining terrain/ground block otherwise.
+ *
+ * <p>One deliberate exception: {@code dark_forest} takes <strong>oak</strong> leaves, not dark oak,
+ * although dark oak is its signature tree. Dark oak leaves only drop from a dark forest, so keying
+ * the recipe to them would mean you must already have found the biome the quill is meant to find.
+ * Oak leaves keep the quill reachable; it is the one entry in this table you can craft blind.
  */
 public final class PathfinderQuillRecipes {
 

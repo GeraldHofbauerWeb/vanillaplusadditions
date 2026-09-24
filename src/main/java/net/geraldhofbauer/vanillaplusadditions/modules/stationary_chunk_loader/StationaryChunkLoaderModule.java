@@ -32,6 +32,7 @@ import net.neoforged.neoforge.common.world.chunk.RegisterTicketControllersEvent;
 import net.neoforged.neoforge.common.world.chunk.TicketController;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -154,6 +155,22 @@ public class StationaryChunkLoaderModule
         if (event.getLevel() instanceof ServerLevel level) {
             manager.forgetLevel(level);
         }
+    }
+
+    /**
+     * Forgets that force-loading was on, once the server is gone.
+     *
+     * <p>The module instance outlives a single server: in single player, leaving the world and
+     * opening another one reuses it. Without this reset the next server would start believing it
+     * had already resumed, and with {@code only_while_players_online = false} - where the state
+     * never flips back on its own - the resume transition would fire exactly once per game
+     * process.</p>
+     *
+     * @param event the shutdown event
+     */
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        forcingEnabled = false;
     }
 
     // ---- Block callbacks (from ChunkAnchorBlock) ----

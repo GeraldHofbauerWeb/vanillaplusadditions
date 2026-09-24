@@ -37,9 +37,10 @@ for a burning arrow, not a re-implementation:
 * water puts it out, and so do rain and powder snow; an extinguished Fire Arrow lays no fire — it
   is an ordinary arrow again until it is shot anew.
 
-It works from a bow and a crossbow, and it can be picked up and shot again. A dispenser does not
-shoot it: vanilla registers a dispense behaviour per arrow item — `minecraft:arrow`, `tipped_arrow`,
-`spectral_arrow` — and the Fire Arrow has none, so a dispenser ejects it as an item.
+It works from a bow, a crossbow and a dispenser, and it can be picked up and shot again. The
+dispenser had to be taught: vanilla registers a dispense behaviour per arrow item —
+`minecraft:arrow`, `tipped_arrow`, `spectral_arrow` — and anything without one is simply ejected as
+an item, which is what the Fire Arrow used to be.
 
 ## Why it is built this way
 
@@ -47,12 +48,39 @@ The arrow entity is vanilla's `Arrow`. `FireArrowItem` only overrides the two fa
 already has — `createArrow`, which bows and crossbows go through, and `asProjectile`, the dispenser
 factory — and lights the result for a hundred seconds, which is exactly what the Flame enchantment
 does. No arrow stays airborne for anything like that long, so it is guaranteed to arrive burning.
-No dispenser reaches the `asProjectile` half as things stand: a dispenser only shoots an item as a
-projectile if a `ProjectileDispenseBehavior` was registered for it via
-`DispenserBlock.registerProjectileBehavior`, and nothing here does that — every other item falls
-through to `DefaultDispenseItemBehavior`, which simply ejects the stack. (Vanilla's other
-caller of `asProjectile`, the ominous item spawner, only ever holds what a datapack or command puts
-in it.)
+The `asProjectile` half is reached because the module registers the behaviour itself: a dispenser
+only shoots an item as a projectile if a `ProjectileDispenseBehavior` exists for it in
+`DispenserBlock.DISPENSER_REGISTRY`, and everything else falls through to
+`DefaultDispenseItemBehavior`, which just ejects the stack. `MoArrowsModule.onModCommonSetup` calls
+`DispenserBlock.registerProjectileBehavior(FIRE_ARROW.get())` inside `event.enqueueWork`, because
+that registry is a plain map and mod setup runs in parallel. (Vanilla's other caller of
+`asProjectile`, the ominous item spawner, only ever holds what a datapack or command puts in it.)
+
+### Where the fire goes
+
+Not simply "in front of the block that was hit". That is the first candidate and it is all a shot
+into flat ground needs — the struck face points up, the block above it is air, the ground below
+carries the fire. Outdoors it stops being enough almost immediately, so two more rules apply:
+
+* **The arrow's own block is the second candidate.** Shoot sideways into a bush and the arrow stops
+  *inside* the foliage, not in front of it; the block off the struck face is then frequently another
+  leaf, and vanilla's `canBePlacedAt` refuses on `!isAir()`. The block the arrow itself occupies is
+  the air it just flew through — empty by construction and touching what was hit.
+* **A replaceable block may give way.** A snow layer is two pixels high: an arrow shot at
+  snow-covered ground passes straight through it and strikes the ground underneath, so the block off
+  the struck face *is the snow layer*, and the arrow ends up in it as well. Both candidates then hold
+  snow rather than air. Since snow is declared `replaceable()` in vanilla, it is now accepted as long
+  as a fire would survive there — the layer is replaced by the fire. Tall grass and ferns come along
+  for the same ride.
+
+Verified in game on 2026-09-24 across 18 impacts (11 from above, 7 from the side), with the
+per-impact diagnostics switched on: no refusals, and the side hits into snow-fronted blocks show
+`fire set at …, which held minecraft:snow[layers=1]`.
+
+If neither candidate works, nothing is set alight and — with `debug_logging` on — one line says which
+block was in the way. Those lines are INFO rather than DEBUG on purpose: a dedicated server's log
+configuration drops DEBUG entirely, so a `.debug()` call would never reach the log of the one machine
+where this needs diagnosing.
 
 The fire it lays hangs off `ProjectileImpactEvent` rather than an overridden `onHitBlock`, because
 overriding that method would mean registering an entity type, writing a renderer and sending a spawn

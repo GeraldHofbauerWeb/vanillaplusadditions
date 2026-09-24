@@ -79,7 +79,8 @@ public class HostileEndermenConfig
     @Override
     public void onConfigLoad(ModConfigSpec spec) {
         super.onConfigLoad(spec);
-        if (detectionRange != null && angerDuration != null && respectCarvedPumpkin != null) {
+        if (detectionRange != null && angerDuration != null && respectCarvedPumpkin != null
+                && suppressTeleportAttack != null) {
             LOGGER.debug("  - Detection range: {} blocks", detectionRange.get());
             LOGGER.debug("  - Anger duration: {} ticks", angerDuration.get());
             LOGGER.debug("  - Respect carved pumpkin: {}", respectCarvedPumpkin.get());

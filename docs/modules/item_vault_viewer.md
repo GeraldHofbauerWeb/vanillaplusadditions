@@ -125,13 +125,24 @@ item capability. Create builds that capability on the controller as a
 `VersionedInventoryWrapper` around a `SameSizeCombinedInvWrapper` over every member block's handler,
 so a placed multiblock already adds up in one handler and the viewer does no walking at all.
 
-Both hops go through reflection — `getControllerBE()` by name, `itemCapability` as a declared field,
-because it is `protected`. A failure to find the controller means nothing opens at all. A field that
-cannot be read **or is simply still null** falls back to the public `getInventoryOfBlock()`, which
-returns **one block's** handler, so a 3×3×9 vault quietly reads as 20 slots rather than breaking
-outright. Null is not a hypothetical: Create builds `itemCapability` lazily in its private
-`initCapability()` and clears it again in `notifyMultiUpdated()` and whenever the controller
-position changes. Both hops swallow the `ReflectiveOperationException` without a log line.
+Finding the controller goes through reflection (`getControllerBE()` by name); a failure there means
+nothing opens at all. Getting its handler does **not** — it asks the capability system first:
+
+```java
+IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null);
+```
+
+That order matters, and it used to be the other way round. Create builds `itemCapability` lazily in
+its private `initCapability()`, which runs from inside the very lookup this call performs — so on a
+vault that nobody had touched since its chunk loaded, reading the field directly found `null`. The
+viewer then fell through to the public `getInventoryOfBlock()`, which returns **one block's**
+handler, and a 3×3×9 vault quietly read as 20 slots. Asking through the capability is what makes the
+field exist.
+
+Both reflective routes are kept behind it: reading `itemCapability` as a declared field (it is
+`protected`), then `getInventoryOfBlock()`. They cost nothing on the path that works and are the
+only thing left if Create ever stops registering the vault this way. Both swallow the
+`ReflectiveOperationException` without a log line.
 
 ### Reading a contraption vault
 
@@ -261,7 +272,7 @@ This module has no settings of its own.
 | All GUI text is hardcoded English | The only lang key this module owns is the keybind name. The window title, "Search", "Desc"/"Asc", "No matches", "Empty", "Vault N% full", "N / M slots used" and "N items" are literals and cannot be translated. |
 | `debug_logging` does nothing here | The module never consults it. Both the server-side traces and the client-side `[IVV/contraption]` diagnostics are plain SLF4J `debug` calls on their class loggers, so only a log4j level change turns them on. |
 | Mixed versions | The open-menu payload changed in `v1.0.0-beta.69` (anchor → fill numbers → stacks). Client and server must run the same version. |
-| `itemCapability` unreadable or still null | Placed vaults quietly degrade to the controller block's own 20 slots via the `getInventoryOfBlock()` fallback — a rename is one way there, Create's lazy initialisation of that field is another. A rename of `getControllerBE` stops the viewer opening at all. Neither logs anything. |
+| The capability lookup fails | Placed vaults quietly degrade to the controller block's own 20 slots via the `getInventoryOfBlock()` fallback. Create's lazy initialisation no longer leads here — the capability call triggers it — so it now takes an actual change on Create's side. A rename of `getControllerBE` still stops the viewer opening at all. Neither logs anything. |
 | No mounted storage for any resolved member of a contraption vault | The nearest-storage fallback searches every mounted item storage within Chebyshev radius 3, vault or not, and can show a neighbouring container. A failed `capturedMultiblocks` reflection is warned about once per launch, but does not by itself lead here. |
 | Spectators | The contraption path skips them explicitly; the placed-block client handler does not, and neither does the server. The view is read-only either way. |
 | Standalone jar | `vpa_item_vault_viewer` declares no dependency on Create, not even an optional one — it simply does nothing without it. The bundle does declare `create` as optional, `[6.0,)`, ordering AFTER, side BOTH. |
@@ -299,7 +310,9 @@ switched on and off at runtime; without Create it never registers anything in th
 | `modules/item_vault_viewer/config/ItemVaultViewerConfig` | Ten lines; no keys of its own |
 | `standalone/item_vault_viewer/ItemVaultViewerStandalone` | `@Mod("vpa_item_vault_viewer")` |
 
-**Coupling to Create internals.** Three of them are not API: the protected field `itemCapability`,
+**Coupling to Create internals.** The handler itself now comes through NeoForge's capability API,
+which is the one supported route. What remains coupled is not API: the protected field
+`itemCapability` (fallback only),
 the protected field `Contraption.capturedMultiblocks`, and the member order that mirrors the private
 `ItemVaultBlockEntity.initCapability`. All three exist in the vendored `create-1.21.1-6.0.9.jar`
 (checked with `javap -p`), all three are reflection or behavioural copies rather than compile

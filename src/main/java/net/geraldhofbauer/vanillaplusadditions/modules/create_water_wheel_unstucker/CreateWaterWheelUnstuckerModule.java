@@ -125,7 +125,7 @@ public class CreateWaterWheelUnstuckerModule
         }
         if (WaterWheelRegistry.isWheelBlock(event.getPlacedBlock())) {
             registry.onBlockPlaced(level, event.getPos(), event.getPlacedBlock());
-            stallManager.enqueuePostLoadCheck(level, List.of(event.getPos().immutable()));
+            stallManager.enqueuePlacementCheck(level, List.of(event.getPos().immutable()));
         }
     }
 
@@ -139,8 +139,12 @@ public class CreateWaterWheelUnstuckerModule
         if (registry == null || !(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
-        registry.onBlockBroken(level, event.getPos(), event.getState());
-        stallManager.forgetWheel(level, event.getPos());
+        // Use the resolved centre: breaking a large wheel's shell block unregisters the master, and
+        // the stall manager's state is keyed by that same centre, not by the block that was hit.
+        BlockPos centre = registry.onBlockBroken(level, event.getPos(), event.getState());
+        if (centre != null) {
+            stallManager.forgetWheel(level, centre);
+        }
     }
 
     /**

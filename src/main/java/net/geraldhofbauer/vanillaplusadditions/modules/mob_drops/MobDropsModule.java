@@ -32,8 +32,10 @@ public class MobDropsModule
         extends AbstractModule<MobDropsModule, MobDropsConfig> {
 
     /**
-     * Cache structure: EntityType -> (Item -> DropInfo)
-     * Where DropInfo contains chance and optionally max_drops
+     * Parsed config, keyed by mob: EntityType -&gt; list of drops.
+     *
+     * <p>A list, not a map by item, on purpose - the same item may be configured twice for one mob
+     * (two rules with different chances and stack sizes), and every matching rule is rolled.</p>
      */
     private final Map<EntityType<?>, List<DropInfo>> mobDropsCache = new HashMap<>();
 
@@ -92,21 +94,18 @@ public class MobDropsModule
                     }
                 }
 
-                // Get the entity type
+                // containsKey first: ENTITY_TYPE is a DefaultedRegistry whose get() never returns
+                // null - an unknown id silently comes back as minecraft:pig, so a typo used to
+                // attach the rule to pigs instead of reporting itself.
+                if (!BuiltInRegistries.ENTITY_TYPE.containsKey(mobRl)) {
+                    getLogger().warn("Mob drops config: Mob not found: {} (rule ignored)", parts[0]);
+                    continue;
+                }
                 EntityType<?> mobType = BuiltInRegistries.ENTITY_TYPE.get(mobRl);
                 Item item = BuiltInRegistries.ITEM.get(itemRl);
 
-                if (mobType == null) {
-                    if (getConfig().shouldDebugLog()) {
-                        getLogger().warn("Mob drops config: Mob not found: {}", parts[0]);
-                    }
-                    continue;
-                }
-
                 if (item == Items.AIR) {
-                    if (getConfig().shouldDebugLog()) {
-                        getLogger().warn("Mob drops config: Item not found: {}", parts[1]);
-                    }
+                    getLogger().warn("Mob drops config: Item not found: {} (rule ignored)", parts[1]);
                     continue;
                 }
 

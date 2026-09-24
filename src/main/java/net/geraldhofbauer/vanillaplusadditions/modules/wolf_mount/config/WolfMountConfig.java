@@ -11,7 +11,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  * read on paths that can run before the spec is loaded.
  *
  * <p><b>Multiplayer note:</b> this is a COMMON config and NeoForge does not sync it. {@code enabled}
- * and the movement multipliers must match on client and server — see {@code docs/wolf_mount.md}.
+ * and the movement multipliers must match on client and server — see {@code docs/modules/wolf_mount.md}.
  */
 public class WolfMountConfig extends AbstractModuleConfig<WolfMountModule, WolfMountConfig> {
 

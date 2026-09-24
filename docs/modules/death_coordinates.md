@@ -1,9 +1,8 @@
 # Death Coordinates Announcer
 
 > **TL;DR** — When any player dies, everyone on the server gets a chat line naming the player, the
-> exact X/Y/Z of the death and the dimension — and if the player who died was an operator, that line
-> is clickable and teleports whoever clicks it to the spot, provided they themselves may run
-> commands.
+> exact X/Y/Z of the death and the dimension. For the operators among them that line is clickable
+> and teleports them to the spot; everybody else gets the same text without the click.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -29,10 +28,10 @@ The name is bold gold, the coordinates aqua, the dimension light purple. Nothing
 nothing has to be remembered: the line stays in the chat history for as long as any other message,
 which is usually enough to walk back to the items.
 
-If the player who died was an **operator**, the whole line also carries a hover ("Click to teleport
-to death location") and a click that runs a teleport to the spot. That is a convenience for staff
-cleaning up after an accident, not a general respawn shortcut — see [the click](#the-click) for who
-actually gets it and who it works for.
+**Operators** additionally get a hover ("Click to teleport to death location") and a click that
+runs a teleport to the spot. That is a convenience for staff cleaning up after an accident, not a
+general respawn shortcut — see [the click](#the-click). Who died makes no difference to it; who is
+reading does.
 
 ## In detail
 
@@ -76,30 +75,31 @@ public void die(DamageSource cause) {
 
 ### The click
 
-The hover and the click event are attached to the message *once*, gated on the player who just
-**died**:
+Two versions of the line are built — one plain, one with the hover and the click — and each player
+is handed the one that matches **their own** permission level:
 
 ```java
-if (player.hasPermissions(2)) {
-    deathMessage = deathMessage.withStyle(style -> style
-            .withHoverEvent(...)
-            .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                    "/execute in %s as @s run tp @s %d %d %d".formatted(...))));
+for (ServerPlayer serverPlayer : server.getPlayerList().getPlayers()) {
+    serverPlayer.sendSystemMessage(serverPlayer.hasPermissions(TELEPORT_PERMISSION_LEVEL)
+            ? teleportMessage : baseMessage);
 }
 ```
 
-That single component is then broadcast unchanged to everybody. There is no per-recipient check, so
-the outcome is a grid rather than a rule:
+So the rule is simply: you get the click if you could run the command.
 
-| Who died | Who clicks | Result |
+| Who died | Who reads | Result |
 |---|---|---|
-| Operator | may run `/tp` | teleported to the death spot |
-| Operator | may not run commands | the command is rejected for the clicker |
-| Ordinary player | anyone, operator included | no hover, no click — plain text |
+| anyone | may run `/tp` | clickable, teleports them to the death spot |
+| anyone | may not run commands | plain text, no hover, no click |
 
-The command runs with the **clicker's** permissions, not the dead player's, which is what the second
-row comes down to. The gate on the dying player is a known open point rather than a settled design;
-the source says so at the `if`:
+The command runs with the **clicker's** permissions. It used to be decided by the *dying* player's
+rank instead, which got it wrong in both directions at once: an operator's death handed every player
+a command the server then refused, and an ordinary player's death stayed unclickable even for the
+operators who could have used it. The console copy is always the plain one — there is nothing there
+to click.
+
+What is still open is making the level configurable, so a server could offer the teleport to
+spectators or to everyone; the source says so at the check:
 
 ```java
 // TODO: Make the permission level configurable aka make it a config option to enable for spectators
@@ -174,8 +174,7 @@ This module has no settings of its own.
 | English only | The message is built from `Component.literal`, so client language does not matter. The lang key `message.vpa.death_coords` exists in all six lang files but is referenced nowhere in `src/` — `0.10.3` moved these strings to translatable components and `0.12.0` moved them back to literals, leaving the translations behind. |
 | Everyone sees every death | There is no distance, team or dimension filter. On a PvP server the line tells the whole server where a player's items are lying. |
 | `showDeathMessages` off | Does not silence this module; the gamerule is never read. Two lines become one. |
-| Non-op deaths are never clickable | Even an operator receives plain text when an ordinary player dies, because the gate sits on the dying player. |
-| Op deaths are clickable for everyone | A player without command permission still gets a clickable line and only finds out on the click, when the command is refused. |
+| The permission level is not configurable | Hardcoded at 2, the level `/tp` itself requires. A server cannot offer the teleport to spectators or to everyone. |
 | Teleport target is not made safe | `tp` goes to the recorded block position. A void death in the End teleports the clicker back into the void; a lava death teleports them into lava. |
 | Fake players | Any `Player` subclass counts, including the fake players some mods use for machines. There is no UUID or fake-player check. |
 | Client mods | None needed. Nothing is registered on the client and no packet of our own is sent; it is ordinary system chat. |

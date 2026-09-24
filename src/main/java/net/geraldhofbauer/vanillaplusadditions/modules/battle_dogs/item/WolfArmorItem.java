@@ -39,14 +39,17 @@ public class WolfArmorItem extends AnimalArmorItem {
 
     private final Tier tier;
     private final ResourceLocation texture;
+    private final ResourceLocation foxhoundTexture;
 
     public WolfArmorItem(Tier tier, Properties properties) {
         super(ArmorMaterials.ARMADILLO, BodyType.CANINE, false,
               properties.durability(tier.getMaxDurability()));
         this.tier = tier;
+        String suffix = tier.name().toLowerCase() + ".png";
         this.texture = ResourceLocation.fromNamespaceAndPath(
-                VanillaPlusAdditions.MODID,
-                "textures/entity/wolf/wolf_armor_" + tier.name().toLowerCase() + ".png");
+                VanillaPlusAdditions.MODID, "textures/entity/wolf/wolf_armor_" + suffix);
+        this.foxhoundTexture = ResourceLocation.fromNamespaceAndPath(
+                VanillaPlusAdditions.MODID, "textures/entity/foxhound/foxhound_armor_" + suffix);
     }
 
     public Tier getTier() {
@@ -56,6 +59,19 @@ public class WolfArmorItem extends AnimalArmorItem {
     @Override
     public ResourceLocation getTexture() {
         return texture;
+    }
+
+    /**
+     * The same armour on Quark's Foxhound.
+     *
+     * <p>A second texture is needed because Quark's Foxhound brings its own armour model with a
+     * 64x64 UV layout that has nothing to do with the 64x32 vanilla wolf armour. Same tier, same
+     * palette, different sheet - see {@code scripts/gen_foxhound_armor_textures.py}.</p>
+     *
+     * @return the Foxhound armour texture for this tier
+     */
+    public ResourceLocation getFoxhoundTexture() {
+        return foxhoundTexture;
     }
 
     @Override

@@ -208,7 +208,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| Unknown or misspelt `mob_id` | Silently becomes `minecraft:pig`. No warning is possible — see above. |
+| Unknown or misspelt `mob_id` | Skipped, with a WARN line naming the id. The lookup asks `containsKey` first, which is what makes the warning possible at all — `get` would hand back a pig. |
 | `minecraft:air` as `item_id` | Skipped, with the same message an unknown item gets, and only when debug logging is on. |
 | One invalid entry | Deleted from the list by NeoForge's config correction. If every entry is invalid the four defaults come back. |
 | `chance = 0.0` | Passes validation and never fires. Nothing is logged; it looks exactly like a rule that is not working. |

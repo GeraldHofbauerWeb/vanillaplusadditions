@@ -148,11 +148,22 @@ Gamerules live in `level.dat`, so `doDaylightCycle = false` survives a shutdown,
 backup restore. While the module is installed and enabled that costs nothing — the first join after
 the restart sets everything back to `true`.
 
-It becomes permanent the moment the module stops running in that state. Remove the jar, or set
-`enabled = false`, while the server is empty and the world keeps a frozen sun, frozen weather — and
-a frozen season clock, if Serene Seasons is in the pack — with nothing left to undo it. There is no
-shutdown hook, no `ServerStopping` handler and no "restore on disable" path anywhere in the module.
-It takes one command per rule in your list — with the defaults, three:
+That is why the module puts them back on the way out. `ServerStopping` checks whether the server
+is stopping while empty — the only state in which the rules are currently paused — and restores
+them before `level.dat` is written:
+
+```java
+if (Boolean.FALSE.equals(lastPlayersOnline)) {
+    applyGamerules(event.getServer(), true);
+}
+```
+
+It costs nothing: a server that comes back up empty pauses them again on the first tick. What it
+buys is that removing the jar, or setting `enabled = false`, never leaves a world with a frozen sun,
+frozen weather and a frozen season clock and nothing left to undo it.
+
+A crash is the one case this cannot cover — `ServerStopping` does not fire. If a world does come
+back frozen, it is one command per rule:
 
 ```
 /gamerule doDaylightCycle true
@@ -162,27 +173,34 @@ It takes one command per rule in your list — with the defaults, three:
 
 (No Serene Seasons, no `doSeasonCycle` — that third command just fails, harmlessly.)
 
-### Rule names are never checked
+### Rule names are checked
 
-The config validator is `o -> o instanceof String`. An empty string, a typo, a rule from a mod that
-is not installed — all of them pass config validation and fail later as an unparseable command. That
-failure is invisible twice over. Vanilla answers a parse error with `sendFailure`, which the
-suppressed source drops on the floor:
+The rules are looked up by name and written directly, not run through `/gamerule`:
+
+```java
+GameRules.Key<GameRules.BooleanValue> key = known.get(rule);
+if (key == null) {
+    unknown.add(rule);
+    continue;
+}
+rules.getRule(key).set(enabled, server);
+```
+
+`known` is every boolean gamerule the server has, collected once per run through
+`GameRules.visitGameRuleTypes` — which covers modded rules as well, because they register the same
+way. Anything not in it is named in a WARN line instead of being applied, and the INFO line lists
+only what really was applied.
+
+This used to be a command, and a silent one. Vanilla answers a parse error with `sendFailure`, which
+a suppressed-output source drops on the floor:
 
 ```java
 public void sendFailure(Component message) {
     if (this.source.acceptsFailure() && !this.silent) {
 ```
 
-And the module's own log line prints the whole configured list regardless of what applied, at INFO,
-so it shows up with `debug_logging` off as well:
-
-```java
-getLogger().info("Server is now {} -> set {} to {}",
-        enabled ? "occupied" : "empty", getConfig().getGamerules(), value);
-```
-
-The symptom is "the log says it set `doSeasonCycle`, but nothing happened". Checking the rule by
+— and the log line printed the whole configured list regardless. The symptom was "the log says it
+set `doSeasonCycle`, but nothing happened". Checking the rule by
 hand with `/gamerule doSeasonCycle` is the only feedback there is.
 
 <!-- vpa:config:start -->
@@ -194,17 +212,17 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `gamerules` | list | `List.of("doDaylightCycle", "doWeatherCycle", "doSeasonCycle") = ["doDaylightCycle", "doWeatherCycle", "doSeasonCycle"] (IdleGamerulesConfig.java:13-14, 29-32; generated in test-server/config/vanillaplusadditions-common.toml:561)` | no spec range; the per-entry validator is `o -> o instanceof String`, so ANY string passes - no check that the name is a real gamerule. The new-element supplier for config editors is "doDaylightCycle". | Gamerules that are set to FALSE while no player is online and back to TRUE as soon as the first player joins, listed by their /gamerule name so modded rules work too (e.g. Serene Seasons' doSeasonCycle). Applied by running `/gamerule <name> <value>` once per entry through the server command source with output suppressed; an unknown or misspelled name fails silently. |
+| `gamerules` | list | `List.of("doDaylightCycle", "doWeatherCycle", "doSeasonCycle") = ["doDaylightCycle", "doWeatherCycle", "doSeasonCycle"] (IdleGamerulesConfig.java:13-14, 29-32; generated in test-server/config/vanillaplusadditions-common.toml:561)` | no spec range; the per-entry validator requires a non-blank String. Whether the name is a real gamerule is settled at apply time, not here - an unknown one is named in the log rather than silently ignored. The new-element supplier for config editors is "doDaylightCycle". | Gamerules that are set to FALSE while no player is online and back to TRUE as soon as the first player joins, listed by their /gamerule name so modded rules work too (e.g. Serene Seasons' doSeasonCycle). Each name is looked up among the server's boolean gamerules and written directly; a name that is not one is skipped and reported in a WARN line, and the INFO line lists only what was really applied. The same rules are restored to TRUE when a server that is currently empty shuts down, so a paused world is not left frozen in level.dat. |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits
 
 | Limit | Effect |
 |---|---|
-| Module removed or disabled while the server is empty | The world stays paused for good — see above. Set the rules back by hand. |
+| Module removed or disabled while the server is empty | Handled: the rules are restored on `ServerStopping`. Only a crash can still leave a world paused — set the rules back by hand then. |
 | The module owns those rules | It only ever writes, never reads. A rule you deliberately set yourself is overwritten at the next join or the next empty server; take it out of the `gamerules` list instead. |
-| Misspelled or unavailable rule name | Fails silently, and the log line claims it was applied anyway. |
-| No Serene Seasons | `/gamerule doSeasonCycle` simply fails and is swallowed; `doDaylightCycle` and `doWeatherCycle` still pause. There is no `ModList.isLoaded` check, no compile dependency and no compat class — the mod is named in a comment and nowhere else. |
+| Misspelled or unavailable rule name | Skipped and named in a WARN line, with the count. The INFO line lists only the rules that were really applied. |
+| No Serene Seasons | `doSeasonCycle` is reported as unknown once per transition and skipped; `doDaylightCycle` and `doWeatherCycle` still pause. There is no `ModList.isLoaded` check, no compile dependency and no compat class — the mod is named in a comment and nowhere else. |
 | Single player | The handler is on the game bus, so the integrated server ticks it too. `lastPlayersOnline` starts `null`, so every world load writes the rules once; if the host is not in the player list yet on that tick, it writes `false` and corrects itself to `true` a moment later. Harmless in play, but it does mean every single-player world load touches those three rules. <!-- TODO: whether the very first ticked frame really sees playerCount == 0 is timing, not something the repository proves --> |
 | Module disabled at startup (bundle) | `ModuleManager.initializeModules` only calls `initialize()` for modules enabled in the config, so `onInitialize` never runs and the handler is never subscribed. `/vpa module enable idle_gamerules` cannot bring it back before a restart. |
 | Disabling at runtime | Works immediately — the handler checks `isModuleEnabled()` on every tick. Re-enabling self-corrects, because `lastPlayersOnline` is not updated while the module is off: the next tick either sees a real transition and re-applies, or correctly sees none. |

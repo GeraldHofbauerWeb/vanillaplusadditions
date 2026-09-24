@@ -175,8 +175,6 @@
   "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "That backpack compartment isn't unlocked yet.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "You aren't wearing a giant backpack.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Overpacked backpack access is unavailable.",
-  "message.vpa.death_coords": "Player %s died at coordinates: X=%d, Y=%d, Z=%d in dimension %s",
-  "message.vpa.death_coords.hover": "Click to teleport to death location",
   "item.vanillaplusadditions.world_compass": "World Compass",
   "item.vanillaplusadditions.fire_arrow": "Fire Arrow"
 }

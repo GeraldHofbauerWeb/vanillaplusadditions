@@ -17,11 +17,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -260,7 +262,32 @@ public class ItemVaultViewerModule extends AbstractModule<ItemVaultViewerModule,
         }
     }
 
+    /**
+     * The vault's item handler.
+     *
+     * <p>Asked through the capability system first, and that order is the point. Create initialises
+     * the vault's {@code itemCapability} field <em>lazily</em>, from inside the lookup it registers
+     * in {@code registerCapabilities} - so on a vault that nobody has touched since its chunk
+     * loaded the field is still null. Reading it by reflection therefore used to hand back nothing
+     * and the viewer showed an empty vault instead of its contents. This call is what makes the
+     * field exist in the first place.</p>
+     *
+     * <p>The two reflective routes stay as fallbacks: they cost nothing on the path that already
+     * works, and they are the only thing left if Create ever stops exposing the vault this way.</p>
+     *
+     * @param blockEntity the vault controller block entity
+     * @return its item handler, or null if none of the three routes produced one
+     */
     private static IItemHandler getInventory(BlockEntity blockEntity) {
+        Level level = blockEntity.getLevel();
+        if (level != null) {
+            IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK,
+                    blockEntity.getBlockPos(), null);
+            if (handler != null) {
+                return handler;
+            }
+        }
+
         try {
             var field = blockEntity.getClass().getDeclaredField("itemCapability");
             field.setAccessible(true);

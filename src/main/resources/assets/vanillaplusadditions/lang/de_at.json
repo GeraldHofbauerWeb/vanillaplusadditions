@@ -18,8 +18,6 @@
   "command.vpa.mobglow.applied_new": "Leichtn auf %s neie %s Viecha %s draufgmocht",
   "command.vpa.mobglow.infinite": "auf ewig",
   "command.vpa.mobglow.for_seconds": "fia %s Sekundn",
-  "message.vpa.death_coords": "%s is hi gaunga bei: X=%d, Y=%d, Z=%d in da Dimension %s",
-  "message.vpa.death_coords.hover": "Klick, damit's di zu deim Grob beamt",
   "entity.vanillaplusadditions.flying_fish": "Fliagnda Fisch",
   "item.vanillaplusadditions.flying_fish": "Fliagnda Fisch",
   "item.vanillaplusadditions.cooked_flying_fish": "Grüda fliagnda Fisch",

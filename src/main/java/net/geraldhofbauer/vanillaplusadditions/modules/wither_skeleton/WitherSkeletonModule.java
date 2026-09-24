@@ -22,6 +22,7 @@ import net.minecraft.world.level.levelgen.structure.structures.NetherFortressStr
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 
 import java.util.Map;
@@ -29,25 +30,31 @@ import java.util.Map;
 /**
  * Wither Skeleton Module
  * <p>
- * Prevents normal skeletons from spawning in the Nether and broadcasts a message
- * when this happens. Optionally replaces them with Wither Skeletons to maintain
- * the intended Nether difficulty.
+ * Keeps plain skeletons out of <strong>Nether fortresses</strong> and puts a Wither Skeleton in
+ * their place, so a fortress spawner yields what a fortress is supposed to yield.
+ * <p>
+ * This is deliberately <em>not</em> a Nether-wide ban: the handler returns early for any skeleton
+ * whose position carries no structure reference, so plain skeletons keep spawning in the wastes,
+ * the soul sand valleys and the basalt deltas exactly as vanilla intends.
  * <p>
  * Features:
- * - Prevents normal skeleton spawns in the Nether
- * - Broadcasts configurable messages to all players
- * - Option to replace blocked skeletons with Wither Skeletons
- * - Configurable message format and replacement behavior
+ * - Blocks plain skeleton spawns inside a Nether fortress (vanilla's, and Better Fortresses')
+ * - Replaces every blocked spawn with a Wither Skeleton - always, there is no switch for it
+ * - Announces blocked spawns in chat, but only while debug logging is on; the module has no
+ *   config keys of its own
  */
 public class WitherSkeletonModule
         extends AbstractModule<WitherSkeletonModule, WitherSkeletonConfig> {
+
+    /** Permission level {@code /tp} requires, and therefore the one the click-to-teleport needs. */
+    private static final int TELEPORT_PERMISSION_LEVEL = 2;
 
 
     public WitherSkeletonModule() {
         super("wither_skeleton",
                 "Wither Skeleton Enforcer",
-                "Prevents normal skeletons from spawning in the Nether and broadcasts messages "
-                        + "about blocked spawns",
+                "Keeps plain skeletons out of Nether fortresses and replaces them with Wither "
+                        + "Skeletons (blocked spawns are announced only with debug logging on)",
                 WitherSkeletonConfig::new
         );
     }
@@ -57,7 +64,7 @@ public class WitherSkeletonModule
         // Register event listeners for this module
         NeoForge.EVENT_BUS.register(this);
 
-        getLogger().info("Wither Skeleton module initialized - Normal skeletons are now banned from the Nether!");
+        getLogger().info("Wither Skeleton module initialized - plain skeletons are now banned from Nether fortresses");
     }
 
     @Override
@@ -97,7 +104,7 @@ public class WitherSkeletonModule
             return;
         }
 
-        // Check if the skeleton is inside a fortress - allow it if so
+        // A fortress is what this module is about: outside one, a plain skeleton is left alone.
         Map<Structure, LongSet> allStructures = serverLevel.structureManager().getAllStructuresAt(
                 event.getEntity().blockPosition());
         if (allStructures.isEmpty()) {
@@ -110,9 +117,9 @@ public class WitherSkeletonModule
             if (structure instanceof NetherFortressStructure
                     || ResourceLocation.fromNamespaceAndPath("betterfortresses", "fortress")
                     .equals(structureRegistry.getKey(structure))) {
-                // Allow normal skeleton spawn inside Nether Fortress
+                // Inside a fortress - this is the spawn that gets replaced below.
                 if (getConfig().shouldDebugLog()) {
-                    getLogger().debug("Allowed normal skeleton spawn inside Nether Fortress at {}",
+                    getLogger().debug("Plain skeleton spawn inside a Nether fortress at {} - replacing it",
                             event.getEntity().blockPosition());
                 }
                 insideFortress = true;
@@ -124,7 +131,7 @@ public class WitherSkeletonModule
             return;
         }
 
-        // This is a normal skeleton trying to spawn in the Nether - block it!
+        // A plain skeleton trying to spawn inside a fortress - block it.
         if (getConfig().shouldDebugLog()) {
             getLogger().debug("Blocked normal skeleton spawn in Nether at {}", event.getEntity().blockPosition());
         }
@@ -140,32 +147,41 @@ public class WitherSkeletonModule
     }
 
     /**
-     * Broadcasts a message to all players about the blocked skeleton spawn
+     * Announces a blocked skeleton spawn in chat.
+     *
+     * <p>Debug output, and gated as such: with debug logging off - the default - nothing is ever
+     * sent. The text is an English literal on purpose; it is a developer aid, not a player-facing
+     * message, and the module ships no lang keys.</p>
+     *
+     * @param level    the level the spawn was blocked in
+     * @param position where it was blocked
      */
     private void broadcastSkeletonBlockedMessage(ServerLevel level, BlockPos position) {
         if (!getConfig().shouldDebugLog()) {
             return;
         }
-        Component message = Component
+        Component headline = Component
                 .literal("🔥 A normal skeleton tried to spawn in a Fortress but was blocked! 🔥")
-                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
-                .append(Component
-                        .literal("\nLocation: %d, %d, %d".formatted(position.getX(), position.getY(), position.getZ()))
-                        .withStyle(ChatFormatting.YELLOW)
-                        .withStyle(style -> style.withClickEvent(
-                                new net.minecraft.network.chat.ClickEvent(
-                                        net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
-                                        "/tp @p %d %d %d".formatted(position.getX(), position.getY(), position.getZ())
-                                )
-                        ))
-                );
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+        Component coordinates = Component
+                .literal("\nLocation: %d, %d, %d".formatted(position.getX(), position.getY(), position.getZ()))
+                .withStyle(ChatFormatting.YELLOW);
+        // The teleport is offered per recipient: /tp needs permission level 2, so handing the click
+        // to everyone only produces an error message for the players who cannot run it.
+        Component clickable = coordinates.copy().withStyle(style -> style.withClickEvent(
+                new net.minecraft.network.chat.ClickEvent(
+                        net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
+                        "/tp @s %d %d %d".formatted(position.getX(), position.getY(), position.getZ())
+                )
+        ));
 
         // Send to all players on the server
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
-            player.sendSystemMessage(message);
+            player.sendSystemMessage(headline.copy()
+                    .append(player.hasPermissions(TELEPORT_PERMISSION_LEVEL) ? clickable : coordinates));
         }
 
-        getLogger().info("Broadcasted skeleton block message for spawn at {}", position);
+        getLogger().debug("Broadcasted skeleton block message for spawn at {}", position);
     }
 
     /**
@@ -184,9 +200,12 @@ public class WitherSkeletonModule
             witherSkeleton.moveTo(originalSkeleton.getX(), originalSkeleton.getY(), originalSkeleton.getZ(),
                     originalSkeleton.getYRot(), originalSkeleton.getXRot());
 
-            // Finalize the spawn with the same spawn type
-            witherSkeleton.finalizeSpawn(level, level.getCurrentDifficultyAt(witherSkeleton.blockPosition()),
-                    spawnType, null);
+            // Through EventHooks, not Mob#finalizeSpawn directly: that method is @ApiStatus.
+            // OverrideOnly in NeoForge and calling it here would hide the replacement from every
+            // other mod's FinalizeSpawnEvent handler. No recursion into this handler either - a
+            // WitherSkeleton is not a Skeleton.
+            EventHooks.finalizeMobSpawn(witherSkeleton, level,
+                    level.getCurrentDifficultyAt(witherSkeleton.blockPosition()), spawnType, null);
 
             // Add the Wither Skeleton to the world
             level.addFreshEntity(witherSkeleton);

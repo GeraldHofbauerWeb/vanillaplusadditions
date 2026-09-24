@@ -53,7 +53,7 @@
   ],
   "registeredInBundle": true,
   "requiredMods": [],
-  "shortDescription": "Adds configurable shaped crafting recipes from the module config.",
+  "shortDescription": "Adds configurable shaped and shapeless crafting recipes from the module config.",
   "side": "server",
   "sinceCommit": "08c89d7",
   "sinceVersion": "v0.13.0",

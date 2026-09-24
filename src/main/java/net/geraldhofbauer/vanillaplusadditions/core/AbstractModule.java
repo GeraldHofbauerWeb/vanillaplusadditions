@@ -22,6 +22,9 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
     private IEventBus modEventBus;
     private ModContainer modContainer;
 
+    /** True once {@link #onInitialize()} has actually run; gates the three setup phases. */
+    private boolean setupAllowed;
+
     /**
      * Creates a new abstract module.
      *
@@ -94,13 +97,17 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
         logger.debug("Initializing module: {}", displayName);
 
         if (!shouldInitialize()) {
-            logger.info("Module '{}' is disabled and will not be initialized", displayName);
+            // Not the same thing as "disabled": the module manager only ever gets here for a module
+            // the config enabled. A false shouldInitialize() means the module itself refused - in
+            // practice because a mod it needs is not installed.
+            logger.info("Module '{}' is unavailable and will not be initialized", displayName);
             return;
         }
 
         // Call the implementation-specific initialization
         onInitialize();
 
+        setupAllowed = true;
         logger.debug("Module initialized: {}", displayName);
     }
 
@@ -121,6 +128,9 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
 
     @Override
     public void commonSetup() {
+        if (skipSetup("common setup")) {
+            return;
+        }
         logger.debug("Running common setup for module: {}", displayName);
         onCommonSetup();
     }
@@ -135,6 +145,9 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
 
     @Override
     public void loadComplete() {
+        if (skipSetup("load complete")) {
+            return;
+        }
         logger.debug("Running load complete for module: {}", displayName);
         onLoadComplete();
     }
@@ -148,6 +161,9 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
 
     @Override
     public void clientSetup() {
+        if (skipSetup("client setup")) {
+            return;
+        }
         logger.debug("Running client setup for module: {}", displayName);
         onClientSetup();
     }
@@ -158,6 +174,27 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
      */
     protected void onClientSetup() {
         // Default empty implementation
+    }
+
+    /**
+     * Whether a setup phase must be skipped because {@link #onInitialize()} never ran.
+     *
+     * <p>The module manager builds its enabled list from the config flag alone and then hands every
+     * entry {@code commonSetup()}, {@code loadComplete()} and {@code clientSetup()}. A module that
+     * refused to initialise - {@link #shouldInitialize()} false, i.e. a mod it needs is missing -
+     * would otherwise still get those calls and touch types that are not there. In the bundle that
+     * surfaced as a logged exception per phase; a standalone jar hangs its listeners without a
+     * try/catch ({@code StandaloneModuleBootstrap}) and would take the game down with it.</p>
+     *
+     * @param phase name of the phase, for the log line
+     * @return true if the phase should be skipped
+     */
+    private boolean skipSetup(String phase) {
+        if (setupAllowed) {
+            return false;
+        }
+        logger.debug("Skipping {} for module '{}' - it was never initialized", phase, displayName);
+        return true;
     }
 
     /**
@@ -209,7 +246,8 @@ public abstract class AbstractModule<M extends Module, C extends ModuleConfig> i
         try {
             return ModuleManager.getInstance().resolveModuleEnabled(moduleId, config.isEnabled());
         } catch (Exception e) {
-            // If config not available yet, return true to allow initialization
+            // Config not readable (too early, or a broken file): treat the module as OFF. Doing the
+            // opposite would let a module act while nothing can confirm the operator wants it.
             logger.debug("Config not available during module enabled check: {}", e.getMessage());
             return false;
         }

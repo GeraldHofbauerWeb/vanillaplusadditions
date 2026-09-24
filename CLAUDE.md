@@ -91,7 +91,7 @@ korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **
   fremde Mod nötig, nur `ModList.isLoaded(...)` zur Laufzeit. Vorlage:
   `EnhancedAiLeaderLootModule` (`onLootTableLoad` + `buildLeaderLootTable`).
 - **Keine** `data/.../recipe/`- oder `loot_table/`-JSONs mehr anlegen. Keine Migration zu JSON geplant.
-Details: `docs/custom_crafting_recipes.md`, `docs/enhanced_ai_leader_loot.md`.
+Details: `docs/modules/custom_crafting_recipes.md`, `docs/modules/enhanced_ai_leader_loot.md`.
 
 ## Worktrees
 Do NOT use worktrees for this project. Edit files directly in the repository working copy.

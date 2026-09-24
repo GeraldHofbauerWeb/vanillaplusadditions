@@ -18,8 +18,6 @@
   "command.vpa.mobglow.applied_new": "Efekt svícení použit na %s nových entit %s %s",
   "command.vpa.mobglow.infinite": "trvale",
   "command.vpa.mobglow.for_seconds": "na %s sekund",
-  "message.vpa.death_coords": "Hráč %s zemřel na souřadnicích: X=%d, Y=%d, Z=%d v dimenzi %s",
-  "message.vpa.death_coords.hover": "Klikni pro teleportaci na místo smrti",
   "entity.vanillaplusadditions.flying_fish": "Létající ryba",
   "item.vanillaplusadditions.flying_fish": "Létající ryba",
   "item.vanillaplusadditions.cooked_flying_fish": "Pečená létající ryba",

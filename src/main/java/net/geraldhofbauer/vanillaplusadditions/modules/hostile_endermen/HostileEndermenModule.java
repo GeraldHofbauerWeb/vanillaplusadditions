@@ -37,7 +37,8 @@ public class HostileEndermenModule extends AbstractModule<HostileEndermenModule,
     /** How many caller frames the teleport diagnostics print. */
     private static final int TELEPORT_DEBUG_FRAMES = 14;
 
-    /** Static handle for the Enderman Overhaul compat mixin, which has no module instance. */
+    /** Static handle for everything that runs without a module instance in hand: the Enderman
+     * Overhaul compat mixin, the teleport suppression gates and the teleport diagnostics. */
     private static HostileEndermenModule instance;
 
     public HostileEndermenModule() {
@@ -134,9 +135,11 @@ public class HostileEndermenModule extends AbstractModule<HostileEndermenModule,
         StackTraceElement[] frames = new Throwable().getStackTrace();
         int printed = 0;
         for (StackTraceElement frame : frames) {
+            // Only this class's own frames are worth skipping. Mixin frames never appear: an
+            // @Inject handler is merged into its target, so those frames carry the target's name
+            // (ServerPlayer here), never our mixin package.
             String className = frame.getClassName();
-            if (className.startsWith(HostileEndermenModule.class.getName())
-                    || className.startsWith("net.geraldhofbauer.vanillaplusadditions.mixin")) {
+            if (className.startsWith(HostileEndermenModule.class.getName())) {
                 continue;
             }
             message.append("\n    at ").append(frame);

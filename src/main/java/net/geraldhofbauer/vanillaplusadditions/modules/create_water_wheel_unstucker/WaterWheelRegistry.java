@@ -102,16 +102,20 @@ class WaterWheelRegistry {
      * @param level The server level
      * @param pos   The broken position
      * @param state The broken block state
+     * @return the wheel centre that was unregistered, or null if the break was not a wheel
      */
-    void onBlockBroken(ServerLevel level, BlockPos pos, BlockState state) {
+    BlockPos onBlockBroken(ServerLevel level, BlockPos pos, BlockState state) {
         if (state.getBlock() instanceof WaterWheelStructuralBlock) {
             BlockPos master = WaterWheelStructuralBlock.getMaster(level, pos, state);
             if (master != null) {
                 positions(level).remove(master);
             }
+            return master;
         } else if (isWheelBlock(state)) {
             positions(level).remove(pos);
+            return pos;
         }
+        return null;
     }
 
     /**

@@ -39,7 +39,8 @@ public class FreecamSublevelNoclipModule
 
     @Override
     protected void onInitialize() {
-        // Client-only: FreecamSublevelNoclipClientEvents registers itself via @EventBusSubscriber.
+        // Nothing to hook up: the whole behaviour is the mixin, which asks isActive() below on
+        // every call. This module has no event subscriber of its own.
     }
 
     /**

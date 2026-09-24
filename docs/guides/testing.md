@@ -3,11 +3,23 @@
 VanillaPlusAdditions provides several ways to verify and test mod features during development.
 
 ## Automated Testing
-The project uses JUnit for unit and integration testing.
-Run all tests using Gradle:
+**There is no test suite.** The `test` task is wired up but there is no `src/test` directory, so
+
 ```bash
 ./gradlew test
 ```
+
+is a no-op that always succeeds. Do not read a green `test` task as evidence of anything.
+
+What the build *does* check is style and static analysis, and that check is strict — one Checkstyle
+warning fails it:
+
+```bash
+./gradlew build                      # includes Checkstyle and SpotBugs
+./gradlew checkstyleMain spotbugsMain   # the same gate, faster
+```
+
+Verification of behaviour is therefore manual, in the game, using the environments below.
 
 ## Manual Testing Environments
 We provide pre-configured environments for manual testing on both the server and client.

@@ -186,8 +186,16 @@ public final class ModuleManager {
     }
     
     /**
-     * Checks if a module is enabled.
-     * 
+     * Checks if a module is enabled, resolved live.
+     *
+     * <p>Runtime override first, then the module's own config value - the same order and the same
+     * source {@code AbstractModule.isModuleEnabled()} uses, so a module asking about a sibling gets
+     * the same answer the sibling gives about itself. Reading the startup snapshot here instead
+     * used to let the two drift apart whenever a config file was edited at runtime.</p>
+     *
+     * <p>The snapshot stays as the fallback for an id nobody registered, and for the window before
+     * the config is readable at all.</p>
+     *
      * @param moduleId The module ID
      * @return true if the module is enabled
      */
@@ -195,6 +203,15 @@ public final class ModuleManager {
         Boolean override = runtimeModuleOverrides.get(moduleId);
         if (override != null) {
             return override;
+        }
+        Module module = registeredModules.get(moduleId);
+        if (module != null) {
+            try {
+                return ModulesConfig.isModuleEnabled(module);
+            } catch (Exception e) {
+                LOGGER.debug("Config not readable for module '{}', falling back to the startup state",
+                        moduleId);
+            }
         }
         return moduleEnabledState.getOrDefault(moduleId, false);
     }

@@ -17,6 +17,8 @@ public class CreateWaterWheelUnstuckerConfig
     private ModConfigSpec.IntValue maxFixAttempts;
     private ModConfigSpec.BooleanValue hardKick;
     private ModConfigSpec.BooleanValue reinitLargeWheels;
+    private ModConfigSpec.BooleanValue autoUnstickOnChunkLoad;
+    private ModConfigSpec.BooleanValue autoClearPhantomStress;
     private ModConfigSpec.BooleanValue autoFix;
     private ModConfigSpec.BooleanValue clearPhantomStress;
     private ModConfigSpec.IntValue reinitFloodTicks;
@@ -45,13 +47,21 @@ public class CreateWaterWheelUnstuckerConfig
 
         maxFixAttempts = builder
                 .comment("Consecutive failed fix attempts per wheel before backing off for ~5 minutes.",
-                        "Attempt 1 is always the soft kick (flow recompute); further attempts use the",
-                        "hard kick if enabled.")
+                        "Applies to every automatic trigger that may re-initialise. After two full backoff",
+                        "rounds without the wheel restarting, it is left alone entirely - a wheel that",
+                        "survives that is dry, decorative or unfinished rather than stalled, and only",
+                        "/vpaunstuck will try it again.",
+                        "On top of this sits a hard floor of one automatic re-init per wheel per minute.",
+                        "Every attempt is the same break-and-replace re-init; there is no cheaper first step.")
                 .defineInRange("max_fix_attempts", 3, 1, 10);
 
         hardKick = builder
-                .comment("Allow the hard fix escalation: detach + re-attach the wheel's kinetic network",
-                        "(equivalent to wrenching the wheel out and back in). false = soft kicks only.")
+                .comment("CURRENTLY INERT - nothing reads this key.",
+                        "It was meant to allow a cheaper escalation step (detach + re-attach the wheel's",
+                        "kinetic network, like wrenching it out and back in) before the break-and-replace",
+                        "re-init. That step was never wired up; WaterWheelKinetics.softKick/hardKick exist",
+                        "but have no callers. The key is kept so an existing config file does not change",
+                        "meaning under the operator's feet.")
                 .define("hard_kick", true);
 
         autoFix = builder
@@ -63,6 +73,27 @@ public class CreateWaterWheelUnstuckerConfig
                         "The re-init briefly breaks + re-places the wheel (a manual fix, done by code) so",
                         "adjacent water re-flows - the only thing that revives a reload-stalled wheel.")
                 .define("auto_fix", false);
+
+        autoUnstickOnChunkLoad = builder
+                .comment("Unstick a stalled wheel automatically after its chunk has loaded.",
+                        "true (default) = the targeted check that runs post_load_delay_ticks after a chunk",
+                        "with wheels loads may apply the full cure, re-initialising the wheel if nothing",
+                        "cheaper worked - the same thing /vpaunstuck does by hand.",
+                        "This is the situation the module exists for: a wheel loses its flow score across a",
+                        "chunk reload. A wheel a player has just placed is NOT treated this way.",
+                        "Separate from auto_fix, which governs the periodic sweep.")
+                .define("auto_unstick_on_chunk_load", true);
+
+        autoClearPhantomStress = builder
+                .comment("Let the automatic path also drop an unloaded-member stress tally, not just a",
+                        "self-contradictory one. Requires clear_phantom_stress.",
+                        "true (default) = allowed, but only after the tally has stopped changing for ten",
+                        "seconds while the network stayed overstressed. That wait matters: Create seeds",
+                        "tally with the WHOLE network when a world loads and only counts it down as members",
+                        "load, so a tally that is still shrinking means members are still arriving.",
+                        "Each such clear is logged as a warning with the numbers it was based on.",
+                        "false = the judgement call stays with /vpaunstuck.")
+                .define("auto_clear_phantom_stress", true);
 
         reinitLargeWheels = builder
                 .comment("Allow re-initialising large (multiblock) water wheels as well.",
@@ -79,11 +110,12 @@ public class CreateWaterWheelUnstuckerConfig
                         "subtracts its share again - the network then reports an overload that no existing",
                         "machine causes. Two cases, deliberately treated differently:",
                         " - orphaned tally (stress charged while the network claims ZERO unloaded members):",
-                        "   nothing can be behind those numbers, so the periodic sweep drops them by itself",
-                        "   and logs one line per revived wheel.",
+                        "   nothing can be behind those numbers, so any caller drops them and logs one line",
+                        "   per revived wheel.",
                         " - tally with actual unloaded members, where the loaded members alone would fit the",
                         "   loaded capacity: those might be real machines in unloaded chunks, which Create",
-                        "   counts on purpose - only /vpaunstuck does this, and logs the full numbers.",
+                        "   counts on purpose. /vpaunstuck does this at once; an automatic caller only after",
+                        "   auto_clear_phantom_stress's ten-second wait, and logs it as a warning.",
                         "Machines that genuinely are unloaded re-register (with their real numbers) as soon",
                         "as their chunk loads. false = never touch the tally, command included.")
                 .define("clear_phantom_stress", true);
@@ -138,6 +170,24 @@ public class CreateWaterWheelUnstuckerConfig
      */
     public boolean isReinitLargeWheelsEnabled() {
         return reinitLargeWheels != null && reinitLargeWheels.get();
+    }
+
+    /**
+     * Whether a chunk-load check may apply the full cure, re-init included.
+     *
+     * @return true if wheels are unstuck automatically after a chunk load
+     */
+    public boolean isAutoUnstickOnChunkLoadEnabled() {
+        return autoUnstickOnChunkLoad == null || autoUnstickOnChunkLoad.get();
+    }
+
+    /**
+     * Whether the automatic path may drop a settled unloaded-member stress tally.
+     *
+     * @return true if the automatic path may take the judgement call
+     */
+    public boolean isAutoClearPhantomStressEnabled() {
+        return autoClearPhantomStress == null || autoClearPhantomStress.get();
     }
 
     /**

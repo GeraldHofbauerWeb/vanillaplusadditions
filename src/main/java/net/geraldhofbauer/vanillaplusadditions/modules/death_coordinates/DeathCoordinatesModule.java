@@ -15,12 +15,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
-import java.util.Objects;
-
 public class DeathCoordinatesModule extends AbstractModule<
         DeathCoordinatesModule,
         AbstractModuleConfig.DefaultModuleConfig<DeathCoordinatesModule>
         > {
+
+    /** Permission level required to use the click-to-teleport on a death message ({@code /tp}). */
+    private static final int TELEPORT_PERMISSION_LEVEL = 2;
+
     public DeathCoordinatesModule() {
         super("death_coordinates",
                 "Death Coordinates Announcer",
@@ -92,7 +94,7 @@ public class DeathCoordinatesModule extends AbstractModule<
             // Get the death coordinates
             net.minecraft.core.BlockPos deathPos = player.blockPosition();
             ResourceLocation location = level.dimension().location();
-            MutableComponent deathMessage = Component.literal("Player ")
+            MutableComponent baseMessage = Component.literal("Player ")
                     .append(Component.literal(player.getName().getString())
                             .withStyle(net.minecraft.ChatFormatting.BOLD, net.minecraft.ChatFormatting.GOLD))
                     .append(Component.literal(" died at coordinates: "))
@@ -102,41 +104,48 @@ public class DeathCoordinatesModule extends AbstractModule<
                     .append(Component.literal(" in "))
                     .append(dimensionName(level)
                             .withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
-            // TODO: Make the permission level configurable aka make it a config option to enable for spectators
-            //  (and/or ops) or all players
-            if (player.hasPermissions(2)) {
-                deathMessage = deathMessage.withStyle(style -> style
-                        .withHoverEvent(new HoverEvent(
-                                HoverEvent.Action.SHOW_TEXT,
-                                Component.literal("Click to teleport to death location")
-                        ))
-                        .withClickEvent(
-                                new net.minecraft.network.chat.ClickEvent(
-                                        net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
-                                        // Use @s to teleport the player who clicked the message
-                                        "/execute in %s as @s run tp @s %d %d %d"
-                                                .formatted(
-                                                        location.toString(),
-                                                        deathPos.getX(),
-                                                        deathPos.getY(),
-                                                        deathPos.getZ()
-                                                )
-                                )
-                        ));
+            // TODO: Make the permission level configurable, so a server can offer the teleport to
+            //  spectators or to everyone instead of just to operators.
+            // The teleport is decided per RECIPIENT, not by the rank of the player who died. One
+            // component broadcast to everyone would do exactly the wrong thing in both directions:
+            // an operator death would hand every player a command the server then refuses, and an
+            // ordinary player's death would stay unclickable even for the operators who may run it.
+            MutableComponent teleportMessage = baseMessage.copy().withStyle(style -> style
+                    .withHoverEvent(new HoverEvent(
+                            HoverEvent.Action.SHOW_TEXT,
+                            Component.literal("Click to teleport to death location")
+                    ))
+                    .withClickEvent(
+                            new net.minecraft.network.chat.ClickEvent(
+                                    net.minecraft.network.chat.ClickEvent.Action.RUN_COMMAND,
+                                    // Use @s to teleport the player who clicked the message
+                                    "/execute in %s as @s run tp @s %d %d %d"
+                                            .formatted(
+                                                    location.toString(),
+                                                    deathPos.getX(),
+                                                    deathPos.getY(),
+                                                    deathPos.getZ()
+                                            )
+                            )
+                    ));
+
+            MinecraftServer server = level.getServer();
+            if (server == null) {
+                return;
             }
             // Broadcast the death message to all players
-            MinecraftServer server = Objects.requireNonNull(level.getServer());
             for (ServerPlayer serverPlayer : server.getPlayerList().getPlayers()) {
-                serverPlayer.sendSystemMessage(deathMessage);
+                serverPlayer.sendSystemMessage(serverPlayer.hasPermissions(TELEPORT_PERMISSION_LEVEL)
+                        ? teleportMessage : baseMessage);
             }
             // Log the death event
             if (getConfig().shouldDebugLog()) {
-                getLogger().info("Announced death of player {} at coordinates X={}, Y={}, Z={}",
+                getLogger().debug("Announced death of player {} at coordinates X={}, Y={}, Z={}",
                         player.getName().getString(),
                         deathPos.getX(), deathPos.getY(), deathPos.getZ());
             }
-            // Send a copy of the message to the server console
-            server.sendSystemMessage(deathMessage);
+            // Send a copy of the message to the server console - no click target there
+            server.sendSystemMessage(baseMessage);
         }
     }
 }

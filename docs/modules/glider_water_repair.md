@@ -176,12 +176,12 @@ This module has no settings of its own.
 
 | Limit | Effect |
 |---|---|
-| Gliders not installed | `shouldInitialize()` is `ModList.get().isLoaded("vc_gliders")`, so the module logs *"is disabled and will not be initialized"* and registers no handler at all. Nothing declares the dependency statically — neither `neoforge.mods.toml` nor the generated standalone toml names `vc_gliders`. |
+| Gliders not installed | `shouldInitialize()` is `ModList.get().isLoaded("vc_gliders")`, so the module logs *"is unavailable and will not be initialized"* and registers no handler at all. Nothing declares the dependency statically — neither `neoforge.mods.toml` nor the generated standalone toml names `vc_gliders`. |
 | Items in a slot | Never touched. Only an `ItemEntity` is examined, so the glider has to be on the ground (or in the water) as a dropped item. |
 | Gliders renames its items | Detection is a prefix match on `vc_gliders:paraglider…`. A rename stops the module silently — no warning, no log line. |
 | Gliders renames the `broken` component | Looked up once, lazily, the first time it is needed. If it is missing then, a warning is logged **once** and the module stays quiet for the rest of the session; there is no retry. |
 | The runtime toggle is one-way | `isModuleEnabled()` is re-read inside the handler, so `/vpa module disable glider_water_repair` takes effect at once. Enabling does nothing until a restart: only a module that was enabled when the config was first read ever reaches `onInitialize`, and that is where the handler is registered. The same applies to a server that started without Gliders. |
-| The item in the water | The stack is mutated in place and `ItemEntity.setItem` is never called, so the entity's synced stack is not marked dirty. The hiss and the steam are sent explicitly and always arrive; whether the sprite on the ground drops its charred look before you pick the glider up is not established. <!-- TODO: verify in game whether the dropped item's model refreshes before pickup, or only after the entity is re-tracked. --> |
+| The item in the water | The repair goes through `ItemEntity.setItem` with a **copy** of the stack, which is what makes it reach the tracking clients: mutating the stack in place would have changed the very object in the entity's `DATA_ITEM` slot, and `SynchedEntityData.set` skips a value it considers unchanged — `ItemStack` has no `equals` override, so that check is identity. Before the fix the sprite on the ground kept its charred look until the entity was re-tracked or picked up. Not yet confirmed in game. |
 | Testing | This repository has no unit tests, and Gliders is not on the development classpath — no jar in `libs/`, no compile dependency — so `runClient` and `runServer` cannot exercise the module at all. It needs a real 1.21.1 instance with the mod present. |
 
 ## Under the hood

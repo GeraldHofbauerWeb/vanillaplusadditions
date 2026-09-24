@@ -1,8 +1,13 @@
 # Quelltext-Befunde aus dem Doku-Audit (2026-09-20)
 
+> **Stand 2026-09-23: abgearbeitet.** Alle 57 Befunde haben eine Antwort; 54 sind im Code
+> repariert, für die drei übrigen steht die Begründung unter [Was offen bleibt](#was-offen-bleibt). Die Liste bleibt unverändert stehen — sie ist das
+> Protokoll des Audits, nicht eine To-do-Liste, und die Beweisführung je Befund ist weiter nützlich.
+> Was danach im Code geändert wurde, steht im Changelog unter `[Unreleased]`.
+
 Beim Gegenlesen der 47 Modulseiten haben die Prüf-Agenten nicht nur die Doku geprüft, sondern
-auch gemeldet, was ihnen **im Java selbst** aufgefallen ist. Nichts davon wurde angefasst — das
-hier ist eine Fundliste, keine Änderung.
+auch gemeldet, was ihnen **im Java selbst** aufgefallen ist. Nichts davon wurde in *jener* Runde
+angefasst — das hier war zunächst eine Fundliste, keine Änderung.
 
 **Vor dem Umsetzen jeweils selbst nachprüfen.** Die Befunde sind mit Datei und Zeile belegt und
 haben sich in den Stichproben als zuverlässig erwiesen, aber ein Agent kann irren, und ein
@@ -197,3 +202,36 @@ nicht in der Liste.
   Beschreibung sagt "shaped crafting recipes", obwohl das Modul seit Einfuehrung des Schluessels
   `shapeless_recipes` auch formlose Rezepte verarbeitet. Dieselbe Zeichenkette spiegelt die
   `shortDescription` des Fakten-Blatts.
+
+
+---
+
+# Was offen bleibt
+
+Alle 57 Befunde haben eine Antwort. Drei davon ist die Antwort „nicht reparieren", und warum, steht
+hier — zwei sind systembedingt nicht behebbar, einer ist eine Balance-Frage und keine Reparatur.
+
+## `pathfinder_quills` — Dark Forest nimmt Eichenlaub
+
+Der Javadoc versprach "jedes Biom mit seinem eigenen Laub, wo es einen Leitbaum hat"; Dark Forest
+nimmt aber `OAK_LEAVES` statt `DARK_OAK_LEAVES`. Der Befund liess ausdrücklich offen, ob der Code
+oder der Javadoc falsch ist — entschieden wurde für den Javadoc, weil Schwarzeichenlaub nur im Dark
+Forest fällt: das Rezept würde verlangen, das Biom schon gefunden zu haben, das die Feder finden
+soll. Die Begründung steht jetzt als Ausnahme im Javadoc.
+
+**Die Gegenrichtung bleibt eine Balance-Entscheidung** und wäre kein Fehler-Fix: sie ändert ein
+bestehendes craftbares Rezept.
+
+## `waystone_amethyst_repair` — das Standalone-Jar kann das Tor nicht exakt lesen
+
+Im Bundle laufen beide Gratis-Tore jetzt synchron. Als einzelnes Jar bleibt nur
+`ModList.isLoaded("vpa_free_anvil_repair")`, also die Anwesenheit des Jars, nicht sein
+`enabled`-Flag. Exakt wäre nur ein direkter Zugriff auf `FreeAnvilRepairModule` — und genau dessen
+Klasse liegt in einem Jar, das hier fehlen darf. **Nicht behebbar ohne harte Modul-Abhängigkeit.**
+
+## `mo_arrows` — Abschalten zerstört gecraftete Fire Arrows
+
+Ein abgeschaltetes Modul registriert seine Items nicht, und ein Item ohne Registrierung
+verschwindet beim Laden aus der Welt. Das ist **das Muster aller item-tragenden Module** dieses
+Projekts, kein Fehler von `mo_arrows`. Der sichere Weg, den Pfeil zu entschärfen, ist der Schalter
+`light_fires`; das steht so auf der Modulseite.

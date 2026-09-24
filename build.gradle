@@ -171,7 +171,7 @@ dependencies {
     // backpack GUI is entity-bound and worn via a Curios "back" slot, so both are needed on the
     // compile classpath. localRuntime loads them for dev testing of the keybind feature.
     // Overpacked 2.x hard-requires Bobo Lib (its GiantBackpack calls BU.ShrinkCreative), so that
-    // jar has to be on both classpaths as well — see docs/overpacked_extensions.md.
+    // jar has to be on both classpaths as well — see docs/modules/overpacked_extensions.md.
     compileOnly files("libs/overpacked-2.0.1-1.21.1-neoforge.jar")
     compileOnly files("libs/bobo_lib-1.1-1.21.1-neoforge.jar")
     compileOnly files("libs/curios-neoforge-9.5.1+1.21.1.jar")

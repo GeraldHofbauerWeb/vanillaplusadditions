@@ -29,7 +29,9 @@ public class IdleGamerulesConfig
                 .defineList("gamerules",
                         DEFAULT_GAMERULES,
                         () -> "doDaylightCycle",
-                        o -> o instanceof String);
+                        // Blank entries used to pass here and fail silently much later, as a
+                        // gamerule that simply never matched anything.
+                        o -> o instanceof String name && !name.isBlank());
     }
 
     public List<? extends String> getGamerules() {

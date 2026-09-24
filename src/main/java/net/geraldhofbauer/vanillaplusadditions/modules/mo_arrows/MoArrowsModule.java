@@ -6,6 +6,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.config.MoArrowsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.item.FireArrowItem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
@@ -26,9 +27,12 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.DispenserBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
@@ -72,9 +76,27 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
     @Override
     protected void onInitialize() {
         ITEMS.register(getModEventBus());
+        getModEventBus().addListener(this::onModCommonSetup);
         VanillaPlusCreativeTabs.addToMainTab(FIRE_ARROW);
         NeoForge.EVENT_BUS.register(this);
         getLogger().info("Mo' Arrows module initialized - Fire Arrow registered");
+    }
+
+    /**
+     * Teaches dispensers to shoot the Fire Arrow.
+     *
+     * <p>A dispenser only fires what has an entry in {@code DispenserBlock.DISPENSER_REGISTRY};
+     * vanilla registers exactly three arrows there. Without this the Fire Arrow was simply dropped
+     * on the ground, and {@code FireArrowItem.asProjectile} - which lights the arrow on the
+     * dispenser path - could never run.</p>
+     *
+     * <p>Through {@code enqueueWork} because that registry is a plain map and mod setup runs in
+     * parallel.</p>
+     *
+     * @param event the common setup event
+     */
+    private void onModCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> DispenserBlock.registerProjectileBehavior(FIRE_ARROW.get()));
     }
 
     /**
@@ -100,19 +122,110 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
             return;
         }
         Level level = arrow.level();
-        if (level.isClientSide || !arrow.isOnFire()) {
+        if (level.isClientSide) {
+            return;
+        }
+        if (!arrow.isOnFire()) {
+            // These three lines are INFO rather than DEBUG on purpose: a dedicated server's log
+            // configuration drops DEBUG entirely, so a .debug() line would never reach the log of
+            // the machine where this needs diagnosing. The debug_logging gate keeps them quiet.
+            if (getConfig().shouldDebugLog()) {
+                getLogger().info("Fire Arrow hit {} on its {} face but was no longer burning - "
+                                + "nothing set alight.",
+                        hit.getBlockPos().toShortString(), hit.getDirection());
+            }
             return;
         }
 
-        BlockPos pos = hit.getBlockPos().relative(hit.getDirection());
-        if (!BaseFireBlock.canBePlacedAt(level, pos, hit.getDirection())) {
+        BlockPos pos = firePosition(level, hit, arrow);
+        if (pos == null) {
+            if (getConfig().shouldDebugLog()) {
+                BlockPos offFace = hit.getBlockPos().relative(hit.getDirection());
+                getLogger().info("Fire Arrow hit {} on its {} face, no fire placed: {} holds {}, "
+                                + "the arrow's own spot {} holds {}",
+                        hit.getBlockPos().toShortString(), hit.getDirection(),
+                        offFace.toShortString(), level.getBlockState(offFace),
+                        arrow.blockPosition().toShortString(),
+                        level.getBlockState(arrow.blockPosition()));
+            }
             return;
         }
+        BlockState previous = level.getBlockState(pos);
+        // Flint and steel, not a fire charge: what happens here is a fire being PLACED on a face,
+        // which is flint and steel's sound and pitch formula. A fire charge's FIRECHARGE_USE is the
+        // whoosh of the charge itself bursting, and there is no charge in flight here.
         level.playSound(null, pos, SoundEvents.FLINTANDSTEEL_USE, SoundSource.BLOCKS,
                 1.0F, level.getRandom().nextFloat() * 0.4F + 0.8F);
         level.setBlockAndUpdate(pos, BaseFireBlock.getState(level, pos));
         Entity shooter = arrow.getOwner();
         level.gameEvent(shooter, GameEvent.BLOCK_PLACE, pos);
+        if (getConfig().shouldDebugLog()) {
+            getLogger().info("Fire Arrow hit {} ({}) on its {} face; fire set at {}, which held {}. "
+                            + "Arrow sits at {}.",
+                    hit.getBlockPos().toShortString(), level.getBlockState(hit.getBlockPos()),
+                    hit.getDirection(), pos.toShortString(), previous,
+                    arrow.blockPosition().toShortString());
+        }
+    }
+
+    /**
+     * Where the fire goes, or null if neither candidate can hold one.
+     *
+     * <p>Two candidates, in this order:</p>
+     * <ol>
+     *   <li><b>Off the struck face.</b> The natural choice and the one that always works for a shot
+     *       into the ground: the block above solid ground is air and the ground carries the fire.</li>
+     *   <li><b>Where the arrow itself is.</b> Needed for anything that is not a flat surface. Shoot
+     *       into a bush and the block off the struck face is frequently another leaf - foliage is
+     *       several blocks deep and the arrow stops inside it, not in front of it - so
+     *       {@code canBePlacedAt} refuses on {@code !isAir()} and nothing catches. The arrow's own
+     *       block is the air it just flew through, so it is empty by construction and touches what
+     *       was hit.</li>
+     * </ol>
+     *
+     * @param level the level the arrow struck in
+     * @param hit   the block hit result
+     * @param arrow the arrow, for its own position
+     * @return the position to set alight, or null if neither candidate can take a fire
+     */
+    private static BlockPos firePosition(Level level, BlockHitResult hit, AbstractArrow arrow) {
+        BlockPos offFace = hit.getBlockPos().relative(hit.getDirection());
+        if (canTakeFire(level, offFace, hit.getDirection())) {
+            return offFace;
+        }
+        BlockPos atArrow = arrow.blockPosition();
+        if (!atArrow.equals(offFace) && canTakeFire(level, atArrow, hit.getDirection())) {
+            return atArrow;
+        }
+        return null;
+    }
+
+    /**
+     * Whether a fire can be put at this position.
+     *
+     * <p>{@link BaseFireBlock#canBePlacedAt} first, which is vanilla's own rule - but it insists on
+     * <em>air</em>, and outdoors that is often not what is there. A snow layer is the case that
+     * showed it: an arrow shot at snow-covered ground goes through the two-pixel layer and strikes
+     * the ground underneath, so the block off the struck face is the snow layer itself, and the
+     * arrow ends up in it too. Both candidates then hold snow, not air, and nothing caught fire.</p>
+     *
+     * <p>So a replaceable block is accepted as well, as long as it is not a fluid and a fire would
+     * survive there. That is what flint and steel does - right-click snow-covered ground and the
+     * layer is replaced by the fire - and the same now goes for tall grass and ferns.</p>
+     *
+     * @param level the level
+     * @param pos   the candidate position
+     * @param face  the struck face, for vanilla's portal check
+     * @return true if a fire may be set here
+     */
+    private static boolean canTakeFire(Level level, BlockPos pos, Direction face) {
+        if (BaseFireBlock.canBePlacedAt(level, pos, face)) {
+            return true;
+        }
+        BlockState state = level.getBlockState(pos);
+        return state.canBeReplaced()
+                && state.getFluidState().isEmpty()
+                && BaseFireBlock.getState(level, pos).canSurvive(level, pos);
     }
 
     /**

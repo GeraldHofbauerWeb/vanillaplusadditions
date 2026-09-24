@@ -116,7 +116,15 @@ public final class StationaryChunkLoaderManager {
         }
     }
 
-    /** Drops in-memory tracking for an unloading level (tickets vanish with the level). */
+    /**
+     * Drops in-memory tracking for an unloading level.
+     *
+     * <p>Only the bookkeeping: the tickets themselves are persisted by NeoForge's ticket controller
+     * and come back with the level. That is the point - the anchors are meant to survive a restart,
+     * and {@code resume()} re-establishes them from {@link ChunkAnchorData}.</p>
+     *
+     * @param level the level being unloaded
+     */
     public void forgetLevel(ServerLevel level) {
         forced.remove(level);
     }

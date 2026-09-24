@@ -10,7 +10,7 @@
 | **Module ID** | `battle_dogs` |
 | **Side** | Client + Server |
 | **Requires** | — |
-| **Works with** | [JEI](https://modrinth.com/mod/jei) |
+| **Works with** | [JEI](https://modrinth.com/mod/jei), [Quark](https://modrinth.com/mod/quark) <sub>tested 4.1-482</sub> |
 | **Download** | [`vpa_battle_dogs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_battle_dogs.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.battle_dogs]` |
 | **Since** | `v1.0.0-beta` |
@@ -298,7 +298,42 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `BiteDirections` never evicts | Entries expire logically after 500 ms but are never removed; the static map keeps one entry per wolf entity id that ever bit near you, for the lifetime of the client session. Called out as deliberate in its javadoc — a stale entry is simply never read again. |
 | Debug latches | Both mixins announce themselves once per JVM, not once per wolf, and only with `debug_logging = true`. |
 | [Wolf Mount](wolf_mount.md) | Composes cleanly, in one direction. `wolf_mount` never imports a class from here — it tests `AnimalArmorItem` with `BodyType.CANINE` and colours its armour HUD by item id — so it works with this module absent. Its rider immunity cancels on `LivingIncomingDamageEvent`, which fires well before the `LivingDamageEvent.Pre` all three handlers here use, so on that path the absorption is simply never reached. |
+| [Quark](https://modrinth.com/mod/quark)'s Foxhound | Supported, through a layer of our own — see [Quark's Foxhound](#quarks-foxhound). A damaged set shows no cracks there; the vanilla crack textures are laid out for a different model. |
 | [JEI](https://modrinth.com/mod/jei) | Optional. `BattleDogsJeiPlugin` is loaded by JEI's own annotation scan (there is no `jei` entry in `neoforge.mods.toml`) and adds the armadillo-scute anvil repairs and the possible enchantments to the recipe viewer. Without JEI both still work, they are just undiscoverable — vanilla anvil repair is code-only and JEI's anvil list is hardcoded vanilla. |
+
+### Quark's Foxhound
+
+A foxhound wearing one of these sets used to show nothing at all — the inventory slot quite plainly
+held a piece of armour and the dog stayed bare. Two independent gates were closed at once:
+
+* **Quark's own armour layer never fired.** It is gated on `Wolf.hasArmor()`, which is
+  `getBodyArmorItem().is(Items.WOLF_ARMOR)` — the concrete vanilla item, not the type. Our items are
+  `AnimalArmorItem`s with `BodyType.CANINE`, which is what the rest of that layer goes on to check,
+  but it never gets that far.
+* **Our own layer was not there to help.** `BattleDogsClientSetup` adds `BattleDogsArmorLayer` to
+  `EntityType.WOLF`'s renderer. A Foxhound extends `Wolf` but has a renderer and a model of its own
+  (`FoxhoundModel extends AgeableListModel`, not `WolfModel`), so it never sees that layer.
+
+So the module adds a second layer, on Quark's renderer, behind a `ModList.isLoaded("quark")` gate
+that lives in its own Quark-free class — resolving a static member links the class that holds it,
+and the verifier would then load the Quark types named in its signatures. That is the
+`NoClassDefFoundError`-at-construction trap this project has hit before.
+
+The geometry is Quark's (`ModelHandler.foxhound_armor`), the colour is ours. It has to be a separate
+set of textures: Quark's armour model uses a 64×64 UV layout that has nothing in common with the
+64×32 vanilla wolf armour, so our wolf sheets would smear across it.
+
+**The four Foxhound textures are generated, not drawn.** `scripts/gen_foxhound_armor_textures.py`
+recolours Quark's own `foxhound_armor.png` with each tier's palette. That works because both sides
+use exactly eleven opaque colours — Quark's eleven reddish ones (eight plate, three leather strap)
+and each of our tiers' eleven shades of one metal. The mapping is by **luminance rank**: darkest to
+darkest, next-darkest to next-darkest. Shading survives pixel for pixel and only the hue moves. The
+script refuses to guess if either side stops having eleven colours.
+
+The leather strap is recoloured along with everything else, on purpose: our wolf armour is one metal
+throughout, so a brown strap the wolf version does not have would be the odd one out.
+
+Results are committed, so neither the build nor CI needs the Quark jar.
 
 ## Under the hood
 
@@ -354,14 +389,6 @@ bails out on a wolf without our armour; the animation belongs to every wolf, arm
 Mixin needs the target method declared in the target class, and `Wolf` happens to declare its own for
 the wet-shake. It is listed in the `"mixins"` block of `vanillaplusadditions.mixins.json`;
 `WolfBiteAnimationMixin` targets a client-only class and is listed in `"client"`.
-
-<!-- TODO (source change, out of scope for a docs pass): WolfSwingTimeMixin's own javadoc still
-     claims that without it the first swing latches `swinging` and every later bite is silently
-     swallowed. That is wrong, and the vanilla source settles it — `swing()` writes `swingTime = -1`
-     (LivingEntity.java:1865) and its guard accepts `swingTime < 0` (LivingEntity.java:1864), so an
-     untended wolf re-fires `swing()` and re-broadcasts its ClientboundAnimatePacket on every bite.
-     This page says it correctly above; the javadoc needs the same correction. This marker stays
-     until it gets one. -->
 
 **Localisation.** The four item names exist in all six lang files. The two tooltip lines are shared
 with the cat and axolotl armours under `tooltip.vanillaplusadditions.mob_armor.attack` and

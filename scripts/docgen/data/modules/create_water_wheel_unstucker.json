@@ -5,10 +5,52 @@
   ],
   "configKeys": [
     {
+      "key": "auto_clear_phantom_stress",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Whether the automatic path may also drop an unloaded-member stress tally, not just a self-contradictory one. Subordinate to `clear_phantom_stress`. It never fires immediately: the tally must have been unchanged for ten seconds while the network stayed overstressed. That wait is what makes it safe - Create seeds the tally with the whole network when a world loads and only counts it down as members load, so a tally that is still shrinking means members are still arriving. Every such clear is logged as a warning with its numbers."
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Whether the PERIODIC SWEEP may re-initialise a stalled wheel. false (default) = the sweep only detects and settles stress bookkeeping, never touching a block. This no longer governs the chunk-load path, which has its own key `auto_unstick_on_chunk_load` (default true) - the reload stall is what the module is for, while the sweep is a safety net over wheels that stalled for some other reason.",
+      "key": "auto_fix",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "key": "auto_unstick_on_chunk_load",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Whether the targeted check that runs `post_load_delay_ticks` after a chunk with wheels loads may apply the full cure, re-initialising the wheel if nothing cheaper worked - the same thing `/vpaunstuck` does by hand. This is the situation the module exists for: a wheel loses its flow score across a chunk reload. A wheel a player has just placed uses a separate trigger and is never re-initialised. Independent of `auto_fix`, which governs only the periodic sweep."
+    },
+    {
       "defaultValue": "100",
       "effect": "How often (in ticks) all tracked water wheels are swept for stalls; only remembered wheel positions whose footprint chunks are already loaded are checked, never a global scan. The sweep is driven by the global server tick counter (server.getTickCount() % interval == 0), so every dimension is swept in the same tick.",
       "key": "check_interval_ticks",
       "range": "20 ~ 1200",
+      "type": "int"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Allows dropping a stale unloaded-member stress tally to cure a phantom 'Overstressed' network - automatically in the sweep when the tally is provably orphaned (stress or capacity charged while unloadedMembers == 0), and in the judgement case (real unloaded members, loaded members alone would fit) only via /vpaunstuck. false disables both paths. It does not gate the preceding network recompute, which always runs for an overstressed stalled wheel. Master switch: with it off, no path clears a tally at all. With it on, the automatic path is additionally gated by `auto_clear_phantom_stress`.",
+      "key": "clear_phantom_stress",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "**Currently inert — nothing reads this key.** It was meant to allow a cheaper escalation step (detach and re-attach the wheel's kinetic network, the equivalent of wrenching it out and back in) before the break-and-replace re-init. That step was never wired up: `WaterWheelKinetics.softKick` and `hardKick` exist but have no callers anywhere in the module. The key is kept rather than removed so an existing config file does not silently change meaning.",
+      "key": "hard_kick",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "3",
+      "effect": "Consecutive re-init attempts per wheel before that wheel backs off for ~5 minutes (STALL_BACKOFF_TICKS = 6000) and the attempt counter resets; the first exhaustion also logs one WARN per wheel. Applies to every automatic trigger that may re-initialise - the chunk-load path as well as the sweep. On top of it sits a hard floor of one automatic re-init per wheel per minute (MIN_REINIT_INTERVAL_TICKS = 1200). `/vpaunstuck` ignores both, clears any pending backoff and does not count towards either. Every attempt is the same break-and-replace re-init; there is no cheaper first step.",
+      "key": "max_fix_attempts",
+      "range": "1 ~ 10",
       "type": "int"
     },
     {
@@ -19,39 +61,18 @@
       "type": "int"
     },
     {
-      "defaultValue": "3",
-      "effect": "Consecutive re-init attempts per wheel before that wheel backs off for ~5 minutes (STALL_BACKOFF_TICKS = 6000) and the attempt counter resets; the first exhaustion also logs one WARN per wheel. Only relevant when auto_fix = true - the whole escalation state sits behind the auto_fix gate, and /vpaunstuck ignores it and clears any pending backoff.",
-      "key": "max_fix_attempts",
-      "range": "1 ~ 10",
-      "type": "int"
-    },
-    {
-      "defaultValue": "true",
-      "effect": "DEAD KEY: documented as allowing the hard fix escalation (detach + re-attach the kinetic network), but its getter CreateWaterWheelUnstuckerConfig.isHardKickEnabled() has no caller anywhere in src/, and neither WaterWheelKinetics.softKick() nor hardKick() is ever invoked. Changing it has no effect - see notes.",
-      "key": "hard_kick",
-      "range": "",
-      "type": "boolean"
-    },
-    {
-      "defaultValue": "false",
-      "effect": "Whether the periodic sweep may re-initialise a stalled wheel itself (break to air, wait reinit_flood_ticks, place back). false (the default) means the sweep changes no blocks and a genuine flow stall is only detected; the fix then comes from /vpaunstuck. With true, a still-stalled wheel is re-initialised once per sweep until max_fix_attempts is reached. It does NOT gate the stress-bookkeeping repairs, which run either way.",
-      "key": "auto_fix",
-      "range": "",
-      "type": "boolean"
-    },
-    {
-      "defaultValue": "true",
-      "effect": "Allows dropping a stale unloaded-member stress tally to cure a phantom 'Overstressed' network - automatically in the sweep when the tally is provably orphaned (stress or capacity charged while unloadedMembers == 0), and in the judgement case (real unloaded members, loaded members alone would fit) only via /vpaunstuck. false disables both paths. It does not gate the preceding network recompute, which always runs for an overstressed stalled wheel.",
-      "key": "clear_phantom_stress",
-      "range": "",
-      "type": "boolean"
-    },
-    {
       "defaultValue": "6",
       "effect": "Ticks the wheel stays removed during a re-init so adjacent water can flood the gap and re-establish active flow before the wheel is placed back.",
       "key": "reinit_flood_ticks",
       "range": "1 ~ 40",
       "type": "int"
+    },
+    {
+      "key": "reinit_large_wheels",
+      "type": "boolean",
+      "defaultValue": "false",
+      "range": "",
+      "effect": "Whether large (multiblock) water wheels may be re-initialised. Off by default because Create rebuilds the multiblock through `LargeWaterWheelBlock.tick`, which calls `destroyBlock(center, false)` - without drops - so a re-init that goes wrong there costs the whole structure rather than one block. Large wheels are still detected and logged."
     }
   ],
   "displayName": "Create Water Wheel Unstucker",

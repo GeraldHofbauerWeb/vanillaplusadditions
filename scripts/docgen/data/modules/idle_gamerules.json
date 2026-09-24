@@ -4,9 +4,9 @@
   "configKeys": [
     {
       "defaultValue": "List.of(\"doDaylightCycle\", \"doWeatherCycle\", \"doSeasonCycle\") = [\"doDaylightCycle\", \"doWeatherCycle\", \"doSeasonCycle\"] (IdleGamerulesConfig.java:13-14, 29-32; generated in test-server/config/vanillaplusadditions-common.toml:561)",
-      "effect": "Gamerules that are set to FALSE while no player is online and back to TRUE as soon as the first player joins, listed by their /gamerule name so modded rules work too (e.g. Serene Seasons' doSeasonCycle). Applied by running `/gamerule <name> <value>` once per entry through the server command source with output suppressed; an unknown or misspelled name fails silently.",
+      "effect": "Gamerules that are set to FALSE while no player is online and back to TRUE as soon as the first player joins, listed by their /gamerule name so modded rules work too (e.g. Serene Seasons' doSeasonCycle). Each name is looked up among the server's boolean gamerules and written directly; a name that is not one is skipped and reported in a WARN line, and the INFO line lists only what was really applied. The same rules are restored to TRUE when a server that is currently empty shuts down, so a paused world is not left frozen in level.dat.",
       "key": "gamerules",
-      "range": "no spec range; the per-entry validator is `o -> o instanceof String`, so ANY string passes - no check that the name is a real gamerule. The new-element supplier for config editors is \"doDaylightCycle\".",
+      "range": "no spec range; the per-entry validator requires a non-blank String. Whether the name is a real gamerule is settled at apply time, not here - an unknown one is named in the log rather than silently ignored. The new-element supplier for config editors is \"doDaylightCycle\".",
       "type": "list"
     }
   ],

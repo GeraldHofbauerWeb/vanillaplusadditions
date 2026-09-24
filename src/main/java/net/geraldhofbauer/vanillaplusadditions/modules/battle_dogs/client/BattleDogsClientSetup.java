@@ -1,5 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.client;
 
+import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.compat.quark.FoxhoundArmorLayers;
+import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.compat.quark.QuarkFoxhoundCompat;
 import net.minecraft.client.model.WolfModel;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -23,6 +25,13 @@ public final class BattleDogsClientSetup {
             LivingEntityRenderer<Wolf, WolfModel<Wolf>> wolfRenderer =
                     (LivingEntityRenderer<Wolf, WolfModel<Wolf>>) lr;
             wolfRenderer.addLayer(new BattleDogsArmorLayer(wolfRenderer, event.getEntityModels()));
+        }
+
+        // Quark's Foxhound extends Wolf but has a renderer of its own, so the layer above never
+        // reaches it - and Quark's own armour layer only fires for the vanilla wolf_armor item.
+        // Without this a foxhound wore our armour invisibly.
+        if (QuarkFoxhoundCompat.isAvailable()) {
+            FoxhoundArmorLayers.addTo(event);
         }
     }
 }

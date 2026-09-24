@@ -20,18 +20,21 @@ import java.util.List;
  * Finds the positions where hostile mobs can spawn around the player, mirroring vanilla's own
  * spawn checks so the overlay does not drift from actual game behaviour.
  *
- * <p>Per position, in order of cost:</p>
+ * <p>Per position, in the order the code actually applies them - cheapest reject first:</p>
  * <ol>
  *   <li>block light against {@link DimensionType#monsterSpawnBlockLightLimit()} — cheapest reject</li>
+ *   <li>the light test, evaluated against the dimension's {@link IntProvider} range rather than a
+ *       hardcoded 0..7, so the Nether and the End come out right as well</li>
  *   <li>{@link SpawnPlacementTypes#ON_GROUND} placement, which is what vanilla asks: the block
  *       below must be a valid spawn surface and this block plus the one above must pass
  *       {@code NaturalSpawner.isValidEmptySpawnBlock} (no full collision shape, no redstone
  *       source, no fluid, not {@code #prevent_mob_spawning_inside}, not dangerous)</li>
  *   <li>no collision for the mob's actual spawn hitbox — vanilla checks this too, and it is what
  *       keeps wide mobs out of narrow gaps</li>
- *   <li>the light test itself, evaluated against the dimension's {@link IntProvider} range rather
- *       than a hardcoded 0..7, so the Nether and the End come out right as well</li>
  * </ol>
+ *
+ * <p>The last two are one step in the code: {@code fits()} does the placement check and the
+ * collision check together.</p>
  *
  * <p>Deliberately not checked: the 24-block player distance and the mob cap. Both are momentary,
  * and for spawn-proofing you want to see the permanent state of a room.</p>

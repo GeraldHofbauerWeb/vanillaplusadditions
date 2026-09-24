@@ -63,6 +63,11 @@
       "modId": "jei",
       "whatItAdds": "BattleDogsJeiPlugin (loaded only by JEI's own annotation scan, gated on ModuleManager.isModuleEnabled(\"battle_dogs\")) shows the four wolf armors' armadillo-scute anvil repairs (JeiMobArmorRepairs) and their possible enchantments (JeiMobArmorEnchantments) in JEI. Without JEI nothing breaks - the repairs and enchantments still work in an anvil, they are just undiscoverable in a recipe viewer, because vanilla anvil repair is code-only and JEI's anvil list is hardcoded vanilla.",
       "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/battle_dogs/compat/jei/BattleDogsJeiPlugin.java:34 (module gate) and build.gradle:110-113 (JEI API compileOnly, full JEI only at localRuntime); no jei entry in src/main/resources/META-INF/neoforge.mods.toml"
+    },
+    {
+      "modId": "quark",
+      "whatItAdds": "FoxhoundArmorLayer draws the four armour tiers on Quark's Foxhound, which otherwise wears them invisibly: Quark's own armour layer is gated on Wolf.hasArmor() - getBodyArmorItem().is(Items.WOLF_ARMOR), the concrete vanilla item - and our BattleDogsArmorLayer is bound to EntityType.WOLF's renderer, which a Foxhound does not use (its FoxhoundModel extends AgeableListModel, not WolfModel). The geometry is Quark's ModelHandler.foxhound_armor; the four textures are recoloured from Quark's foxhound_armor.png by scripts/gen_foxhound_armor_textures.py because that model's 64x64 UV layout does not match the 64x32 vanilla wolf armour. No crack overlay - the vanilla crackiness textures are laid out for the other model. Without Quark nothing is touched: the gate QuarkFoxhoundCompat.isAvailable() lives in its own class that names no Quark type, so the Quark classes are never linked.",
+      "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/battle_dogs/compat/quark/QuarkFoxhoundCompat.java (gate), .../FoxhoundArmorLayers.java (registration on EntityRenderersEvent.AddLayers), .../FoxhoundArmorLayer.java (the layer); BattleDogsClientSetup.java:31-33 (call site); build.gradle Quark+Zeta compileOnly; no quark entry in src/main/resources/META-INF/neoforge.mods.toml"
     }
   ],
   "recipes": [

@@ -12,7 +12,12 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   Soft-Kick (FlowScore-Neuberechnung) bzw. Hard-Kick (Kinetik detach/re-attach) wieder
   angeworfen.
 
-- [ ] **`item_vault_viewer`: Inventar per Capability holen statt per Reflection auf
+- [x] **`item_vault_viewer`: Inventar per Capability holen statt per Reflection auf
+  `itemCapability`** — umgesetzt 2026-09-23. `getInventory` fragt jetzt zuerst
+  `level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null)`; die beiden Reflection-Wege
+  bleiben als Rückfallebene. **Im Spiel noch nicht gegengeprüft** — die Reproduktion unten
+  (frisch geladener Chunk, Vault mit Inhalt, Brille auf, Vault vorher nicht öffnen) steht noch aus.
+  Ursprünglicher Eintrag: **`item_vault_viewer`: Inventar per Capability holen statt per Reflection auf
   `itemCapability`** (gefunden 2026-09-19 beim Gegenlesen der Modul-Doku, von mir noch
   **nicht** selbst nachgeprüft): `ItemVaultViewerModule.getInventory` liest das Feld
   `itemCapability` der Create-`ItemVaultBlockEntity` per Reflection
@@ -27,7 +32,9 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   **Vor dem Umbau im Spiel reproduzieren:** frisch geladener Chunk, Vault mit Inhalt, Brille
   auf, ohne das Vault vorher zu öffnen.
 
-- [ ] **Standalone-Jars für die letzten sechs Module** (Gerry, 2026-09-20, ausgelöst durch
+- [x] **Standalone-Jars für die letzten sechs Module** — erledigt (Stand 2026-09-23: alle 50 Module
+  haben ein eigenes Jar, geprüft über `hasStandaloneJar` in allen Fakten-Blättern). Ursprünglicher
+  Eintrag: **Standalone-Jars für die letzten sechs Module** (Gerry, 2026-09-20, ausgelöst durch
   `tipped_arrows`): Nach der `mob_drops`-Verdrahtung haben **6 von 48** Modulen kein eigenes Jar —
   `enhanced_ai_leader_loot`, `mob_cart_loader`, `pathfinder_quills`, `static_fov`, `tipped_arrows`,
   `waystone_amethyst_repair`. Sie stecken nur im Bundle, und die README-Tabelle weist sie als
@@ -39,7 +46,12 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   überhaupt laden kann, oder ob es eine harte Dependency in der generierten `mods.toml` braucht.
   Gerry will mit `tipped_arrows` anfangen.
 
-- [ ] **39 Quelltext-Befunde aus dem Doku-Audit abarbeiten** (2026-09-20):
+- [x] **39 Quelltext-Befunde aus dem Doku-Audit abarbeiten** — erledigt 2026-09-23, zusammen mit den
+  18 Befunden des Nachtrags. 54 von 57 repariert, die drei übrigen mit Begründung geschlossen
+  (Abschnitt „Was offen bleibt" in der Fundliste). Die beiden `chunk_reset`-Verdachtsfälle waren
+  beide echt und sind beide behoben: die Dimension steht jetzt im Auftrag, und gelöscht wird erst,
+  wenn der Chunk den Speicher verlassen hat. Ursprünglicher Eintrag:
+  **39 Quelltext-Befunde aus dem Doku-Audit abarbeiten** (2026-09-20):
   `docs/internal/source-findings-2026-09-20.md`. Beim Gegenlesen der Modulseiten sind den
   Prüf-Agenten Fehler und falsche Kommentare im Java aufgefallen — belegt mit Datei und Zeile,
   aber **nicht** angefasst. Zwei Befunde in `chunk_reset` klingen nach echten Bugs und gehören
@@ -47,7 +59,10 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   falschen Level zuschlagen), und die Löschung wird weder entladen noch geflusht, könnte also
   von `ChunkMap.save` überschrieben werden. Jeden Befund vor dem Umsetzen selbst verifizieren.
 
-- [ ] **ModuleManager-Lookup laeuft in Standalone-Jars ins Leere** (gefunden 2026-09-20 bei der
+- [x] **ModuleManager-Lookup laeuft in Standalone-Jars ins Leere** — erledigt in `25325d4`
+  (Stand 2026-09-23: kein Modul ruft `ModuleManager.getInstance().getModule(` mehr auf).
+  Ursprünglicher Eintrag: **ModuleManager-Lookup laeuft in Standalone-Jars ins Leere**
+  (gefunden 2026-09-20 bei der
   Machbarkeitsanalyse der sechs Bundle-only-Module, Mechanismus von mir am Quelltext bestaetigt,
   Auswirkung je Modul **noch nicht** einzeln geprueft):
   `ModuleManager.registeredModules` wird ausschliesslich von `VanillaPlusAdditions.registerModules()`
@@ -66,8 +81,12 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   **Zuerst pruefen:** je Modul, was der Null-Lookup tatsaechlich kostet — manche Pfade sind
   unkritisch, andere legen das ganze Modul still.
 
-- [ ] **Standalone-Entrypoints fuer fuenf Module vorbereitet, aber nicht verdrahtet**
-  (2026-09-20): `standalone/{enhanced_ai_leader_loot,mob_cart_loader,pathfinder_quills,
+- [x] **Standalone-Entrypoints fuer fuenf Module vorbereitet, aber nicht verdrahtet** — erledigt
+  in `25325d4`. Nachtrag 2026-09-23: `conduit_attack_range` hatte dasselbe Problem andersherum —
+  ein Eintrag in `standaloneModules` ohne Entrypoint, also ein Jar, das gebaut und veröffentlicht
+  wurde und kein Verhalten enthielt. Der Entrypoint ist nachgetragen.
+  Ursprünglicher Eintrag: **Standalone-Entrypoints fuer fuenf Module vorbereitet, aber nicht
+  verdrahtet** (2026-09-20): `standalone/{enhanced_ai_leader_loot,mob_cart_loader,pathfinder_quills,
   tipped_arrows,waystone_amethyst_repair}/` liegen im Baum, es fehlt je ein Eintrag in
   `standaloneModules` (`build.gradle`) — ohne den wird kein Jar gebaut und es aendert sich nichts.
   Analysen dazu: `build/standalone-analysis/` (nicht versioniert). Offen: `pathfinder_quills`

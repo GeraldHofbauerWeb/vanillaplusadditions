@@ -64,7 +64,9 @@ public final class ChunkLoaderTrackCompat {
     }
 
     public static Block createBlock() {
-        // Mirrors Create's own track properties (AllBlocks.TRACK).
+        // The visible half of Create's track properties - colour, hardness, sound, no occlusion.
+        // Not a full mirror: Create's AllBlocks.TRACK starts from SharedProperties::stone and adds
+        // forceSolidOn(), neither of which is reproduced here.
         return new ChunkLoaderTrackBlock(BlockBehaviour.Properties.of()
                 .mapColor(MapColor.METAL)
                 .strength(0.8F)

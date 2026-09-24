@@ -78,7 +78,8 @@ public class ConduitAttackRangeModule
      * Largest hostile radius any conduit can reach (at the maximum 42 frames). Used to size the
      * target-reacquire search box in {@code findDestroyTarget}, which has no frame count in scope:
      * a target acquired at any conduit's actual radius is always within this bound, so the client
-     * can resolve the target UUID and render the attack beam even beyond vanilla's 8 blocks.
+     * can resolve the target UUID and still show the hunt beyond vanilla's 8 blocks - that is the
+     * nautilus particle spawned at the victim, not a beam; vanilla draws none.
      *
      * @return the maximum possible hostile-damage radius in blocks
      */
