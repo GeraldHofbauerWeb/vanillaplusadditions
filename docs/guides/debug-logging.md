@@ -22,7 +22,7 @@ Debug logging operates on two levels:
 All settings live in:
 
 ```
-config/vanillaplusadditions-server.toml
+config/vanillaplusadditions-common.toml
 ```
 
 ### Enable Debug Logging Globally
@@ -68,11 +68,14 @@ When debug logging is active for a module, you'll see messages like:
 - Warnings for missing items or effects in the config
 - Module enable/disable state changes
 
-All debug messages are written to the standard server log (`logs/latest.log`).
+Debug messages are written to `logs/debug.log`, **not** to `logs/latest.log`. NeoForge's
+default Log4j configuration filters `latest.log` down to `INFO` and above, and routes the
+full `DEBUG` stream into a separate file next to it. Both are in the same `logs/` directory,
+so if a module looks silent, check `debug.log` before concluding that debug logging is off.
 
 ## Example: Debugging Food Effects
 
-1. Open `config/vanillaplusadditions-server.toml`.
+1. Open `config/vanillaplusadditions-common.toml`.
 2. Set the Food Effects module to verbose:
    ```toml
    [modules.food_effects]
@@ -80,7 +83,7 @@ All debug messages are written to the standard server log (`logs/latest.log`).
        debug_logging = "ON"
    ```
 3. Restart the server.
-4. Eat a configured food item and check `logs/latest.log` for output like:
+4. Eat a configured food item and check `logs/debug.log` for output like:
    ```
    [DEBUG] Food effects cache reloaded. 5 items configured.
    [DEBUG] Applied 1 effects to Steve after eating cookie

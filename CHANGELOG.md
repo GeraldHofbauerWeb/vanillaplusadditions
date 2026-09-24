@@ -4,6 +4,49 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.92] - 2026-09-24
+
+### Changed
+- **`compass_overhaul`: Die 32 Weltkompass-Texturen liegen nicht mehr als Dateien im Jar, sondern
+  entstehen beim Laden aus den Kompass-Frames des Spielers.** Ein eigener `SpriteSource`
+  (`WorldCompassSpriteSource`, registriert ueber NeoForges `RegisterSpriteSourceTypesEvent` und
+  angemeldet in `assets/vanillaplusadditions/atlases/blocks.json`) liest
+  `minecraft:textures/item/compass_00…31.png` beim Zusammenbauen des Atlas aus dem Ressourcen-Stapel
+  und faerbt jeden Frame in Java um. Zwei Gruende: der Mod liefert damit **keine abgeleiteten
+  Mojang-Assets** mehr aus, nur noch Code und eine Atlas-JSON — und der Weltkompass **folgt endlich
+  dem Resource Pack** des Spielers, statt auf Vanilla eingefroren zu sein. Vanillas eingebautes
+  `paletted_permutations` kann das nicht leisten, weil zwei Grautoene doppelte Rollen haben (innen
+  Zifferblatt, aussen Gehaeuse) und deshalb eine raeumliche Maske noetig ist, keine Farbtabelle.
+  Der Java-Port wurde gegen die 32 bisher ausgelieferten PNGs geprueft und erzeugt sie **pixelgenau**.
+  Zeichnet ein Resource Pack den Kompass so um, dass die Flutfuellung kein Zifferblatt findet, wird
+  der Frame unveraendert durchgereicht — ein normal aussehender Kompass statt einer fehlenden Textur.
+  Die Atlas-Definition liegt unter `assets/minecraft/atlases/blocks.json`, also im **Minecraft-
+  Namespace**: `SpriteSourceList.load` baut den Dateinamen aus der ID des Atlas (`minecraft:blocks`)
+  und liest genau diesen Pfad aus jedem Pack — eine Datei im eigenen Namespace wird nie geoeffnet,
+  ohne Fehlermeldung, nur mit fehlenden Sprites.
+  `scripts/gen_world_compass_textures.py` ist als Build-Schritt entfallen und bleibt als
+  Referenz-Implementierung und Modell-Generator erhalten.
+- **Die Atlas-Definitionen wandern aus `vpa_core` in das besitzende Modul-Jar** (neues
+  `assetGlobs`-Feld in `build.gradle`). Laegen sie in `vpa_core`, meldete jede Standalone-Installation
+  ohne `vpa_compass_overhaul` bei jedem Ressourcen-Reload einen unbekannten SpriteSource-Typ.
+
+- **`food_effects`: Builder's Tea waermt und loescht Durst — jetzt im Auslieferungszustand**
+  (Gerry, 2026-09-24). `create:builders_tea;toughasnails:internal_warmth;3600;0` und
+  `create:builders_tea;2;` standen auf games2 schon von Hand in der Config und sind jetzt Default.
+  Beide Listen decken sich damit Eintrag fuer Eintrag mit dem Server.
+- **`mo_arrows`: Das Feuerpfeil-Rezept ist jetzt geformt — acht Pfeile um eine Feuerkugel ergeben
+  acht Feuerpfeile** (Gerry, 2026-09-24). Dieselbe Form, die Vanilla fuer getippte Pfeile um einen
+  verweilenden Trank benutzt. Vorher war es formlos, ein Pfeil plus eine ganze Feuerkugel, und damit
+  um den Faktor acht teurer als sein Vorbild.
+
+### Fixed
+- **`docs/guides/debug-logging.md` nannte eine Datei, die es nicht gibt.** Der Leitfaden schickte
+  Nutzer an vier Stellen in eine `vanillaplusadditions-server.toml`; die Konfiguration ist
+  `ModConfig.Type.COMMON` und heisst `vanillaplusadditions-common.toml`. Ausserdem stand dort, die
+  Debug-Ausgaben landeten in `logs/latest.log` — NeoForge filtert `latest.log` auf INFO und hoeher
+  und leitet DEBUG in die Datei `logs/debug.log` daneben. Derselbe Irrtum steckte als Kommentar in
+  `MoArrowsModule` und ist dort ebenfalls korrigiert.
+
 ## [1.0.0-beta.91] - 2026-09-24
 
 Abarbeitung der Quelltext-Fundliste aus dem Doku-Audit (`docs/internal/source-findings-2026-09-20.md`):

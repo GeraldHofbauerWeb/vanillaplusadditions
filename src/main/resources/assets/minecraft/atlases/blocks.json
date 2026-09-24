@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "type": "vanillaplusadditions:world_compass",
+      "source": "minecraft:item/compass",
+      "sprite": "vanillaplusadditions:item/world_compass",
+      "frames": 32
+    }
+  ]
+}

@@ -977,13 +977,14 @@
    ]
   },
   "items/world_compass.png": {
-   "inputs": "93b2adf4b85e61ca19e68ca918db04750ca1e430a9d8facf730209d6c140e7cc",
+   "inputs": "0202b905bbaf99844e5d52a6e21a3489c1992dca72c8df1556edc5696244337f",
    "model": "vanillaplusadditions:item/world_compass",
    "png": "859295f35902cb1cb53194160abbf5f20a9f88b8fd4835e2e1305a09a1c61e90",
    "sources": [
+    "compass:16",
     "file:models/item/world_compass.json",
-    "file:textures/item/world_compass_16.png",
-    "jar:assets/minecraft/models/item/generated.json"
+    "jar:assets/minecraft/models/item/generated.json",
+    "jar:assets/minecraft/textures/item/compass_16.png"
    ]
   }
  },

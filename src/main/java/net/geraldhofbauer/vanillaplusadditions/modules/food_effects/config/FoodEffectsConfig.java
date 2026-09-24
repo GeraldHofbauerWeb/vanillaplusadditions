@@ -18,6 +18,9 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
             "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0",
             "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0",
             "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0",
+            // Builder's Tea waermt und loescht den Durst - beides auf games2 erprobt und von dort
+            // uebernommen (Gerry, 2026-09-24), siehe auch DEFAULT_THIRST_EFFECTS.
+            "create:builders_tea;toughasnails:internal_warmth;3600;0",
             "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0",
             // Cooling effect (Tough As Nails)
             "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0",
@@ -41,6 +44,7 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
     );
 
     private static final List<String> DEFAULT_THIRST_EFFECTS = List.of(
+            "create:builders_tea;2;",
             "minecraft:beetroot_soup;6;",
             "minecraft:mushroom_stew;2;",
             "minecraft:rabbit_stew;2;",

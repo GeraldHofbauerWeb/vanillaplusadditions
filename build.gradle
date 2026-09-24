@@ -405,6 +405,14 @@ def standaloneModules = [
                'cat_guardian.ChestBlockCatMixin'] ],
     [ moduleId: 'chunk_reset', displayName: 'Vanilla Plus: Chunk Reset' ],
     [ moduleId: 'compass_overhaul', displayName: 'Vanilla Plus: Compass Overhaul',
+      // Die Atlas-JSON liegt im MINECRAFT-Namespace, nicht in unserem: SpriteSourceList.load
+      // sucht die Datei ueber die ID des Atlas ('minecraft:blocks'), also unter
+      // assets/minecraft/atlases/blocks.json - in jedem Pack, aber nur unter DIESEM Pfad. Eine
+      // Datei unter assets/vanillaplusadditions/atlases/ wird nie gelesen (beta.92, einmal
+      // schmerzhaft gelernt: kein Fehler im Log, nur fehlende Sprites).
+      // Sie nennt einen SpriteSource-Typ, den NUR dieses Modul registriert, und darf deshalb nicht
+      // in vpa_core liegen - sonst meldet jede Installation ohne dieses Modul einen unbekannten Typ.
+      assetGlobs: ['assets/minecraft/atlases/**'],
       mixins: ['compass_overhaul.LodestoneTrackerMixin'],
       clientMixins: ['compass_overhaul.CompassAngleSubLevelMixin',
                      'compass_overhaul.QuarkCompassAngleMixin'] ],
@@ -480,6 +488,7 @@ standaloneModules.each {
     it.modId = "vpa_${it.moduleId}"
     it.entrypointPkg = it.moduleId
     it.dataGlobs = it.dataGlobs ?: []
+    it.assetGlobs = it.assetGlobs ?: []
     it.moduleDeps = it.moduleDeps ?: []
     it.mixins = it.mixins ?: []
     // Mixins targeting client-only classes (e.g. KeyboardHandler): they must land in the
@@ -628,6 +637,8 @@ tasks.register('coreJar', Jar) {
         include "${basePkg}/util/**"
         include "${basePkg}/standalone/core/**"   // VpaCore @Mod entrypoint only
         include 'assets/vanillaplusadditions/**'  // cosmetic resources for every module (safe if unused)
+        // Atlas-Definitionen liegen unter assets/minecraft/atlases/ (siehe compass_overhaul) und
+        // damit ohnehin ausserhalb dieses Include - sie kommen ueber assetGlobs ins Modul-Jar.
         include 'logo.png'
     }
     // Third-party compat tags that belong to no single module: they repair how ANOTHER pair of mods
@@ -662,6 +673,7 @@ standaloneModules.each { d ->
         // alongside the sibling into('META-INF') spec makes Gradle silently drop the into file
         // (reproduced with 2+ globs). Separate from-blocks avoid the quirk.
         d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
+        d.assetGlobs.each { g -> from(sourceSets.main.output) { include g } }
         // Mixin classes owned by this module (name*.class also catches inner classes). Entries may
         // be subpackage-qualified ("cat_guardian.ChestBlockCatMixin") — dots map to directories.
         d.allMixins.each { mx ->

@@ -7,7 +7,6 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.config.MoArrows
 import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.item.FireArrowItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -24,7 +23,8 @@ import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
-import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.DispenserBlock;
@@ -126,9 +126,9 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
             return;
         }
         if (!arrow.isOnFire()) {
-            // These three lines are INFO rather than DEBUG on purpose: a dedicated server's log
-            // configuration drops DEBUG entirely, so a .debug() line would never reach the log of
-            // the machine where this needs diagnosing. The debug_logging gate keeps them quiet.
+            // These three lines are INFO rather than DEBUG on purpose. NeoForge routes DEBUG into
+            // logs/debug.log while logs/latest.log keeps only INFO and above, and latest.log is what
+            // gets looked at first when a hit report comes in. The debug_logging gate keeps them quiet.
             if (getConfig().shouldDebugLog()) {
                 getLogger().info("Fire Arrow hit {} on its {} face but was no longer burning - "
                                 + "nothing set alight.",
@@ -242,13 +242,20 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
         event.addListener(new FireArrowRecipeReloadListener(event.getServerResources().getRecipeManager()));
     }
 
-    /** One arrow plus one fire charge, in any arrangement → one Fire Arrow. */
+    /**
+     * Acht Pfeile um eine Feuerkugel herum → acht Feuerpfeile.
+     *
+     * <p>Dieselbe Form, die Vanilla fuer getippte Pfeile um einen verweilenden Trank benutzt: eine
+     * Feuerkugel je acht Pfeile. Die vorherige Fassung war formlos, ein Pfeil plus eine ganze
+     * Feuerkugel, und damit um den Faktor acht teurer als ihr Vanilla-Vorbild.
+     */
     private void applyFireArrowRecipe(RecipeManager recipeManager) {
-        ShapelessRecipe recipe = new ShapelessRecipe("", CraftingBookCategory.EQUIPMENT,
-                new ItemStack(FIRE_ARROW.get()),
-                NonNullList.of(Ingredient.EMPTY,
-                        Ingredient.of(Items.ARROW), Ingredient.of(Items.FIRE_CHARGE)));
-        RecipeHolder<ShapelessRecipe> holder = new RecipeHolder<>(
+        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.EQUIPMENT,
+                ShapedRecipePattern.of(
+                        Map.of('A', Ingredient.of(Items.ARROW), 'F', Ingredient.of(Items.FIRE_CHARGE)),
+                        "AAA", "AFA", "AAA"),
+                new ItemStack(FIRE_ARROW.get(), 8));
+        RecipeHolder<ShapedRecipe> holder = new RecipeHolder<>(
                 ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "fire_arrow"), recipe);
 
         Map<ResourceLocation, RecipeHolder<?>> merged = new LinkedHashMap<>();

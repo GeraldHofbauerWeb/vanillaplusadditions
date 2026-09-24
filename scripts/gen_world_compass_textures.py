@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Erzeugt Texturen und Modelle für den Weltkompass aus den Vanilla-Kompass-Frames.
 
+HINWEIS (beta.92): Die Texturen werden nicht mehr ausgeliefert. Sie entstehen zur Ladezeit im
+Spiel, aus den Kompass-Frames des Spielers — siehe ``WorldCompassSpriteSource`` und
+``WorldCompassRecolour``. Dieses Skript bleibt als Referenz-Implementierung (der Java-Port
+reproduziert seine Ausgabe pixelgenau) und weil es die 32 Modelldateien erzeugt. Die von ihm
+geschriebenen PNGs gehören NICHT mehr ins Repo.
+
 Der Weltkompass übernimmt die Geometrie des Vanilla-Kompasses Pixel für Pixel — jeder
 Nachbau scheitert am beleuchteten Metallrahmen, der das ganze Icon trägt. Umgefärbt wird
 ausschließlich das Zifferblatt: Nordnadel in Amethyst, Fläche in Enderperlen-Türkis,

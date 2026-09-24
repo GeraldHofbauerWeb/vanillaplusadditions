@@ -63,4 +63,4 @@ See [test-client/README.md](../../test-client/README.md) for more details.
 - Check for atmospheric fog effects inside the structure.
 
 ## Debug Logging
-Enable debug logging in `vanillaplusadditions-server.toml` to get detailed information about module behavior. See [Debug Logging Guide](debug-logging.md) for details.
+Enable debug logging in `vanillaplusadditions-common.toml` to get detailed information about module behavior. See [Debug Logging Guide](debug-logging.md) for details.

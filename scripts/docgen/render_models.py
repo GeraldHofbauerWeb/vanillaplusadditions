@@ -223,6 +223,33 @@ class Log:
 # Every read is hashed and attributed to the entry being rendered, which is what --check needs.
 # -------------------------------------------------------------------------------------------
 
+_COMPASS_GEN = None
+
+
+def _compass_gen():
+    """Laedt scripts/gen_world_compass_textures.py als Modul - die Umfaerbe-Logik steht dort."""
+    global _COMPASS_GEN
+    if _COMPASS_GEN is None:
+        import importlib.util
+
+        path = os.path.join(_REPO, "scripts", "gen_world_compass_textures.py")
+        spec = importlib.util.spec_from_file_location("vpa_compass_gen", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _COMPASS_GEN = module
+    return _COMPASS_GEN
+
+
+def _world_compass_frame(path: str):
+    """Welcher Kompass-Frame steckt hinter dieser Textur-ID - oder None, wenn keiner."""
+    if path == "item/world_compass":
+        return _compass_gen().BASE_FRAME
+    prefix = "item/world_compass_"
+    if path.startswith(prefix) and path[len(prefix):].isdigit():
+        return int(path[len(prefix):])
+    return None
+
+
 class Assets:
     def __init__(self, root: str, jar_path: str, log: Log) -> None:
         self.root = os.path.abspath(root)
@@ -257,7 +284,16 @@ class Assets:
         if not path:
             namespace, path = "minecraft", namespace
         if namespace == MODID:
-            return "file:" + os.path.join(self.root, kind, path + ext)
+            local = os.path.join(self.root, kind, path + ext)
+            # Der Weltkompass liefert seine Texturen seit beta.92 nicht mehr als Dateien aus - sie
+            # entstehen im Spiel aus den Kompass-Frames des Spielers (WorldCompassSpriteSource).
+            # Fuer das Rendern der Doku-Bilder machen wir hier dasselbe: Vanilla-Frame aus dem
+            # Client-Jar holen und mit derselben Logik umfaerben.
+            if kind == "textures" and not os.path.isfile(local):
+                frame = _world_compass_frame(path)
+                if frame is not None:
+                    return "compass:%02d" % frame
+            return "file:" + local
         if namespace == "minecraft":
             return "jar:assets/minecraft/%s/%s%s" % (kind, path, ext)
         raise NotRenderable("reference %r lives in the %r namespace: that asset ships with another "
@@ -267,6 +303,8 @@ class Assets:
         kind, _, ident = source.partition(":")
         if kind == "file":
             return os.path.isfile(ident)
+        if kind == "compass":
+            return self.exists("jar:assets/minecraft/textures/item/compass_%s.png" % ident)
         if self.jar is None:
             return False
         try:
@@ -281,6 +319,11 @@ class Assets:
             if kind == "file":
                 with open(ident, "rb") as handle:
                     data = handle.read()
+            elif kind == "compass":
+                # Der Hash haengt bewusst am VANILLA-Frame, nicht an den erzeugten Bytes: sonst
+                # wuerde ein Pillow-Update jedes Bild als "stale" melden, obwohl sich kein Pixel
+                # geaendert hat.
+                data = self._recoloured_compass(ident)
             elif kind == "jar":
                 if self.jar is None:
                     raise ModelError(
@@ -296,9 +339,27 @@ class Assets:
         except (OSError, KeyError) as exc:
             raise ModelError("cannot read %s: %s" % (source, exc)) from exc
         self.hashes[source] = hashlib.sha256(data).hexdigest()
+        if kind == "compass":
+            # Siehe _recoloured_compass: massgeblich ist der Vanilla-Frame, aus dem wir faerben.
+            self.hashes[source] = self.hashes["jar:assets/minecraft/textures/item/compass_%s.png" % ident]
         if self._touched is not None:
             self._touched.add(source)
         return data
+
+    def _recoloured_compass(self, index: str) -> bytes:
+        """Faerbt einen Vanilla-Kompass-Frame um, genau wie WorldCompassRecolour es im Spiel tut."""
+        import io as _io
+
+        from PIL import Image as _Image
+
+        source = "jar:assets/minecraft/textures/item/compass_%s.png" % index
+        raw = self.read(source)          # setzt den Hash auf den Vanilla-Frame
+        frame = _Image.open(_io.BytesIO(raw)).convert("RGBA")
+        dial = _compass_gen().dial_mask(frame)
+        edge = _compass_gen().edge_mask(frame, dial)
+        out = _io.BytesIO()
+        _compass_gen().recolour(frame, dial, edge).save(out, format="PNG")
+        return out.getvalue()
 
     def read_json(self, source: str, what: str) -> dict:
         raw = self.read(source)

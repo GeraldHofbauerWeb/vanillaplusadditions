@@ -1,6 +1,6 @@
 # Mo' Arrows
 
-> **TL;DR** — An arrow crafted from an arrow and a fire charge: it flies burning, sets alight whatever it hits, and starts a real fire where it lands — the part even a Flame-enchanted bow has never done.
+> **TL;DR** — An arrow crafted from arrows and a fire charge: it flies burning, sets alight whatever it hits, and starts a real fire where it lands — the part even a Flame-enchanted bow has never done.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -25,8 +25,15 @@ Adds one arrow so far, and the module is named for the ones that may follow.
 | **Fire Arrow** | `vanillaplusadditions:fire_arrow` | Flies burning, ignites what it hits, and starts a fire where it lands |
 
 ```
-Arrow + Fire Charge   (shapeless)   →   1x Fire Arrow
+ A A A        A = Arrow
+ A F A        F = Fire Charge      →   8x Fire Arrow
+ A A A
 ```
+
+Eight arrows around one fire charge, the same shape vanilla uses for tipped arrows around a
+lingering potion — one fire charge per eight arrows. Until beta.92 this was a shapeless
+arrow-plus-fire-charge recipe, which cost a whole fire charge per single arrow and was therefore
+eight times dearer than the vanilla pattern it was modelled on.
 
 A Flame-enchanted bow already sets mobs alight. What it has never done is start a fire on the
 ground — and that is the half this arrow adds. Everything else it does is vanilla's own behaviour
