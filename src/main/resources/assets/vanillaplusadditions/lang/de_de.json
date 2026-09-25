@@ -8,6 +8,8 @@
   "gui.vanillaplusadditions.mob_cart_loader.empty": "Leer",
   "block.vanillaplusadditions.cat_feeding_station": "Katzen-Futterstation",
   "block.vanillaplusadditions.chunk_anchor": "Chunk-Anker",
+  "block.vanillaplusadditions.glow_mushroom": "Leuchtpilz",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Leuchtpilzsuppe",
   "block.vanillaplusadditions.chunk_loader_rail": "Chunk-Loader-Schiene",
   "block.vanillaplusadditions.chunk_loader_track": "Chunk-Loader-Gleis",
   "vanillaplusadditions.ponder.chunk_loader_track_spacing.header": "Chunk-Loader-Gleise platzieren",

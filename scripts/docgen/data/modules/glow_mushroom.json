@@ -1,0 +1,51 @@
+{
+  "blocks": [
+    "glow_mushroom"
+  ],
+  "commands": [],
+  "configKeys": [
+    {
+      "key": "mushroom_glow_ticks",
+      "type": "int",
+      "defaultValue": "200",
+      "range": "20 ~ 6000",
+      "effect": "Duration of the Glowing effect after eating a raw glow mushroom, in ticks (20 = one second). Read when the item is registered, so a change needs a restart."
+    },
+    {
+      "key": "stew_glow_ticks",
+      "type": "int",
+      "defaultValue": "600",
+      "range": "20 ~ 24000",
+      "effect": "Duration of the Glowing effect after eating glow mushroom stew, in ticks. Same restart caveat."
+    }
+  ],
+  "displayName": "Glow Mushroom",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (GAME bus, @SubscribeEvent onAddReloadListener; registers a PreparableReloadListener that injects the stew recipe into the RecipeManager after every datapack reload, gated on isModuleEnabled())",
+    "net.neoforged.neoforge.event.level.BlockDropsEvent (GAME bus, @SubscribeEvent onBlockDrops; throttles what a broken shroomlight or honey_block yields, but ONLY when a mushroom_stem stands within 5 blocks sideways / 8 below / 2 above - vanilla loot tables are left untouched so Nether shroomlight and redstone honey blocks keep behaving normally. Silk Touch bypasses the rule.)"
+  ],
+  "hasStandaloneJar": true,
+  "items": [
+    "glow_mushroom",
+    "glow_mushroom_stew"
+  ],
+  "keybinds": [],
+  "mixins": [],
+  "moduleDeps": [],
+  "moduleId": "glow_mushroom",
+  "notes": "DOC-WRITER NOTES (all provable in-repo):\n\nFILES: modules/glow_mushroom/{GlowMushroomModule.java, config/GlowMushroomConfig.java}, standalone/glow_mushroom/GlowMushroomStandalone.java. Assets: blockstates/glow_mushroom.json, models/block/glow_mushroom.json, models/block/glow_mushroom_rotated.json, models/item/glow_mushroom.json, models/item/glow_mushroom_stew.json, textures/block/glow_mushroom.png. Lang entries in all six locales.\n\nBLOCK: plain vanilla net.minecraft.world.level.block.MushroomBlock - no subclass. It therefore inherits vanilla's placement rules (mushroom_grow_block tag, or low light) and its bone-meal behaviour. lightLevel is a flat 12. NO offsetType: vanilla mushrooms jitter within their cell, this one deliberately does not, because the visual variety comes from two blockstate variants instead (straight and a 45-degree one). Minecraft picks among blockstate variants by BLOCK POSITION, not randomly - two different mushrooms on the same spot therefore always show the same orientation.\n\nTHE 45-DEGREE VARIANT cannot be done with the blockstate's own 'y' key: that only accepts 0/90/180/270, and a 90-degree turn of a square cap looks identical. The rotation has to sit on the model ELEMENTS ('rotation': {'angle': 45, 'axis': 'y', 'origin': [8,8,8]}), which is what glow_mushroom_rotated.json does. Geometry follows the obvious two-box form (stem 2x3x2 at [7,0,7], cap 6x3x6 at [5,3,5]) so it sits alongside the VanillaTweaks 3D mushrooms the pack uses without standing out.\n\nEMISSIVE: both elements carry NeoForge's per-element 'neoforge_data' - cap block_light/sky_light 15, stem 8. That is what makes it LOOK lit; the block's own lightLevel(12) is what makes it light its surroundings. The two are independent.\n\nBONE MEAL grows ResourceKey CONFIGURED_FEATURE 'vpa:glow_mushroom_branched', which is supplied by the vpa_mushroom_fields_plus WORLD DATAPACK, not by the mod. Without that pack the key resolves to nothing and vanilla MushroomBlock simply does not grow it - no crash.\n\nTHE STEW SHIPS NO TEXTURE. models/item/glow_mushroom_stew.json points layer0 at 'minecraft:item/mushroom_stew', so the game draws the texture it already has. This is deliberate: copying Mojang's PNG into the mod would redistribute their asset, referencing it does not. The permanent sparkle is the DataComponents.ENCHANTMENT_GLINT_OVERRIDE component, not an enchantment. The bowl comes back via FoodProperties.Builder.usingConvertsTo(Items.BOWL) - note that 1.21.1 has no BowlFoodItem class, that lives on FoodProperties now.\n\nRECIPE is code-registered through AddReloadListenerEvent, per the project rule that datapack JSON recipes do not load reliably here (CLAUDE.md). Same mechanism as minecart_chunk_loading.\n\nWORLDGEN COUPLING: the vpa_mushroom_fields_plus datapack lists 'vanillaplusadditions:glow_mushroom' in its dense_mushroom_patch weighted provider (weight 1 against 3 red and 3 brown). That makes the PACK depend on the MOD - without the module the world refuses to load with a datapack error. Verified in game on 2026-09-25.\n\nCAP DROPS: the big mushrooms' caps are vanilla shroomlight and honey_block, whose loot tables are GLOBAL - editing them would break Nether shroomlight and every redstone build using honey blocks. The throttle therefore lives in BlockDropsEvent with a proximity test for mushroom_stem: 5 % the block itself, 35 % a glow mushroom, 60 % nothing. Vanilla drops for these blocks are otherwise untouched, and Silk Touch always returns the block.",
+  "oneLiner": "A small glowing mushroom you can dig up, replant and cook: it lights its surroundings, glows visibly in the dark, and boiled into a stew it makes you glow yourself for half a minute.",
+  "optionalMods": [],
+  "recipes": [
+    "Shapeless (code-registered, id vanillaplusadditions:glow_mushroom_stew, group \"\", CraftingBookCategory.MISC): minecraft:bowl + vanillaplusadditions:glow_mushroom + minecraft:brown_mushroom -> 1x vanillaplusadditions:glow_mushroom_stew"
+  ],
+  "registeredInBundle": true,
+  "relatedModules": [],
+  "requiredMods": [],
+  "shortDescription": "A small glowing mushroom that can be planted and cooked into a glowing stew.",
+  "side": "both",
+  "sinceCommit": "23343cf",
+  "sinceVersion": "v1.0.0-beta.93"
+}

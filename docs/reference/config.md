@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 248 module-specific keys across 50 modules,
+Every setting of every module — 250 module-specific keys across 51 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -298,6 +298,15 @@ No settings of its own.
 A paraglider from the Gliders mod that a lightning strike left broken can be thrown into water - as a dropped item, never one sitting in a slot: it hisses, steams and glides again, though it stays as battered as the strike left it. · [full page](../modules/glider_water_repair.md)
 
 No settings of its own.
+
+## `glow_mushroom` — Glow Mushroom
+
+A small glowing mushroom you can dig up, replant and cook: it lights its surroundings, glows visibly in the dark, and boiled into a stew it makes you glow yourself for half a minute. · [full page](../modules/glow_mushroom.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `mushroom_glow_ticks` | int | `200` | 20 ~ 6000 | Duration of the Glowing effect after eating a raw glow mushroom, in ticks (20 = one second). Read when the item is registered, so a change needs a restart. |
+| `stew_glow_ticks` | int | `600` | 20 ~ 24000 | Duration of the Glowing effect after eating glow mushroom stew, in ticks. Same restart caveat. |
 
 ## `haunted_house` — Haunted House
 

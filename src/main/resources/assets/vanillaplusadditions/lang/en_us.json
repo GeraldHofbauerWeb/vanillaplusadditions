@@ -8,6 +8,8 @@
   "gui.vanillaplusadditions.mob_cart_loader.empty": "Empty",
   "block.vanillaplusadditions.cat_feeding_station": "Cat Feeding Station",
   "block.vanillaplusadditions.chunk_anchor": "Chunk Anchor",
+  "block.vanillaplusadditions.glow_mushroom": "Glow Mushroom",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Glow Mushroom Stew",
   "block.vanillaplusadditions.chunk_loader_rail": "Chunk Loader Rail",
   "block.vanillaplusadditions.chunk_loader_track": "Chunk Loader Track",
   "vanillaplusadditions.ponder.chunk_loader_track_spacing.header": "Placing Chunk Loader Tracks",

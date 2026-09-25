@@ -18,6 +18,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.flying_fish.FlyingFishMod
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.FreeAnvilRepairModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.waystone_amethyst_repair.WaystoneAmethystRepairModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.food_effects.FoodEffectsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.glow_mushroom.GlowMushroomModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.haunted_house.HauntedHouseModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.bluemap_signs.BluemapSignsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.glider_water_repair.GliderWaterRepairModule;
@@ -151,6 +152,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new DebugOverlayModule());
         moduleManager.registerModule(new MinecartChunkLoadingModule());
         moduleManager.registerModule(new TrainChunkLoadingModule());
+        moduleManager.registerModule(new GlowMushroomModule());
         moduleManager.registerModule(new StationaryChunkLoaderModule());
         moduleManager.registerModule(new HostileZombifiedPiglinsModule());
         moduleManager.registerModule(new HostileEndermenModule());

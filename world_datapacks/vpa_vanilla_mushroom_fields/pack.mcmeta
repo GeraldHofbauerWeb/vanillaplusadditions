@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "Vanilla Plus: Mushroom Fields wieder wie in Vanilla (hebt WWOO nur fuer dieses Biom auf)",
+    "pack_format": 48,
+    "supported_formats": [48, 99]
+  }
+}

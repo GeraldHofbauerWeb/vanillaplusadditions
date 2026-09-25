@@ -67,5 +67,7 @@
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Překryv míst spawnu: VYPNUTO",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Překryv míst spawnu: ZAPNUTO",
   "item.vanillaplusadditions.world_compass": "Světový kompas",
-  "item.vanillaplusadditions.fire_arrow": "Ohnivý šíp"
+  "item.vanillaplusadditions.fire_arrow": "Ohnivý šíp",
+  "block.vanillaplusadditions.glow_mushroom": "Zarici houba",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Zarici houbova polevka"
 }

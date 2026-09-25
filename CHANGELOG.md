@@ -4,6 +4,31 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.93] - 2026-09-24
+
+### Added
+- **Neues Modul `glow_mushroom`: ein dritter kleiner Pilz, der leuchtet** (Gerry und Sebi,
+  2026-09-25). Ergaenzt roten und braunen Pilz um eine orange Variante mit Shroomlight-Hut:
+  Lichtlevel 12, abbaubar, pflanzbar, essbar (Glowing 10 s). Dazu die **Leuchtpilzsuppe** aus
+  Schuessel + Leuchtpilz + braunem Pilz (Glowing 30 s, Schuessel kommt zurueck).
+
+  Drei Punkte, die beim Bau Zeit gekostet haben und dokumentiert sind:
+
+  - **Ausrichtung waehlt Minecraft nach Blockposition**, nicht zufaellig. Ein Leuchtpilz am Platz
+    eines roten zeigt darum dieselbe Drehung. Die 45-Grad-Variante laesst sich **nicht** ueber den
+    `y`-Schluessel des Blockstates bauen (der kennt nur 0/90/180/270, und ein quadratischer Hut
+    sieht nach 90 Grad gleich aus) — sie braucht eine Element-Rotation im Modell selbst.
+  - **Leuchten und Beleuchten sind zwei Dinge.** `lightLevel(12)` hellt die Umgebung auf; dass der
+    Pilz selbst leuchtet, macht NeoForges `neoforge_data` pro Element (Hut `block_light: 15`,
+    Stiel 8).
+  - **Die Suppe liefert keine eigene Textur.** Ihr Modell zeigt auf `minecraft:item/mushroom_stew`
+    — dieselbe Linie wie die Stations-Skins unten: referenzieren statt kopieren. Der Glitzer kommt
+    aus der Komponente `enchantment_glint_override`, nicht aus einer Verzauberung.
+
+  Der Welt-Datapack `vpa_mushroom_fields_plus` saet den Pilz in die Bodendecke der Mushroom Fields.
+  **Achtung, die Abhaengigkeit laeuft in diese Richtung:** ohne das Modul verweigert eine Welt mit
+  diesem Pack den Start, weil das Pack einen Block nennt, den es nicht gibt.
+
 ## [1.0.0-beta.92] - 2026-09-24
 
 ### Changed

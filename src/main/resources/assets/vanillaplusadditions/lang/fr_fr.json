@@ -67,5 +67,7 @@
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Calque d'apparition : DÉSACTIVÉ",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Calque d'apparition : ACTIVÉ",
   "item.vanillaplusadditions.world_compass": "Boussole du monde",
-  "item.vanillaplusadditions.fire_arrow": "Flèche enflammée"
+  "item.vanillaplusadditions.fire_arrow": "Flèche enflammée",
+  "block.vanillaplusadditions.glow_mushroom": "Champignon lumineux",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Soupe de champignon lumineux"
 }

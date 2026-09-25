@@ -69,5 +69,7 @@
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Superposición de generación: DESACTIVADA",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Superposición de generación: ACTIVADA",
   "item.vanillaplusadditions.world_compass": "Brújula del mundo",
-  "item.vanillaplusadditions.fire_arrow": "Flecha de fuego"
+  "item.vanillaplusadditions.fire_arrow": "Flecha de fuego",
+  "block.vanillaplusadditions.glow_mushroom": "Seta luminosa",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Sopa de seta luminosa"
 }

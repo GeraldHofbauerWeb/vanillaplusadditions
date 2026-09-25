@@ -67,5 +67,7 @@
   "message.vanillaplusadditions.mob_spawn_overlay.off": "Spawn-Ovalay: AUS",
   "message.vanillaplusadditions.mob_spawn_overlay.on": "Spawn-Ovalay: AN",
   "item.vanillaplusadditions.world_compass": "Weltkompass",
-  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil"
+  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil",
+  "block.vanillaplusadditions.glow_mushroom": "Leuchtpilz",
+  "item.vanillaplusadditions.glow_mushroom_stew": "Leuchtpilzsuppn"
 }

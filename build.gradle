@@ -446,6 +446,7 @@ def standaloneModules = [
     [ moduleId: 'glider_water_repair', displayName: 'Vanilla Plus: Glider Water Repair' ],
     [ moduleId: 'freecam_sublevel_noclip', displayName: 'Vanilla Plus: Freecam Sub-Level Noclip',
       clientMixins: ['freecam_sublevel_noclip.EntityMoveFreecamMixin'] ],
+    [ moduleId: 'glow_mushroom', displayName: 'Vanilla Plus: Glow Mushroom' ],
     [ moduleId: 'haunted_house', displayName: 'Vanilla Plus: Haunted House' ],
     [ moduleId: 'hostile_endermen', displayName: 'Vanilla Plus: Hostile Endermen',
       mixins: ['hostile_endermen.EndEndermanTeleportMixin',
