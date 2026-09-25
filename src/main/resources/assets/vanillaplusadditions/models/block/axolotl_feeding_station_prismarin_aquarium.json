@@ -2,8 +2,8 @@
   "render_type": "minecraft:translucent",
   "parent": "minecraft:block/block",
   "textures": {
-    "particle": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
-    "floor": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
+    "particle": "minecraft:block/prismarine_bricks",
+    "floor": "minecraft:block/prismarine_bricks",
     "trim": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium_trim",
     "glass": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium_glass"
   },

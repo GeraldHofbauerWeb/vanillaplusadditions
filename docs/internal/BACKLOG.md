@@ -93,3 +93,25 @@ Ideen/Aufträge, die noch nicht eingeplant sind. Beim Umsetzen: Eintrag in ein M
   braucht moeglicherweise Quark als harte Dependency, und `renderModuleToml` kann bisher **keine**
   Fremd-Mod-Abhaengigkeit in die erzeugte `mods.toml` schreiben. `static_fov` hat bewusst keinen
   Entrypoint bekommen, weil dort erst der Lookup-Fix oben noetig ist.
+
+- [ ] **Abgeleitete Vanilla-Texturen aufloesen** (Gerry, 2026-09-24, Befund aus dem Asset-Audit
+  nach beta.92). Alle 194 eigenen Texturen wurden gegen jede gleich grosse Vanilla-Textur gehalten
+  und der Anteil *buchstaeblich unveraenderter sichtbarer Pixel* gemessen. Die drei exakten Kopien
+  sind in beta.93 erledigt (Modelle verweisen jetzt auf die Vanilla-Textur). Was bleibt:
+  * **~19 Stations-Trims bei 96-97 %** — z.B. `axolotl_feeding_station_koralle_rot_trim.png` gegen
+    `block/fire_coral_block.png`, `cat_feeding_station_dorf_trim.png` gegen `block/bricks.png`.
+    Das sind Umfaerbungen, kein Kopieren. Sauberer Weg: derselbe `SpriteSource`-Mechanismus wie
+    beim Weltkompass (siehe `WorldCompassSpriteSource`), dann faellt auch hier jedes fremde Pixel weg.
+  * **~10 Skins bei 75-86 %**, gleiche Kategorie.
+  * **`gui/cat_inventory.png` und `gui/axolotl_inventory.png`: 74 %** identisch mit Vanillas
+    `gui/container/hopper.png`; die beiden Stations-GUIs 54 % mit `gui/container/shulker_box.png`.
+  * **`block/chunk_anchor_active_side.png`: 64 %** von `block/lodestone_side.png`.
+  * **`item/fire_arrow.png`: 46 %** von `item/arrow.png` — `scripts/gen_fire_arrow_texture.py` sagt
+    es selbst: Federn und hinterer Schaft bleiben unveraendert.
+  * **Unkritisch:** `end_conduit` (6), Wolf-/Katzen-/Axolotl-Ruestung, `flying_fish*`,
+    `end_nautilus` liegen bei **0-1 %** unveraenderten Pixeln — sie teilen nur die Silhouette.
+    Die Foxhound-Texturen sind von Quark abgeleitet, **mit Vazkiis ausdruecklicher Erlaubnis**.
+  **Methodenwarnung fuer den naechsten Durchgang:** der Anteil muss ueber Pixel gebildet werden, die
+  in *mindestens einem* der beiden Bilder sichtbar sind. Sonst melden zwei fast leere Texturen
+  94 % Uebereinstimmung (erst passiert mit `entity/phantom_eyes.png`). Verglichen wurde nur gegen
+  Vanilla, nicht gegen Create, Quark und die uebrigen Fremd-Mods.

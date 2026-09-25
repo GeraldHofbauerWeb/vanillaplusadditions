@@ -2,8 +2,8 @@
   "render_type": "minecraft:translucent",
   "parent": "minecraft:block/block",
   "textures": {
-    "particle": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
-    "floor": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
+    "particle": "minecraft:block/warped_planks",
+    "floor": "minecraft:block/warped_planks",
     "trim": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald_trim",
     "glass": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald_glass"
   },

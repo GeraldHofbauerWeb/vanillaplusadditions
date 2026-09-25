@@ -29,6 +29,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Achtung, die Abhaengigkeit laeuft in diese Richtung:** ohne das Modul verweigert eine Welt mit
   diesem Pack den Start, weil das Pack einen Block nennt, den es nicht gibt.
 
+### Changed
+- **Das Inventar-Icon beider Futterstationen zeigte die Rueckwand** (Gerry, 2026-09-25). Vanillas
+  `block/block` dreht fuer das Inventar um `[30, 225, 0]` und zeigt damit die **Nord**seite eines
+  Blocks — die Vorderseite dieser beiden Modelle liegt aber im Sueden. Die Item-Modelle
+  ueberschreiben die GUI-Drehung jetzt mit `[30, 45, 0]`. Am Block selbst war nichts zu tun:
+  `getStateForPlacement` setzt `FACING` auf die Blickrichtung, die Oeffnung zeigt in die
+  Gegenrichtung und damit korrekt zum Spieler.
+- **`axolotl_guardian`: Drei Stations-Skins liefern ihre Textur nicht mehr mit, sondern verweisen
+  auf die Vanilla-Textur** (Gerry, 2026-09-24). Ein Abgleich aller 194 eigenen Texturen gegen die
+  Vanilla-Texturen hat drei Dateien gefunden, die **Pixel fuer Pixel identisch** mit ihrer Vorlage
+  waren — also blosse Kopien:
+
+  | Datei | war identisch mit |
+  |---|---|
+  | `axolotl_feeding_station_wirrwald.png` | `minecraft:block/warped_planks` |
+  | `axolotl_feeding_station_prismarin_aquarium.png` | `minecraft:block/prismarine_bricks` |
+  | `axolotl_feeding_station_kupfer_labor.png` | `minecraft:block/oxidized_copper` |
+
+  Die drei Modelle zeigen mit `particle` und `floor` jetzt direkt auf die Vanilla-Textur, die PNGs
+  sind geloescht. Am Aussehen aendert sich **nichts**: die Doku-Renders sind nach dem Umbau
+  byteweise unveraendert. Wie beim Weltkompass in beta.92 liefert der Mod damit ein Stueck weniger
+  fremdes Material aus — und der Block folgt nebenbei dem Resource Pack des Spielers.
+  `_trim`- und `_glass`-Lagen derselben Skins bleiben vorerst, sie sind Umfaerbungen und keine
+  Kopien; sie stehen als eigener Punkt im Backlog.
+
 ## [1.0.0-beta.92] - 2026-09-24
 
 ### Changed

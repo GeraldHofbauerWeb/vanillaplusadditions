@@ -24,9 +24,9 @@
    ]
   },
   "blocks/axolotl_feeding_station.png": {
-   "inputs": "82e6790f808e7348d1d4298aa509ce375f400abca783d1c0e9444bf0c9126c60",
+   "inputs": "648b844dc38557a16244bbe4f151f60c0e9e8552b8d762b3be8e6f4fcf419f31",
    "model": "vanillaplusadditions:item/axolotl_feeding_station",
-   "png": "98429950622882e2b7aeaa2cd1415a502720aa7bcab8c2c2063f6e72f9a5e4ca",
+   "png": "374930843bb9ebbec8a525ac3e4c89100da23f4271c0a8771eebe9ce505838b0",
    "sources": [
     "file:models/block/axolotl_feeding_station.json",
     "file:models/item/axolotl_feeding_station.json",
@@ -156,15 +156,15 @@
    ]
   },
   "blocks/axolotl_feeding_station_kupfer_labor.png": {
-   "inputs": "a11fa15f7385ee4940ff80da1be710d606ac7572c2c79427cb1586bc626fb0ec",
+   "inputs": "0f7cf09500854f33a97f2266c423d19fe7ab0f021acff997ddeb24a0a5887a8f",
    "model": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
    "png": "53232ca3d3ace231bc4ec678117ce1ec2026249bb17b2581c97259cd507b52cc",
    "sources": [
     "file:models/block/axolotl_feeding_station_kupfer_labor.json",
-    "file:textures/block/axolotl_feeding_station_kupfer_labor.png",
     "file:textures/block/axolotl_feeding_station_kupfer_labor_glass.png",
     "file:textures/block/axolotl_feeding_station_kupfer_labor_trim.png",
-    "jar:assets/minecraft/models/block/block.json"
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/textures/block/oxidized_copper.png"
    ]
   },
   "blocks/axolotl_feeding_station_lagune.png": {
@@ -192,27 +192,27 @@
    ]
   },
   "blocks/axolotl_feeding_station_prismarin_aquarium.png": {
-   "inputs": "3645c59bcc41430ffdc477e9e25fb817e2b7c8052be931db7e546a0fa4a3cc2d",
+   "inputs": "557b40588b44efc1ad214ae8d6b10054c5f60c88c2b7badcccb8d7fcc3ac2f5f",
    "model": "vanillaplusadditions:block/axolotl_feeding_station_prismarin_aquarium",
    "png": "c5acad5c7a167b7637fce2f98df858549bd4c26e8c8e68af39619155469a03f7",
    "sources": [
     "file:models/block/axolotl_feeding_station_prismarin_aquarium.json",
-    "file:textures/block/axolotl_feeding_station_prismarin_aquarium.png",
     "file:textures/block/axolotl_feeding_station_prismarin_aquarium_glass.png",
     "file:textures/block/axolotl_feeding_station_prismarin_aquarium_trim.png",
-    "jar:assets/minecraft/models/block/block.json"
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/textures/block/prismarine_bricks.png"
    ]
   },
   "blocks/axolotl_feeding_station_wirrwald.png": {
-   "inputs": "632fa5f3aa38f0cd2cb31ee3b05544d5aee5e03ad2fb197143a03f17a161384c",
+   "inputs": "833553d42234617cfd743479dc26c9baeeb9f2ef611fe17f74bf07b5c27cb7a5",
    "model": "vanillaplusadditions:block/axolotl_feeding_station_wirrwald",
    "png": "a3124470bb345286b7da2258858a71c5eaf98262e796706bede2ad1b38ce661a",
    "sources": [
     "file:models/block/axolotl_feeding_station_wirrwald.json",
-    "file:textures/block/axolotl_feeding_station_wirrwald.png",
     "file:textures/block/axolotl_feeding_station_wirrwald_glass.png",
     "file:textures/block/axolotl_feeding_station_wirrwald_trim.png",
-    "jar:assets/minecraft/models/block/block.json"
+    "jar:assets/minecraft/models/block/block.json",
+    "jar:assets/minecraft/textures/block/warped_planks.png"
    ]
   },
   "blocks/cat_bowl.png": {
@@ -238,9 +238,9 @@
    ]
   },
   "blocks/cat_feeding_station.png": {
-   "inputs": "9a876d5982dcd0dfd51d50a7bd77c85205d1aeadd9aed1d217802920f08c4566",
+   "inputs": "b122f1a3920b5b8c2d897abbac40479a6a844f08ab284baf0502892e16990d4b",
    "model": "vanillaplusadditions:item/cat_feeding_station",
-   "png": "b0591c35b9fff5f99355c206f61878cff8a44db303e2115393d4ed837aaeab28",
+   "png": "c293c73802dd213866b1cd0ad91bd9dfcd353d0437301f24099702d3bd173889",
    "sources": [
     "file:models/block/cat_feeding_station.json",
     "file:models/item/cat_feeding_station.json",
@@ -724,6 +724,25 @@
    "reason": "parent builtin/entity - vanilla draws conduits with a BlockEntityRenderer from geometry hard-coded in Java; neither this mod's model nor vanilla's block/conduit.json holds any elements, so there is nothing to derive",
    "skipped": true
   },
+  "blocks/glow_mushroom.png": {
+   "inputs": "5bee70cb1f50ec84a1e5719ec0e89ee827cc169454d0a06bd136940f4ec52b3a",
+   "model": "vanillaplusadditions:item/glow_mushroom",
+   "png": "b469d661d2884bb6e4e8f16d459bcafc8c1a9673f4e079b99c6e883bbd98c172",
+   "sources": [
+    "file:models/block/glow_mushroom.json",
+    "file:models/item/glow_mushroom.json",
+    "file:textures/block/glow_mushroom.png"
+   ]
+  },
+  "blocks/glow_mushroom_rotated.png": {
+   "inputs": "6203e4f15c23a543326103a42149bd4615ad0fb6498af31e04738245c40ce1d2",
+   "model": "vanillaplusadditions:block/glow_mushroom_rotated",
+   "png": "ef67e7a9de2e458c49d7e890768674d90b0aa499454c30db946ba33161762a90",
+   "sources": [
+    "file:models/block/glow_mushroom_rotated.json",
+    "file:textures/block/glow_mushroom.png"
+   ]
+  },
   "blocks/mob_loader.png": {
    "inputs": "a81a002409144dcec1df6999058efbe4f2c4ebaa0bbc428a6440f8b90f5a7f17",
    "model": "vanillaplusadditions:item/mob_loader",
@@ -934,6 +953,16 @@
     "jar:assets/minecraft/models/item/template_spawn_egg.json",
     "jar:assets/minecraft/textures/item/spawn_egg.png",
     "jar:assets/minecraft/textures/item/spawn_egg_overlay.png"
+   ]
+  },
+  "items/glow_mushroom_stew.png": {
+   "inputs": "2313ae679b105cf784e7911d4629ea157c78a121b8157cff897b6ba01914ffcf",
+   "model": "vanillaplusadditions:item/glow_mushroom_stew",
+   "png": "eb667edd206501f3a429c4cb5147d30a4998d471d5b06b6e5131f06253366dde",
+   "sources": [
+    "file:models/item/glow_mushroom_stew.json",
+    "jar:assets/minecraft/models/item/generated.json",
+    "jar:assets/minecraft/textures/item/mushroom_stew.png"
    ]
   },
   "items/wolf_armor_diamond.png": {

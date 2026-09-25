@@ -2,8 +2,8 @@
   "render_type": "minecraft:translucent",
   "parent": "minecraft:block/block",
   "textures": {
-    "particle": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
-    "floor": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor",
+    "particle": "minecraft:block/oxidized_copper",
+    "floor": "minecraft:block/oxidized_copper",
     "trim": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor_trim",
     "glass": "vanillaplusadditions:block/axolotl_feeding_station_kupfer_labor_glass"
   },
