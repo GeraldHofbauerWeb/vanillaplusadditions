@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "minecraft:hot_floor",
-    "minecraft:campfire"
+    "minecraft:campfire",
+    "minecraft:on_fire",
+    "minecraft:in_fire"
   ]
 }

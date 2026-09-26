@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 250 module-specific keys across 51 modules,
+Every setting of every module — 251 module-specific keys across 51 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -56,6 +56,7 @@ Tamed wolves can wear iron, gold, diamond or netherite body armor that soaks up 
 | `bite_animation.enabled` | boolean | `true` | — | Snap the wolf's head down when it lands a bite. Also gates the lunge and the server-side bite-direction packet; it does NOT gate the swing-timer mixin. |
 | `bite_animation.only_when_ridden` | boolean | `false` | — | Restrict the animation to a wolf that is being ridden (off by default, because a dog that only bites visibly while carrying someone looks stranger than one that always does). |
 | `bite_animation.strength` | double | `1.0` | 0.0 ~ 2.0 | Scales how far the head swings and how far the lunge travels; 1.0 is about 50 degrees of head pitch (BITE_PITCH = 0.9 rad). |
+| `fall_absorb_blocks` | double | `5.0` | 0.0 ~ 256.0 | Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright - so no hurt flash and no armor sound either. |
 | `thorns_reflect_fraction` | double | `0.33` | 0.0 ~ 1.0 | Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). Total reflect is capped at 1.0 (min(1.0, fraction * thornsLevel)). |
 
 ## `better_mobs` — Better Mobs

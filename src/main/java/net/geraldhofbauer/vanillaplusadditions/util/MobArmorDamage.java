@@ -38,6 +38,12 @@ public final class MobArmorDamage {
      * <p>Separate from the tag above because standing on a magma block should not be a free ride at
      * every tier (Gerry, 2026-09-26). Netherite shrugging it off matches the material not burning up
      * in vanilla; iron, gold and diamond still pay.</p>
+     *
+     * <p>Burning is in here too, and it is what actually wore the armor down in the Nether: magma
+     * blocks do not ignite anything, but a pet standing next to lava catches fire and {@code on_fire}
+     * then ticks for as long as it burns. {@code lava} is deliberately <b>not</b> listed — the armor
+     * already absorbs it completely, so making it free would be permanent lava immunity rather than
+     * a repair-bill fix.</p>
      */
     public static final TagKey<DamageType> PET_ARMOR_NO_WEAR_HEATPROOF = TagKey.create(
             Registries.DAMAGE_TYPE,

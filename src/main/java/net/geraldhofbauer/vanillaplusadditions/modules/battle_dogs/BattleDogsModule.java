@@ -17,16 +17,19 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -293,6 +296,52 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
         }
 
         updateArmorAttribute(wolf, event.getTo());
+    }
+
+    /**
+     * Swallows terrain damage and short falls before the wolf ever flinches.
+     *
+     * <p>Hooks {@code LivingIncomingDamageEvent} rather than {@code LivingDamageEvent.Pre}, and the
+     * difference is the whole point. {@code LivingEntity.hurt} fires this one early, then sets
+     * {@code hurtTime} and calls {@code playHurtSound} — the red flash and the armor clink — and only
+     * afterwards reaches {@code actuallyHurt}, where absorption and wear are decided. Cancelling at
+     * the later event therefore left a wolf flashing and clanking its way through a cactus while
+     * taking nothing (Gerry noticed, 2026-09-26). Cancelling here makes {@code hurt()} return false
+     * outright: no flash, no sound, no damage, no wear.</p>
+     *
+     * <p>It also sidesteps a second trap that cost a round: {@code Wolf.actuallyHurt} forks
+     * <em>before</em> {@code LivingEntity.actuallyHurt}, absorbing into the armor itself and never
+     * firing {@code LivingDamageEvent.Pre} at all unless the damage type is in
+     * {@code #minecraft:bypasses_wolf_armor}. This event fires no matter which branch would follow.</p>
+     *
+     * <p>Fall damage is judged on the <b>fall distance</b>, not on the damage number, so
+     * {@code fall_absorb_blocks = 5} means exactly what it says: a five-block drop is free. Vanilla
+     * subtracts three blocks before it hurts at all, so the setting only extends what is already
+     * survivable rather than inventing a new rule.</p>
+     *
+     * <p>Reading {@code fallDistance} here is safe, and it is worth writing down why, because the
+     * opposite would fail silently by exempting <em>every</em> fall: {@code Entity.checkFallDamage}
+     * calls {@code fallOn(..., this.fallDistance)} — which is what ends up calling {@code hurt} —
+     * and only afterwards calls {@code resetFallDistance()}. The field still holds the real distance
+     * while this handler runs.</p>
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public void onWolfIncomingDamage(LivingIncomingDamageEvent event) {
+        if (!isModuleEnabled() || !(event.getEntity() instanceof Wolf wolf)) {
+            return;
+        }
+        ItemStack armor = wolf.getBodyArmorItem();
+        if (!(armor.getItem() instanceof WolfArmorItem)) {
+            return;
+        }
+        if (MobArmorDamage.absorbsWithoutWear(event.getSource(), armor)) {
+            event.setCanceled(true);
+            return;
+        }
+        double freeFall = getConfig().getFallAbsorbBlocks();
+        if (freeFall > 0.0 && event.getSource().is(DamageTypeTags.IS_FALL) && wolf.fallDistance <= freeFall) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent

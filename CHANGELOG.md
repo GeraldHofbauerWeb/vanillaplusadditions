@@ -4,6 +4,41 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.99.3] - 2026-09-26
+
+### Changed
+- **Gepanzerte Woelfe zucken und klirren nicht mehr, wenn sie gar nichts abbekommen** (Gerry,
+  2026-09-26). Der rote Blitz und das Ruestungsgeraeusch kommen aus `LivingEntity.hurt` und werden
+  dort **vor** `actuallyHurt` gesetzt — also vor der Stelle, an der Absorption und Verschleiss
+  ueberhaupt entschieden werden. Ein Wolf lief deshalb blitzend und klirrend durch den Kaktus,
+  obwohl ihn nichts erreichte. Der Verzicht haengt jetzt an `LivingIncomingDamageEvent`, das
+  `hurt()` sofort mit `false` beendet: kein Blitz, kein Ton, kein Schaden, kein Verschleiss.
+- **Fallschaden bis 5 Bloecke wird komplett geschluckt** (Gerry, 2026-09-26), neuer Schluessel
+  `battle_dogs.fall_absorb_blocks` (Standard 5.0, 0 schaltet ab). Gemessen wird die **Fallhoehe**,
+  nicht der Schaden — `5` heisst also genau, was es sagt. Vanilla zieht ohnehin drei Bloecke ab,
+  die Einstellung verlaengert also nur das ohnehin Ueberlebbare.
+
+### Removed
+- `WolfArmorTerrainWearMixin` aus beta.99.1. Es hat funktioniert, war aber ueberfluessig: das
+  Event greift frueher und loest dasselbe Problem ohne Bytecode-Eingriff mit.
+
+### Known limits
+- Katze und Axolotl bekommen weiterhin Blitz und Ton, und ihr Fallschaden kostet weiter
+  Haltbarkeit. Derselbe Handler dort braucht Platz in `CatGuardianModule`, und die Datei steht
+  exakt auf der Checkstyle-Grenze von 2.000 Zeilen — das gehoert zuerst aufgeteilt.
+
+## [1.0.0-beta.99.2] - 2026-09-26
+
+### Changed
+- **Brennen nutzt die Netherit-Haustierruestung nicht mehr ab** (Gerry, 2026-09-26). Der
+  Magmablock-Fix aus beta.99.1 wirkte, der Verschleiss im Nether ging aber weiter — gemessen am
+  lebenden Objekt mit `/damage`: `hot_floor` und `cactus` kosteten nichts mehr, `on_fire`,
+  `in_fire` und `lava` je einen Punkt. Magmabloecke zuenden niemanden an, aber ein Tier neben Lava
+  faengt Feuer, und `on_fire` tickt dann dauerhaft. `on_fire` und `in_fire` stehen jetzt im
+  Hitze-Tag, gelten also **nur auf der Netherit-Stufe**. `lava` bleibt bewusst draussen: die
+  Ruestung schluckt Lava ohnehin vollstaendig, eine Befreiung waere dauerhafte Lava-Immunitaet und
+  keine Reparaturkosten-Frage.
+
 ## [1.0.0-beta.99.1] - 2026-09-26
 
 ### Fixed

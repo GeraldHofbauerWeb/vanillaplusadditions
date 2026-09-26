@@ -158,10 +158,22 @@ handler, Thorns included, is limited to the bypassing types. Worth knowing befor
 here; it cost a round to find when a netherite wolf kept losing durability on a magma block after
 `v1.0.0-beta.99`.
 
-The no-wear rule therefore runs in `mixin/battle_dogs/WolfArmorTerrainWearMixin` instead, cancelling
-`actuallyHurt` at the head for this mod's armour when the damage type is exempt: no damage, no wear,
-both branches skipped at once. Cat and axolotl armour needs no mixin, because it lives in attachment
-data rather than the vanilla body slot and takes the ordinary route.
+The no-wear rule therefore does not live in that handler at all. It runs in
+`onWolfIncomingDamage`, on `LivingIncomingDamageEvent`, which `LivingEntity.hurt` fires **before**
+it sets `hurtTime`, before `playHurtSound` and before either branch above. Cancelling there makes
+`hurt()` return false outright — no red flash, no armour clink, no damage, no wear — and it fires
+whichever branch would have followed. A mixin on `actuallyHurt` did the job in `v1.0.0-beta.99.1`
+and was dropped again in `beta.99.3`: it worked, but it silenced neither the flash nor the sound,
+and the event needs no bytecode surgery.
+
+The same handler swallows **fall damage up to `fall_absorb_blocks`** (default 5). The test is on the
+wolf's `fallDistance`, not on the damage number, so the setting reads the way it sounds; vanilla
+already subtracts three blocks before a fall hurts at all.
+
+Cat and axolotl armour still uses the `LivingDamageEvent.Pre` route, so terrain costs them no
+durability either — but they do still flash and make a noise, and their falls are still paid for.
+Moving them onto the same handler wants room in `CatGuardianModule`, which sits exactly on the
+2000-line Checkstyle limit.
 
 `LivingDamageEvent.Pre` fires inside `LivingEntity.actuallyHurt`, after armour and magic reduction
 and before the health is subtracted. The handler sets the remaining damage to zero and charges the
@@ -177,8 +189,8 @@ but costs **no durability at all**:
 | | |
 |---|---|
 | Free at every tier | `cactus`, `sweet_berry_bush`, `stalagmite`, `falling_stalactite`, `freeze`, `in_wall`, `cramming`, `fly_into_wall` |
-| Free on **netherite only** | `hot_floor`, `campfire` — in the second tag `#vanillaplusadditions:pet_armor_no_wear_heatproof` |
-| Deliberately not | fire, fall, drowning, starvation — the armour still wears from the animal's own mistakes |
+| Free on **netherite only** | `hot_floor`, `campfire`, `on_fire`, `in_fire` — in the second tag `#vanillaplusadditions:pet_armor_no_wear_heatproof` |
+| Deliberately not | `lava`, fall, drowning, starvation. Lava is absorbed in full either way, so exempting it would be permanent lava immunity, not a repair bill |
 | Turning it off | a datapack with `"replace": true` and an empty list; there is no config flag, the tag *is* the switch |
 
 Standing on a magma block is not free at every tier on purpose: netherite shrugs it off because the
@@ -324,6 +336,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `bite_animation.enabled` | boolean | `true` | — | Snap the wolf's head down when it lands a bite. Also gates the lunge and the server-side bite-direction packet; it does NOT gate the swing-timer mixin. |
 | `bite_animation.only_when_ridden` | boolean | `false` | — | Restrict the animation to a wolf that is being ridden (off by default, because a dog that only bites visibly while carrying someone looks stranger than one that always does). |
 | `bite_animation.strength` | double | `1.0` | 0.0 ~ 2.0 | Scales how far the head swings and how far the lunge travels; 1.0 is about 50 degrees of head pitch (BITE_PITCH = 0.9 rad). |
+| `fall_absorb_blocks` | double | `5.0` | 0.0 ~ 256.0 | Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright - so no hurt flash and no armor sound either. |
 | `thorns_reflect_fraction` | double | `0.33` | 0.0 ~ 1.0 | Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). Total reflect is capped at 1.0 (min(1.0, fraction * thornsLevel)). |
 <!-- vpa:config:end -->
 

@@ -392,11 +392,9 @@ def standaloneModules = [
                   'data/minecraft/tags/item/axolotl_food.json'],
       moduleDeps: ['vpa_debug_overlay'],
       mixins: ['axolotl_guardian.AxolotlBucketRestoreMixin'] ],
-    // Nur das neue Mixin eingetragen: WolfSwingTimeMixin und WolfBiteAnimationMixin fehlen hier
-    // seit jeher, d.h. die Standalone-Jar hat die Biss-Animation nicht. Das ist ein eigener Fund
-    // und wird nicht ungeprueft nebenbei mitgeaendert.
-    [ moduleId: 'battle_dogs', displayName: 'Vanilla Plus: Battle Dogs',
-      mixins: ['battle_dogs.WolfArmorTerrainWearMixin'] ],
+    // Fund am Rande, NICHT mitgeaendert: WolfSwingTimeMixin und WolfBiteAnimationMixin fehlen hier
+    // seit jeher, die Standalone-Jar hat also keine Biss-Animation.
+    [ moduleId: 'battle_dogs', displayName: 'Vanilla Plus: Battle Dogs' ],
     [ moduleId: 'better_mobs', displayName: 'Vanilla Plus: Better Mobs' ],
     [ moduleId: 'block_glow', displayName: 'Vanilla Plus: Block Glow' ],
     [ moduleId: 'bluemap_signs', displayName: 'Vanilla Plus: BlueMap Signs',

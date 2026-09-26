@@ -6,7 +6,6 @@
   "mixins": [
     "ChunkStatusTasksMixin",
     "battle_dogs.WolfSwingTimeMixin",
-    "battle_dogs.WolfArmorTerrainWearMixin",
     "GenerationChunkHolderMixin",
     "axolotl_guardian.AxolotlBucketRestoreMixin",
     "bluemap_signs.SignBlockEntityTextMixin",

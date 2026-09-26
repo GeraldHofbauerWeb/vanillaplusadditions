@@ -10,6 +10,13 @@
       "effect": "Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). Total reflect is capped at 1.0 (min(1.0, fraction * thornsLevel))."
     },
     {
+      "key": "fall_absorb_blocks",
+      "type": "double",
+      "defaultValue": "5.0",
+      "range": "0.0 ~ 256.0",
+      "effect": "Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright - so no hurt flash and no armor sound either."
+    },
+    {
       "key": "bite_animation.enabled",
       "type": "boolean",
       "defaultValue": "true",

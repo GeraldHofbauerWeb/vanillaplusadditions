@@ -14,6 +14,7 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
     private static final double DEFAULT_BITE_STRENGTH = 1.0D;
 
     private ModConfigSpec.DoubleValue thornsReflectFraction;
+    private ModConfigSpec.DoubleValue fallAbsorbBlocks;
     private ModConfigSpec.BooleanValue biteAnimation;
     private ModConfigSpec.BooleanValue biteAnimationOnlyWhenRidden;
     private ModConfigSpec.DoubleValue biteAnimationStrength;
@@ -28,6 +29,13 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
                 .comment("Base fraction of absorbed damage reflected back to the attacker, scaled "
                         + "by the armor's Thorns level (0.0 = none, 1.0 = full).")
                 .defineInRange("thorns_reflect_fraction", 0.33D, 0.0D, 1.0D);
+
+        fallAbsorbBlocks = builder
+                .comment("An armored wolf takes no fall damage at all - and its armor no wear - for",
+                        "falls up to this many blocks. Measured on the fall distance, not on the",
+                        "damage, so it reads the way it sounds: 5 means a five-block drop is free.",
+                        "0 switches it off and every fall is paid for as before.")
+                .defineInRange("fall_absorb_blocks", 5.0D, 0.0D, 256.0D);
 
         builder.comment("Client-side bite animation. Vanilla wolves have none at all -- their model",
                         "never reads attackAnim, so an attacking wolf deals damage without moving.").push("bite_animation");
@@ -58,6 +66,15 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
 
     public double getBiteAnimationStrength() {
         return biteAnimationStrength != null ? biteAnimationStrength.get() : DEFAULT_BITE_STRENGTH;
+    }
+
+    /**
+     * Fall distance up to which an armored wolf takes no fall damage and its armor no wear.
+     *
+     * @return the free fall distance in blocks, 0 to disable
+     */
+    public double getFallAbsorbBlocks() {
+        return fallAbsorbBlocks.get();
     }
 
     public double getThornsReflectFraction() {
