@@ -5,6 +5,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config.BattleDogsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.item.WolfArmorItem;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorDamage;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.BiteDirections;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.WolfBiteDirectionPacket;
@@ -308,13 +309,13 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
             return;
         }
 
-        // Armor absorbs 100% of damage; each damage point drains 1 durability
+        // Armor absorbs 100% of damage; wear is charged by MobArmorDamage, which exempts terrain.
         float absorbed = event.getNewDamage();
         // Read Thorns before the armor possibly breaks below, so the reflect still fires.
         int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
         event.setNewDamage(0f);
 
-        armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), wolf, EquipmentSlot.BODY);
+        MobArmorDamage.wearArmor(armor, wolf, EquipmentSlot.BODY, absorbed, event.getSource());
 
         // Thorns: reflect a share of the absorbed damage back to a living attacker.
         MobArmorEnchantments.reflectThorns(wolf, event.getSource(), absorbed, thornsLevel,

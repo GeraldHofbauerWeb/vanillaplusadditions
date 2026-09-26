@@ -144,6 +144,29 @@ behaviour untouched — the two kinds coexist on the same wolf population, one p
 and before the health is subtracted. The handler sets the remaining damage to zero and charges the
 armour `max(1, ceil(absorbed))` durability for it.
 
+
+**Terrain costs nothing.** A cactus, a sweet berry bush or a stalagmite deals damage on a timer for
+as long as the animal stands in it, so an unlucky walk through a hedge wore the armour down faster
+than any fight did (Gerry, 2026-09-26). Since `v1.0.0-beta.98` every damage type in
+`#vanillaplusadditions:pet_armor_no_wear` is still absorbed in full — nothing reaches the animal —
+but costs **no durability at all**:
+
+| | |
+|---|---|
+| Free at every tier | `cactus`, `sweet_berry_bush`, `stalagmite`, `falling_stalactite`, `freeze`, `in_wall`, `cramming`, `fly_into_wall` |
+| Free on **netherite only** | `hot_floor`, `campfire` — in the second tag `#vanillaplusadditions:pet_armor_no_wear_heatproof` |
+| Deliberately not | fire, fall, drowning, starvation — the armour still wears from the animal's own mistakes |
+| Turning it off | a datapack with `"replace": true` and an empty list; there is no config flag, the tag *is* the switch |
+
+Standing on a magma block is not free at every tier on purpose: netherite shrugs it off because the
+material does not burn up in vanilla either, while iron, gold and diamond pay for it. The tier
+question is asked through the `util/PetArmor` interface — an interface rather than a fourth tag,
+because a tag nothing fills is silently empty and the rule just never fires, which is exactly how the
+End backtanks broke (see [`end_oxygen`](end_oxygen.md)). A missing implementation is a compile error.
+
+The rule lives in `util/MobArmorDamage.wearArmor`, shared by all three pet armours so the rounding
+and the floor of 1 cannot drift apart between them.
+
 It asks two questions only: is the victim a `Wolf`, and does its body slot hold a `WolfArmorItem`.
 Not whether the wolf is tame, not whose it is. A wild wolf handed a piece with `/item` is just as
 invulnerable as yours until the armour breaks.

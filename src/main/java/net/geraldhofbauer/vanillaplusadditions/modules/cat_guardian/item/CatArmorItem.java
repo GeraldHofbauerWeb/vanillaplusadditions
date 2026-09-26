@@ -1,5 +1,6 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item;
 
+import net.geraldhofbauer.vanillaplusadditions.util.PetArmor;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorTooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -9,7 +10,7 @@ import net.minecraft.world.item.TooltipFlag;
 
 import java.util.List;
 
-public class CatArmorItem extends Item {
+public class CatArmorItem extends Item implements PetArmor {
 
     public enum Tier {
         IRON(200, 1.0f, Items.IRON_INGOT),
@@ -82,5 +83,15 @@ public class CatArmorItem extends Item {
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         MobArmorTooltip.append(tooltipComponents, tier.getAttackBonus());
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Netherite only — see {@link PetArmor#resistsHeat()}.</p>
+     */
+    @Override
+    public boolean resistsHeat() {
+        return tier == Tier.NETHERITE;
     }
 }

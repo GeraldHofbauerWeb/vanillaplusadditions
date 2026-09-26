@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:cactus",
+    "minecraft:sweet_berry_bush",
+    "minecraft:stalagmite",
+    "minecraft:falling_stalactite",
+    "minecraft:freeze",
+    "minecraft:in_wall",
+    "minecraft:cramming",
+    "minecraft:fly_into_wall"
+  ]
+}

@@ -4,6 +4,57 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.99] - 2026-09-26
+
+### Changed
+- **Haustier-Ruestungen nutzen sich an Gelaende nicht mehr ab** (Gerry, 2026-09-26). Wolf-, Katzen-
+  und Axolotl-Ruestung schlucken schon immer **100 %** des Schadens; bezahlt wird in Haltbarkeit,
+  ein Punkt je Schadenspunkt. Gegen einen Mob ist das richtig — der schlaegt einmal zu. Gegen
+  Gelaende ist es ruinoes: Kaktus, Suessbeerstrauch und Stalagmit ticken, solange das Tier
+  darinsteht, und ein Hund, der durch eine Hecke laeuft, hat seine Ruestung schneller
+  durchgescheuert als in jedem Kampf.
+
+  Jeder Schadenstyp im neuen Tag `#vanillaplusadditions:pet_armor_no_wear` wird weiterhin
+  vollstaendig abgefangen — beim Tier kommt nichts an —, kostet aber **keine Haltbarkeit**.
+  Ausgeliefert: `cactus`, `sweet_berry_bush`, `stalagmite`, `falling_stalactite`, `freeze`,
+  `in_wall`, `cramming`, `fly_into_wall`. Die Hitzequellen `hot_floor` und `campfire` liegen in
+  einem zweiten Tag `#vanillaplusadditions:pet_armor_no_wear_heatproof` und sind **nur auf der
+  Netherit-Stufe** gratis (Gerrys Einwand, 2026-09-26) — auf einem Magmablock zu stehen soll nicht
+  auf jeder Stufe umsonst sein, und dass Netherit es wegsteckt, passt dazu, dass das Material in
+  Vanilla nicht verbrennt. Die Stufenfrage laeuft ueber das neue Interface `util/PetArmor`, bewusst
+  kein vierter Tag: ein Tag, den niemand fuellt, ist lautlos leer (siehe beta.97), eine fehlende
+  Implementierung dagegen ist ein Compile-Fehler. Bewusst **nicht** dabei sind Feuer,
+  Fallschaden, Ertrinken und Verhungern — daran darf sich die Ruestung weiter abnutzen. Einen
+  Config-Schalter gibt es nicht: der Tag ist der Schalter, ein Datapack mit `"replace": true` und
+  leerer Liste schaltet die Regel ab.
+
+### Internal
+- Die dreifach kopierte Verschleiss-Rechnung `max(1, ceil(absorbed))` liegt jetzt in
+  `util/MobArmorDamage.wearArmor`, zusammen mit der Tag-Pruefung. Drei Kopien derselben Formel sind
+  der Weg, auf dem sie auseinanderlaufen.
+- `CatGuardianModule` stand exakt auf der Checkstyle-Grenze von 2.000 Zeilen. Die Auslagerung hat
+  gerade genug eingespart; die Datei bleibt aber ein Kandidat zum Aufteilen.
+
+## [1.0.0-beta.97] - 2026-09-26
+
+### Fixed
+- **Create-Backtanks gaben im End nie Luft** (Gerry, 2026-09-26). Bei
+  `end_oxygen.backtank.requires_full_set = true` — dem Standard — verlangt der Code zusaetzlich
+  einen Taucherhelm aus dem Item-Tag `vanillaplusadditions:diving_helmets`. **Diesen Tag hat der
+  Mod nie ausgeliefert.** Ein Tag, den niemand definiert, ist nicht abwesend, sondern **leer**, und
+  ein leerer Tag trifft kein Item: Die Bedingung konnte also nie wahr werden, und der Backtank war
+  wirkungslos — ohne Warnung, ohne Logzeile, einfach ein erstickender Spieler mit vollem Tank auf
+  dem Ruecken. Der Tag wird jetzt mitgeliefert (Create-Kupfer- und -Netherit-Taucherhelm, beide
+  `required: false`, damit er auch ohne Create laedt; per Datapack erweiterbar). Wer den Backtank
+  lieber ohne Helm nutzt, setzt `requires_full_set = false`.
+
+  Weder unsere Aenderungen der letzten Tage noch das Create-Update auf 6.0.10 hatten damit zu tun:
+  `BacktankUtil` ist zwischen 6.0.9 und 6.0.10 signaturgleich.
+
+### Removed
+- **`EndOxygenModule.BACKTANKS`**, ein `TagKey` auf `vanillaplusadditions:backtanks`, den kein Code
+  je gelesen hat und dessen Tag es ebenso wenig gab.
+
 ## [1.0.0-beta.96] - 2026-09-26
 
 ### Fixed

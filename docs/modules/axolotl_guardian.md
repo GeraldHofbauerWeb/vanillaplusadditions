@@ -290,6 +290,18 @@ Armor absorbs **100 %** of incoming damage and takes `max(1, ceil(damage))` dura
 axolotl's own health does not move at all while the armor holds; when it breaks it falls off, the
 attack bonus goes with it, and play-dead and the flee threshold take over.
 
+**Terrain costs nothing.** A cactus, a sweet berry bush or a stalagmite deals damage on a timer for
+as long as the animal stands in it, so grazing a hedge wore the armor down faster than any fight did
+(Gerry, 2026-09-26). Since `v1.0.0-beta.98` every damage type in
+`#vanillaplusadditions:pet_armor_no_wear` is still absorbed in full but costs **no durability**:
+`cactus`, `sweet_berry_bush`, `stalagmite`, `falling_stalactite`, `freeze`, `in_wall`, `cramming`,
+`fly_into_wall`. The heat hazards `hot_floor` and `campfire` sit in a second tag,
+`#vanillaplusadditions:pet_armor_no_wear_heatproof`, and are free on the **netherite tier only** —
+asked through the `util/PetArmor` interface. Fire, fall, drowning and starvation are deliberately
+left out. There is no config flag — the tag is the switch, and a datapack with `"replace": true` and an
+empty list turns it off. Shared with the wolf and the other pet armor through
+`util/MobArmorDamage.wearArmor`, so the rounding cannot drift between them.
+
 Three enchantments do something:
 
 | Enchantment | Effect |

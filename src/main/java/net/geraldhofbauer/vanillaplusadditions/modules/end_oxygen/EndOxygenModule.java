@@ -32,11 +32,16 @@ public class EndOxygenModule extends AbstractModule<EndOxygenModule, EndOxygenCo
             ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "out_of_oxygen")
     );
 
-    public static final TagKey<Item> BACKTANKS = TagKey.create(
-            Registries.ITEM,
-            ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "backtanks")
-    );
-
+    /**
+     * Helmets that count as diving gear when {@code backtank.requires_full_set} is on.
+     *
+     * <p>Shipped as {@code data/vanillaplusadditions/tags/item/diving_helmets.json} — and it has to
+     * be, because an item tag nothing defines is simply <b>empty</b>, not absent. Between the module
+     * arriving and {@code v1.0.0-beta.97} no file filled this tag, so the condition below could never
+     * be true and a Create backtank supplied no air at all on the default config. That is a silent
+     * failure with nothing in the log; the entries are {@code required: false} so the tag still loads
+     * without Create, and a datapack can add other mods' helmets.</p>
+     */
     public static final TagKey<Item> DIVING_HELMETS = TagKey.create(
             Registries.ITEM,
             ResourceLocation.fromNamespaceAndPath("vanillaplusadditions", "diving_helmets")

@@ -22,6 +22,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlPathPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlStatsPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.network.SyncAxolotlTargetPacket;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorDamage;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -1732,7 +1733,7 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
         AxolotlInventoryData invData = axolotl.getData(AXOLOTL_INVENTORY.get());
         ItemStack armor = invData.getArmor();
         if (armor.getItem() instanceof AxolotlArmorItem) {
-            // Armor absorbs 100% of damage; each damage point drains 1 durability.
+            // Armor absorbs 100% of damage; wear is charged by MobArmorDamage, which exempts terrain.
             float absorbed = event.getNewDamage();
             // Read Thorns before the armor possibly breaks below, so the reflect still fires.
             int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
@@ -1749,8 +1750,8 @@ public class AxolotlGuardianModule extends AbstractModule<AxolotlGuardianModule,
                 axolotl.getBrain().eraseMemory(MemoryModuleType.PLAY_DEAD_TICKS);
             }
 
-            armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), axolotl,
-                    net.minecraft.world.entity.EquipmentSlot.CHEST);
+            MobArmorDamage.wearArmor(armor, axolotl, net.minecraft.world.entity.EquipmentSlot.CHEST,
+                    absorbed, event.getSource());
             if (armor.isEmpty()) {
                 invData.setArmor(ItemStack.EMPTY);
                 removeArmorAttribute(axolotl);

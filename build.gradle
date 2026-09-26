@@ -431,7 +431,10 @@ def standaloneModules = [
     [ moduleId: 'dispenser_bucket_guard', displayName: 'Vanilla Plus: Dispenser Bucket Guard' ],
     [ moduleId: 'end_conduit', displayName: 'Vanilla Plus: End Conduit' ],
     [ moduleId: 'end_oxygen', displayName: 'Vanilla Plus: End Oxygen',
-      dataGlobs: ['data/vanillaplusadditions/damage_type/out_of_oxygen.json'] ],
+      // diving_helmets muss mit: ohne die Datei ist der Tag leer, nicht abwesend, und der
+      // Backtank-Zweig kann bei requires_full_set = true nie greifen (siehe beta.97).
+      dataGlobs: ['data/vanillaplusadditions/damage_type/out_of_oxygen.json',
+                  'data/vanillaplusadditions/tags/item/diving_helmets.json'] ],
     [ moduleId: 'enhanced_ai_leader_loot', displayName: 'Vanilla Plus: Enhanced AI Leader Loot' ],
     [ moduleId: 'flying_fish', displayName: 'Vanilla Plus: Flying Fish',
       dataGlobs: ['data/vanillaplusadditions/loot_tables/entities/flying_fish.json',
@@ -646,6 +649,10 @@ tasks.register('coreJar', Jar) {
     // gets along and are inert unless both are installed (every entry is required:false). Own
     // from-block on purpose — see the note on the module jars below.
     from(sourceSets.main.output) { include 'data/sable/**' }
+    // Der Damage-Type-Tag der drei Haustier-Ruestungen gehoert in den Kern, nicht in ein Modul:
+    // wolf, cat und axolotl lesen ihn alle ueber util/MobArmorDamage. Fehlt die Datei, ist der Tag
+    // leer statt abwesend und die Regel greift lautlos nicht - genau die Falle aus beta.97.
+    from(sourceSets.main.output) { include 'data/vanillaplusadditions/tags/damage_type/**' }
     // Shared mixins (see coreMixins): owned by core so no two module jars split the mixin package.
     coreMixins.each { mx ->
         from(sourceSets.main.output) { include "${basePkg}/mixin/${mx.replace('.', '/')}*.class" }

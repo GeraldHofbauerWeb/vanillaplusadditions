@@ -13,6 +13,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.blockentity.
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.client.CatGuardianClientEvents;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.config.CatGuardianConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.item.CatArmorItem;
+import net.geraldhofbauer.vanillaplusadditions.util.MobArmorDamage;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.minecraft.core.RegistryAccess;
 import net.geraldhofbauer.vanillaplusadditions.modules.cat_guardian.menu.CatFeedingStationMenu;
@@ -1440,13 +1441,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             return;
         }
 
-        // Armor absorbs 100% of damage; each damage point drains 1 durability
+        // Armor absorbs 100% of damage; wear is charged by MobArmorDamage, which exempts terrain.
         float absorbed = event.getNewDamage();
         // Read Thorns before the armor possibly breaks below, so the reflect still fires.
         int thornsLevel = MobArmorEnchantments.getThornsLevel(armor);
         event.setNewDamage(0f);
 
-        armor.hurtAndBreak(Math.max(1, (int) Math.ceil(absorbed)), cat, net.minecraft.world.entity.EquipmentSlot.CHEST);
+        MobArmorDamage.wearArmor(armor, cat, net.minecraft.world.entity.EquipmentSlot.CHEST, absorbed, event.getSource());
         if (armor.isEmpty()) {
             invData.setArmor(ItemStack.EMPTY);
             removeArmorAttribute(cat);
@@ -1725,7 +1726,6 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
                 .toList()
                 .forEach(cat.targetSelector::removeGoal);
     }
-
 
     /**
      * Buffer (blocks) for target eligibility — avoids flicker at the boundary.

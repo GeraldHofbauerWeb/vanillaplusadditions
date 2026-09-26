@@ -2,8 +2,8 @@
 
 > **TL;DR** — The End has no breathable air: your bubbles drain the whole time you are there and you
 > start taking damage once they run out, unless you stand in Conduit Power — or carry a Create
-> backtank, which out of the box first needs `backtank.requires_full_set = false` or a datapack
-> (see [below](#the-diving-helmet-no-tag-defines)).
+> backtank, which also wants a diving helmet unless you set `backtank.requires_full_set = false`
+> (see [below](#the-diving-helmet)).
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -31,7 +31,7 @@ Four things change that:
 | | Effect |
 |---|---|
 | **Water Breathing** | Slows the drain rather than stopping it: 90 seconds at level I, 2½ minutes at level II. |
-| **Create backtank** | Real breathing. The bar refills while the tank drains, roughly 15 minutes out of a full one. By default it also wants a diving helmet — see [below](#the-diving-helmet-no-tag-defines), that gate does not currently work. |
+| **Create backtank** | Real breathing. The bar refills while the tank drains, roughly 15 minutes out of a full one. By default it also wants a diving helmet — see [below](#the-diving-helmet). |
 | **Conduit Power** | Full air every tick, no damage at all. The [End Conduit](end_conduit.md) is the source built for this; any Conduit Power does it. |
 | **Creative or Spectator** | Skipped entirely. |
 
@@ -182,7 +182,7 @@ When the tank does run dry it drops out of `getAllWithAir`, the handler falls th
 the bar starts from wherever it was — full, in practice, so you get the ordinary 30 seconds of grace
 to get out.
 
-### The diving helmet no tag defines
+### The diving helmet
 
 With `backtank.requires_full_set` at its default `true`, the backtank branch also wants a helmet:
 
@@ -192,19 +192,24 @@ boolean hasDivingHelmet = player.getItemBySlot(EquipmentSlot.HEAD).is(DIVING_HEL
 if (!backtanks.isEmpty() && (!getConfig().requiresFullSet() || hasDivingHelmet)) {
 ```
 
-`DIVING_HELMETS` is the item tag `vanillaplusadditions:diving_helmets` — and **nothing in this
-repository fills it**. The only tag file under `data/vanillaplusadditions/tags/item/` is
-`arm_goggles.json`, there is no datagen in the project, and a repo-wide search finds the string
-`diving_helmets` in exactly one place: the `TagKey` declaration itself. An empty tag matches no
-item, so on a server with no datapack of its own the condition can never be true and backtanks
-supply no air at all.
+`DIVING_HELMETS` is the item tag `vanillaplusadditions:diving_helmets`, and since `v1.0.0-beta.97`
+the mod ships it — Create's copper and netherite diving helmets, both `required: false` so the tag
+loads in a pack without Create. A datapack can add other mods' helmets on top.
 
-Two ways out, both provable from the source: set `backtank.requires_full_set = false`, or add a
-datapack that gives the tag some values (`create:copper_diving_helmet`,
-`create:netherite_diving_helmet`).
+**Until beta.97 nothing filled that tag, and that was the bug.** An item tag nothing defines is not
+absent, it is **empty**, and an empty tag matches no item — so the condition could never be true and
+a Create backtank supplied no air whatsoever on the default config. The failure was completely
+silent: no warning, no log line, just a player suffocating in the End with a full tank on their back.
+This page described the fault from the source alone for some time, with a TODO to confirm it in game;
+Gerry hit it on games2 on 2026-09-26 and the TODO is now closed.
 
-<!-- TODO: confirm in game. Read off the source only — nothing in this repository records a test of
-     the backtank path with the default requires_full_set = true. -->
+Two lessons worth carrying: **a missing tag file does not fail loudly, it fails empty** — so any
+`TagKey` a gate depends on has to be shipped, or the gate is simply off. And the module's other
+`TagKey`, `vanillaplusadditions:backtanks`, was declared but never read by anything; it was removed
+in the same change rather than left to suggest a tag that likewise did not exist.
+
+If you would rather have a bare backtank work with no helmet, set `backtank.requires_full_set` to
+`false` — that path never depended on the tag.
 
 ### Conduit Power
 
