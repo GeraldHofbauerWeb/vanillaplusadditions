@@ -4,6 +4,22 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.99.1] - 2026-09-26
+
+### Fixed
+- **Wolfsruestung nutzte sich auf Magmabloecken trotzdem ab** (Gerry, 2026-09-26). Die Regel aus
+  beta.98/99 wurde beim Wolf nie gefragt: `Wolf.actuallyHurt` verzweigt, **bevor**
+  `LivingEntity.actuallyHurt` erreicht ist — traegt der Wolf eine Koerperruestung, schluckt Vanilla
+  den Schaden selbst und ruft `hurtAndBreak` direkt auf, ohne `LivingDamageEvent.Pre` zu feuern.
+  Unser Handler lief also nur fuer Schadenstypen aus `#minecraft:bypasses_wolf_armor`, und
+  `hot_floor` gehoert nicht dazu. Neues Mixin `WolfArmorTerrainWearMixin` bricht `actuallyHurt` am
+  Kopf ab, wenn der Schadenstyp in einem der No-Wear-Tags steht: kein Schaden, kein Verschleiss,
+  beide Zweige auf einmal uebersprungen. Katze und Axolotl brauchen das nicht, deren Ruestung liegt
+  in Attachment-Daten und nimmt den normalen Weg.
+
+  Nebenbefund, **nicht** mitgeaendert: im Standalone-Deskriptor von `battle_dogs` fehlen
+  `WolfSwingTimeMixin` und `WolfBiteAnimationMixin`, die Einzel-Jar hat also keine Biss-Animation.
+
 ## [1.0.0-beta.99] - 2026-09-26
 
 ### Changed

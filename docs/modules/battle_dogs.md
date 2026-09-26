@@ -140,6 +140,29 @@ behaviour untouched — the two kinds coexist on the same wolf population, one p
 
 ### Damage absorption
 
+**Most hits never reach this module.** `Wolf.actuallyHurt` forks before `LivingEntity.actuallyHurt`
+is ever called:
+
+```java
+if (!this.canArmorAbsorb(source)) {
+    super.actuallyHurt(source, amount);          // only here does LivingDamageEvent.Pre fire
+} else {
+    itemstack.hurtAndBreak(Mth.ceil(amount), this, EquipmentSlot.BODY);
+}
+```
+
+So while a wolf wears body armour, **vanilla** absorbs the damage and wears the armour itself, and
+`onWolfHurt` is reached only by damage types in `#minecraft:bypasses_wolf_armor`. The net effect on
+health is the same either way — the wolf takes nothing — but everything this module hangs off that
+handler, Thorns included, is limited to the bypassing types. Worth knowing before debugging anything
+here; it cost a round to find when a netherite wolf kept losing durability on a magma block after
+`v1.0.0-beta.99`.
+
+The no-wear rule therefore runs in `mixin/battle_dogs/WolfArmorTerrainWearMixin` instead, cancelling
+`actuallyHurt` at the head for this mod's armour when the damage type is exempt: no damage, no wear,
+both branches skipped at once. Cat and axolotl armour needs no mixin, because it lives in attachment
+data rather than the vanilla body slot and takes the ordinary route.
+
 `LivingDamageEvent.Pre` fires inside `LivingEntity.actuallyHurt`, after armour and magic reduction
 and before the health is subtracted. The handler sets the remaining damage to zero and charges the
 armour `max(1, ceil(absorbed))` durability for it.
