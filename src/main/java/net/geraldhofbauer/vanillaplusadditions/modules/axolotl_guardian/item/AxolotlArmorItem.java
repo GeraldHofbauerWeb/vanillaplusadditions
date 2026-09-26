@@ -58,12 +58,15 @@ public class AxolotlArmorItem extends Item {
     }
 
     /**
-     * Turtle scutes (the recipe ingredient) repair axolotl armor on the anvil. With the
-     * free_anvil_repair module enabled that repair costs 0 levels automatically.
+     * Turtle scutes (the recipe ingredient) repair axolotl armor on the anvil. The netherite tier
+     * additionally accepts diamonds: a netherite ingot is far too dear to burn on a repair, and
+     * diamond is the material the tier is built up from anyway. With the free_anvil_repair module
+     * enabled that repair costs 0 levels automatically.
      */
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
-        return repairCandidate.is(Items.TURTLE_SCUTE);
+        return repairCandidate.is(Items.TURTLE_SCUTE)
+                || (tier == Tier.NETHERITE && repairCandidate.is(Items.DIAMOND));
     }
 
     @Override

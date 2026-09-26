@@ -10,6 +10,9 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
 
     public static final List<String> DEFAULT_STACKABLES = List.of(
             "minecraft:mushroom_stew:64",
+            // Unsere Leuchtpilzsuppe wird als stacksTo(1) registriert, wie Vanillas Eintoepfe -
+            // dieser Eintrag hebt sie mit denselben 64 auf, ohne das Modul glow_mushroom zu kennen.
+            "vanillaplusadditions:glow_mushroom_stew:64",
             "minecraft:rabbit_stew:64",
             "minecraft:beetroot_soup:64",
             "minecraft:suspicious_stew:64",
@@ -28,7 +31,20 @@ public class StackablesConfig extends AbstractModuleConfig<StackablesModule, Sta
             "toughasnails:sweet_berry_juice:64",
             "toughasnails:ice_cream:64",
             "toughasnails:charc_os:64",
-            "create:builders_tea:64"
+            "create:builders_tea:64",
+            // Enderman Overhaul: alle acht Perlen sind dort stacksTo(16), wie Vanillas Enderperle,
+            // und werden hier genauso auf 64 gehoben. Zwei davon stapeln trotzdem nur bedingt -
+            // soul_pearl traegt BOUND_ENTITY, ancient_pearl ENTITY_DATA, und Stapel mit
+            // unterschiedlichen Komponenten verschmelzen grundsaetzlich nicht. Ungebunden stapeln
+            // sie, gebunden nie; das ist Vanilla-Verhalten und keine Frage der Stapelgroesse.
+            "endermanoverhaul:ancient_pearl:64",
+            "endermanoverhaul:bubble_pearl:64",
+            "endermanoverhaul:corrupted_pearl:64",
+            "endermanoverhaul:crimson_pearl:64",
+            "endermanoverhaul:icy_pearl:64",
+            "endermanoverhaul:soul_pearl:64",
+            "endermanoverhaul:summoner_pearl:64",
+            "endermanoverhaul:warped_pearl:64"
     );
 
     private ModConfigSpec.ConfigValue<List<? extends String>> stackableItems;

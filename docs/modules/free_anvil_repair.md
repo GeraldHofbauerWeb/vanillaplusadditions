@@ -144,6 +144,61 @@ when it differs from the current display name, and `null` — no name sent at al
 typing an item's own name back into the box does not cost you the free repair, while renaming *and*
 repairing in the same click keeps the full vanilla price for both.
 
+**And a name may arrive filtered, which is why the check allows for that.** Simply putting an item
+into the anvil already sends a rename — no typing needed:
+
+| Step | What happens |
+|---|---|
+| Item enters slot 0 | `AnvilScreen.slotChanged` calls `EditBox.setValue(stack.getHoverName().getString())` |
+| `setValue` | fires the responder, i.e. `onNameChanged` |
+| `onNameChanged` | sends a `ServerboundRenameItemPacket` — the item *has* a `CUSTOM_NAME`, so the string is not blanked |
+| `AnvilMenu.validateName` | runs it through `StringUtil.filterText`, which drops the section sign (167) |
+
+For an ordinary name that round trip changes nothing. For a name carrying **formatting codes** it
+does: the server sees the name without its `§` sequences, compares it against the item's real name,
+and concludes the player is renaming. A netherite sword called `§kSomething` therefore reported a
+rename on *every* anvil open and could never be repaired for free — found on games2 on 2026-09-26,
+where it cost 9 levels instead of nothing. Since `v1.0.0-beta.96` the check accepts the filtered form
+of the current name as "unchanged" too.
+
+**With EasyAnvils the same problem runs the other way.** That mod replaces the anvil menu outright
+(`ModAnvilMenu extends AnvilMenu`, `createResult` overridden) and its whole point is that formatting
+codes in names are *allowed* — so it does not filter them. The style then lives in the name component
+rather than in its text:
+
+| | |
+|---|---|
+| `stack.getHoverName().getString()` | `Testschwert` — `getString()` drops the style |
+| what the client sends back | `§kTestschwert` — EasyAnvils re-renders the style as codes |
+
+Different strings again, so every formatted item reported a rename on every anvil open. This is what
+actually cost the netherite sword its free repair on games2 — proven by giving a plain, unnamed,
+damaged netherite sword, which repaired for free at the same anvil. The check therefore normalises
+**both** directions: the incoming name may arrive filtered (vanilla) or carrying codes the item's own
+text does not have (EasyAnvils).
+
+The trade is small and deliberate: changing *only* an item's formatting, with the letters untouched,
+no longer counts as a rename, so the repair stays free and the formatting is left alone — the repair
+copies the left stack and keeps its name. The alternative is worse in both directions: full price for
+every repair of every named item, and under plain vanilla a silent strip of the formatting on each
+one.
+
+### The anvil may not be vanilla's at all
+
+Worth knowing before debugging anything here: with **EasyAnvils** installed, `AnvilUpdateEvent` is not
+automatically the last word. Its `createResult` builds two states and compares them —
+
+| State | What it is |
+|---|---|
+| `builtInAnvilState` | a real `AnvilMenu`, so `createResult()` fires `AnvilUpdateEvent` — this module runs |
+| `vanillaAnvilState` | a hand-copied reimplementation of vanilla's `createResult` that fires **no** event |
+
+If they differ, EasyAnvils steps aside and calls `super.createResult()`, and the modded result wins.
+If they match — i.e. no mod changed anything — its own cost model applies. That is a considerate
+design, and it means this module keeps working, but only for as long as it actually produces a
+result. Bail out of `onAnvilUpdate` for any reason and EasyAnvils' prices apply, with nothing in the
+log to say so.
+
 ### How much one material unit repairs
 
 ```java

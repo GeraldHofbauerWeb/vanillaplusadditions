@@ -26,9 +26,9 @@ it only edits the maximum stack size of items that already exist:
 
 * **Potions, splash potions, lingering potions and tipped arrows** follow one number,
   `default_potion_stack_size`, which is 64.
-* **Everything else** comes from a list of `namespace:id:stack` entries. Eighteen of them ship by
-  default: the four vanilla stews and soups, ender pearls, eggs, eleven Tough As Nails drinks and
-  Create's Builder's Tea.
+* **Everything else** comes from a list of `namespace:id:stack` entries. Twenty-seven of them ship by
+  default: the four vanilla stews and soups plus our own glow mushroom stew, ender pearls, eggs,
+  eleven Tough As Nails drinks, Create's Builder's Tea and Enderman Overhaul's eight pearls.
 
 Any item from any mod can be added to that list by id. An id that no installed mod provides is
 skipped, so the shipped Tough As Nails and Create entries cost nothing in a pack without those mods.
@@ -122,7 +122,9 @@ parses but names an item no mod registered is dropped too, this time with a `war
 Ids and stack sizes below were read out of the jars this pack is built against — vanilla 1.21.1, and
 `libs/ToughAsNails-neoforge-1.21.1-10.1.0.13.jar` and `libs/create-1.21.1-6.0.9.jar`. That Create jar
 is the compile-time one; the played pack runs 6.0.10, which is the version the table at the top
-names — `builders_tea` is `stacksTo(16)` in both. All eighteen shipped entries resolve to real items.
+names — `builders_tea` is `stacksTo(16)` in both. Enderman Overhaul was read from
+`endermanoverhaul-neoforge-1.21.1-2.0.3.jar` in the played pack; it is not in `libs/`, so nothing in
+this repository compiles against it.
 
 | Entry | Default without this module | With it |
 |---|---|---|
@@ -142,8 +144,18 @@ names — `builders_tea` is `stacksTo(16)` in both. All eighteen shipped entries
 | `toughasnails:ice_cream` | 16 | 64 |
 | `toughasnails:charc_os` | 16 | 64 |
 | `create:builders_tea` | 16 | 64 |
+| `vanillaplusadditions:glow_mushroom_stew` | 1 | 64 |
+| `endermanoverhaul:ancient_pearl` and the seven other pearls | 16 | 64 |
 
-The seven juices are apple, cactus, chorus fruit, glow berry, melon, pumpkin and sweet berry.
+The seven juices are apple, cactus, chorus fruit, glow berry, melon, pumpkin and sweet berry. The
+eight Enderman Overhaul pearls are ancient, bubble, corrupted, crimson, icy, soul, summoner and
+warped.
+
+**Two of those pearls will still refuse to stack, and that is not this module's doing.** `soul_pearl`
+carries a `BOUND_ENTITY` component and `ancient_pearl` an `ENTITY_DATA` one, and Minecraft only merges
+stacks whose components are equal. Unbound ones stack to 64; once two pearls are bound to different
+things they stay apart no matter what the maximum says. Raising the limit is all a stack-size setting
+can ever do.
 
 Tough As Nails' **canteens** are in neither group. The filled ones carry durability, and
 `Item.Properties.durability(int)` sets `MAX_STACK_SIZE` to 1 in the same breath, so they can never
@@ -222,7 +234,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `default_potion_stack_size` | int | `64` | 1 ~ 64 | Default stack size for potions, splash potions, lingering potions and tipped arrows. Effective value is max(2, this) - setting 1 still yields 2, so vanilla's unstackable potions cannot be restored through this key (StackablesModule.java:73). The default was 16 until v0.9.3 (commit 73e2ffe). |
-| `stackable_items` | list | `StackablesConfig.DEFAULT_STACKABLES (18 entries) = minecraft:mushroom_stew:64, minecraft:rabbit_stew:64, minecraft:beetroot_soup:64, minecraft:suspicious_stew:64, minecraft:ender_pearl:64, minecraft:egg:64, toughasnails:dirty_water_bottle:64, toughasnails:purified_water_bottle:64, toughasnails:apple_juice:64, toughasnails:cactus_juice:64, toughasnails:chorus_fruit_juice:64, toughasnails:glow_berry_juice:64, toughasnails:melon_juice:64, toughasnails:pumpkin_juice:64, toughasnails:sweet_berry_juice:64, toughasnails:ice_cream:64, toughasnails:charc_os:64, create:builders_tea:64` | per entry: at least two colons (the part before the last colon must itself contain a colon) and a stack part parsing to 1 ~ 64 | List of item entries to make stackable, each in the format namespace:id:stack (e.g. minecraft:mushroom_stew:64); the last part is the desired max stack size. Ids that are not present in the item registry are skipped (WARN only with debug_logging on), malformed entries are skipped without any log. The runtime parser is looser than the config validator (see notes 10). |
+| `stackable_items` | list | `StackablesConfig.DEFAULT_STACKABLES (27 entries) = minecraft:mushroom_stew:64, vanillaplusadditions:glow_mushroom_stew:64, minecraft:rabbit_stew:64, minecraft:beetroot_soup:64, minecraft:suspicious_stew:64, minecraft:ender_pearl:64, minecraft:egg:64, toughasnails:dirty_water_bottle:64, toughasnails:purified_water_bottle:64, toughasnails:apple_juice:64, toughasnails:cactus_juice:64, toughasnails:chorus_fruit_juice:64, toughasnails:glow_berry_juice:64, toughasnails:melon_juice:64, toughasnails:pumpkin_juice:64, toughasnails:sweet_berry_juice:64, toughasnails:ice_cream:64, toughasnails:charc_os:64, create:builders_tea:64, endermanoverhaul:ancient_pearl:64, endermanoverhaul:bubble_pearl:64, endermanoverhaul:corrupted_pearl:64, endermanoverhaul:crimson_pearl:64, endermanoverhaul:icy_pearl:64, endermanoverhaul:soul_pearl:64, endermanoverhaul:summoner_pearl:64, endermanoverhaul:warped_pearl:64` | per entry: at least two colons (the part before the last colon must itself contain a colon) and a stack part parsing to 1 ~ 64 | List of item entries to make stackable, each in the format namespace:id:stack (e.g. minecraft:mushroom_stew:64); the last part is the desired max stack size. Ids that are not present in the item registry are skipped (WARN only with debug_logging on), malformed entries are skipped without any log. The runtime parser is looser than the config validator (see notes 10). |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits

@@ -163,6 +163,43 @@ Die fuenf Pilzformen sind alle `minecraft:tree`-Features mit Pilzbloecken statt 
   Kappen, wie die Kirschbaeume im Cherry Grove.
 - **Leuchtpilz** — dieselben zwei grossen Formen, Hut aber zu 100 % `shroomlight`.
 
+### Kein Pilz im Wasser, kein Pilz auf einem Pilz
+
+Bis zum 2026-09-25 standen Pilze im Meer und wuchsen uebereinander (Sebi und Gerry per Screenshot).
+Zwei Ursachen, beide in der Platzierung:
+
+**`MOTION_BLOCKING` ist der falsche Heightmap.** Er zaehlt Wasser mit (`blocksMotion() ||
+!getFluidState().isEmpty()`), landet im Meer also auf der **Wasseroberflaeche** — und er zaehlt
+Pilzbloecke mit, landet in der Naehe eines fertigen Pilzes also auf dessen **Hut**. Vanilla benutzt
+denselben Heightmap fuer `mushroom_island_vegetation` und kommt damit durch, weil dort
+`HugeMushroomFeature` selbst prueft, ob unter dem Ursprung ein `#mushroom_grow_block` liegt. Unsere
+Formen sind `minecraft:tree`-Features, und `TreeFeature.validTreePos` erlaubt alles, was Luft oder
+`#replaceable_by_trees` ist — es prueft den Boden gar nicht. Jetzt steht ueberall `OCEAN_FLOOR_WG`
+(Fluessigkeiten ignoriert, `Usage.WORLDGEN` — nicht `OCEAN_FLOOR`, das ist `Usage.LIVE_WORLD`).
+
+**Der Bodentest muss aus dem Placed Feature kommen.** Jede der sechs Pilzformen und der Bodenteppich
+tragen jetzt hinter dem Heightmap denselben Filter:
+
+```json
+{ "type": "minecraft:block_predicate_filter",
+  "predicate": { "type": "minecraft:all_of", "predicates": [
+    { "type": "minecraft:matching_blocks", "blocks": "minecraft:air" },
+    { "type": "minecraft:matching_blocks", "offset": [0, -1, 0], "blocks": "#minecraft:dirt" } ] } }
+```
+
+Der Ursprung selbst muss Luft sein — damit faellt alles im Wasser raus. Darunter muss `#minecraft:dirt`
+liegen (Mycel, Podsol, Erde, Grasblock …) — damit faellt jeder Pilzhut, jeder Stiel, Honig,
+Shroomlight, Stein und Sand raus. Genau das macht Vanilla bei Baeumen auch, nur ueber
+`BlockPredicate.wouldSurvive(<Setzling>)`.
+
+**Bei den kleinen Pilzen reicht `canSurvive()` nicht.** `SimpleBlockFeature` prueft es zwar, aber
+`MushroomBlock.canSurvive` laesst **jeden** soliden Block zu, sobald `getRawBrightness < 13` ist — und
+waehrend der Weltgenerierung ist das Licht noch gar nicht berechnet, steht also immer auf 0. Darum
+sassen Leuchtpilze auf Riesenpilzhuetten. Der Filter oben liegt deshalb zusaetzlich in der **inneren**
+Platzierung von `dense_mushroom_patch`, pro Einzelposition.
+
+Alles das wirkt nur auf **neu generierte** Chunks. Was schon dasteht, bleibt stehen.
+
 ### Flechten: `multiface_growth`, nicht Dekorator
 
 Glow Lichen sitzt **nicht** ueber einen `attached_to_leaves`-Dekorator am Pilz. Der reiht die

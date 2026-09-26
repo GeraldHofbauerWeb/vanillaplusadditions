@@ -1,11 +1,11 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.CuriosBackpackAccess.Worn;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network.BackpackHelperReadyPacket;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
@@ -17,6 +17,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerContainerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.nycto_team.overpacked.entity.GiantBackpack;
 import net.nycto_team.overpacked.item.GiantBackpackItem;
 import net.nycto_team.overpacked.menu.GiantBackpackMenu;
@@ -58,7 +60,69 @@ public final class OverpackedGuiBridge {
      */
     private static final Map<Integer, Session> SESSIONS = new HashMap<>();
 
-    private record Session(UUID playerUUID, String identifier, int index, ItemStack originalWorn) {
+    /**
+     * How far below the player's feet the helper entity is parked, in blocks.
+     *
+     * <p>Not a cosmetic choice. {@code GiantBackpack.tick()} pushes <b>every player inside its
+     * bounding box</b> away from itself, once per tick — and the old code dropped the helper straight
+     * into the player whenever the spot in front was occupied. On a Sable airship that shove is enough
+     * to squeeze the player through the hull, because sub-level block collision is the weaker,
+     * transformed path. Parking it clear of the player's box (which is 1.8 blocks tall, the helper
+     * 1.25) makes the push a no-op, keeps it out of the crosshair, and buries it out of sight. It is
+     * {@code noPhysics}, so sitting inside the floor costs nothing.</p>
+     */
+    private static final double HELPER_DROP = 2.5;
+
+    /**
+     * How long the server waits for the client's {@code ConfirmBackpackHelperPacket} before cleaning
+     * up an unopened helper, in ticks (7 s).
+     *
+     * <p>Just longer than the client's own 5 s patience: the client always gives up first, so this
+     * only ever fires for a client that vanished mid-handshake. Not much longer, because a pending
+     * session also blocks the keybind (see {@link #hasPendingHelper}) — a failed attempt should not
+     * lock the backpack for half a minute.</p>
+     */
+    private static final int CONFIRM_TIMEOUT_TICKS = 140;
+
+    /**
+     * One open (or pending) helper backpack: which slot to write back to, and how far the handshake
+     * with the client has got.
+     */
+    private static final class Session {
+        private final UUID playerUUID;
+        private final String identifier;
+        private final int index;
+        private final ItemStack originalWorn;
+        private final int compartment;
+        private final long confirmDeadline;
+        /** False until the client confirmed the entity and the screen actually opened. */
+        private boolean opened;
+
+        private Session(UUID playerUUID, String identifier, int index, ItemStack originalWorn,
+                        int compartment, long confirmDeadline) {
+            this.playerUUID = playerUUID;
+            this.identifier = identifier;
+            this.index = index;
+            this.originalWorn = originalWorn;
+            this.compartment = compartment;
+            this.confirmDeadline = confirmDeadline;
+        }
+
+        private UUID playerUUID() {
+            return playerUUID;
+        }
+
+        private String identifier() {
+            return identifier;
+        }
+
+        private int index() {
+            return index;
+        }
+
+        private ItemStack originalWorn() {
+            return originalWorn;
+        }
     }
 
     private OverpackedGuiBridge() {
@@ -93,6 +157,11 @@ public final class OverpackedGuiBridge {
      * backpack, reusing Overpacked's own menu + screen.
      */
     public static void open(ServerPlayer player, int compartment) {
+        if (hasPendingHelper(player)) {
+            // A helper is already waiting for its confirmation - holding the key down would otherwise
+            // spawn one per tick, each carrying a copy of the same inventory.
+            return;
+        }
         Optional<Worn> wornOpt = CuriosBackpackAccess.findWorn(player);
         if (wornOpt.isEmpty()) {
             player.displayClientMessage(Component.translatable(
@@ -119,33 +188,15 @@ public final class OverpackedGuiBridge {
         // call plus the custom name (Utils.PlaceBackpack); 1.x has no such helper and is restored by
         // hand. Hand-restoring on 2.x would silently drop whatever Load() covers — see below.
         GiantBackpack entity = new GiantBackpack(ModEntities.giant_backpack.get(), level);
-        // Place the helper a bit in front of the player along their (horizontal) look direction — not
-        // inside the player — and rotate it to face the player (yRot + 180), exactly like Overpacked's
-        // own GiantBackpackItem.use() does when you place a backpack on the ground.
-        Vec3 look = player.getViewVector(1.0f);
-        Vec3 horizontal = new Vec3(look.x, 0.0, look.z);
-        double horizontalLen = horizontal.length();
-        Vec3 forward = horizontalLen > 1.0e-4
-                ? horizontal.scale(1.0 / horizontalLen)
-                : Vec3.directionFromRotation(0.0f, player.getYRot());
-        double spawnDistance = 1.5;
-        entity.moveTo(
-                player.getX() + forward.x * spawnDistance,
-                player.getY(),
-                player.getZ() + forward.z * spawnDistance,
-                player.getYRot() + 180.0f,
-                0.0f);
-        // Would the in-front spot drop the helper into a block (e.g. the wall a mounted item frame
-        // hangs on, when the player stands right at the shelf)? Then it would overlap the frame /
-        // entity there — stealing the frame's crosshair pick and becoming an accidental hit target
-        // whose GiantBackpack.hurt() would dump its contents. Fall back to spawning it inside the
-        // player: out of the crosshair, off wall frames. Mirrors the noCollision guard in
-        // Overpacked's own GiantBackpackItem.use(). A clear spot in front keeps the 1.5-block offset.
-        if (!level.noCollision(entity, entity.getBoundingBox())) {
-            entity.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot() + 180.0f, 0.0f);
-        }
+        // Park the helper below the player's feet rather than in front of them — see HELPER_DROP for
+        // why that matters, and onServerTick() for why it stays there.
+        moveHelperToPlayer(entity, player);
         entity.setNoGravity(true);
         entity.noPhysics = true; // transient helper — never blocks or shoves the player
+        // Buried in the floor it can still catch an entityInside damage source (a cactus, a player in
+        // creative). GiantBackpack.hurt() answers damage by dropping its whole contents as an item —
+        // which here is a copy of the worn backpack, so it would be a duplication bug.
+        entity.setInvulnerable(true);
         if (worn.stack().getItem() instanceof GiantBackpackItem backpackItem) {
             entity.SetColor(backpackItem.color);
         }
@@ -174,43 +225,109 @@ public final class OverpackedGuiBridge {
         // Markieren, BEVOR sie in der Welt landet: stuerzt der Server ab oder wird er neu gestartet,
         // waehrend das GUI offen ist, wird die Entity mitgespeichert - SESSIONS ist danach aber leer,
         // und onContainerClose laesst sie deshalb in Ruhe. Sie bliebe als echter, abgestellter
-        // Rucksack liegen: sie steckt im Spieler (siehe Fallback oben) und Overpackeds
-        // place_predicate verwirft dann jedes Platzieren aus der Hand stumm - und ihr Inhalt ist eine
-        // Kopie des getragenen, also ein Duplikationsweg. Der Tag macht sie beim Laden auffindbar.
+        // Rucksack liegen und ihr Inhalt ist eine Kopie des getragenen, also ein Duplikationsweg.
+        // Der Tag macht sie beim Laden auffindbar.
         entity.addTag(HELPER_TAG);
         level.addFreshEntity(entity);
 
-        SESSIONS.put(entity.getId(),
-                new Session(player.getUUID(), worn.identifier(), worn.index(), worn.stack().copy()));
-
-        // Defer the open by one tick so the entity-spawn packet reaches the client before the
-        // open-screen packet — otherwise Overpacked's client menu factory can't resolve the entity.
         MinecraftServer server = player.getServer();
-        if (server == null) {
-            openMenuNow(player, entity, compartment);
-            return;
-        }
-        server.tell(new TickTask(server.getTickCount() + 1, () -> openMenuNow(player, entity, compartment)));
+        long deadline = (server != null ? server.getTickCount() : 0L) + CONFIRM_TIMEOUT_TICKS;
+        SESSIONS.put(entity.getId(), new Session(player.getUUID(), worn.identifier(), worn.index(),
+                worn.stack().copy(), compartment, deadline));
+
+        // Now ask the client whether it can see the entity. openMenu() only happens once it says yes
+        // (confirm()) — never on a timer. See BackpackHelperReadyPacket.
+        PacketDistributor.sendToPlayer(player, new BackpackHelperReadyPacket(entity.getId(), compartment));
     }
 
-    private static void openMenuNow(ServerPlayer player, GiantBackpack entity, int compartment) {
-        if (!entity.isAlive() || player.hasDisconnected()) {
-            // GUI never opened — nothing was edited, just drop the helper entity.
-            SESSIONS.remove(entity.getId());
-            entity.discard();
+    /**
+     * True when this player already has a helper waiting for its confirmation.
+     *
+     * <p>Holding the keybind would otherwise spawn one helper per tick, each with a copy of the same
+     * inventory. Sessions that are already open are not affected: re-opening a second compartment
+     * while the first screen is up is legitimate and closes the first one.</p>
+     */
+    private static boolean hasPendingHelper(ServerPlayer player) {
+        return SESSIONS.values().stream()
+                .anyMatch(session -> !session.opened && session.playerUUID().equals(player.getUUID()));
+    }
+
+    /**
+     * Handles the client's confirmation that it can resolve the helper entity, and only then opens
+     * Overpacked's screen.
+     *
+     * @param player    the player who sent the confirmation
+     * @param entityId  the helper entity id, echoed back by the client
+     */
+    public static void confirm(ServerPlayer player, int entityId) {
+        Session session = SESSIONS.get(entityId);
+        if (session == null || session.opened || !session.playerUUID().equals(player.getUUID())) {
             return;
         }
+        if (!(player.level().getEntity(entityId) instanceof GiantBackpack entity) || !entity.isAlive()) {
+            SESSIONS.remove(entityId);
+            return;
+        }
+        session.opened = true;
         player.openMenu(
                 new SimpleMenuProvider(
-                        (id, inv, p) -> new GiantBackpackMenu(id, inv, entity, compartment),
+                        (id, inv, p) -> new GiantBackpackMenu(id, inv, entity, session.compartment),
                         entity.getDisplayName()),
                 buf -> {
                     buf.writeInt(entity.getId());
-                    buf.writeByte(compartment);
+                    buf.writeByte(session.compartment);
                 });
     }
 
+    /** Parks the helper straight below the player, facing the way the player faces. */
+    private static void moveHelperToPlayer(GiantBackpack entity, ServerPlayer player) {
+        entity.moveTo(player.getX(), player.getY() - HELPER_DROP, player.getZ(),
+                player.getYRot() + 180.0f, 0.0f);
+        entity.setDeltaMovement(Vec3.ZERO);
+    }
+
     // ---- Event handlers (registered on NeoForge.EVENT_BUS only when isAvailable()) ----
+
+    /**
+     * Keeps every live helper glued to its owner and cleans up helpers whose handshake never finished.
+     *
+     * <p>The gluing is what makes the feature work on a moving Sable airship. A helper spawned at the
+     * player's world position simply stays there while the ship — and the player standing on it — flies
+     * on: it visibly drifts off, and once it is more than 4 blocks away Overpacked's
+     * {@code stillValid} slams the screen shut. Re-parking it under the player every tick sidesteps
+     * the whole coordinate-space question, because the player is the reference frame either way.</p>
+     */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Pre event) {
+        if (SESSIONS.isEmpty()) {
+            return;
+        }
+        MinecraftServer server = event.getServer();
+        long now = server.getTickCount();
+        Iterator<Map.Entry<Integer, Session>> it = SESSIONS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Integer, Session> entry = it.next();
+            Session session = entry.getValue();
+            ServerPlayer player = server.getPlayerList().getPlayer(session.playerUUID());
+            if (player == null) {
+                continue; // onLogout owns that case
+            }
+            Entity ent = player.serverLevel().getEntity(entry.getKey());
+            if (!(ent instanceof GiantBackpack helper) || !helper.isAlive()) {
+                it.remove();
+                continue;
+            }
+            if (!session.opened && now > session.confirmDeadline) {
+                // The client never answered — nothing was edited, so the helper can just go.
+                helper.discard();
+                it.remove();
+                player.displayClientMessage(Component.translatable(
+                        "message.vanillaplusadditions.overpacked_extensions.open_failed"), true);
+                continue;
+            }
+            moveHelperToPlayer(helper, player);
+        }
+    }
 
     @SubscribeEvent
     public static void onContainerClose(PlayerContainerEvent.Close event) {

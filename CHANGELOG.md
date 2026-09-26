@@ -4,6 +4,110 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.96] - 2026-09-26
+
+### Fixed
+- **Items mit Formatierungscodes im Namen bekamen nie eine Gratis-Reparatur** (Gerry, 2026-09-26).
+  Ein Netherit-Schwert mit verschleiertem Namen kostete am Amboss 9 Level statt nichts, ein frisch
+  gegebenes ohne Namen war am selben Amboss gratis — damit war die Ursache eingekreist.
+
+  Ausloeser ist, dass ein Name schon beim blossen Hineinlegen verschickt wird: `slotChanged` setzt
+  das Namensfeld auf den Namen des Items, `EditBox.setValue` feuert den Responder, der Client
+  schickt ein Rename-Paket. Danach gehen die beiden moeglichen Aemboss-Implementierungen
+  auseinander, und zwar in entgegengesetzte Richtungen:
+
+  - **Vanilla** filtert den eingehenden Namen durch `StringUtil.filterText` und wirft das
+    Paragraphzeichen (167) heraus.
+  - **EasyAnvils**, das den Amboss auf games2 tatsaechlich stellt, laesst Formatierungscodes
+    ausdruecklich zu. Der Stil steckt dann im Component statt im Text: `getString()` liefert
+    `Testschwert`, der Client schickt `§kTestschwert` zurueck.
+
+  Beide Male verglich `isRenaming` zwei verschiedene Zeichenketten und meldete eine Umbenennung —
+  und Umbenennungen sind vom Gratis-Pfad ausgeschlossen. Der Vergleich raeumt jetzt beide
+  Richtungen ab. Preis dafuer: Wer **nur** die Formatierung aendert, ohne die Buchstaben
+  anzutasten, gilt nicht mehr als Umbenennung; die Reparatur bleibt gratis und die Formatierung
+  unveraendert. Dass EasyAnvils den Amboss ueberhaupt uebernimmt und wann unser Event noch zaehlt,
+  steht jetzt in `docs/modules/free_anvil_repair.md`.
+- **Builder's Tea war doppelt belegt** (Gerry, 2026-09-26). Das Tough-As-Nails-Create-Addon
+  (`tanca`) traegt `create:builders_tea` selbst in drei TAN-Tags ein: `heating_consumed_items`,
+  `thirst/7_thirst_drinks` und `hydration/60_hydration_drinks`. Unsere beiden Eintraege in
+  `food_effects` kamen obendrauf — die Waerme wurde ein zweites Mal gesetzt, der Durst als 7 + 2.
+  Beide Zeilen sind raus, aus den Defaults und aus der Server-Config. Sweet Berry Juice und Cactus
+  Juice bleiben: TANs eigene Tags enthalten nur `charc_os` bzw. `ice_cream`, dort gibt es keine
+  Ueberschneidung. Warum der Eintrag zweimal zurueckkam und wie man den Fall in einer Minute prueft,
+  steht jetzt in `docs/modules/food_effects.md`.
+
+### Added
+- **Enderman Overhauls acht Perlen stapeln auf 64** (Gerry, 2026-09-26). `ancient`, `bubble`,
+  `corrupted`, `crimson`, `icy`, `soul`, `summoner` und `warped` sind dort `stacksTo(16)` wie
+  Vanillas Enderperle und werden jetzt genauso angehoben. **Zwei stapeln trotzdem nur bedingt:**
+  `soul_pearl` traegt `BOUND_ENTITY`, `ancient_pearl` `ENTITY_DATA` — Minecraft verschmilzt nur
+  Stapel mit gleichen Komponenten, gebundene Perlen bleiben also getrennt, egal wie hoch das
+  Maximum steht. Das ist Vanilla-Verhalten, keine Einschraenkung des Moduls.
+- **Leuchtpilzsuppe stapelt auf 64** (Gerry, 2026-09-26). Neuer Standardeintrag in `stackables`:
+  `vanillaplusadditions:glow_mushroom_stew:64`. Das Item wird als `stacksTo(1)` registriert, wie
+  Vanillas Eintoepfe — und wie diese hebt `stackables` es jetzt auf 64. Auch hier gilt: **eine
+  bestehende Config behaelt ihre Liste**, der Eintrag muss am Server nachgetragen werden.
+
+## [1.0.0-beta.95] - 2026-09-25
+
+### Fixed
+- **Rucksack-Kurztaste warf Sebi im Luftschiff vom Server** (Sebi, 2026-09-25). Overpackeds
+  Client-Menue loest den Rucksack ueber die Entity-ID auf — `level.getEntity(id).inv[…]`, ohne
+  Null-Pruefung. War die Entity beim Client noch nicht angekommen, flog eine `NullPointerException`,
+  und NeoForge beantwortet eine werfende Menu-Factory mit einem **Disconnect**. Die bisherige
+  Absicherung war ein fester Ein-Tick-Versatz: gut genug auf einem ruhigen Server, nicht gut genug
+  im Luftschiff. Jetzt laeuft ein Handschlag — der Server meldet die Entity-ID, der Client
+  antwortet erst, wenn er sie wirklich aufloesen kann, und **danach** oeffnet sich der Bildschirm.
+  Klappt es nicht, kommt eine Meldung statt eines Rauswurfs.
+- **Rucksack-Helfer schob den Spieler durch den Luftschiffrumpf** (Sebi, 2026-09-25). Overpackeds
+  `GiantBackpack.tick()` stoesst **jeden Spieler in seiner Bounding Box** einmal pro Tick weg. Der
+  Helfer wurde bisher 1,5 Bloecke vor den Spieler gesetzt und, wenn dort kein Platz war, **in ihn
+  hinein** — in einer Kabine also immer. Auf einem Sable-Schiff reicht dieser Stoss, um den Spieler
+  durch die Wand zu druecken, weil Sublevel-Kollision den schwaecheren, transformierten Pfad nimmt.
+  Der Helfer sitzt jetzt 2,5 Bloecke **unter** den Fuessen, ausserhalb der Spielerbox, und wird dort
+  jeden Tick nachgezogen — damit bleibt er auch auf einem fahrenden Schiff beim Spieler, statt
+  sichtbar zurueckzubleiben. Zusaetzlich `setInvulnerable(true)`, weil ein zerstoerter Helfer seinen
+  Inhalt fallen laesst und der eine Kopie des getragenen Rucksacks ist.
+- **Pilze im Wasser und Pilze auf Pilzen** (Gerry, 2026-09-25, Datapack `vpa_mushroom_fields_plus`).
+  Die Platzierung benutzte `MOTION_BLOCKING`, und der zaehlt Wasser **und** Pilzbloecke mit — der
+  Ursprung landete also auf der Wasseroberflaeche bzw. auf einem fertigen Hut. Vanilla kommt damit
+  durch, weil `HugeMushroomFeature` selbst den Boden prueft; unsere Formen sind `tree`-Features, und
+  `TreeFeature` prueft ihn nicht. Jetzt `OCEAN_FLOOR_WG` plus ein `block_predicate_filter`: Ursprung
+  muss Luft sein, darunter muss `#minecraft:dirt` liegen. Die kleinen Pilze brauchten denselben
+  Filter pro Einzelposition, weil `MushroomBlock.canSurvive` jeden soliden Block zulaesst, sobald die
+  Helligkeit unter 13 liegt — und waehrend der Weltgenerierung ist sie immer 0. **Wirkt nur auf neu
+  generierte Chunks.**
+- **Eintopf gab die Schuessel nicht mehr zurueck** (gefunden am 2026-09-25 beim Bau des Punktes
+  unten). `food_effects` baut das `FOOD`-Component jedes gelisteten Items neu auf, um es immer
+  essbar zu machen — ueber `FoodProperties.Builder`, der zwei der sechs Felder gar nicht setzen kann.
+  `usingConvertsTo` ist in 1.21.1 aber die **ganze** Mechanik hinter "gibt die Schuessel zurueck", es
+  gibt keinen `BowlFoodItem` mehr. Betroffen waren Pilzsuppe, Kanincheneintopf und Rote-Bete-Suppe.
+  Im selben Zug faellt ein zweiter alter Fehler weg: die Saettigung wurde durch
+  `saturationModifier()` ein zweites Mal hochgerechnet, bei doppelt gelisteten Items sogar mehrfach
+  (Kanincheneintopf: 4.800 statt 12). Der Aufbau geht jetzt direkt ueber den Record und uebernimmt
+  fuenf der sechs Felder unveraendert.
+
+### Added
+- **Leuchtpilzsuppe waermt und ist immer essbar** (Gerry, 2026-09-25). Neuer Standardeintrag in
+  `food_effects`: `vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0` —
+  10 Minuten Internal Warmth, genau wie Vanillas Pilzsuppe, und wie jeder Eintrag dieser Liste
+  zusaetzlich immer essbar. Braucht Tough As Nails. **Eine bestehende
+  `vanillaplusadditions-common.toml` behaelt ihre eigene Liste** — auf games2 muss die Zeile von Hand
+  nachgetragen werden.
+
+## [1.0.0-beta.94] - 2026-09-25
+
+### Fixed
+- **Netherit-Haustierruestungen lassen sich mit Diamanten reparieren** (Gerry, 2026-09-25). Bisher
+  ging das gar nicht bis kaum: Die **Wolfsruestung** hatte ueberhaupt kein `isValidRepairItem` und
+  fiel auf Vanilla zurueck, die **Axolotl-Ruestung** akzeptierte nur Schildkroetenschuppen, und bei
+  der **Katzenruestung** verlangte die Netherit-Stufe einen Netherit-Barren — fuer eine Reparatur
+  absurd teuer. Alle drei nehmen auf der Netherit-Stufe jetzt zusaetzlich Diamanten, was auch zur
+  Herstellungslogik passt: Netherit-Ausruestung wird aus Diamant-Ausruestung aufgewertet. Die
+  bisherigen Materialien bleiben gueltig. In JEI ist die Reparatur eigens registriert, weil
+  `isValidRepairItem` reiner Code ist und JEIs Amboss-Liste nur Vanilla kennt.
+
 ## [1.0.0-beta.93] - 2026-09-24
 
 ### Added
@@ -1605,7 +1709,7 @@ oder sein eigener Anspruch.
 ## [0.13.0] - 2026-05-10
 ### Added
 - CustomCraftingRecipesModule: Neues konfigurierbares Modul für benutzerdefinierte Handwerksrezepte eingeführt.
-  - Unterstützt **Shaped Recipes** (`recipe_id;result_item;result_count;pattern;keys`) mit Zeilen-Trenn­zeichen `|` oder gequoteten Zeilen.
+  - Unterstützt **Shaped Recipes** (`recipe_id;result_item;result_count;pattern;keys`) mit Zeilen-Trennzeichen `|` oder gequoteten Zeilen.
   - Unterstützt **Shapeless Recipes** (`ingredient1,ingredient2,...->result_item[;result_count[;recipe_id]]`).
   - Zutaten können Item-IDs oder Tag-Referenzen (Präfix `#`) sein.
   - Rezepte werden über einen ReloadListener nach jedem `/reload` neu angewandt.

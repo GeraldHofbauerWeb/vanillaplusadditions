@@ -39,6 +39,8 @@ public class CatGuardianJeiPlugin implements IModPlugin {
                 CatGuardianModule.CAT_ARMOR_DIAMOND.get(),
                 CatGuardianModule.CAT_ARMOR_NETHERITE.get());
         JeiMobArmorRepairs.register(registration, Items.ARMADILLO_SCUTE, armors);
+        // Netherit-Stufe laesst sich zusaetzlich mit Diamanten reparieren
+        JeiMobArmorRepairs.register(registration, Items.DIAMOND, List.of(CatGuardianModule.CAT_ARMOR_NETHERITE.get()));
 
         JeiMobArmorEnchantments.register(registration, armors);
     }

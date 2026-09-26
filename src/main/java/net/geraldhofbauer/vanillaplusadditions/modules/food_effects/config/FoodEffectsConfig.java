@@ -16,11 +16,14 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
             // Heating effect (Tough As Nails)
             "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0",
             "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0",
+            "vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0",
             "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0",
             "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0",
-            // Builder's Tea waermt und loescht den Durst - beides auf games2 erprobt und von dort
-            // uebernommen (Gerry, 2026-09-24), siehe auch DEFAULT_THIRST_EFFECTS.
-            "create:builders_tea;toughasnails:internal_warmth;3600;0",
+            // Builder's Tea steht hier BEWUSST NICHT MEHR (Gerry, 2026-09-26). Das Tough-As-Nails-
+            // Create-Addon (tanca) traegt es selbst in TANs Tags ein: heating_consumed_items,
+            // 7_thirst_drinks und 60_hydration_drinks. Unsere Zeilen kamen obendrauf - die Waerme
+            // doppelt, der Durst als 7 + 2. Sweet Berry Juice bleibt: das steht in keinem der
+            // beiden Tag-Saetze, weder bei TAN noch bei tanca.
             "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0",
             // Cooling effect (Tough As Nails)
             "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0",
@@ -44,7 +47,7 @@ public class FoodEffectsConfig extends AbstractModuleConfig<FoodEffectsModule, F
     );
 
     private static final List<String> DEFAULT_THIRST_EFFECTS = List.of(
-            "create:builders_tea;2;",
+            // Builder's Tea: siehe DEFAULT_FOOD_EFFECTS - tanca gibt ihm schon 7 Durst.
             "minecraft:beetroot_soup;6;",
             "minecraft:mushroom_stew;2;",
             "minecraft:rabbit_stew;2;",

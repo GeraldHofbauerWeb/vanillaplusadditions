@@ -2,6 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.config.FreeAnvilRepairConfig;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -111,6 +112,25 @@ public class FreeAnvilRepairModule
     /**
      * A name was sent that would change the item's custom name — either setting a different one
      * or clearing an existing one (empty string).
+     *
+     * <p>The comparison has to allow for the name being <em>filtered</em> on the way in, or items
+     * carrying formatting codes lose free repairs entirely. Putting an item into the anvil is enough
+     * to send a rename: {@code AnvilScreen.slotChanged} calls {@code EditBox.setValue} with the
+     * item's own name, that fires the responder, and the client sends a
+     * {@code ServerboundRenameItemPacket} before the player has typed anything. On the way through
+     * {@code AnvilMenu.validateName} the string goes through {@code StringUtil.filterText}, which
+     * drops the section sign (167). So a sword named with {@code §k} reports a rename on
+     * <b>every</b> anvil open, its name never matching itself — which is exactly how this was found
+     * (Gerry, 2026-09-26, netherite sword + diamond charging 9 levels).
+     *
+     * <p>With {@code EasyAnvils} installed it is the other way round — that mod replaces the anvil
+     * menu and <em>allows</em> formatting codes, so the style ends up in the name component while the
+     * client sends the code back as text. Both directions are therefore normalised away.
+     *
+     * <p>The cost is that changing only an item's formatting, with no change to the letters, no
+     * longer registers as a rename: the repair stays free and the formatting is left as it was,
+     * because {@code applyMaterialRepair} copies the left stack. That is the better trade — the
+     * alternative charges full price for every repair of every named item.
      */
     private boolean isRenaming(String name, ItemStack left) {
         if (name == null) {
@@ -119,7 +139,17 @@ public class FreeAnvilRepairModule
         if (StringUtil.isBlank(name)) {
             return left.has(DataComponents.CUSTOM_NAME);
         }
-        return !name.equals(left.getHoverName().getString());
+        String current = left.getHoverName().getString();
+        if (name.equals(current) || name.equals(StringUtil.filterText(current))) {
+            return false;
+        }
+        // Und der umgekehrte Fall, der auf games2 zuschlug: EasyAnvils ersetzt den Amboss durch sein
+        // eigenes Menue und laesst Formatierungscodes ausdruecklich ZU, filtert sie also nicht heraus.
+        // Der Stil liegt dann im Component, nicht im Text: getString() liefert "Testschwert",
+        // waehrend der Client "§kTestschwert" zurueckschickt. Ohne dieses Abraeumen meldete jedes
+        // formatierte Item bei jedem Oeffnen eine Umbenennung.
+        String plain = ChatFormatting.stripFormatting(name);
+        return plain == null || !plain.equals(current);
     }
 
     /**

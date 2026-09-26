@@ -27,10 +27,18 @@ light level 12 — enough to keep a cave corner lit — and, unlike the vanilla 
 | | Effect | Hunger |
 |---|---|---|
 | **Glow Mushroom** (raw) | Glowing, 10 s | 1 |
-| **Glow Mushroom Stew** | Glowing, 30 s | 6 |
+| **Glow Mushroom Stew** | Glowing, 30 s · Internal Warmth, 10 min | 6 |
 
 The stew is the vanilla recipe with the red mushroom swapped out: **bowl + glow mushroom + brown
 mushroom**, shapeless. The bowl comes back when you finish it.
+
+The warmth is not this module's doing. The stew is listed in
+[`food_effects`](food_effects.md)' default table as
+`vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0`, exactly like vanilla's
+mushroom stew — so it needs Tough As Nails, it follows whatever that config says, and being on that
+list is also what makes it **always edible**, on a full hunger bar. Neither applies if `food_effects`
+is disabled. A config that already exists keeps its own list: the new line only reaches a server whose
+`vanillaplusadditions-common.toml` is regenerated or edited by hand.
 
 ## Where it comes from
 

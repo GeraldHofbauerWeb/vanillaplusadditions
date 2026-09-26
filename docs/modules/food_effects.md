@@ -41,6 +41,7 @@ nothing else — delete every line and the module has nothing left to do.
 | `minecraft:glow_berries` | Glowing | 60 t · 3 s | I | — | — |
 | `minecraft:rabbit_stew` | Internal Warmth | 24 000 t · 20 min | I | — | TAN |
 | `minecraft:mushroom_stew` | Internal Warmth | 12 000 t · 10 min | I | — | TAN |
+| `vanillaplusadditions:glow_mushroom_stew` | Internal Warmth | 12 000 t · 10 min | I | — | TAN + [`glow_mushroom`](glow_mushroom.md) |
 | `minecraft:beetroot_soup` | Internal Warmth | 12 000 t · 10 min | I | — | TAN |
 | `toughasnails:sweet_berry_juice` | Internal Warmth | 3 600 t · 3 min | I | — | TAN |
 | `rottencreatures:magma_rotten_flesh` | Internal Warmth | 6 000 t · 5 min | I | — | TAN + Rotten Creatures |
@@ -121,23 +122,27 @@ unlike the effects list a second line for the same item **overwrites** the first
 it. Without TAN the whole list is skipped at load time (`loadThirstEffects` returns on the first
 line) and the cache stays empty.
 
-### Always edible, and what the rebuild costs
+### Always edible, and what the rebuild keeps
 
-The item's `FOOD` component is not patched in place. It is rebuilt from scratch:
+The item's `FOOD` component is not patched in place — there is no partial-update API for it — so it is
+rebuilt. The rebuild goes straight to the record, not through `FoodProperties.Builder`:
 
 ```java
-foodBuilder = new FoodProperties.Builder()
-        .nutrition(existingFood.nutrition())
-        .saturationModifier(existingFood.saturation())
-        .alwaysEdible();
-existingFood.effects().forEach(effect -> foodBuilder.effect(effect::effect, effect.probability()));
+builder.set(DataComponents.FOOD, new FoodProperties(
+        existingFood.nutrition(),
+        existingFood.saturation(),
+        true,                          // the only thing this module actually changes
+        existingFood.eatSeconds(),
+        existingFood.usingConvertsTo(),
+        existingFood.effects()));
 ```
 
-Nutrition, the always-edible flag and the item's own built-in effects survive — a golden apple keeps
-its Regeneration and Absorption. Two things do not.
+Five of the six fields are carried over untouched and only `canAlwaysEat` is forced on. That is more
+literal-minded than it looks, and it is deliberate — **the builder cannot express this record**, which
+cost two real bugs before it was written this way (both fixed in `v1.0.0-beta.95`):
 
-**Saturation is converted a second time.** `FoodProperties` is a record of *absolute* values, but the
-builder takes a *modifier* and multiplies it out on `build()`:
+**`FoodProperties` stores absolute saturation, the builder takes a modifier.** `build()` runs the
+value through
 
 ```java
 public static float saturationByModifier(int foodLevel, float saturationModifier) {
@@ -145,44 +150,17 @@ public static float saturationByModifier(int foodLevel, float saturationModifier
 }
 ```
 
-`existingFood.saturation()` is already the product. Feeding it back in as the modifier runs it through
-the same multiplication again. Worse, `ModifyDefaultComponentsEvent.modify` applies each patch
-immediately (`Item.modifyDefaultComponentsFrom` reassigns `Item.components`) and `new ItemStack(item)`
-reads exactly that map — so an item named on more than one line compounds once per line. With the
-shipped defaults:
+so feeding `existingFood.saturation()` — already the product — back in as the modifier squared it.
+Worse, `ModifyDefaultComponentsEvent.modify` applies each patch *immediately*
+(`Item.modifyDefaultComponentsFrom` reassigns `Item.components`) and `new ItemStack(item)` reads
+exactly that map, so an item named on more than one line compounded once per line: rabbit stew, on
+both the food and the thirst table, reached a saturation of 4 800. `FoodData.add` clamps saturation to
+the hunger level of the bite, so the damage in play was bounded — but every configured food saturated
+to the maximum instead of its vanilla value.
 
-| Item | Vanilla saturation | Lines | After |
-|---|---|---|---|
-| `cookie` | 0.4 | 1 | 1.6 |
-| `glow_berries` | 0.4 | 1 | 1.6 |
-| `melon_slice` | 1.2 | 1 | 4.8 |
-| `golden_apple` | 9.6 | 1 | 76.8 |
-| `golden_carrot` | 14.4 | 1 | 172.8 |
-| `enchanted_golden_apple` | 9.6 | 2 | 614.4 |
-| `mushroom_stew` | 7.2 | 2 (both tables) | 1 036.8 |
-| `beetroot_soup` | 7.2 | 2 (both tables) | 1 036.8 |
-| `rabbit_stew` | 12.0 | 2 (both tables) | 4 800.0 |
-
-In play the damage is bounded, because `FoodData.add` clamps saturation to the hunger level it has
-just set:
-
-```java
-this.saturationLevel = Mth.clamp(saturationLevel + this.saturationLevel, 0.0F, (float)this.foodLevel);
-```
-
-So the ceiling is real, but it does not fall the same way on everyone on the list. The six large
-values — the golden foods and the three stews — are far above 20, the highest that cap can ever be,
-so eating one always leaves saturation pinned at the hunger level the bite just produced; what the
-inflated numbers buy is nothing — 4 800 and 614.4 collapse to the same rule. The ceiling itself
-still differs, because nutrition does: a rabbit stew restores 10 hunger, an enchanted golden apple
-4. The three small ones stay on the other side of the line: cookie, glow berries and melon slice
-simply saturate four times as much as in vanilla (1.6 / 1.6 / 4.8) and are cut back only when the
-running saturation total would pass the current hunger level — the ceiling vanilla puts on every
-food.
-
-**Two of the six fields are dropped.** The record is `(nutrition, saturation, canAlwaysEat, eatSeconds,
-usingConvertsTo, effects)`; the builder chain above sets four of them, so `usingConvertsTo` and
-`eatSeconds` fall back to the defaults — empty, and 1.6 seconds. Vanilla builds all three soups through
+**The builder has no setter for `eatSeconds` and starts `usingConvertsTo` empty.** In 1.21.1 there is
+no `BowlFoodItem` any more; `usingConvertsTo` is the whole mechanism, and `Player.eat` hands the empty
+bowl back from that field. Vanilla builds all three soups through
 
 ```java
 private static FoodProperties.Builder stew(int nutrition) {
@@ -190,15 +168,18 @@ private static FoodProperties.Builder stew(int nutrition) {
 }
 ```
 
-and `Player.eat` is what hands the empty bowl back from that field. On the shipped defaults, therefore,
-**eating mushroom stew, rabbit stew or beetroot soup returns no bowl**. The same reset would turn a
-configured fast food — dried kelp's 0.8 s — back into an ordinary 1.6 s meal, though nothing in the
-defaults is affected.
+Dropping the field meant that with this module on its defaults, **eating mushroom stew, rabbit stew or
+beetroot soup returned no bowl** — and the glow mushroom stew would have joined them the moment it was
+added to the list. `eatSeconds` fell back to 1.6 s the same way, which would have turned a configured
+fast food (dried kelp, 0.8 s) into an ordinary meal.
 
-**A non-food item on either list becomes food.** With no existing `FOOD` component the builder falls
-through to `nutrition(0).saturationModifier(0).alwaysEdible()`, which makes the item edible with no
-nutrition at all. That is what lets a drink from another mod carry an effect, and equally what turns a
-typo'd `minecraft:diamond` into something you can chew on.
+The lesson generalises past this module: **when a vanilla record has a builder, check that the builder
+can reach every field before using it to copy one.**
+
+**A non-food item on either list still becomes food.** With no existing `FOOD` component there is
+nothing to carry over, so the item gets `nutrition(0).saturationModifier(0).alwaysEdible()`. That is
+what lets a drink from another mod carry an effect, and equally what turns a typo'd
+`minecraft:diamond` into something you can chew on.
 
 ### Tooltips
 
@@ -233,8 +214,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `food_effects` | list | `["minecraft:cookie;minecraft:speed;160;1", "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0", "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0", "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0", "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0", "create:builders_tea;toughasnails:internal_warmth;3600;0", "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0", "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0", "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0", "minecraft:golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25", "minecraft:glow_berries;minecraft:glowing;60;0", "toughasnails:melon_juice;minecraft:regeneration;60;0", "toughasnails:glow_berry_juice;minecraft:glowing;120;0", "toughasnails:chorus_fruit_juice;minecraft:jump_boost;240;1", "minecraft:enchanted_golden_apple;toughasnails:climate_clemency;6000;0;1.0", "create:sweet_roll;minecraft:speed;120;0", "create:bar_of_chocolate;minecraft:speed;600;0", "create:bar_of_chocolate;minecraft:jump_boost;600;0", "create:chocolate_glazed_berries;minecraft:speed;60;0", "create:chocolate_glazed_berries;minecraft:jump_boost;60;0"] - 21 entries covering 18 distinct items` | no spec range; defineList with a per-entry validator: 3 to 5 semicolon-separated parts, parts[0] and parts[1] must parse as ResourceLocations, duration_in_ticks >= 0, amplifier >= 0 (optional, default 0), chance between 0.0 and 1.0 (optional, default 1.0). The "new entry" template offered by the config UI is minecraft:apple;minecraft:speed;200;0;1.0. | Item-to-potion-effect table applied when a living entity finishes eating the item. Format: item_id;effect_id;duration_in_ticks;amplifier;chance. Several lines may target the same item (all of them are applied, each rolled separately). Entries whose item or effect is not registered are dropped silently at cache load. Every listed item is additionally made always-edible via the FOOD data component. |
-| `thirst_effects` | list | `["create:builders_tea;2;", "minecraft:beetroot_soup;6;", "minecraft:mushroom_stew;2;", "minecraft:rabbit_stew;2;", "minecraft:melon_slice;2;"] - note the trailing semicolons, which split drops, so chance defaults to 1.0` | no spec range; defineList with a per-entry validator: 2 or 3 semicolon-separated parts, parts[0] must parse as a ResourceLocation, thirst_amount >= 0, chance between 0.0 and 1.0 (optional, default 1.0). Template: minecraft:beetroot_soup;6;1.0. | Item-to-thirst table. Format: item_id;thirst_amount;chance. Only ever read when Tough As Nails is loaded (loadThirstEffects returns immediately otherwise, FoodEffectsModule.java:121-124) and only applied to Players; the restored value is capped at 20. One entry per item (a HashMap, so a second line for the same item overwrites the first). The items ARE made always-edible even without Tough As Nails. |
+| `food_effects` | list | `["minecraft:cookie;minecraft:speed;160;1", "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0", "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0", "vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0", "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0", "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0", "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0", "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0", "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0", "minecraft:golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25", "minecraft:glow_berries;minecraft:glowing;60;0", "toughasnails:melon_juice;minecraft:regeneration;60;0", "toughasnails:glow_berry_juice;minecraft:glowing;120;0", "toughasnails:chorus_fruit_juice;minecraft:jump_boost;240;1", "minecraft:enchanted_golden_apple;toughasnails:climate_clemency;6000;0;1.0", "create:sweet_roll;minecraft:speed;120;0", "create:bar_of_chocolate;minecraft:speed;600;0", "create:bar_of_chocolate;minecraft:jump_boost;600;0", "create:chocolate_glazed_berries;minecraft:speed;60;0", "create:chocolate_glazed_berries;minecraft:jump_boost;60;0"] - 21 entries covering 18 distinct items` | no spec range; defineList with a per-entry validator: 3 to 5 semicolon-separated parts, parts[0] and parts[1] must parse as ResourceLocations, duration_in_ticks >= 0, amplifier >= 0 (optional, default 0), chance between 0.0 and 1.0 (optional, default 1.0). The "new entry" template offered by the config UI is minecraft:apple;minecraft:speed;200;0;1.0. | Item-to-potion-effect table applied when a living entity finishes eating the item. Format: item_id;effect_id;duration_in_ticks;amplifier;chance. Several lines may target the same item (all of them are applied, each rolled separately). Entries whose item or effect is not registered are dropped silently at cache load. Every listed item is additionally made always-edible via the FOOD data component; the rest of its FOOD record - saturation, eat time and the bowl it converts to - is carried over unchanged. |
+| `thirst_effects` | list | `["minecraft:beetroot_soup;6;", "minecraft:mushroom_stew;2;", "minecraft:rabbit_stew;2;", "minecraft:melon_slice;2;"] - note the trailing semicolons, which split drops, so chance defaults to 1.0` | no spec range; defineList with a per-entry validator: 2 or 3 semicolon-separated parts, parts[0] must parse as a ResourceLocation, thirst_amount >= 0, chance between 0.0 and 1.0 (optional, default 1.0). Template: minecraft:beetroot_soup;6;1.0. | Item-to-thirst table. Format: item_id;thirst_amount;chance. Only ever read when Tough As Nails is loaded (loadThirstEffects returns immediately otherwise, FoodEffectsModule.java:121-124) and only applied to Players; the restored value is capped at 20. One entry per item (a HashMap, so a second line for the same item overwrites the first). The items ARE made always-edible even without Tough As Nails. |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits
@@ -246,8 +227,6 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | No Create / no Rotten Creatures | Those ids resolve to `Items.AIR` and are skipped. Rotten Creatures is not declared in `neoforge.mods.toml` and is on no classpath in this repository; both mods are default config **data**, not a code dependency. |
 | Config edit, always edible | Needs a game restart. `ModifyDefaultComponentsEvent` fires once during mod loading; the effect and thirst caches reload with the config, the `FOOD` component does not. |
 | Module disabled at runtime | Effects and thirst stop at once (the caches are cleared and the handlers check `isModuleEnabled()`), but the rewritten `FOOD` components stay as they are until the next start. |
-| Stews return no bowl | See above: the rebuilt `FOOD` component drops `usingConvertsTo`. Hits mushroom stew, rabbit stew and beetroot soup on the shipped defaults. |
-| Saturation is multiplied once per line | See above. The golden foods and the stews end up far above the cap, so `FoodData` clamps them to the hunger level — each simply tops saturation up to whatever hunger level its own nutrition leaves you at; cookie, glow berries and melon slice land at four times their vanilla saturation (1.6 / 1.6 / 4.8) and keep their differences. |
 | `debug_logging` is loud and public | With it on, **every** finished use-item — any eating or drinking, configured or not — broadcasts `[DEBUG] Consumed food item: …`, then the cache size, then one chat line per cached item, and `MessageBroadcaster` sends to the whole player list, not just the level. On the defaults with Create, TAN and Rotten Creatures installed that is about 20 lines per bite for everyone online; in pure vanilla, four. |
 | Bad config lines | An unknown item or effect id is dropped **silently**; the warning only appears with `debug_logging` on. A line that fails to parse is logged at error level, except inside the always-edible pass, where the exception is swallowed entirely. |
 | Standalone jar + TAN, thirst tooltip | The `ClientTooltipComponent` factory for `ThirstTooltipData` is registered only in `VanillaPlusAdditions.ClientModEvents`, and that class ships in neither `vpa_core` nor `vpa_food_effects`. Hovering a thirst-configured item there hands `ClientTooltipComponent.create` a component with no factory, which throws `IllegalArgumentException("Unknown TooltipComponent")`. Read off the build script and the decompiled sources; not reproduced in game. The bundle jar is unaffected. |
@@ -306,7 +285,21 @@ else. It is the module's only lang key.
 
 **Version history.** The module arrived in `0.6.0`; the Tough As Nails half only in `v0.10.0`, and the
 graphical thirst tooltip in `v0.10.2`. Builder's Tea was removed from the thirst defaults in August
-2026.
+2026, added back to both tables in September, and taken out of both again in `v1.0.0-beta.96` — see
+below for why it kept coming back.
+
+### Leave Builder's Tea alone
+
+`create:builders_tea` belongs to the **Tough As Nails Create Addon** (`tanca`), which writes it into
+three of TAN's own tags: `heating_consumed_items`, `thirst/7_thirst_drinks` and
+`hydration/60_hydration_drinks`. TAN handles it from there. Every entry this module adds for it lands
+*on top* of that — the warmth applied twice, thirst as 7 + 2 — which is why it was taken out again.
+
+The test is cheap and worth doing before adding any drink from a TAN addon: unpack the addon's jar and
+look in `data/toughasnails/tags/item/`. If the item is listed there, this module has nothing to add.
+For comparison, TAN's own heating tag holds only `toughasnails:charc_os` and its cooling tag only
+`toughasnails:ice_cream` — so the sweet berry juice and cactus juice entries in the defaults are
+genuine and stay.
 
 ## See also
 

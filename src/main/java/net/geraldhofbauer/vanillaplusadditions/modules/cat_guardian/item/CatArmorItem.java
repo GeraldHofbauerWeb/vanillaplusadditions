@@ -66,13 +66,15 @@ public class CatArmorItem extends Item {
 
     /**
      * Armadillo scutes (the recipe ingredient) or the tier's base metal/gem (iron, gold, diamond,
-     * netherite) repair cat armor on the anvil — mirroring how vanilla armor repairs with its own
+     * netherite) repair cat armor on the anvil. The netherite tier additionally accepts diamonds,
+     * because a netherite ingot is far too dear to burn on a repair — mirroring how vanilla armor repairs with its own
      * material. With the free_anvil_repair module enabled that repair costs 0 levels automatically.
      */
     @Override
     public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
         return repairCandidate.is(Items.ARMADILLO_SCUTE)
-                || repairCandidate.is(tier.getRepairMaterial());
+                || repairCandidate.is(tier.getRepairMaterial())
+                || (tier == Tier.NETHERITE && repairCandidate.is(Items.DIAMOND));
     }
 
     @Override

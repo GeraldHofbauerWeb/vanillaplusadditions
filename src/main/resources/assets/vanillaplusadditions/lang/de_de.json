@@ -176,6 +176,7 @@
   "message.vanillaplusadditions.options.scope_keys": "nur Tastenbelegung",
   "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Dieses Rucksackfach ist noch nicht freigeschaltet.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Du trägst keinen großen Rucksack.",
+  "message.vanillaplusadditions.overpacked_extensions.open_failed": "Der Rucksack konnte nicht geöffnet werden – bitte nochmal versuchen.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
   "item.vanillaplusadditions.world_compass": "Weltkompass",
   "item.vanillaplusadditions.fire_arrow": "Feuerpfeil"

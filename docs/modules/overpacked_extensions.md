@@ -148,32 +148,81 @@ A keypress runs the whole chain server-side:
    `#overpacked:giant_backpacks` — every colour variant, not only the `back` slot. None →
    *"You aren't wearing a giant backpack."*
 4. A locked side pocket (Overpacked 2.x) → *"That backpack compartment isn't unlocked yet."*
-5. Otherwise the helper entity is spawned and the menu opened one tick later.
+5. Otherwise the helper entity is spawned and the screen opened once the client confirms it can
+   see it — see *The handshake* below.
 
 All three messages go to the action bar (`displayClientMessage(…, true)`).
 
-**The helper entity.** A real `GiantBackpack` is spawned 1.5 blocks in front of you along your
-horizontal look vector, turned to face you (`yRot + 180`). If that spot is not free
-(`level.noCollision`), it spawns inside you instead: out of the crosshair, so it cannot steal the pick
-from an item frame on the wall behind it and cannot become an accidental hit target — Overpacked's
-`GiantBackpack.hurt` adds `amount × 10` to a damage counter that ticks back down by 1, and once that
-counter passes 40 — or at once on a hit from a creative player — it discards the entity and, with
-`doEntityDrops`, drops the whole backpack as an item. The helper is spawned with
-`setNoGravity(true)` and `noPhysics = true`, so it neither falls nor is shoved about.
+**The helper entity.** A real `GiantBackpack`, parked **2.5 blocks below your feet** and re-parked
+there every server tick for as long as the session lives. It is spawned with `setNoGravity(true)`,
+`noPhysics = true` and `setInvulnerable(true)`, so it neither falls, nor is shoved about, nor can be
+destroyed — Overpacked's `GiantBackpack.hurt` adds `amount × 10` to a damage counter that ticks back
+down by 1, and once that counter passes 40 it discards the entity and, with `doEntityDrops`, drops the
+whole backpack as an item. Since the helper's contents are a *copy* of the worn one, that would be a
+duplication bug, and buried in the floor it is within reach of a cactus or a creative player's hit.
+
+Under your feet rather than in front of you, because of one line in Overpacked's `tick()`:
+
+```java
+this.level().getEntities(EntityTypeTest.forClass(Player.class), this.getBoundingBox(),
+        EntitySelector.pushableBy(this)).forEach(e -> e.push(this));
+```
+
+**A giant backpack pushes every player standing inside it, once per tick.** Earlier versions of this
+module put the helper 1.5 blocks in front of the player and fell back to spawning it *inside* them
+whenever that spot was blocked — a cabin, a corridor, anywhere tight. On a Sable airship that push was
+enough to squeeze the player through the hull, because sub-level block collision runs through the
+weaker transformed path (see [`freecam_sublevel_noclip`](freecam_sublevel_noclip.md)). The player's box
+is 1.8 blocks tall and the backpack's 1.25, so a 2.5-block drop clears it with room to spare, and it
+sits out of the crosshair — it cannot steal the pick from an item frame on the wall either.
+
+**Re-parking it every tick is what makes this work on a moving ship.** A helper left at the world
+position where it spawned simply stays there while the ship, and the player standing on it, fly on: it
+drifts off visibly, and once it is more than 4 blocks away Overpacked's `stillValid` slams the screen
+shut. Following the player sidesteps the whole coordinate-space question, because the player is the
+reference frame either way.
 
 Its contents are restored the way Overpacked's own place-a-backpack code does it: colour from the
 item, then on 2.x `Load(tag)` plus `SetName` for a renamed backpack, on 1.x `SetSleepingBagColor` and
 `LoadInventory`. Restoring 2.x by hand is not an option — `Load` is also what carries the side-pocket
 unlocks, and the write-back would then persist them as locked and destroy the upgrade.
 
-**The one-tick delay.** The menu is opened from a `TickTask` scheduled for `getTickCount() + 1`,
-because of the client menu factory quoted above: the spawn packet has to reach the client before the
-open-screen packet, or there is no entity for the screen to bind to. If the entity died or the player
-disconnected in that tick, the session is dropped and the helper discarded instead.
+**The handshake.** Look again at Overpacked's client-side menu factory:
 
-While the screen is up the helper is an ordinary entity in the world — other players can see it.
-Overpacked's own `stillValid` requires `canInteractWithEntity(backpack, 4.0)`, so walking a few blocks
-away closes the GUI, which writes back like any other close.
+```java
+public GiantBackpackMenu(int id, Inventory inv, FriendlyByteBuf buf) {
+    this(id, inv, (GiantBackpack)inv.player.level().getEntity(buf.readInt()), buf.readByte());
+}
+// and then, in the constructor it delegates to:
+this.container = backpack.inv[inv_id];
+```
+
+There is no null check. If the client cannot resolve that id yet, `backpack` is null, `backpack.inv`
+throws, and NeoForge's advanced-open-screen handler answers a throwing menu factory by **disconnecting
+the client**:
+
+> Failed to open a screen with advanced data: java.lang.NullPointerException: Cannot read field "inv"
+> because …
+
+So the server never opens the screen on a timer. It spawns the helper, sends
+`vanillaplusadditions:backpack_helper_ready` with the entity id, and waits. The client polls
+`level.getEntity(id)` once per client tick and answers `vanillaplusadditions:confirm_backpack_helper`
+the moment it resolves — then, and only then, does `player.openMenu` run. The client gives up after
+5 s, the server cleans the helper up after 7 s and says *"The backpack could not be opened — please
+try again."* Nothing was edited at that point, so there is nothing to write back.
+
+This replaced a fixed one-tick `TickTask` delay, which is the kind of fix that works until it does not:
+it held on a quiet server and broke on a Sable airship, where Sebi was thrown off the server for it
+(2026-09-25). A round trip costs one ping before the GUI appears and cannot be wrong.
+
+The client-side watcher deliberately tests `getEntity(id) != null` rather than
+`instanceof GiantBackpack` — naming Overpacked's type there would link it into a class that runs on
+every client, Overpacked installed or not. Entity ids are unique per connection, so non-null is
+already the answer.
+
+While the screen is up the helper is an ordinary entity in the world — other players can see it, if
+they look into the ground. Overpacked's own `stillValid` requires
+`canInteractWithEntity(backpack, 4.0)`; the helper follows you, so that stays true until you close it.
 
 **The write-back.** `entity.getPickResult()` (Overpacked's `get_stack()`) is the source of truth. Its
 `CUSTOM_DATA` is copied onto a copy of the original worn stack, and a **missing** `CUSTOM_DATA` clears

@@ -4,6 +4,9 @@ import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.OverpackedCompat;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.compat.OverpackedGuiBridge;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.config.OverpackedExtensionsConfig;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.client.BackpackKeysClientEvents;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network.BackpackHelperReadyPacket;
+import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network.ConfirmBackpackHelperPacket;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.network.OpenBackpackCompartmentPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -83,6 +86,27 @@ public class OverpackedExtensionsModule
                         return;
                     }
                     OverpackedGuiBridge.open(player, compartment);
+                }));
+
+        // Server -> client: "the helper is spawned, tell me when you can see it". The handler names a
+        // Dist.CLIENT class, which is safe because a lambda body is only linked when it runs - and it
+        // only ever runs on a client. Same reasoning as the 1.x/2.x split in OverpackedCompat.
+        event.registrar("1").playToClient(
+                BackpackHelperReadyPacket.TYPE,
+                BackpackHelperReadyPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> BackpackKeysClientEvents.handleHelperReady(packet)));
+
+        event.registrar("1").playToServer(
+                ConfirmBackpackHelperPacket.TYPE,
+                ConfirmBackpackHelperPacket.STREAM_CODEC,
+                (packet, ctx) -> ctx.enqueueWork(() -> {
+                    if (!isModuleEnabled() || !getConfig().isBackpackKeysEnabled()) {
+                        return;
+                    }
+                    if (!(ctx.player() instanceof ServerPlayer player) || !OverpackedCompat.isAvailable()) {
+                        return;
+                    }
+                    OverpackedGuiBridge.confirm(player, packet.entityId());
                 }));
     }
 }

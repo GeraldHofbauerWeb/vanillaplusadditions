@@ -285,23 +285,27 @@ public class FoodEffectsModule extends AbstractModule<FoodEffectsModule, FoodEff
                 event.modify(item, builder -> {
                     ItemStack stack = new ItemStack(item);
                     FoodProperties existingFood = stack.get(DataComponents.FOOD);
-                    FoodProperties.Builder foodBuilder;
-                    if (existingFood != null) {
-                        foodBuilder = new FoodProperties.Builder()
-                                .nutrition(existingFood.nutrition())
-                                .saturationModifier(existingFood.saturation())
-                                .alwaysEdible();
-                        // Copy effects if any
-                        existingFood.effects().forEach(effect ->
-                                foodBuilder.effect(effect::effect, effect.probability()));
-                    } else {
-                        // If it's not food yet, make it food so it can be eaten
-                        foodBuilder = new FoodProperties.Builder()
+                    if (existingFood == null) {
+                        // Not food yet — make it edible so the configured effect has a trigger.
+                        builder.set(DataComponents.FOOD, new FoodProperties.Builder()
                                 .nutrition(0)
                                 .saturationModifier(0)
-                                .alwaysEdible();
+                                .alwaysEdible()
+                                .build());
+                        return;
                     }
-                    builder.set(DataComponents.FOOD, foodBuilder.build());
+                    // Rebuild the record rather than going through the Builder. The Builder cannot
+                    // express eat_seconds (only fast() = 0.8 s) and starts usingConvertsTo empty — and
+                    // usingConvertsTo is where 1.21.1 keeps the "gives the bowl back" behaviour, there
+                    // is no BowlFoodItem any more. Losing it silently swallowed the bowl of every stew
+                    // this module touches (mushroom stew, rabbit stew, beetroot soup).
+                    builder.set(DataComponents.FOOD, new FoodProperties(
+                            existingFood.nutrition(),
+                            existingFood.saturation(),
+                            true, // this is what the config entry is for: always edible
+                            existingFood.eatSeconds(),
+                            existingFood.usingConvertsTo(),
+                            existingFood.effects()));
                 });
             }
         } catch (Exception e) {

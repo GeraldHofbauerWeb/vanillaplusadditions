@@ -39,6 +39,8 @@ public class AxolotlGuardianJeiPlugin implements IModPlugin {
                 AxolotlGuardianModule.AXOLOTL_ARMOR_DIAMOND.get(),
                 AxolotlGuardianModule.AXOLOTL_ARMOR_NETHERITE.get());
         JeiMobArmorRepairs.register(registration, Items.TURTLE_SCUTE, armors);
+        // Netherit-Stufe laesst sich zusaetzlich mit Diamanten reparieren
+        JeiMobArmorRepairs.register(registration, Items.DIAMOND, List.of(AxolotlGuardianModule.AXOLOTL_ARMOR_NETHERITE.get()));
 
         JeiMobArmorEnchantments.register(registration, armors);
     }

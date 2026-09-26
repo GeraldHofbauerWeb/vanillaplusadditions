@@ -56,6 +56,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_left": "Rucksack aufmachen (linkes Fach)",
   "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Des Rucksackfach is no ned freigschoit.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Du hast kan großen Rucksack auf.",
+  "message.vanillaplusadditions.overpacked_extensions.open_failed": "Der Rucksack hat si ned aufgmacht – probier's nomoi.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) is ned verfügbar.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Kotz-Ovalays umschoitn",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Kotz-Ovalays: AN",

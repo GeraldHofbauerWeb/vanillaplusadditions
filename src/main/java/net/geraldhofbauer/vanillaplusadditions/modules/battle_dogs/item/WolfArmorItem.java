@@ -8,6 +8,7 @@ import net.minecraft.world.item.AnimalArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 
 import java.util.List;
@@ -72,6 +73,18 @@ public class WolfArmorItem extends AnimalArmorItem {
      */
     public ResourceLocation getFoxhoundTexture() {
         return foxhoundTexture;
+    }
+
+    /**
+     * Armadillo scutes repair wolf armour, as they do in vanilla. The netherite tier additionally
+     * accepts diamonds: a netherite ingot is far too dear to burn on a repair, and diamond is the
+     * material the tier is built up from anyway. With the free_anvil_repair module enabled the
+     * repair costs 0 levels.
+     */
+    @Override
+    public boolean isValidRepairItem(ItemStack stack, ItemStack repairCandidate) {
+        return repairCandidate.is(Items.ARMADILLO_SCUTE)
+                || (tier == Tier.NETHERITE && repairCandidate.is(Items.DIAMOND));
     }
 
     @Override

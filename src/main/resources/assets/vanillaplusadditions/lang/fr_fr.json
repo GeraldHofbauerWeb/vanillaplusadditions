@@ -59,6 +59,7 @@
   "key.vanillaplusadditions.overpacked_extensions.open_left": "Ouvrir le sac (compartiment gauche)",
   "message.vanillaplusadditions.overpacked_extensions.compartment_locked": "Ce compartiment du sac à dos n'est pas encore débloqué.",
   "message.vanillaplusadditions.overpacked_extensions.no_backpack": "Vous ne portez pas de grand sac à dos.",
+  "message.vanillaplusadditions.overpacked_extensions.open_failed": "Le sac n'a pas pu être ouvert – veuillez réessayer.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "L'accès au sac Overpacked est indisponible.",
   "key.vanillaplusadditions.cat_guardian.toggle_overlay": "Afficher/masquer les surcouches Chat Gardien",
   "message.vanillaplusadditions.cat_guardian.overlay_on": "Surcouches Chat Gardien : ACTIVÉ",
