@@ -10,6 +10,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.PlayerRideableJumping;
+import net.geraldhofbauer.vanillaplusadditions.modules.wolf_mount.compat.QuarkMountCompat;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.HumanoidArm;
@@ -95,6 +96,17 @@ public abstract class WolfMountMixin extends TamableAnimal implements PlayerRide
     @Override
     protected void tickRidden(Player rider, Vec3 travelVector) {
         super.tickRidden(rider, travelVector);
+        // Quark's foxhound keeps a "resting" flag that its model reads: posed down, and with the head
+        // branch that ignores the look direction entirely. Nothing clears it while a passenger is in
+        // control, so a mounted foxhound stared in one fixed direction and swung its legs through its
+        // own head. No-op for every other wolf, and for every installation without Quark.
+        Wolf self = (Wolf) (Object) this;
+        QuarkMountCompat.wakeIfFoxhound(self);
+        // A wolf that sees food tilts its head. Vanilla puts that angle on the head's ROLL axis
+        // (WolfModel: realHead.zRot); Quark's foxhound puts the very same value on its YAW axis, so
+        // the head turns sideways instead of tilting. Under a saddle either reading is a nuisance —
+        // a rider almost always holds something, and the mount's head then sits permanently askew.
+        self.setIsInterested(false);
         Vec2 rotation = new Vec2(rider.getXRot() * 0.5F, rider.getYRot());
         this.setRot(rotation.y, rotation.x);
         this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();

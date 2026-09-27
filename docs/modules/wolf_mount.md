@@ -10,7 +10,7 @@
 | **Module ID** | `wolf_mount` |
 | **Side** | Client + Server |
 | **Requires** | — |
-| **Works with** | Grim Kingdoms: structures & ruins, Creeper Overhaul |
+| **Works with** | Grim Kingdoms: structures & ruins, Creeper Overhaul, [Quark](https://modrinth.com/mod/quark) <sub>tested 4.1-482</sub> |
 | **Download** | [`vpa_wolf_mount.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_wolf_mount.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.wolf_mount]` |
 | **Since** | `v1.0.0-beta.74` |
@@ -550,6 +550,23 @@ to English.
 **Porting checklist.** The module rests on four `protected` hooks with no NeoForge event coverage.
 Any port past 1.21.1 must re-verify the `travelRidden` branch of `LivingEntity.aiStep`,
 `travelRidden` itself, and the signatures of `tickRidden`, `getRiddenInput` and `getRiddenSpeed`.
+
+## Foxhounds
+
+Quark's Foxhound extends `Wolf`, so every rule above already covers it — an armoured, large enough,
+tamed foxhound rides like any other. It needed one fix, and it is a good example of how a mod's own
+animation can be broken by a use it never expected.
+
+A foxhound lies down near a heat source and remembers it in a synced `IS_RESTING` flag. Its model
+reads that flag **twice**: `prepareMobModel` poses the head and body for lying down, and `setupAnim`
+then takes a branch that ignores the look direction entirely and wobbles the head on a timer instead.
+Nothing clears the flag while a passenger is in control, because the goal that would clear it does
+not run. A ridden foxhound therefore stared in one fixed direction while its legs kept swinging from
+the walk animation — straight through its own posed-down head.
+
+`tickRidden` now clears the flag. The class that names `Foxhound` is reached only through a
+`ModList` check, so it is never loaded on an installation without Quark — the trap that crashed
+beta.70.
 
 ## See also
 

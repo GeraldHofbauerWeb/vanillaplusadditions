@@ -123,6 +123,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   einen Nether-Hund, den zu suchen sich lohnt, ganz ohne neues Mob: das Tier gab es schon, es hat nur
   einen Grund gebraucht, gross zu sein.
 
+### Fixed
+- **Ein gerittener Foxhound starrte in eine feste Richtung und trat sich durch den eigenen Kopf**
+  (Gerry, 2026-09-27). Quarks Foxhound legt sich an Waermequellen hin und merkt sich das in einem
+  synchronisierten `IS_RESTING`-Flag. Sein Modell liest das Flag **zweimal**: `prepareMobModel` stellt
+  Kopf und Koerper auf Liegen, und `setupAnim` nimmt dann den Zweig, der die Blickrichtung komplett
+  ignoriert und den Kopf stattdessen auf einem Timer wackeln laesst. Waehrend ein Passagier steuert,
+  raeumt niemand das Flag ab — das Goal, das es taete, laeuft dann nicht. Also blieb der Kopf in der
+  Liegepose stehen, waehrend die Beine weiter die Laufanimation abspielten und dabei durch ihn
+  hindurchfuhren. `tickRidden` loescht das Flag jetzt. Die Klasse, die `Foxhound` ueberhaupt beim
+  Namen nennt, wird nur ueber eine `ModList`-Pruefung erreicht, damit sie ohne Quark nie geladen wird
+  — genau die Falle, die in beta.70 einen Absturz gekostet hat.
+
 ### Changed
 - **Der Rezept-Parser aus `custom_crafting_recipes` liegt jetzt in `util/ConfiguredRecipes`**, weil
   ihn zwei Module brauchen. Reiner Umzug, kein Verhaltenswechsel — es gibt bewusst **einen** Parser
