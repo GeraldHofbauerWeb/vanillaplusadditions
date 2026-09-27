@@ -21,7 +21,7 @@ Two gemstones, cut from emeralds. Hold one in your main hand and right-click a l
 | | <img src="../img/items/growth_gemstone.png" width="48"><br>Growth Gemstone | <img src="../img/items/shrinking_gemstone.png" width="48"><br>Shrinking Gemstone |
 |---|---|---|
 | Size | × 2 | ÷ 2 |
-| Health, attack, speed, jump, step height, armour | × 1.5 | ÷ 1.5 |
+| Health, attack, speed, jump, step height, armour | × 1.5 | × 0.82 |
 | A creeper's blast radius | 3 → 4 | 3 → 2 |
 | A vanilla wolf at 1.0 becomes | 2.0 — **and no further** | 0.5 — and no further |
 
@@ -38,6 +38,31 @@ shrunk  ←──  natural  ←──  grown
 The stats move with the size, but by less: twice as big should be noticeably stronger, not twice as
 strong. That deliberately includes a horse's **hidden stats** — the health, movement speed and jump
 strength that are rolled per animal and decide whether a horse is worth keeping.
+
+### The stats follow the size, not the gemstone
+
+The bonus is a function of how big a creature *is*, not of what was done to it:
+
+| Size | Stats | An armoured wolf falls free for |
+|---|---|---|
+| 0.5 | × 0.82 | 4.1 blocks |
+| 1.0 | × 1.00 | 5.0 blocks |
+| 2.0 | × 1.50 | 7.5 blocks |
+| 3.0 | × 2.25 | 11.2 blocks |
+| 3.25 (Sif) | × 2.49 | 12.5 blocks |
+
+So a wolf that **spawned** three times the usual size earns its 2.25 without anyone ever clicking it,
+and armour that covers twice the animal covers twice the landing. The rungs are additive in size —
+each whole block of extra size is worth another 1.5 — rather than keyed to `log2(size)`, which would
+make three times as big worth only 1.87.
+
+**It tops up, it never stacks.** The target is the *species'* default value times the multiplier, and
+a creature already stronger than that keeps exactly what it has. Sif is the reason this rule exists:
+350 health at size 3.25 would otherwise be handed another 2.5× on top, and any hand-tuned boss from
+another mod would be quietly rebalanced by us. Shrinking works the other way round — it scales down
+what the creature actually has, because there the point is to take something away. A creature of
+ordinary size is never touched at all, or the top-up would drag one that another mod deliberately
+*weakened* back up to its species default.
 
 The change is permanent and exactly reversible. It survives saving, chunk unload and a server
 restart, the hitbox follows, and every player who can see the creature sees it change within a tick.
@@ -232,8 +257,14 @@ Run it with `--check` to verify the committed PNGs are current.
   Wither are on the default denylist so you get a readable refusal rather than a gemstone that
   silently does nothing; the shulker and the slimes are simply capped.
 * **Stats follow, but not everything does.** Health, attack damage, movement speed, jump strength,
-  step height and armour scale (`scaled_attributes`), and a creeper's blast scales with them. Reach
-  and anything a mod computes for itself do not.
+  step height and armour scale (`scaled_attributes`). Reach and anything a mod computes for itself do
+  not.
+* **The creeper's blast is the exception to "size, not gemstone".** It has no base value to measure a
+  top-up against — it is one stored number — so it is walked up and down by the gemstones only. A
+  creeper that spawned big gets the stat bonus but an ordinary blast.
+* **A size change made by something else settles on the next load.** Stats are recomputed when a
+  creature enters the world and right after a gemstone. If another mod resizes a creature mid-life,
+  its stats follow when the chunk next reloads.
 * **Modded creatures usually work**, since almost every entity inherits
   `createLivingAttributes()`. One whose attribute supplier was hand-rolled without `SCALE` is refused
   instead of crashing.
@@ -257,6 +288,7 @@ Run it with `--check` to verify the committed PNGs are current.
 | `modules/special_gemstones/config/SpecialGemstonesConfig.java` | the config keys and their defaults |
 | `mixin/special_gemstones/CreeperExplosionRadiusAccessor.java` | the one private field a gemstone has to reach |
 | `util/ConfiguredRecipes.java` | the shared recipe-string parser, lifted out of `custom_crafting_recipes` so both modules speak one format |
+| `util/SizeScaling.java` | the one ladder — `factor^(size-1)` — that this module and `battle_dogs` both read |
 | `scripts/gen_gemstone_textures.py` | the two item icons, generated and verifiable with `--check` |
 
 <!-- vpa:config:start -->
@@ -279,14 +311,15 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
 | `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
 | `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs. |
-| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed, jump_strength, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor. The three a horse rolls per animal — health, movement speed and jump strength — are all in here, because those hidden numbers are what make one horse better than another and they have to move with the size. Step height is in for the same reason: a creature twice the size that still trips over the same kerb looks wrong. A creature that lacks one of the attributes simply skips it. |
+| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed, jump_strength, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor, as a top-up against the species default. The three a horse rolls per animal — health, movement speed and jump strength — are all in here, because those hidden numbers are what make one horse better than another and they have to move with the size. Step height is in for the same reason: a creature twice the size that still trips over the same kerb looks wrong. A creature that lacks one of the attributes simply skips it. |
 | `shrinking_recipe` | string | `emerald block, 4 warped wart blocks, 4 amethyst shards` | — | The crafting recipe for the Shrinking Gemstone, same format as growth_recipe. |
-| `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | How much one gemstone changes the STATS listed in scaled_attributes. A grown creature is multiplied by it, a shrunk one divided. Deliberately smaller than scale_factor: twice the size should be noticeably stronger, not twice as strong. Set to 1.0 to change size only. |
+| `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | What one whole block of extra SIZE is worth in stats, as factor^(size-1). At the default of 1.5 a creature at twice the usual size is 1.5x, one at three times is 2.25x and Sif at 3.25 is 2.49x. The rungs are additive in size on purpose: three times as big should be worth 1.5 twice over. The bonus is derived from the size itself, so a creature that SPAWNED big earns it without a gemstone — but it only ever tops up to the species default times the multiplier and never stacks on a creature that is already stronger than that. Set to 1.0 to change size only and leave every stat alone. |
 <!-- vpa:config:end -->
 
 ## See also
 
 * [Wolf Mount](wolf_mount.md) — what a Growth Gemstone unlocks
+* [Battle Dogs](battle_dogs.md) — where a bigger wolf's longer free fall is paid out
 * [Custom Crafting Recipes](custom_crafting_recipes.md) — the recipe-string format the two recipe keys use
 * [Configuration Guide](../guides/configuration.md)
 * [All modules](../../README.md#modules)

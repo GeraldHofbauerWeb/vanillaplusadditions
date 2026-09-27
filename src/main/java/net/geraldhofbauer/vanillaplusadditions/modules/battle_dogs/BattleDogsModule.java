@@ -6,6 +6,7 @@ import net.geraldhofbauer.vanillaplusadditions.core.VanillaPlusCreativeTabs;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config.BattleDogsConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.item.WolfArmorItem;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorDamage;
+import net.geraldhofbauer.vanillaplusadditions.util.SizeScaling;
 import net.geraldhofbauer.vanillaplusadditions.util.MobArmorEnchantments;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.BiteDirections;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.network.WolfBiteDirectionPacket;
@@ -338,7 +339,10 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
             event.setCanceled(true);
             return;
         }
-        double freeFall = getConfig().getFallAbsorbBlocks();
+        // A bigger wolf falls further for free: armour that covers twice the animal covers twice the
+        // landing. Same ladder the size gemstones use, so the two agree without depending on each other.
+        double freeFall = getConfig().getFallAbsorbBlocks() * SizeScaling.multiplier(
+                wolf.getAttributeValue(Attributes.SCALE), getConfig().getFallAbsorbSizeFactor());
         if (freeFall > 0.0 && event.getSource().is(DamageTypeTags.IS_FALL) && wolf.fallDistance <= freeFall) {
             event.setCanceled(true);
         }

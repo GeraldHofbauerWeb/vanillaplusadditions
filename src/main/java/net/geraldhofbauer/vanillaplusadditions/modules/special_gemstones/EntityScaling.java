@@ -3,6 +3,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.special_gemstones;
 import net.geraldhofbauer.vanillaplusadditions.VanillaPlusAdditions;
 import net.geraldhofbauer.vanillaplusadditions.mixin.special_gemstones.CreeperExplosionRadiusAccessor;
 import net.geraldhofbauer.vanillaplusadditions.modules.special_gemstones.config.SpecialGemstonesConfig;
+import net.geraldhofbauer.vanillaplusadditions.util.SizeScaling;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +15,8 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -52,6 +55,14 @@ public final class EntityScaling {
     /** Marks a shrunk creature. */
     public static final ResourceLocation SHRUNK_ID =
             ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "gemstone_shrunk");
+
+    /**
+     * Marks the stat bonus a creature carries for its size. Unlike the two above this is not tied to
+     * a gemstone at all — anything big enough earns it, whether a player grew it or it spawned that
+     * way.
+     */
+    public static final ResourceLocation SIZE_STATS_ID =
+            ResourceLocation.fromNamespaceAndPath(VanillaPlusAdditions.MODID, "size_stats");
 
     /**
      * Vanilla's own bounds for {@code generic.scale}, from the {@code RangedAttribute} in
@@ -157,6 +168,7 @@ public final class EntityScaling {
         }
 
         applyStep(target, next, config);
+        refreshSizeStats(target, config);
         if (config.isCreeperBlastScaled()) {
             scaleCreeperBlast(target, next.ordinal() > from.ordinal(), config.getStatFactor());
         }
@@ -180,24 +192,97 @@ public final class EntityScaling {
     }
 
     /**
-     * Writes the new state: both modifiers off every affected attribute, then the one the new state
-     * calls for. The health bar is carried over as a fraction, so a creature at half health is still
-     * at half health afterwards instead of suddenly wounded (grown) or dying (shrunk).
+     * Writes the new size: both markers off the size attribute, then the one the new state calls for.
+     * The stats are not touched here — they follow from the size and are refreshed afterwards.
      */
     private static void applyStep(LivingEntity target, Step step, SpecialGemstonesConfig config) {
+        setModifier(target.getAttribute(Attributes.SCALE), step, amountFor(step, config.getScaleFactor()));
+    }
+
+    /**
+     * Brings a creature's stats in line with how big it currently is.
+     *
+     * <p>The bonus is derived from the size itself, not from the gemstones, so a wolf that spawned at
+     * three times the usual size earns it without anyone having clicked it. Whatever changed the
+     * size — a gemstone, another mod, a command — this is what reads the result and settles up.
+     *
+     * <p><strong>It tops up, it never stacks.</strong> The target is the SPECIES' default value times
+     * the multiplier, and a creature already stronger than that keeps what it has. Sif is the case
+     * this exists for: a wolf with 350 health at size 3.25 would otherwise be handed another 2.5×
+     * on top, and a hand-tuned boss from another mod would be quietly rebalanced by us. Shrinking is
+     * the other way round — it scales down what the creature actually has, because there the point is
+     * to take something away.
+     *
+     * <p>Idempotent on purpose: it runs on every entity join, so it works out the modifier it wants,
+     * compares it with the one already there, and returns without touching anything if they agree.
+     * Health is carried across as a fraction, so a wounded animal stays proportionally wounded rather
+     * than being healed by a reload.
+     */
+    public static void refreshSizeStats(LivingEntity target, SpecialGemstonesConfig config) {
+        double multiplier = SizeScaling.multiplier(
+                target.getAttributeValue(Attributes.SCALE), config.getStatFactor());
+        AttributeSupplier defaults = DefaultAttributes.hasSupplier(target.getType())
+                ? DefaultAttributes.getSupplier(asLivingType(target))
+                : null;
+
         float healthFraction = target.getMaxHealth() > 0.0F
                 ? target.getHealth() / target.getMaxHealth()
                 : 1.0F;
+        boolean changed = false;
 
-        double scaleAmount = amountFor(step, config.getScaleFactor());
-        double statAmount = amountFor(step, config.getStatFactor());
-
-        setModifier(target.getAttribute(Attributes.SCALE), step, scaleAmount);
         for (Holder<Attribute> attribute : scaledAttributes(config)) {
-            setModifier(target.getAttribute(attribute), step, statAmount);
+            AttributeInstance instance = target.getAttribute(attribute);
+            if (instance == null) {
+                continue;
+            }
+            // beta.100 briefly put the step markers on the stats themselves. Anything changed back
+            // then still carries them; drop them here so the bonus is not counted twice.
+            if (instance.hasModifier(GROWN_ID) || instance.hasModifier(SHRUNK_ID)) {
+                instance.removeModifier(GROWN_ID);
+                instance.removeModifier(SHRUNK_ID);
+                changed = true;
+            }
+            double wanted = wantedBonus(instance, attribute, defaults, multiplier);
+            AttributeModifier existing = instance.getModifier(SIZE_STATS_ID);
+            if (Math.abs((existing == null ? 0.0D : existing.amount()) - wanted) < 1.0E-6D) {
+                continue;
+            }
+            instance.removeModifier(SIZE_STATS_ID);
+            if (Math.abs(wanted) >= 1.0E-6D) {
+                instance.addOrReplacePermanentModifier(
+                        new AttributeModifier(SIZE_STATS_ID, wanted, AttributeModifier.Operation.ADD_VALUE));
+            }
+            changed = true;
         }
 
-        target.setHealth(healthFraction * target.getMaxHealth());
+        if (changed) {
+            target.setHealth(healthFraction * target.getMaxHealth());
+        }
+    }
+
+    /** How much has to be added to this attribute so the creature matches its size. */
+    private static double wantedBonus(AttributeInstance instance, Holder<Attribute> attribute,
+                                      AttributeSupplier defaults, double multiplier) {
+        double base = instance.getBaseValue();
+        if (Math.abs(multiplier - 1.0D) < 1.0E-6D) {
+            // Ordinary size earns nothing. Without this the top-up would quietly drag a creature that
+            // another mod deliberately WEAKENED back up to its species default.
+            return 0.0D;
+        }
+        if (multiplier < 1.0D) {
+            // Smaller: take a share off what the creature actually has.
+            return base * multiplier - base;
+        }
+        if (defaults == null || !defaults.hasAttribute(attribute)) {
+            return 0.0D;
+        }
+        double floor = defaults.getBaseValue(attribute) * multiplier;
+        return Math.max(0.0D, floor - base);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static EntityType<? extends LivingEntity> asLivingType(LivingEntity target) {
+        return (EntityType<? extends LivingEntity>) target.getType();
     }
 
     /**

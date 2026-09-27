@@ -15,11 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   vergroessert — ein zweiter Wachstums-Edelstein auf einem schon vergroesserten Tier wird abgelehnt.
   Erreichbar sind also x0.5, x1 und x2, und die Steine lassen sich nicht zu beliebig grossen Mobs
   stapeln. Der jeweils andere Stein fuehrt zurueck.
-- **Die Werte wachsen mit, aber schwaecher** (Gerry, 2026-09-27): Leben, Angriff, Tempo, Sprungkraft,
-  Schritthoehe und Ruestung mal 1.5 beim Vergroessern, geteilt durch 1.5 beim Schrumpfen — doppelt so gross soll
-  spuerbar staerker sein, nicht doppelt so stark. Das trifft ausdruecklich die **versteckten Werte
-  von Pferden**: Leben, Tempo und Sprungkraft werden pro Tier ausgewuerfelt und entscheiden, ob ein
-  Pferd etwas taugt.
+- **Die Werte haengen an der GROESSE, nicht am Edelstein** (Gerry, 2026-09-27). `1.5^(Groesse-1)`:
+  doppelt so gross ist 1.5, dreimal so gross 2.25, Sif mit 3.25 kommt auf 2.49, geschrumpft sind es
+  0.82. Die Stufen sind bewusst additiv in der Groesse und nicht an `log2` gekoppelt — sonst waere
+  dreimal so gross nur 1.87 wert. Ein Wolf, der schon gross **gespawnt** ist, verdient sich den Bonus
+  damit, ohne dass ihn je jemand angeklickt hat. Betroffen sind Leben, Angriff, Tempo, Sprungkraft,
+  Schritthoehe und Ruestung — ausdruecklich also auch die **versteckten Werte von Pferden**, die pro
+  Tier ausgewuerfelt werden und entscheiden, ob ein Pferd etwas taugt.
+- **Aufgestockt wird, gestapelt nicht.** Ziel ist der **Artvorgabewert** mal dem Faktor; wer schon
+  staerker ist, behaelt genau das, was er hat. Sif ist der Grund fuer die Regel: 350 Leben bei Groesse
+  3.25 bekaemen sonst nochmal das 2.5-fache obendrauf, und jeder handgetunte Boss aus einer fremden
+  Mod wuerde von uns stillschweigend umbalanciert. Beim Schrumpfen gilt es umgekehrt — dort wird von
+  dem abgezogen, was das Tier tatsaechlich hat. Bei normaler Groesse passiert gar nichts, sonst wuerde
+  die Aufstockung ein absichtlich **geschwaechtes** Tier auf den Artvorgabewert hochziehen.
+- **Die Ruestung faengt bei groesseren Woelfen mehr Fallschaden ab** (Gerry, 2026-09-27), neuer
+  Schluessel `battle_dogs.fall_absorb_size_factor` (Standard 1.5). Dieselbe Leiter: ein doppelt so
+  grosser Wolf faellt 7.5 Bloecke frei statt 5, Sif 12.5. Ruestung, die das doppelte Tier bedeckt,
+  bedeckt auch die doppelte Landung. Die Leiter selbst liegt in `util/SizeScaling`, damit beide
+  Module dieselbe Antwort geben, ohne voneinander abzuhaengen.
 - **Ungewoehnlich grosse Tiere bleiben unangetastet** (Sebi, 2026-09-27). Wessen **natuerliche**
   Groesse ausserhalb von `min_natural_scale`…`max_natural_scale` liegt (0.5 bis 2.0), den greifen die
   Steine gar nicht — in keine Richtung. Der uebergrosse Wolf aus einer Dungeon-Truhe bleibt damit
@@ -105,6 +118,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stehen auf der Standard-Denylist, damit daraus eine lesbare Absage wird statt eines Edelsteins,
   der stumm nichts tut.
 - Reichweite und alles, was eine fremde Mod selbst ausrechnet, folgen der Groesse nicht.
+- Der Creeper-Krater ist die Ausnahme von „Groesse statt Edelstein": er hat keinen Basiswert, gegen
+  den sich eine Aufstockung messen liesse, und wird deshalb nur von den Edelsteinen bewegt. Ein
+  Creeper, der gross gespawnt ist, bekommt die Werte, aber einen normalen Krater.
+- Aendert eine fremde Mod die Groesse mitten im Leben, folgen die Werte erst beim naechsten Laden.
 
 ## [1.0.0-beta.99.3] - 2026-09-26
 

@@ -15,6 +15,7 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
 
     private ModConfigSpec.DoubleValue thornsReflectFraction;
     private ModConfigSpec.DoubleValue fallAbsorbBlocks;
+    private ModConfigSpec.DoubleValue fallAbsorbSizeFactor;
     private ModConfigSpec.BooleanValue biteAnimation;
     private ModConfigSpec.BooleanValue biteAnimationOnlyWhenRidden;
     private ModConfigSpec.DoubleValue biteAnimationStrength;
@@ -36,6 +37,13 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
                         "damage, so it reads the way it sounds: 5 means a five-block drop is free.",
                         "0 switches it off and every fall is paid for as before.")
                 .defineInRange("fall_absorb_blocks", 5.0D, 0.0D, 256.0D);
+
+        fallAbsorbSizeFactor = builder
+                .comment("How much further a BIGGER wolf falls for free: the blocks above are",
+                        "multiplied by this factor raised to (size - 1), the same ladder the size",
+                        "gemstones use. A wolf at twice the usual size gets 1.5x the free fall, one at",
+                        "three times gets 2.25x. 1.0 switches it off and every wolf falls the same.")
+                .defineInRange("fall_absorb_size_factor", 1.5D, 1.0D, 8.0D);
 
         builder.comment("Client-side bite animation. Vanilla wolves have none at all -- their model",
                         "never reads attackAnim, so an attacking wolf deals damage without moving.").push("bite_animation");
@@ -73,6 +81,10 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
      *
      * @return the free fall distance in blocks, 0 to disable
      */
+    public double getFallAbsorbSizeFactor() {
+        return fallAbsorbSizeFactor != null ? fallAbsorbSizeFactor.get() : 1.5D;
+    }
+
     public double getFallAbsorbBlocks() {
         return fallAbsorbBlocks.get();
     }

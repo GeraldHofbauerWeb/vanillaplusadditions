@@ -36,6 +36,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.LootTableLoadEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -208,6 +209,27 @@ public class SpecialGemstonesModule
             return String.valueOf((long) scale);
         }
         return String.format(Locale.ROOT, "%.3f", scale).replaceAll("0+$", "").replaceAll("\\.$", "");
+    }
+
+    /**
+     * Settles a creature's stats against its size whenever it enters the world.
+     *
+     * <p>This is what lets a creature that was <em>born</em> big earn the bonus — Sif, a boss from
+     * another mod, anything a command made large. The gemstones are only one of the ways a creature
+     * ends up a given size, and the stats follow the size, not the gemstone.
+     *
+     * <p>Cheap enough to run on every entity: the work stops at the first check for anything of
+     * ordinary size, and {@code refreshSizeStats} compares against the modifier already present, so a
+     * creature that is already settled is not touched at all.
+     */
+    @SubscribeEvent
+    public void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!isModuleEnabled() || event.getLevel().isClientSide()) {
+            return;
+        }
+        if (event.getEntity() instanceof LivingEntity living) {
+            EntityScaling.refreshSizeStats(living, getConfig());
+        }
     }
 
     // ------------------------------------------------------------------------------------------
