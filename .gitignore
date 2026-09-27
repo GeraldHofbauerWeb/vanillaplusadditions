@@ -88,3 +88,7 @@ unused_assets/
 # Python-Bytecode der Doku-Werkzeuge
 __pycache__/
 *.pyc
+
+# Vanilla-Client-Jar, die scripts/docgen/render_models.py zum Rendern der Item-Bilder braucht.
+# Mojangs Datei gehoert nicht in ein oeffentliches Repo — lokal ablegen oder VPA_CLIENT_JAR setzen.
+scripts/docgen/client-*.jar

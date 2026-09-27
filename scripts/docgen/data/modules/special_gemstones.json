@@ -1,0 +1,150 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "defaultValue": "2.0",
+      "effect": "How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs.",
+      "key": "scale_factor",
+      "range": "1.05 ~ 8.0",
+      "type": "double"
+    },
+    {
+      "defaultValue": "1.5",
+      "effect": "How much one gemstone changes the STATS listed in scaled_attributes. A grown creature is multiplied by it, a shrunk one divided. Deliberately smaller than scale_factor: twice the size should be noticeably stronger, not twice as strong. Set to 1.0 to change size only.",
+      "key": "stat_factor",
+      "range": "1.0 ~ 8.0",
+      "type": "double"
+    },
+    {
+      "defaultValue": "0.5",
+      "effect": "Smallest NATURAL size a creature may have for the gemstones to work on it — the size it was born with, read from the attribute's base value, not the size it is now.",
+      "key": "min_natural_scale",
+      "range": "0.0625 ~ 16.0",
+      "type": "double"
+    },
+    {
+      "defaultValue": "2.0",
+      "effect": "Largest NATURAL size a creature may have for the gemstones to work on it. Anything already bigger is out of their reach on purpose: an oversized wolf from a dungeon, or Sif from Grim Kingdoms, stays exactly as rare as it was found and can be neither grown further nor cut down to an ordinary size.",
+      "key": "max_natural_scale",
+      "range": "0.0625 ~ 16.0",
+      "type": "double"
+    },
+    {
+      "defaultValue": "max_health, attack_damage, movement_speed, jump_strength, step_height, armor",
+      "effect": "The attributes that follow the size, scaled by stat_factor. The three a horse rolls per animal — health, movement speed and jump strength — are all in here, because those hidden numbers are what make one horse better than another and they have to move with the size. Step height is in for the same reason: a creature twice the size that still trips over the same kerb looks wrong. A creature that lacks one of the attributes simply skips it.",
+      "key": "scaled_attributes",
+      "range": "",
+      "type": "list of strings"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds.",
+      "key": "scale_creeper_blast",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Let the gemstones resize players too. Off by default: a shrunk player sees over no stair and a grown one suffocates in its own corridors.",
+      "key": "allow_players",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible.",
+      "key": "require_tamed",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Refuse to grow a creature when its new hitbox would not fit where it stands. Without it Entity.refreshDimensions gives up looking for a free spot and the animal suffocates inside the ceiling.",
+      "key": "check_space",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Use up the gemstone on a successful change. Creative mode never consumes it, and a refused click never consumes it either.",
+      "key": "consume_item",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "minecraft:ender_dragon, minecraft:wither",
+      "effect": "Entity types the gemstones refuse to touch. The Ender Dragon ignores the attribute anyway (its sanitizeScale returns a hard 1.0F), but listing it turns a gemstone that silently does nothing into a readable refusal. Ids are validated with containsKey, because ENTITY_TYPE is a DefaultedRegistry and an unknown id would otherwise resolve to minecraft:pig.",
+      "key": "denied_entities",
+      "range": "",
+      "type": "list of strings"
+    },
+    {
+      "defaultValue": "emerald block, 4 crimson wart blocks, 4 amethyst shards",
+      "effect": "The crafting recipe for the Growth Gemstone, in the same format custom_crafting_recipes uses: recipe_id;result_item;result_count;pattern;keys. Editable so the pack can re-price the gemstones without a new build. An empty string makes the gemstone uncraftable.",
+      "key": "growth_recipe",
+      "range": "",
+      "type": "string"
+    },
+    {
+      "defaultValue": "emerald block, 4 warped wart blocks, 4 amethyst shards",
+      "effect": "The crafting recipe for the Shrinking Gemstone, same format as growth_recipe.",
+      "key": "shrinking_recipe",
+      "range": "",
+      "type": "string"
+    },
+    {
+      "defaultValue": "seven vanilla structure chests, 8% to 30%",
+      "effect": "Chests that may contain a gemstone, as loot_table;chance. The chance is rolled once per chest and which of the two gemstones drops is an even 50/50. Applied through LootTableLoadEvent, so any mod's chest table can be added.",
+      "key": "loot_tables",
+      "range": "",
+      "type": "list of strings"
+    }
+  ],
+  "displayName": "Special Gemstones",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract (GAME bus, both sides, instance @SubscribeEvent method SpecialGemstonesModule.onEntityInteract registered by NeoForge.EVENT_BUS.register(this) in onInitialize; default priority NORMAL; cancels with InteractionResult.sidedSuccess when a main-hand click with a gemstone lands on a LivingEntity, and only mutates server-side)",
+    "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteractSpecific (same handling; fires before EntityInteract when the click hits a specific part of the hitbox)",
+    "net.neoforged.neoforge.event.AddReloadListenerEvent (GAME bus, server; adds GemstoneRecipeReloadListener, which re-injects the two configured recipes into the RecipeManager after every resource reload)",
+    "net.neoforged.neoforge.event.LootTableLoadEvent (GAME bus, server; adds one named pool to each configured chest table, guarded by getPool(name) == null because addPool throws on a duplicate name)"
+  ],
+  "hasStandaloneJar": true,
+  "items": [
+    {
+      "id": "vanillaplusadditions:growth_gemstone",
+      "name": "Growth Gemstone",
+      "notes": "GemstoneItem with grows=true. Right-click a living creature to move it one step up: size x scale_factor, stats x stat_factor. Only works on a creature at its natural size or currently shrunk — a creature that is already grown is refused, which is the cap. Consumed on success unless the player is in creative or consume_item is off. Crimson icon with an engraved arrow pointing up, drawn from scratch by scripts/gen_gemstone_textures.py."
+    },
+    {
+      "id": "vanillaplusadditions:shrinking_gemstone",
+      "name": "Shrinking Gemstone",
+      "notes": "GemstoneItem with grows=false. The exact inverse: one step down, dividing size and stats by the same two factors. Used on a grown creature it removes the growth modifier and restores the creature's own numbers bit for bit. Warped-teal icon with an engraved arrow pointing down."
+    }
+  ],
+  "keybinds": [],
+  "mixins": [
+    "special_gemstones.CreeperExplosionRadiusAccessor (@Accessor on Creeper.explosionRadius, common side; the blast is a plain int field, not an attribute, and Explosion.radius is private final so it cannot be adjusted at detonation time either)"
+  ],
+  "moduleDeps": [],
+  "moduleId": "special_gemstones",
+  "notes": "WHAT EXISTS: two items (vanillaplusadditions:growth_gemstone, vanillaplusadditions:shrinking_gemstone, both GemstoneItem extends Item), one interaction handler pair, one recipe reload listener, one loot-table listener. No block, no entity, no mixin, no packet, no client class.\n\nTHE SIZE IS THE VANILLA ATTRIBUTE. minecraft:generic.scale exists since 1.20.5 as a RangedAttribute(\"attribute.name.generic.scale\", 1.0, 0.0625, 16.0).setSyncable(true) and is part of LivingEntity.createLivingAttributes(), so every vanilla living entity has it. EntityScaling never writes the base value; it adds one ADD_MULTIPLIED_TOTAL modifier and reads the base only to learn the creature's natural size.\n\nTHREE STATES, NOT A FREE SCALE. A creature is shrunk, natural or grown, and a gemstone moves it exactly one state. The state is not stored anywhere of ours: it IS the pair of permanent attribute modifiers vanillaplusadditions:gemstone_grown and vanillaplusadditions:gemstone_shrunk, detected with AttributeInstance.hasModifier(ResourceLocation). Permanent modifiers are saved in the entity's \"attributes\" NBT and synced to every tracking client, so the state survives saving, chunk unload and a restart with no data attachment (which would not reach the client anyway).\n\nWHY MODIFIERS AND NOT setBaseValue: exact reversibility. Multiplying base values leaves rounding behind on every round trip and, far worse, overwrites the creature's own rolled numbers — a horse's health, movement speed and jump strength are randomised per animal, and those are the hidden stats that must survive being grown and shrunk again. Removing a modifier restores them bit for bit. addOrReplacePermanentModifier is used rather than addPermanentModifier, which throws IllegalArgumentException(\"Modifier is already applied on this attribute!\") on a second add with the same id.\n\nTHE STATS FOLLOW THE SIZE, by a smaller factor: stat_factor (default 1.5) against scale_factor (default 2.0), so twice the size is noticeably stronger but not twice as strong. The same modifier id goes onto every attribute in scaled_attributes with amount stat_factor-1 (grown) or 1/stat_factor-1 (shrunk), operation ADD_MULTIPLIED_TOTAL. Attributes the creature does not have are skipped: a cow has no attack damage, and only horses and their relatives roll a jump strength. Health is carried over as a FRACTION of max health across the change, so a wounded animal stays proportionally wounded instead of being suddenly hurt (grown) or killed (shrunk).\n\nWHAT STAYS OUT OF REACH: a creature whose NATURAL scale is outside min_natural_scale..max_natural_scale is refused outright, in both directions. That is what keeps an oversized dungeon wolf or Sif unique — it can neither be grown further nor cut down to an ordinary size.\n\nNOTHING HAS TO BE SYNCED OR REFRESHED. AttributeMap.onAttributeModified queues every syncable instance and ServerEntity broadcasts ClientboundUpdateAttributesPacket, so the client follows within a tick; LivingEntity.aiStep compares getScale() with its last applied value and calls refreshDimensions() itself, which is what moves the hitbox, the eye height and the passenger attach point.\n\nWHY PlayerInteractEvent AND NOT Item#interactLivingEntity: Player.interactOn calls entity.interact(player, hand) FIRST and returns as soon as the entity consumed the click; only if it did not does it reach itemstack.interactLivingEntity. A tamed wolf, cat or axolotl toggles sit/stand on any unknown item, a horse mounts, a breedable animal eats — so an item hook would never fire on exactly the animals worth resizing. EntityInteract (and EntityInteractSpecific, which fires first when the click lands on a specific part of the hitbox) runs before all of it, via CommonHooks.onInteractEntity at the top of interactOn.\n\nTHE CANCELLATION RESULT MATTERS. The handlers cancel with InteractionResult.sidedSuccess(isClientSide), never with PASS: a PASS cancellation lets the client fall through to the use-item stage. Same trap the axolotl_guardian module documents for the water bucket. setCancellationResult and setCanceled are declared on the two subclasses, not on the abstract PlayerInteractEvent, so the shared helper takes the pieces rather than the event.\n\nBOTH SIDES FIRE. The event runs client-locally in MultiPlayerGameMode.interact and server-side in Player.interactOn; everything that mutates is behind level.isClientSide(). Only the main hand is handled, otherwise the off-hand re-fires the same click.\n\nREFUSALS, all with an action-bar message and the gemstone kept: the target is on denied_entities, the target is a player and allow_players is false, require_tamed is on and the entity is not an OwnableEntity owned by the clicking player, the creature is already one step out and cannot go further, its natural size is outside the reachable band, or the grown hitbox would not fit. The space check scales the CURRENT bounding box about the entity's feet and asks level.noCollision — Entity.refreshDimensions does try fudgePositionAfterSizeChange for a mob that grew, but gives up when there is no free spot, and the animal then suffocates in the ceiling.\n\nTHE CREEPER'S BLAST IS THE ONE STAT THAT IS NOT AN ATTRIBUTE. Creeper.explodeCreeper reads a private int field (3 by default, doubled while charged); Explosion.radius is private final, so ExplosionEvent.Start cannot adjust it either without cancelling and restarting the explosion, which re-fires the same event. The module writes the field through a mixin accessor instead, which also persists for free because vanilla saves it as ExplosionRadius in the creeper's NBT. Rounding is picked for reversibility: growing floors, shrinking rounds, so 3 -> 4 -> 3 and 3 -> 2 -> 3 both hold at stat_factor 1.5. It follows stat_factor rather than scale_factor so a grown creeper is a 4, one short of a charged creeper's 6.\n\nTHREE VANILLA ENTITIES IGNORE OR CAP THE ATTRIBUTE, by their own code, not ours: EnderDragon.sanitizeScale returns a hard 1.0F, Shulker.sanitizeScale caps at 3.0F, and Slime/MagmaCube size themselves from their own `Size` data value rather than the attribute. The dragon and the wither are on the default denylist so the refusal is a readable message instead of a gemstone that silently does nothing.\n\nTHE POINT OF THE PAIRING: wolf_mount only lets a wolf be ridden at generic.scale >= 2.0 (WolfMountRules.isLargeEnough, config eligibility.min_scale, default 2.0), and with the defaults NO naturally occurring wolf qualifies — the module was built around Sif from Grim Kingdoms, a plain minecraft:wolf on a spawn egg with scale 3.25. One Growth Gemstone on a tamed vanilla wolf is the first way to reach 2.0 in normal play. The reverse also holds: WolfMountRules.stillEligible is re-checked while riding, so shrinking a ridden wolf below min_scale dismounts the rider.\n\nTHE RECIPES COME FROM THE CONFIG. Own-item recipes belong to their own module by project convention, so they exist exactly as long as this module is enabled — but the shape is two config strings in the same format custom_crafting_recipes uses, parsed by the shared util/ConfiguredRecipes. That parser was lifted out of CustomCraftingRecipesModule for this module; there is deliberately one parser and one format. Reason for the config: the pack owner wanted the price to be chosen by a player, not fixed in a release. An empty string makes that gemstone uncraftable. The shipped default is Sebi's design — a block of emerald cored with four nether/warped wart blocks and four amethyst shards, nine emeralds and thirty-six warts per gemstone. The Nether half is his argument too: it is the compact dimension, so size magic belongs there, with crimson reading as bigger and warped as smaller.\n\nCHEST LOOT GOES THROUGH LootTableLoadEvent, the project's route for editing a foreign loot table, not a datapack JSON. One pool per configured table, one roll, a LootItemRandomChanceCondition for the chance, and the two gemstones as equally weighted entries. The pool carries a name because NeoForge's LootTable.addPool throws RuntimeException on a duplicate pool name, and the event fires again on every /reload — the name is both label and guard.\n\nTHE DENYLIST USES containsKey FIRST. BuiltInRegistries.ENTITY_TYPE is a DefaultedRegistry whose get() never returns null: an unknown id silently comes back as minecraft:pig, so a typo would protect pigs instead of reporting itself. Same trap mob_drops documents.\n\nTHE TEXTURES ARE ORIGINAL ART. scripts/gen_gemstone_textures.py draws both 16x16 icons from geometry and two colour ramps; no vanilla texture is read, recoloured or copied, so they share no pixels with emerald.png (see docs/internal/BACKLOG.md, \"Abgeleitete Vanilla-Texturen aufloesen\"). One silhouette, two palettes, the way the four wolf_armor_*.png icons work. They are distinguishable twice over: by hue and by an arrow pointing up vs one pointing down engraved in the pavilion, so colour-blind players can still tell them apart. The hues follow the recipe rather than being picked freely — crimson for the gem cut around nether wart, warped teal for the one cut around warped wart, the same red-means-bigger, blue-means-smaller logic the recipe carries. The arrow is CUT IN, which is a lighting problem: an engraving is a relief with the light reversed, so the groove is shadowed along its top and left edge and catches the light along its bottom and right; the shadowed rim is four steps down the gem's own ramp from the facet under it, so the cut reads equally deep on the bright table and the dark tip. The core stays bright because a real groove loses contrast as it deepens and 16 pixels have none to spare. The script has a --check mode.\n\nSTANDALONE JAR: the vpa_special_gemstones jar registers its items unconditionally, because StandaloneModuleBootstrap initialises regardless of the enabled flag — with enabled=false the items exist but no click, recipe or loot does anything.\n\nNOT VERIFIED IN GAME YET (2026-09-27): compiles and passes Checkstyle. Worth checking specifically that a tamed wolf does not sit down instead of growing, that the size survives a world reload, that a grown wolf satisfies wolf_mount, that a second growth is refused, and that a horse grown and shrunk again has exactly its original speed and jump strength.",
+  "oneLiner": "Two emerald-priced gemstones that make the creature you right-click one size bigger or smaller — stats and all, once each way — and the first way to grow a wolf big enough to ride.",
+  "optionalMods": [],
+  "recipes": [
+    "vanillaplusadditions:growth_gemstone — shaped, one minecraft:emerald_block in the centre, four minecraft:nether_wart_block on the edges, four minecraft:amethyst_shard in the corners, result 1; the shape itself comes from the growth_recipe config key and is re-applied on every server resource reload",
+    "vanillaplusadditions:shrinking_gemstone — the same layout with minecraft:warped_wart_block instead of the crimson one; from the shrinking_recipe config key"
+  ],
+  "registeredInBundle": true,
+  "relatedModules": [
+    "wolf_mount",
+    "custom_crafting_recipes",
+    "battle_dogs"
+  ],
+  "requiredMods": [],
+  "shortDescription": "Adds two emerald gemstones that move the creature you right-click one step up or down in size, scaling its stats with it, via the vanilla generic.scale attribute.",
+  "side": "both",
+  "sinceCommit": "",
+  "sinceVersion": "v1.0.0-beta.100"
+}

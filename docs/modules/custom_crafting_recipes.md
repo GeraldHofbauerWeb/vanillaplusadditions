@@ -281,6 +281,12 @@ holders in (counting adds and replaces by whether `Map.put` returned anything) a
 collection back through `RecipeManager.replaceRecipes`. One `INFO` line per reload:
 `Applied {} custom recipes ({} added, {} replaced).`
 
+**The shaped parser no longer lives here.** `ConfiguredRecipes.Shaped.parse` and the ingredient
+resolution moved to `util/ConfiguredRecipes.java` when
+[`special_gemstones`](special_gemstones.md) needed the same string format for its own two recipe
+config keys; this module calls into it and still owns the shapeless half. One parser, one format —
+a second dialect for the same job would be a second place for a typo to mean something different.
+
 Thirteen other modules use the same injection — `flying_fish`, `cat_guardian`, `battle_dogs`,
 `end_conduit`, `minecart_chunk_loading`, `pathfinder_quills`, `tipped_arrows` and the rest. Each one
 copies the recipe map as it finds it and hands back a full replacement, so they accumulate rather
@@ -327,4 +333,5 @@ This is intentional and final — there is no plan to migrate to JSON datapacks.
 * [Config reference](../reference/config.md) — every module's keys in one place
 * [Pathfinder Quills](pathfinder_quills.md) — a whole recipe family in code, with its own serializer
 * [Minecart Chunk Loading](minecart_chunk_loading.md) — the template for a module's own recipe
+* [Special Gemstones](special_gemstones.md) — uses this page's recipe format in its own config keys
 * [All modules](../../README.md#-modules)

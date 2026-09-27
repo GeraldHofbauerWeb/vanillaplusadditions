@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 251 module-specific keys across 51 modules,
+Every setting of every module — 265 module-specific keys across 52 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -506,6 +506,27 @@ Splash a potion of Healing or Regeneration onto someone else's wolf, cat or hors
 | `calm_feedback` | boolean | `true` | — | Play 4 heart particles above the animal and an amethyst chime (NEUTRAL, vol 0.7, pitch 1.5) when it is calmed, so it is visible that it worked. Fires only when anger towards the thrower was actually cleared. |
 | `calming_effects` | list | `List.of("minecraft:instant_health", "minecraft:regeneration")` | elements must be String (defineList validator o -> o instanceof String); new entries default to "minecraft:instant_health" | Effect ids (namespace:path) that make an angry owned animal forgive the player who threw the potion; works for splash and lingering potions alike. An empty list switches calming off entirely (isCalming returns false immediately) without affecting the throw-at-pets fix. |
 | `peace_duration_ticks` | int | `200` | 0 ~ 24000 | How long (in ticks) a calmed animal refuses to re-target the thrower; 0 disables the grace period - the anger is still cleared once, it may just come straight back. Only one window per pet exists, so a second player's calm overwrites the first player's protection. |
+
+## `special_gemstones` — Special Gemstones
+
+Two emerald-priced gemstones that make the creature you right-click one size bigger or smaller — stats and all, once each way — and the first way to grow a wolf big enough to ride. · [full page](../modules/special_gemstones.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `allow_players` | boolean | `false` | — | Let the gemstones resize players too. Off by default: a shrunk player sees over no stair and a grown one suffocates in its own corridors. |
+| `check_space` | boolean | `true` | — | Refuse to grow a creature when its new hitbox would not fit where it stands. Without it Entity.refreshDimensions gives up looking for a free spot and the animal suffocates inside the ceiling. |
+| `consume_item` | boolean | `true` | — | Use up the gemstone on a successful change. Creative mode never consumes it, and a refused click never consumes it either. |
+| `denied_entities` | list of strings | `minecraft:ender_dragon, minecraft:wither` | — | Entity types the gemstones refuse to touch. The Ender Dragon ignores the attribute anyway (its sanitizeScale returns a hard 1.0F), but listing it turns a gemstone that silently does nothing into a readable refusal. Ids are validated with containsKey, because ENTITY_TYPE is a DefaultedRegistry and an unknown id would otherwise resolve to minecraft:pig. |
+| `growth_recipe` | string | `emerald block, 4 crimson wart blocks, 4 amethyst shards` | — | The crafting recipe for the Growth Gemstone, in the same format custom_crafting_recipes uses: recipe_id;result_item;result_count;pattern;keys. Editable so the pack can re-price the gemstones without a new build. An empty string makes the gemstone uncraftable. |
+| `loot_tables` | list of strings | `seven vanilla structure chests, 8% to 30%` | — | Chests that may contain a gemstone, as loot_table;chance. The chance is rolled once per chest and which of the two gemstones drops is an even 50/50. Applied through LootTableLoadEvent, so any mod's chest table can be added. |
+| `max_natural_scale` | double | `2.0` | 0.0625 ~ 16.0 | Largest NATURAL size a creature may have for the gemstones to work on it. Anything already bigger is out of their reach on purpose: an oversized wolf from a dungeon, or Sif from Grim Kingdoms, stays exactly as rare as it was found and can be neither grown further nor cut down to an ordinary size. |
+| `min_natural_scale` | double | `0.5` | 0.0625 ~ 16.0 | Smallest NATURAL size a creature may have for the gemstones to work on it — the size it was born with, read from the attribute's base value, not the size it is now. |
+| `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
+| `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
+| `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs. |
+| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed, jump_strength, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor. The three a horse rolls per animal — health, movement speed and jump strength — are all in here, because those hidden numbers are what make one horse better than another and they have to move with the size. Step height is in for the same reason: a creature twice the size that still trips over the same kerb looks wrong. A creature that lacks one of the attributes simply skips it. |
+| `shrinking_recipe` | string | `emerald block, 4 warped wart blocks, 4 amethyst shards` | — | The crafting recipe for the Shrinking Gemstone, same format as growth_recipe. |
+| `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | How much one gemstone changes the STATS listed in scaled_attributes. A grown creature is multiplied by it, a shrunk one divided. Deliberately smaller than scale_factor: twice the size should be noticeably stronger, not twice as strong. Set to 1.0 to change size only. |
 
 ## `stackables` — Stackables
 

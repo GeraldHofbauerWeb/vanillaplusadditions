@@ -72,5 +72,17 @@
   "item.vanillaplusadditions.world_compass": "Brújula del mundo",
   "item.vanillaplusadditions.fire_arrow": "Flecha de fuego",
   "block.vanillaplusadditions.glow_mushroom": "Seta luminosa",
-  "item.vanillaplusadditions.glow_mushroom_stew": "Sopa de seta luminosa"
+  "item.vanillaplusadditions.glow_mushroom_stew": "Sopa de seta luminosa",
+  "item.vanillaplusadditions.growth_gemstone": "Gema de crecimiento",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Clic derecho en una criatura para agrandarla",
+  "item.vanillaplusadditions.shrinking_gemstone": "Gema de reducción",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Clic derecho en una criatura para reducirla",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s ahora mide %2$s× su tamaño normal",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s ya no se puede cambiar más",
+  "message.vanillaplusadditions.special_gemstones.no_space": "Aquí no hay espacio para que %1$s crezca",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s no te pertenece",
+  "message.vanillaplusadditions.special_gemstones.denied": "La gema no tiene efecto sobre %1$s",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Solo una vez: las estadísticas suben con él",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Solo una vez: las estadísticas bajan con él",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s ya tiene un tamaño inusual: la gema no puede con él"
 }

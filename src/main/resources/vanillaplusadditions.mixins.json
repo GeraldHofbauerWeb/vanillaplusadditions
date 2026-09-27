@@ -23,6 +23,7 @@
     "hostile_endermen.PlayerTeleportDebugMixin",
     "hostile_endermen.TeleportAntiCheeseMixin",
     "pet_potions.AreaEffectCloudAccessor",
+    "special_gemstones.CreeperExplosionRadiusAccessor",
     "wolf_mount.WolfMountMixin"
   ],
   "client": [

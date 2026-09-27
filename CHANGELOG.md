@@ -4,6 +4,108 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.100] - 2026-09-27
+
+### Added
+- **Zwei neue Items: die Special Gemstones** (Gerry, 2026-09-26), neues Modul `special_gemstones`.
+  Rechtsklick auf ein Lebewesen mit dem **Wachstums-Edelstein** verdoppelt seine Groesse, der
+  **Schrumpf-Edelstein** halbiert sie. Die Aenderung ist dauerhaft und ueberlebt Speichern,
+  Chunk-Unload und Neustart.
+- **Genau eine Stufe, nicht mehr** (Sebi, 2026-09-27). Ein Lebewesen ist geschrumpft, normal oder
+  vergroessert — ein zweiter Wachstums-Edelstein auf einem schon vergroesserten Tier wird abgelehnt.
+  Erreichbar sind also x0.5, x1 und x2, und die Steine lassen sich nicht zu beliebig grossen Mobs
+  stapeln. Der jeweils andere Stein fuehrt zurueck.
+- **Die Werte wachsen mit, aber schwaecher** (Gerry, 2026-09-27): Leben, Angriff, Tempo, Sprungkraft,
+  Schritthoehe und Ruestung mal 1.5 beim Vergroessern, geteilt durch 1.5 beim Schrumpfen — doppelt so gross soll
+  spuerbar staerker sein, nicht doppelt so stark. Das trifft ausdruecklich die **versteckten Werte
+  von Pferden**: Leben, Tempo und Sprungkraft werden pro Tier ausgewuerfelt und entscheiden, ob ein
+  Pferd etwas taugt.
+- **Ungewoehnlich grosse Tiere bleiben unangetastet** (Sebi, 2026-09-27). Wessen **natuerliche**
+  Groesse ausserhalb von `min_natural_scale`…`max_natural_scale` liegt (0.5 bis 2.0), den greifen die
+  Steine gar nicht — in keine Richtung. Der uebergrosse Wolf aus einer Dungeon-Truhe bleibt damit
+  genau so selten, wie er gefunden wurde: weder weiter vergroesserbar noch auf Normalmass
+  zurechtstutzbar.
+- **Damit ist erstmals ein reitbarer Wolf ohne Befehl erreichbar.** `wolf_mount` laesst nur Woelfe ab
+  `generic.scale` 2.0 reiten, und mit den Standardeinstellungen qualifiziert sich **kein einziger
+  natuerlich vorkommender Wolf** — das Modul war um Sif aus *Grim Kingdoms* herum gebaut, einen
+  Wolf von einem Spawn-Egg mit Skalierung 3.25. Ein Wachstums-Edelstein auf einem gezaehmten
+  Vanilla-Wolf landet auf genau 2.0. Die beiden Module haben keine Zeile Sonderfall gemeinsam, sie
+  lesen und schreiben dieselbe Vanilla-Zahl. Umgekehrt gilt es auch: wer den Wolf schrumpft, auf dem
+  er sitzt, steigt ab.
+- **Erste Smaragd-Senke im Mod, und eine spuerbare.** Beide Steine kosten einen **Smaragdblock**,
+  vier **Warzenbloecke** und vier **Amethyst-Splitter** — also neun Smaragde und sechsunddreissig
+  Warzen fuer eine einzige dauerhafte Veraenderung an einem einzigen Tier. Der Nether-Anteil ist
+  Sebis Begruendung: der Nether ist die kompakte Dimension, dort gehoert Groessenmagie hin, und
+  Crimson liest sich als groesser, so wie Warped sich als kleiner liest. Beide Rezepte stehen als
+  **Config-Schluessel** (`growth_recipe`,
+  `shrinking_recipe`) im selben Format wie `custom_crafting_recipes`, damit Sebi den Preis ohne
+  neuen Build aussuchen kann; ein leerer Wert macht den Stein uncraftbar. Dazu liegen sie selten in
+  sieben Vanilla-Strukturtruhen (8 % im Minenschacht bis 30 % im Waldanwesen), ueber
+  `LootTableLoadEvent` und damit fuer jede fremde Truhentabelle erweiterbar.
+- **Eigene Texturen, kein umgefaerbter Smaragd.** `scripts/gen_gemstone_textures.py` zeichnet beide
+  16x16-Icons aus Geometrie und zwei Farbrampen; keine Vanilla-PNG wird gelesen. Das ist die Antwort
+  auf den offenen Backlog-Punkt „Abgeleitete Vanilla-Texturen aufloesen" — ein getoenter Smaragd
+  waere ein weiterer Eintrag auf genau dieser Liste gewesen, in einem Mod, der veroeffentlicht wird.
+  Unterscheidbar sind die Steine doppelt: ueber die Farbe und ueber einen eingravierten Pfeil nach
+  oben gegen einen nach unten — Farbe allein hilft niemandem, der rot-gruen-schwach ist. Die Farben
+  sind nicht frei gewaehlt, sondern die der Warzenbloecke im jeweiligen Rezept: Crimson fuer den
+  einen, Warped-Tuerkis fuer den anderen. Symbol und Rezept sagen dasselbe. Der Pfeil ist
+  **eingeschnitten**, nicht aufgemalt — und das ist ein Beleuchtungsproblem: eine Gravur ist ein
+  Relief mit vertauschtem Licht, die Rille liegt an ihrer oberen und linken Kante im Schatten und
+  faengt an der unteren rechten das Licht. Die Schattenkante wird vier Stufen tiefer auf der eigenen
+  Farbrampe des Steins geholt, nicht aus einer festen Farbe, damit der Schnitt auf der hellen Krone
+  genauso tief wirkt wie auf der dunklen Spitze.
+
+- **Der Krater eines Creepers waechst und schrumpft mit** (Gerry, 2026-09-27, im Spiel gemessen: drei
+  Creeper in drei Groessen hinterliessen denselben Krater). Die Explosion ist der einzige Wert, der
+  kein Attribut ist — `Creeper.explodeCreeper` liest ein schlichtes `int`-Feld — also gibt es nichts,
+  woran ein Modifier haengen koennte, und `Explosion.radius` ist `private final`, laesst sich zur
+  Zuendzeit also auch nicht mehr aendern. Geschrieben wird darum das Feld selbst, ueber einen
+  Mixin-Accessor; Vanilla speichert es ohnehin als `ExplosionRadius` im NBT, der Zustand ueberlebt
+  also von allein. Bei den Standardwerten geht ein vergroesserter Creeper von 3 auf **4** und ein
+  geschrumpfter auf **2**; aufgeladene Creeper verdoppeln weiterhin obendrauf. Der Radius folgt
+  `stat_factor` und nicht `scale_factor`, damit ein grosser Creeper schlimmer ist als ein normaler,
+  aber nicht so schlimm wie ein vom Blitz getroffener. Abschaltbar ueber `scale_creeper_blast`.
+
+### Changed
+- **Der Rezept-Parser aus `custom_crafting_recipes` liegt jetzt in `util/ConfiguredRecipes`**, weil
+  ihn zwei Module brauchen. Reiner Umzug, kein Verhaltenswechsel — es gibt bewusst **einen** Parser
+  und **ein** Format, ein zweiter Dialekt fuer dieselbe Aufgabe waere eine zweite Stelle, an der ein
+  Tippfehler etwas anderes bedeutet.
+
+### Technical notes
+- **Gearbeitet wird mit Attribut-Modifiern, nicht mit `setBaseValue` — wegen der Pferde.** Deren
+  Leben, Tempo und Sprungkraft werden pro Tier ausgewuerfelt; wer diese Basiswerte mit 1.5
+  multipliziert und spaeter wieder teilt, bekommt nicht das Pferd zurueck, sondern Rundungsfehler —
+  und hat die einzige Kopie der Zahlen ueberschrieben, die dieses Pferd ausgemacht haben. Ein
+  entfernter `ADD_MULTIPLIED_TOTAL`-Modifier stellt sie dagegen **bitgenau** wieder her.
+- **Die Modifier sind zugleich der Zustand.** Wer `vanillaplusadditions:gemstone_grown` traegt, ist
+  vergroessert, wer `…:gemstone_shrunk` traegt, geschrumpft, wer keinen von beiden traegt, ist
+  normal. Es muss also nichts zusaetzlich gespeichert werden — kein Data-Attachment, das ohnehin nie
+  beim Client ankaeme, und nichts, was gegenueber der Groesse aus dem Tritt geraten koennte.
+  Permanente Modifier stehen im `"attributes"`-NBT des Tieres und werden an jeden Client gesendet,
+  der es sieht.
+- **Leben wird als Anteil uebernommen.** Vergroessern hebt das Maximalleben, Vanilla heilt aber
+  nicht — ein Wolf kaeme sonst grundlos mit zwei Dritteln Leben heraus, ein geschrumpfter wuerde
+  heruntergeklemmt und koennte dabei sterben. Der Anteil `health / maxHealth` wird vorher gelesen und
+  hinterher wiederhergestellt.
+- Der Klick haengt an `PlayerInteractEvent.EntityInteract`, nicht an `Item#interactLivingEntity`:
+  `Player.interactOn` fragt zuerst die Entity und kehrt zurueck, sobald die den Klick verbraucht hat.
+  Ein gezaehmter Wolf schaltet auf jeden unbekannten Gegenstand Sitzen/Stehen um — der Item-Hook
+  haette also ausgerechnet bei den Tieren nie gefeuert, um die es geht. Abgebrochen wird mit
+  `sidedSuccess`, nie mit `PASS`.
+- **Gewachsen wird nur, wo Platz ist.** Vor dem Vergroessern wird die neue Hitbox gegen die Welt
+  geprueft. `Entity.refreshDimensions` sucht zwar selbst einen freien Platz, gibt aber auf, wenn es
+  keinen gibt — und dann erstickt das Tier in der Decke.
+
+### Known limits
+- Enderdrache, Wither und Schleime lassen sich nicht veraendern, und zwar durch Vanilla selbst:
+  `EnderDragon.sanitizeScale` gibt hart `1.0F` zurueck, Shulker deckeln bei 3.0, und Schleime und
+  Magmawuerfel skalieren ueber ihren eigenen `Size`-Wert statt ueber das Attribut. Drache und Wither
+  stehen auf der Standard-Denylist, damit daraus eine lesbare Absage wird statt eines Edelsteins,
+  der stumm nichts tut.
+- Reichweite und alles, was eine fremde Mod selbst ausrechnet, folgen der Groesse nicht.
+
 ## [1.0.0-beta.99.3] - 2026-09-26
 
 ### Changed

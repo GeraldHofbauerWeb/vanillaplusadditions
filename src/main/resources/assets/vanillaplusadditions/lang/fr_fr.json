@@ -70,5 +70,17 @@
   "item.vanillaplusadditions.world_compass": "Boussole du monde",
   "item.vanillaplusadditions.fire_arrow": "Flèche enflammée",
   "block.vanillaplusadditions.glow_mushroom": "Champignon lumineux",
-  "item.vanillaplusadditions.glow_mushroom_stew": "Soupe de champignon lumineux"
+  "item.vanillaplusadditions.glow_mushroom_stew": "Soupe de champignon lumineux",
+  "item.vanillaplusadditions.growth_gemstone": "Gemme de croissance",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Clic droit sur une créature pour l’agrandir",
+  "item.vanillaplusadditions.shrinking_gemstone": "Gemme de rétrécissement",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Clic droit sur une créature pour la rétrécir",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s fait maintenant %2$s× sa taille normale",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s ne peut plus être modifié",
+  "message.vanillaplusadditions.special_gemstones.no_space": "Pas assez de place ici pour que %1$s grandisse",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s ne t’appartient pas",
+  "message.vanillaplusadditions.special_gemstones.denied": "La gemme n’a aucun effet sur %1$s",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Une seule fois — les stats montent avec",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Une seule fois — les stats baissent avec",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s a déjà une taille inhabituelle — la gemme n’a pas prise sur lui"
 }

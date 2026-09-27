@@ -476,6 +476,8 @@ def standaloneModules = [
     [ moduleId: 'pet_potions', displayName: 'Vanilla Plus: Pet Potions',
       mixins: ['pet_potions.AreaEffectCloudAccessor'] ],
     [ moduleId: 'stackables', displayName: 'Vanilla Plus: Stackables' ],
+    [ moduleId: 'special_gemstones', displayName: 'Vanilla Plus: Special Gemstones',
+      mixins: ['special_gemstones.CreeperExplosionRadiusAccessor'] ],
     [ moduleId: 'static_fov', displayName: 'Vanilla Plus: Static FOV' ],
     [ moduleId: 'stationary_chunk_loader', displayName: 'Vanilla Plus: Chunk Anchor',
       moduleDeps: ['vpa_debug_overlay'] ],

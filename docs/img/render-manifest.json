@@ -965,6 +965,26 @@
     "jar:assets/minecraft/textures/item/mushroom_stew.png"
    ]
   },
+  "items/growth_gemstone.png": {
+   "inputs": "fc2f7e08bdf13b072691b6fa1e7bf833828a9fdd492db374f5f43396917c13d6",
+   "model": "vanillaplusadditions:item/growth_gemstone",
+   "png": "6362e9dafa26b27ff2a73972b9f3fd7089bfb49815e1c06767d07114a64c3dae",
+   "sources": [
+    "file:models/item/growth_gemstone.json",
+    "file:textures/item/growth_gemstone.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
+  "items/shrinking_gemstone.png": {
+   "inputs": "9cecad3887058637d1e258b960fb9c17e665e919b368b5f656f548a975301b4b",
+   "model": "vanillaplusadditions:item/shrinking_gemstone",
+   "png": "6c0fd2ec49128a1814b63b64c573caa3ef41fcbac55e024e743bc30b59f9a89f",
+   "sources": [
+    "file:models/item/shrinking_gemstone.json",
+    "file:textures/item/shrinking_gemstone.png",
+    "jar:assets/minecraft/models/item/generated.json"
+   ]
+  },
   "items/wolf_armor_diamond.png": {
    "inputs": "f41db41deb360b2793a0545dda7309f907641d00a2fb0ca49c8a1dd4b7cc25df",
    "model": "vanillaplusadditions:item/wolf_armor_diamond",

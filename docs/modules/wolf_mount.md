@@ -553,6 +553,8 @@ Any port past 1.21.1 must re-verify the `travelRidden` branch of `LivingEntity.a
 
 ## See also
 
+* [Special Gemstones](special_gemstones.md) — the Growth Gemstone is the way to get a wolf past the
+  `min_scale` gate without a command
 * [Battle Dogs](battle_dogs.md) — the canine armour this pairs with, and the 100 % absorption the
   armour bar exists for
 * [Companion Armor](../guides/companion-armor.md) — how that armour is enchanted and repaired

@@ -2,12 +2,11 @@ package net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.custom_crafting_recipes.config.CustomCraftingRecipesConfig;
+import net.geraldhofbauer.vanillaplusadditions.util.ConfiguredRecipes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.tags.TagKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.util.Unit;
 import net.minecraft.world.item.Item;
@@ -19,10 +18,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.ShapedRecipe;
-import net.minecraft.world.item.crafting.ShapedRecipePattern;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 
@@ -35,13 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CustomCraftingRecipesModule
         extends AbstractModule<CustomCraftingRecipesModule, CustomCraftingRecipesConfig> {
-
-    private static final Pattern QUOTED_PATTERN = Pattern.compile("\"([^\"]+)\"");
 
     public CustomCraftingRecipesModule() {
         super("custom_crafting_recipes",
@@ -108,8 +101,8 @@ public class CustomCraftingRecipesModule
         // Parse shaped recipes
         for (String entry : getConfig().getRecipeDefinitions()) {
             try {
-                CustomRecipeDefinition definition = CustomRecipeDefinition.parse(entry);
-                RecipeHolder<ShapedRecipe> recipeHolder = createShapedRecipe(definition);
+                ConfiguredRecipes.Shaped definition = ConfiguredRecipes.Shaped.parse(entry);
+                RecipeHolder<ShapedRecipe> recipeHolder = definition.toRecipeHolder();
 
                 if (!seenRecipeIds.add(definition.recipeId())) {
                     getLogger().warn("Duplicate custom recipe id in config. Last one wins: {}", definition.recipeId());
@@ -117,7 +110,7 @@ public class CustomCraftingRecipesModule
 
                 parsedRecipes.removeIf(existing -> existing.id().equals(definition.recipeId()));
                 parsedRecipes.add(recipeHolder);
-            } catch (MissingModException exception) {
+            } catch (ConfiguredRecipes.MissingModException exception) {
                 // A recipe extension for a mod this pack does not have — expected, not a defect.
                 skippedMods.add(exception.namespace());
                 getLogger().debug("Skipping custom crafting recipe (shaped), {}: {}",
@@ -142,7 +135,7 @@ public class CustomCraftingRecipesModule
 
                 parsedRecipes.removeIf(existing -> existing.id().equals(definition.recipeId()));
                 parsedRecipes.add(recipeHolder);
-            } catch (MissingModException exception) {
+            } catch (ConfiguredRecipes.MissingModException exception) {
                 skippedMods.add(exception.namespace());
                 getLogger().debug("Skipping custom crafting recipe (shapeless), {}: {}",
                         exception.getMessage(), entry);
@@ -162,90 +155,20 @@ public class CustomCraftingRecipesModule
         return parsedRecipes;
     }
 
-    private RecipeHolder<ShapedRecipe> createShapedRecipe(CustomRecipeDefinition definition) {
-        Item resultItem = BuiltInRegistries.ITEM.get(definition.resultItemId());
-        if (resultItem == Items.AIR) {
-            throw unknownItem("result item", definition.resultItemId());
-        }
-
-        Map<Character, Ingredient> key = new LinkedHashMap<>();
-        for (Map.Entry<Character, String> keyEntry : definition.keys().entrySet()) {
-            key.put(keyEntry.getKey(), ingredientFromString(keyEntry.getValue()));
-        }
-
-        ShapedRecipePattern shapedPattern = ShapedRecipePattern.of(key, definition.patternRows());
-        ItemStack result = new ItemStack(resultItem, definition.resultCount());
-        ShapedRecipe recipe = new ShapedRecipe("", CraftingBookCategory.MISC, shapedPattern, result);
-        return new RecipeHolder<>(definition.recipeId(), recipe);
-    }
-
     private RecipeHolder<ShapelessRecipe> createShapelessRecipe(ShapelessRecipeDefinition definition) {
         Item resultItem = BuiltInRegistries.ITEM.get(definition.resultItemId());
         if (resultItem == Items.AIR) {
-            throw unknownItem("result item", definition.resultItemId());
+            throw ConfiguredRecipes.unknownItem("result item", definition.resultItemId());
         }
 
         NonNullList<Ingredient> ingredients = NonNullList.create();
         for (String ingredientSpec : definition.ingredients()) {
-            ingredients.add(ingredientFromString(ingredientSpec));
+            ingredients.add(ConfiguredRecipes.ingredientFromString(ingredientSpec));
         }
 
         ItemStack result = new ItemStack(resultItem, definition.resultCount());
         ShapelessRecipe recipe = new ShapelessRecipe("", CraftingBookCategory.MISC, result, ingredients);
         return new RecipeHolder<>(definition.recipeId(), recipe);
-    }
-
-    private Ingredient ingredientFromString(String ingredientString) {
-        if (ingredientString.startsWith("#")) {
-            ResourceLocation tagId = ResourceLocation.parse(ingredientString.substring(1));
-            return Ingredient.of(TagKey.create(Registries.ITEM, tagId));
-        }
-
-        ResourceLocation itemId = ResourceLocation.parse(ingredientString);
-        Item item = BuiltInRegistries.ITEM.get(itemId);
-        if (item == Items.AIR) {
-            throw unknownItem("ingredient item", itemId);
-        }
-
-        return Ingredient.of(item);
-    }
-
-    /**
-     * An unknown item id: a {@link MissingModException} when it belongs to a mod that simply is not
-     * installed (the pack dropped Overpacked, Create, …), a plain {@link IllegalArgumentException}
-     * when the mod IS there and the id is genuinely wrong. Only the latter deserves an ERROR — the
-     * former is the documented way recipe extensions for other mods go inert.
-     */
-    private static IllegalArgumentException unknownItem(String what, ResourceLocation itemId) {
-        if (isModAbsent(itemId)) {
-            return new MissingModException(itemId.getNamespace());
-        }
-        return new IllegalArgumentException("Unknown " + what + ": " + itemId);
-    }
-
-    /** True when the id's namespace names a mod that is not loaded. */
-    private static boolean isModAbsent(ResourceLocation itemId) {
-        String namespace = itemId.getNamespace();
-        if ("minecraft".equals(namespace) || "neoforge".equals(namespace)) {
-            return false;
-        }
-        return !ModList.get().isLoaded(namespace);
-    }
-
-    /** Marks a recipe that references a mod this installation does not have. */
-    private static final class MissingModException extends IllegalArgumentException {
-        private static final long serialVersionUID = 1L;
-
-        private final String namespace;
-
-        private MissingModException(String namespace) {
-            super("mod '" + namespace + "' not installed");
-            this.namespace = namespace;
-        }
-
-        private String namespace() {
-            return namespace;
-        }
     }
 
     private final class CustomRecipeReloadListener implements PreparableReloadListener {
@@ -269,94 +192,6 @@ public class CustomCraftingRecipesModule
         @Override
         public String getName() {
             return "vanillaplusadditions_custom_crafting_recipes";
-        }
-    }
-
-    private record CustomRecipeDefinition(ResourceLocation recipeId,
-                                          ResourceLocation resultItemId,
-                                          int resultCount,
-                                          List<String> patternRows,
-                                          Map<Character, String> keys) {
-
-        private static CustomRecipeDefinition parse(String entry) {
-            String[] parts = entry.split(";", 5);
-            if (parts.length != 5) {
-                throw new IllegalArgumentException(
-                        "Expected 5 parts: recipe_id;result_item;result_count;pattern;keys");
-            }
-
-            ResourceLocation recipeId = ResourceLocation.parse(parts[0].trim());
-            ResourceLocation resultItemId = ResourceLocation.parse(parts[1].trim());
-            int resultCount = Integer.parseInt(parts[2].trim());
-            if (resultCount < 1 || resultCount > 64) {
-                throw new IllegalArgumentException("result_count must be between 1 and 64");
-            }
-
-            List<String> patternRows = parsePatternRows(parts[3].trim());
-            if (patternRows.isEmpty()) {
-                throw new IllegalArgumentException("pattern must define at least one row");
-            }
-
-            Map<Character, String> keys = parseKeys(parts[4].trim());
-            if (keys.isEmpty()) {
-                throw new IllegalArgumentException("keys must define at least one symbol");
-            }
-
-            return new CustomRecipeDefinition(recipeId, resultItemId, resultCount, patternRows, keys);
-        }
-
-        private static List<String> parsePatternRows(String patternSpec) {
-            List<String> rows = new ArrayList<>();
-            Matcher matcher = QUOTED_PATTERN.matcher(patternSpec);
-            while (matcher.find()) {
-                rows.add(matcher.group(1));
-            }
-
-            if (!rows.isEmpty()) {
-                return rows;
-            }
-
-            String[] splitRows = patternSpec.contains("|")
-                    ? patternSpec.split("\\|")
-                    : patternSpec.split(",");
-
-            for (String row : splitRows) {
-                rows.add(row.trim());
-            }
-
-            return rows;
-        }
-
-        private static Map<Character, String> parseKeys(String keysSpec) {
-            Map<Character, String> keys = new LinkedHashMap<>();
-            String[] assignments = keysSpec.split(",");
-
-            for (String assignment : assignments) {
-                String[] pair = assignment.trim().split("=", 2);
-                if (pair.length != 2) {
-                    throw new IllegalArgumentException("Invalid key assignment: " + assignment);
-                }
-
-                String symbolText = pair[0].trim();
-                if (symbolText.length() != 1) {
-                    throw new IllegalArgumentException("Key symbol must be exactly one character: " + symbolText);
-                }
-
-                char symbol = symbolText.charAt(0);
-                if (symbol == ' ') {
-                    throw new IllegalArgumentException("Space cannot be used as a key symbol");
-                }
-
-                String ingredientText = pair[1].trim();
-                if (ingredientText.startsWith("#")) {
-                    ResourceLocation.parse(ingredientText.substring(1));
-                    keys.put(symbol, ingredientText);
-                } else {
-                    keys.put(symbol, ResourceLocation.parse(ingredientText).toString());
-                }
-            }
-
-            return keys;
         }
     }
 
@@ -410,4 +245,3 @@ public class CustomCraftingRecipesModule
         }
     }
 }
-

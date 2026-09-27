@@ -179,5 +179,17 @@
   "message.vanillaplusadditions.overpacked_extensions.open_failed": "The backpack could not be opened - please try again.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Overpacked backpack access is unavailable.",
   "item.vanillaplusadditions.world_compass": "World Compass",
-  "item.vanillaplusadditions.fire_arrow": "Fire Arrow"
+  "item.vanillaplusadditions.fire_arrow": "Fire Arrow",
+  "item.vanillaplusadditions.growth_gemstone": "Growth Gemstone",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Right-click a creature to make it bigger",
+  "item.vanillaplusadditions.shrinking_gemstone": "Shrinking Gemstone",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Right-click a creature to make it smaller",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s is now %2$s× its normal size",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s cannot be changed any further",
+  "message.vanillaplusadditions.special_gemstones.no_space": "There is no room here for %1$s to grow",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s does not belong to you",
+  "message.vanillaplusadditions.special_gemstones.denied": "The gemstone has no effect on %1$s",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Once only — stats rise with it",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Once only — stats fall with it",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s is already an unusual size — the gemstone has no hold on it"
 }

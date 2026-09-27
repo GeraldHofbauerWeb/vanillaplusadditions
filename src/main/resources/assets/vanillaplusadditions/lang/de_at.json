@@ -70,5 +70,17 @@
   "item.vanillaplusadditions.world_compass": "Weltkompass",
   "item.vanillaplusadditions.fire_arrow": "Feuerpfeil",
   "block.vanillaplusadditions.glow_mushroom": "Leuchtpilz",
-  "item.vanillaplusadditions.glow_mushroom_stew": "Leuchtpilzsuppn"
+  "item.vanillaplusadditions.glow_mushroom_stew": "Leuchtpilzsuppn",
+  "item.vanillaplusadditions.growth_gemstone": "Wachstums-Edelstein",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Rechtsklick auf a Lebewesen macht’s größer",
+  "item.vanillaplusadditions.shrinking_gemstone": "Schrumpf-Edelstein",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Rechtsklick auf a Lebewesen macht’s kleiner",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s is jetzt %2$s× so groß wie normal",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s lässt si nicht weiter verändern",
+  "message.vanillaplusadditions.special_gemstones.no_space": "Do is kein Platz, um %1$s wachsen zu lassen",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s gehört dir nicht",
+  "message.vanillaplusadditions.special_gemstones.denied": "Der Edelstein wirkt nicht auf %1$s",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Nur amal — die Werte wachsen mit",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Nur amal — die Werte sinken mit",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s hat eh schon a ungewöhnliche Größe — der Edelstein greift do nicht"
 }

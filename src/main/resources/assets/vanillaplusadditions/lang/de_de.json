@@ -179,5 +179,17 @@
   "message.vanillaplusadditions.overpacked_extensions.open_failed": "Der Rucksack konnte nicht geöffnet werden – bitte nochmal versuchen.",
   "message.vanillaplusadditions.overpacked_extensions.unavailable": "Rucksack-Zugriff (Overpacked) nicht verfügbar.",
   "item.vanillaplusadditions.world_compass": "Weltkompass",
-  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil"
+  "item.vanillaplusadditions.fire_arrow": "Feuerpfeil",
+  "item.vanillaplusadditions.growth_gemstone": "Wachstums-Edelstein",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Rechtsklick auf ein Lebewesen macht es größer",
+  "item.vanillaplusadditions.shrinking_gemstone": "Schrumpf-Edelstein",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Rechtsklick auf ein Lebewesen macht es kleiner",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s ist jetzt %2$s× so groß wie normal",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s lässt sich nicht weiter verändern",
+  "message.vanillaplusadditions.special_gemstones.no_space": "Hier ist kein Platz, um %1$s wachsen zu lassen",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s gehört dir nicht",
+  "message.vanillaplusadditions.special_gemstones.denied": "Der Edelstein wirkt nicht auf %1$s",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Nur einmal — die Werte wachsen mit",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Nur einmal — die Werte sinken mit",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s hat schon eine ungewöhnliche Größe — der Edelstein greift daran nicht"
 }

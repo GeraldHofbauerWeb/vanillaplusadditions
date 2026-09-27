@@ -35,6 +35,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.pathfinder_quills.Pathfin
 import net.geraldhofbauer.vanillaplusadditions.modules.enhanced_ai_leader_loot.EnhancedAiLeaderLootModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.tipped_arrows.TippedArrowsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.special_gemstones.SpecialGemstonesModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.static_fov.StaticFovModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.arm_target_overlay.ArmTargetOverlayModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.axolotl_guardian.AxolotlGuardianModule;
@@ -166,6 +167,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new EndConduitModule());
         moduleManager.registerModule(new FlyingFishModule());
         moduleManager.registerModule(new StackablesModule());
+        moduleManager.registerModule(new SpecialGemstonesModule());
         moduleManager.registerModule(new HauntedHouseModule());
         moduleManager.registerModule(new FoodEffectsModule());
         moduleManager.registerModule(new OverpackedExtensionsModule());

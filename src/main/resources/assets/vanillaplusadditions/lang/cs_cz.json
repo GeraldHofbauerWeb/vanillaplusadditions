@@ -70,5 +70,17 @@
   "item.vanillaplusadditions.world_compass": "Světový kompas",
   "item.vanillaplusadditions.fire_arrow": "Ohnivý šíp",
   "block.vanillaplusadditions.glow_mushroom": "Zarici houba",
-  "item.vanillaplusadditions.glow_mushroom_stew": "Zarici houbova polevka"
+  "item.vanillaplusadditions.glow_mushroom_stew": "Zarici houbova polevka",
+  "item.vanillaplusadditions.growth_gemstone": "Drahokam růstu",
+  "item.vanillaplusadditions.growth_gemstone.desc_1": "Pravým kliknutím na stvoření ho zvětšíš",
+  "item.vanillaplusadditions.shrinking_gemstone": "Drahokam zmenšení",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_1": "Pravým kliknutím na stvoření ho zmenšíš",
+  "message.vanillaplusadditions.special_gemstones.resized": "%1$s je nyní %2$s× větší než normálně",
+  "message.vanillaplusadditions.special_gemstones.at_limit": "%1$s již nelze dále změnit",
+  "message.vanillaplusadditions.special_gemstones.no_space": "Tady není místo, aby %1$s vyrostl",
+  "message.vanillaplusadditions.special_gemstones.not_owned": "%1$s ti nepatří",
+  "message.vanillaplusadditions.special_gemstones.denied": "Drahokam na %1$s nemá žádný účinek",
+  "item.vanillaplusadditions.growth_gemstone.desc_2": "Jen jednou — vlastnosti rostou s ním",
+  "item.vanillaplusadditions.shrinking_gemstone.desc_2": "Jen jednou — vlastnosti klesají s ním",
+  "message.vanillaplusadditions.special_gemstones.out_of_reach": "%1$s už má neobvyklou velikost — drahokam na něj nemá vliv"
 }
