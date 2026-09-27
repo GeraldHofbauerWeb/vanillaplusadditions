@@ -24,6 +24,13 @@
       "type": "double"
     },
     {
+      "defaultValue": "ADDITIVE",
+      "effect": "Which ladder fall_absorb_size_factor climbs, the same choice special_gemstones offers under stat_curve. ADDITIVE gives a size-3.25 wolf 12.5 free blocks, MULTIPLICATIVE 10.0. Keep both modules on the same setting unless you want them to disagree on purpose.",
+      "key": "fall_absorb_size_curve",
+      "range": "",
+      "type": "enum (ADDITIVE, MULTIPLICATIVE)"
+    },
+    {
       "defaultValue": "true",
       "effect": "Snap the wolf's head down when it lands a bite. Also gates the lunge and the server-side bite-direction packet; it does NOT gate the swing-timer mixin.",
       "key": "bite_animation.enabled",
@@ -55,7 +62,8 @@
     "net.neoforged.neoforge.event.AddReloadListenerEvent (game bus) - registers the code-only crafting recipes",
     "net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent (mod bus, registered in onInitialize) - registers WolfBiteDirectionPacket as an OPTIONAL play-to-client channel on registrar \"1\"",
     "net.neoforged.neoforge.client.event.EntityRenderersEvent.AddLayers (mod bus, @EventBusSubscriber(Dist.CLIENT, MOD)) - adds BattleDogsArmorLayer to the wolf renderer; NOT gated on isModuleEnabled()",
-    "net.neoforged.neoforge.client.event.RenderLivingEvent.Pre (priority LOWEST) and RenderLivingEvent.Post (priority HIGHEST) (@EventBusSubscriber(Dist.CLIENT, GAME)) - the bite lunge push/pop on the PoseStack"
+    "net.neoforged.neoforge.client.event.RenderLivingEvent.Pre (priority LOWEST) and RenderLivingEvent.Post (priority HIGHEST) (@EventBusSubscriber(Dist.CLIENT, GAME)) - the bite lunge push/pop on the PoseStack",
+    "net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent (GAME bus, server, instance @SubscribeEvent method BattleDogsModule.onRiderIncomingDamage at priority HIGH; cancels fall damage for anything riding an armoured wolf whose own free fall covers the distance, so the rider is spared exactly what the animal under them is spared — vanilla hands a mount's fall damage to its passengers on purpose, AbstractHorse.causeFallDamage hurts every indirect passenger for the same amount)"
   ],
   "hasStandaloneJar": true,
   "items": [

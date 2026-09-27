@@ -8,7 +8,7 @@
 | **Module ID** | `special_gemstones` |
 | **Side** | Client + Server |
 | **Requires** | — |
-| **Works with** | — |
+| **Works with** | [Quark](https://modrinth.com/mod/quark) <sub>tested 4.1-482</sub> |
 | **Download** | [`vpa_special_gemstones.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_special_gemstones.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.special_gemstones]` |
 | **Since** | `v1.0.0-beta.100` |
@@ -43,18 +43,38 @@ strength that are rolled per animal and decide whether a horse is worth keeping.
 
 The bonus is a function of how big a creature *is*, not of what was done to it:
 
-| Size | Stats | An armoured wolf falls free for |
-|---|---|---|
-| 0.5 | × 0.82 | 4.1 blocks |
-| 1.0 | × 1.00 | 5.0 blocks |
-| 2.0 | × 1.50 | 7.5 blocks |
-| 3.0 | × 2.25 | 11.2 blocks |
-| 3.25 (Sif) | × 2.49 | 12.5 blocks |
+| Size | Stats (`ADDITIVE`) | Stats (`MULTIPLICATIVE`) | An armoured wolf falls free for |
+|---|---|---|---|
+| 0.5 | × 0.82 | × 0.67 | 4.1 blocks |
+| 1.0 | × 1.00 | × 1.00 | 5.0 blocks |
+| 2.0 | × 1.50 | × 1.50 | 7.5 blocks |
+| 3.0 | × 2.25 | × 1.90 | 11.2 blocks |
+| 3.25 (Sif) | × 2.49 | × 1.99 | 12.5 blocks |
+
+Both ladders agree at double size and part company past it. `ADDITIVE` counts whole blocks of extra
+size, `MULTIPLICATIVE` counts doublings — which makes shrinking the exact inverse of growing and
+keeps very large creatures noticeably tamer. There is no right answer; `stat_curve` picks, and the
+fall figures above follow `battle_dogs`' own copy of the same choice.
 
 So a wolf that **spawned** three times the usual size earns its 2.25 without anyone ever clicking it,
 and armour that covers twice the animal covers twice the landing. The rungs are additive in size —
 each whole block of extra size is worth another 1.5 — rather than keyed to `log2(size)`, which would
 make three times as big worth only 1.87.
+
+### Not every stat may travel the whole way
+
+`scaled_attributes` entries can carry a cap — `minecraft:generic.movement_speed;1.25` — limiting how
+far that one attribute's multiplier may get from 1. Two of them need it, and a mount is why.
+
+`LivingEntity.getRiddenSpeed` *is* the mount's speed, and [`wolf_mount`](wolf_mount.md) overrides it
+to `MOVEMENT_SPEED` times its own multiplier. The size bonus therefore lands on the ride one to one:
+a size-3.25 wolf at the full 2.49× reached **0.75** movement speed, which is two and a half times a
+normal wolf. In game that outran chunk loading — 36 fps down to 11 — and snagged on block edges,
+because at nearly a block per tick the collision arrives before the step-up does. Speed is capped at
+1.25.
+
+Jump strength is **pinned** (`;1.0`, no scaling at all): a mount that launches is worse than one that
+simply does not jump higher. Its own rolled value is untouched either way, which was the point.
 
 **It tops up, it never stacks.** The target is the *species'* default value times the multiplier, and
 a creature already stronger than that keeps exactly what it has. Sif is the reason this rule exists:
@@ -86,6 +106,22 @@ The blast follows `stat_factor`, not `scale_factor`, which at the defaults makes
 **4** — one short of a charged creeper's 6, rather than equal to it. A giant creeper should be worse
 news than an ordinary one, not as bad as a lightning strike made it. `scale_creeper_blast = false`
 turns it off entirely.
+
+### Some creatures are born the wrong size
+
+Two in a hundred creatures that spawn **naturally** come out an odd size — seven of ten large, three
+of ten small. They are ordinary grown or shrunk creatures: same marker a gemstone leaves, same
+size-derived stats, and a Shrinking Gemstone walks one back to normal.
+
+Only natural and chunk-generation spawns count. A spawner, a spawn egg, a breeding or anything a
+command placed is left alone, because those are someone *deliberately asking* for a creature — and
+getting a giant instead is a nuisance rather than a surprise.
+
+By default every hostile creature takes part, plus anything named in `natural_spawns.extra_entities`.
+**Quark's Foxhound is named there**, and it is the interesting one: the Nether wolf already spawns
+down there and already tames with coal, but it extends `Wolf` rather than `Monster`, so the hostile
+rule alone would pass it by. Listing it is what turns it into a nether dog worth hunting for — the
+animal existed, it only needed a reason to be big.
 
 ### What stays out of reach
 
@@ -308,18 +344,23 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `loot_tables` | list of strings | `seven vanilla structure chests, 8% to 30%` | — | Chests that may contain a gemstone, as loot_table;chance. The chance is rolled once per chest and which of the two gemstones drops is an even 50/50. Applied through LootTableLoadEvent, so any mod's chest table can be added. |
 | `max_natural_scale` | double | `2.0` | 0.0625 ~ 16.0 | Largest NATURAL size a creature may have for the gemstones to work on it. Anything already bigger is out of their reach on purpose: an oversized wolf from a dungeon, or Sif from Grim Kingdoms, stays exactly as rare as it was found and can be neither grown further nor cut down to an ordinary size. |
 | `min_natural_scale` | double | `0.5` | 0.0625 ~ 16.0 | Smallest NATURAL size a creature may have for the gemstones to work on it — the size it was born with, read from the attribute's base value, not the size it is now. |
+| `natural_spawns.chance` | double | `0.02` | 0.0 ~ 1.0 | Chance that a naturally spawning creature comes out an odd size. Only MobSpawnType.NATURAL and CHUNK_GENERATION count — never a spawner, a spawn egg, a breeding or anything a command placed, because those are someone deliberately asking for a creature and getting a giant instead would be a nuisance rather than a surprise. 0 switches it off. |
+| `natural_spawns.extra_entities` | list of strings | `quark:foxhound` | — | Creatures that take part although they are not hostile, by entity id. Quark's Foxhound is here by default: a Nether wolf that already spawns down there and tames with coal, but it extends Wolf rather than Monster, so the hostile rule alone would pass it by. An oversized one is the closest thing to Sebi's 'nether dogs that are already +1' — the mob exists, it only needed a reason to be big. |
+| `natural_spawns.hostile` | boolean | `true` | — | Let every hostile creature (anything extending Monster) take part. Off means only extra_entities does. |
+| `natural_spawns.shrink_share` | double | `0.3` | 0.0 ~ 1.0 | Of the creatures that come out odd, the share that come out SMALL rather than large. 0 makes every one of them a giant, 1 makes every one tiny. |
 | `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
 | `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
 | `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs. |
-| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed, jump_strength, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor, as a top-up against the species default. The three a horse rolls per animal — health, movement speed and jump strength — are all in here, because those hidden numbers are what make one horse better than another and they have to move with the size. Step height is in for the same reason: a creature twice the size that still trips over the same kerb looks wrong. A creature that lacks one of the attributes simply skips it. |
+| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed;1.25, jump_strength;1.0, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor as a top-up against the species default. An entry may carry a CAP after a semicolon: the furthest that attribute's multiplier may get from 1 in either direction, where 1.0 pins it (no scaling at all) and anything below 1 means no limit. Speed is capped at 1.25 because a mount reads MOVEMENT_SPEED straight through — LivingEntity.getRiddenSpeed, which wolf_mount overrides to exactly that value times its own multiplier — so a size-3.25 wolf at the full 2.49x reached 0.75 movement speed, outran chunk loading and snagged on every block edge, because at nearly a block per tick the collision arrives before the step-up does. Jump strength is pinned outright: a mount that launches is worse than one that does not jump higher. A creature that lacks an attribute skips it. |
 | `shrinking_recipe` | string | `emerald block, 4 warped wart blocks, 4 amethyst shards` | — | The crafting recipe for the Shrinking Gemstone, same format as growth_recipe. |
+| `stat_curve` | enum (ADDITIVE, MULTIPLICATIVE) | `ADDITIVE` | — | Which ladder the stats climb, from util/SizeScaling. Both agree at double size (1.5) and part company past it: ADDITIVE counts whole blocks of extra size, so 3.0 is worth 2.25 and Sif's 3.25 is 2.49; MULTIPLICATIVE counts doublings, so 3.0 is 1.90 and Sif 1.99, and shrinking becomes the exact inverse of growing. There is no right answer — switch to compare in game. |
 | `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | What one whole block of extra SIZE is worth in stats, as factor^(size-1). At the default of 1.5 a creature at twice the usual size is 1.5x, one at three times is 2.25x and Sif at 3.25 is 2.49x. The rungs are additive in size on purpose: three times as big should be worth 1.5 twice over. The bonus is derived from the size itself, so a creature that SPAWNED big earns it without a gemstone — but it only ever tops up to the species default times the multiplier and never stacks on a creature that is already stronger than that. Set to 1.0 to change size only and leave every stat alone. |
 <!-- vpa:config:end -->
 
 ## See also
 
 * [Wolf Mount](wolf_mount.md) — what a Growth Gemstone unlocks
-* [Battle Dogs](battle_dogs.md) — where a bigger wolf's longer free fall is paid out
+* [Battle Dogs](battle_dogs.md) — where a bigger wolf's longer free fall is paid out, riders included
 * [Custom Crafting Recipes](custom_crafting_recipes.md) — the recipe-string format the two recipe keys use
 * [Configuration Guide](../guides/configuration.md)
 * [All modules](../../README.md#modules)

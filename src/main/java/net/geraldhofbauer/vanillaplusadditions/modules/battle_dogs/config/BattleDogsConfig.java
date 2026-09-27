@@ -2,6 +2,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.config;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.battle_dogs.BattleDogsModule;
+import net.geraldhofbauer.vanillaplusadditions.util.SizeScaling;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
@@ -16,6 +17,7 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
     private ModConfigSpec.DoubleValue thornsReflectFraction;
     private ModConfigSpec.DoubleValue fallAbsorbBlocks;
     private ModConfigSpec.DoubleValue fallAbsorbSizeFactor;
+    private ModConfigSpec.EnumValue<SizeScaling.Curve> fallAbsorbSizeCurve;
     private ModConfigSpec.BooleanValue biteAnimation;
     private ModConfigSpec.BooleanValue biteAnimationOnlyWhenRidden;
     private ModConfigSpec.DoubleValue biteAnimationStrength;
@@ -44,6 +46,13 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
                         "gemstones use. A wolf at twice the usual size gets 1.5x the free fall, one at",
                         "three times gets 2.25x. 1.0 switches it off and every wolf falls the same.")
                 .defineInRange("fall_absorb_size_factor", 1.5D, 1.0D, 8.0D);
+
+        fallAbsorbSizeCurve = builder
+                .comment("Which ladder that factor climbs, the same choice special_gemstones offers.",
+                        "ADDITIVE counts whole blocks of extra size (a size-3.25 wolf falls 12.5 blocks",
+                        "free), MULTIPLICATIVE counts doublings (9.9 blocks). Keep both modules on the",
+                        "same setting unless you want them to disagree on purpose.")
+                .defineEnum("fall_absorb_size_curve", SizeScaling.Curve.ADDITIVE);
 
         builder.comment("Client-side bite animation. Vanilla wolves have none at all -- their model",
                         "never reads attackAnim, so an attacking wolf deals damage without moving.").push("bite_animation");
@@ -81,6 +90,10 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
      *
      * @return the free fall distance in blocks, 0 to disable
      */
+    public SizeScaling.Curve getFallAbsorbSizeCurve() {
+        return fallAbsorbSizeCurve != null ? fallAbsorbSizeCurve.get() : SizeScaling.Curve.ADDITIVE;
+    }
+
     public double getFallAbsorbSizeFactor() {
         return fallAbsorbSizeFactor != null ? fallAbsorbSizeFactor.get() : 1.5D;
     }

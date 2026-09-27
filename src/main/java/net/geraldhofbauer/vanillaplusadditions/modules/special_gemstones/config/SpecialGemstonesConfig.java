@@ -3,6 +3,7 @@ package net.geraldhofbauer.vanillaplusadditions.modules.special_gemstones.config
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModuleConfig;
 import net.geraldhofbauer.vanillaplusadditions.modules.special_gemstones.SpecialGemstonesModule;
 import net.minecraft.resources.ResourceLocation;
+import net.geraldhofbauer.vanillaplusadditions.util.SizeScaling;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.ArrayList;
@@ -55,10 +56,17 @@ public class SpecialGemstonesConfig
     private static final List<String> DEFAULT_SCALED_ATTRIBUTES = List.of(
             "minecraft:generic.max_health",
             "minecraft:generic.attack_damage",
-            "minecraft:generic.movement_speed",
-            "minecraft:generic.jump_strength",
+            "minecraft:generic.movement_speed;1.25",
+            "minecraft:generic.jump_strength;1.0",
             "minecraft:generic.step_height",
             "minecraft:generic.armor");
+
+    /**
+     * Creatures that may spawn oddly sized although they are not hostile. Quark's Foxhound is the
+     * reason: it is a Nether wolf that already spawns down there and can be tamed with coal, but it
+     * extends {@code Wolf} rather than {@code Monster}, so the hostile rule alone would pass it by.
+     */
+    private static final List<String> DEFAULT_NATURAL_SPAWN_EXTRA = List.of("quark:foxhound");
 
     /** Structure chests that may hold a gemstone, with the chance per chest. */
     private static final List<String> DEFAULT_LOOT_TABLES = List.of(
@@ -72,6 +80,7 @@ public class SpecialGemstonesConfig
 
     private ModConfigSpec.DoubleValue scaleFactor;
     private ModConfigSpec.DoubleValue statFactor;
+    private ModConfigSpec.EnumValue<SizeScaling.Curve> statCurve;
     private ModConfigSpec.DoubleValue minNaturalScale;
     private ModConfigSpec.DoubleValue maxNaturalScale;
     private ModConfigSpec.BooleanValue allowPlayers;
@@ -79,6 +88,10 @@ public class SpecialGemstonesConfig
     private ModConfigSpec.BooleanValue checkSpace;
     private ModConfigSpec.BooleanValue consumeItem;
     private ModConfigSpec.BooleanValue scaleCreeperBlast;
+    private ModConfigSpec.DoubleValue naturalSpawnChance;
+    private ModConfigSpec.DoubleValue naturalSpawnShrinkShare;
+    private ModConfigSpec.BooleanValue naturalSpawnHostile;
+    private ModConfigSpec.ConfigValue<List<? extends String>> naturalSpawnExtra;
     private ModConfigSpec.ConfigValue<List<? extends String>> deniedEntities;
     private ModConfigSpec.ConfigValue<List<? extends String>> scaledAttributes;
     private ModConfigSpec.ConfigValue<String> growthRecipe;
@@ -107,6 +120,19 @@ public class SpecialGemstonesConfig
                         "smaller than scale_factor: twice the size should be noticeably stronger, not",
                         "twice as strong.")
                 .defineInRange("stat_factor", 1.5D, 1.0D, 8.0D);
+
+        statCurve = builder
+                .comment("Which ladder the stats climb. Both agree at double size and part company",
+                        "past it:",
+                        "  size     ADDITIVE   MULTIPLICATIVE",
+                        "  0.5        0.82         0.67",
+                        "  2.0        1.50         1.50",
+                        "  3.0        2.25         1.87",
+                        "  3.25       2.49         1.97   (Sif)",
+                        "ADDITIVE counts whole blocks of extra size, MULTIPLICATIVE counts doublings —",
+                        "which makes shrinking the exact inverse of growing, and keeps very large",
+                        "creatures noticeably tamer.")
+                .defineEnum("stat_curve", SizeScaling.Curve.ADDITIVE);
 
         minNaturalScale = builder
                 .comment("Smallest NATURAL size a creature may have for the gemstones to work on it.",
@@ -157,10 +183,19 @@ public class SpecialGemstonesConfig
         scaledAttributes = builder
                 .comment("The attributes that follow the size, scaled by stat_factor.",
                         "A creature that does not have one of them simply skips it — a cow has no",
-                        "attack damage, and only horses and their relatives roll a jump strength.")
+                        "attack damage, and only horses and their relatives roll a jump strength.",
+                        "An entry may carry a CAP after a semicolon, e.g. movement_speed;1.25: the",
+                        "furthest that one attribute's multiplier may get from 1 in either direction.",
+                        "Speed is capped because a mount reads MOVEMENT_SPEED straight through — at the",
+                        "full multiplier a size-3.25 wolf outran chunk loading and snagged on every",
+                        "block edge. Leave the cap off for a stat that may follow the size all the way.")
                 .defineList("scaled_attributes", DEFAULT_SCALED_ATTRIBUTES,
                         () -> "minecraft:generic.max_health",
-                        o -> o instanceof String s && ResourceLocation.tryParse(s) != null);
+                        // Deliberately permissive: anything non-blank is kept in the file. A stricter
+                        // validator makes NeoForge DELETE entries it dislikes on load, and a silently
+                        // shortened list is far worse to debug than a warning — EntityScaling already
+                        // skips an id it cannot resolve.
+                        o -> o instanceof String s && !s.isBlank());
 
         growthRecipe = builder
                 .comment("Crafting recipe for the Growth Gemstone.",
@@ -180,6 +215,32 @@ public class SpecialGemstonesConfig
                 .defineList("loot_tables", DEFAULT_LOOT_TABLES,
                         () -> "minecraft:chests/simple_dungeon;0.10",
                         o -> o instanceof String s && s.split(";").length == 2);
+
+        // LAST on purpose: a TOML sub-table swallows every key written after it, so a pushed section
+        // has to come once every plain key of its parent is defined.
+        builder.comment("A few creatures are simply born the wrong size. Nothing here needs a gemstone;",
+                        "the gemstones can still walk such a creature back to normal afterwards.")
+                .push("natural_spawns");
+        naturalSpawnChance = builder
+                .comment("Chance that a NATURALLY spawning creature comes out an odd size.",
+                        "Only natural and chunk-generation spawns count — never a spawner, an egg, a",
+                        "breeding or anything a command placed. 0 switches it off.")
+                .defineInRange("chance", 0.02D, 0.0D, 1.0D);
+        naturalSpawnShrinkShare = builder
+                .comment("Of those, the share that come out SMALL rather than large.",
+                        "0 makes every one of them a giant, 1 makes every one of them tiny.")
+                .defineInRange("shrink_share", 0.3D, 0.0D, 1.0D);
+        naturalSpawnHostile = builder
+                .comment("Let every hostile creature take part. Off means only the list below does.")
+                .define("hostile", true);
+        naturalSpawnExtra = builder
+                .comment("Creatures that take part although they are not hostile, by entity id.",
+                        "Quark's Foxhound is here by default: a Nether wolf that already spawns down",
+                        "there and tames with coal, but it counts as an animal rather than a monster.")
+                .defineList("extra_entities", DEFAULT_NATURAL_SPAWN_EXTRA,
+                        () -> "quark:foxhound",
+                        o -> o instanceof String s && !s.isBlank());
+        builder.pop();
     }
 
     @Override
@@ -194,6 +255,10 @@ public class SpecialGemstonesConfig
 
     public double getStatFactor() {
         return statFactor != null ? statFactor.get() : 1.5D;
+    }
+
+    public SizeScaling.Curve getStatCurve() {
+        return statCurve != null ? statCurve.get() : SizeScaling.Curve.ADDITIVE;
     }
 
     public double getMinNaturalScale() {
@@ -224,6 +289,24 @@ public class SpecialGemstonesConfig
 
     public boolean isCreeperBlastScaled() {
         return scaleCreeperBlast == null || scaleCreeperBlast.get();
+    }
+
+    public double getNaturalSpawnChance() {
+        return naturalSpawnChance != null ? naturalSpawnChance.get() : 0.02D;
+    }
+
+    public double getNaturalSpawnShrinkShare() {
+        return naturalSpawnShrinkShare != null ? naturalSpawnShrinkShare.get() : 0.3D;
+    }
+
+    public boolean isNaturalSpawnHostile() {
+        return naturalSpawnHostile == null || naturalSpawnHostile.get();
+    }
+
+    public List<String> getNaturalSpawnExtra() {
+        return naturalSpawnExtra != null
+                ? new ArrayList<>(naturalSpawnExtra.get())
+                : new ArrayList<>(DEFAULT_NATURAL_SPAWN_EXTRA);
     }
 
     public boolean isItemConsumed() {

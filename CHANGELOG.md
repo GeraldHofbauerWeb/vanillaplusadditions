@@ -28,6 +28,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Mod wuerde von uns stillschweigend umbalanciert. Beim Schrumpfen gilt es umgekehrt — dort wird von
   dem abgezogen, was das Tier tatsaechlich hat. Bei normaler Groesse passiert gar nichts, sonst wuerde
   die Aufstockung ein absichtlich **geschwaechtes** Tier auf den Artvorgabewert hochziehen.
+- **Nicht jeder Wert darf den ganzen Weg mitgehen** (Gerry, 2026-09-27, im Spiel aufgefallen: Sif
+  raste unsteuerbar ueber die Landschaft und blieb an jeder Blockkante haengen). `getRiddenSpeed` ist
+  die Reitgeschwindigkeit, und `wolf_mount` setzt sie auf `MOVEMENT_SPEED` mal seinem eigenen Faktor —
+  der Groessenbonus landet also eins zu eins im Ritt. Sif kam mit dem vollen 2.49-fachen auf **0.75**
+  Tempo, das Zweieinhalbfache eines normalen Wolfs: die Chunks kamen nicht nach (36 auf 11 fps) und
+  bei fast einem Block pro Tick trifft die Kollision, bevor die Stufenlogik greift. Eintraege in
+  `scaled_attributes` koennen jetzt einen **Deckel** tragen (`…movement_speed;1.25`); Tempo ist bei
+  1.25 gedeckelt, Sprungkraft mit `;1.0` ganz festgenagelt — ein Reittier, das abhebt, ist schlimmer
+  als eines, das einfach nicht hoeher springt.
+- **Die Leiter ist waehlbar** (Gerry, 2026-09-27), neuer Schluessel `stat_curve` und daneben
+  `battle_dogs.fall_absorb_size_curve`. `ADDITIVE` zaehlt ganze Bloecke Mehrgroesse (3.0 ist 2.25
+  wert, Sif 2.49), `MULTIPLICATIVE` zaehlt Verdopplungen (3.0 ist 1.90, Sif 1.99) — damit ist
+  Schrumpfen der exakte Kehrwert des Wachsens und sehr grosse Tiere bleiben zahmer. Beide treffen
+  sich bei doppelter Groesse und gehen erst danach auseinander; es gibt keine richtige Antwort, also
+  entscheidet die Config.
+- **Der Reiter wird genauso verschont wie sein Hund** (Gerry, 2026-09-27). Vanilla gibt den
+  Fallschaden eines Reittiers absichtlich an die Passagiere weiter — `AbstractHorse.causeFallDamage`
+  verletzt jeden indirekten Passagier um denselben Betrag — und ein gerittener Wolf landet an
+  derselben Stelle. Die Ruestung fuer das Tier abzufangen und den Reiter trotzdem zahlen zu lassen,
+  ist das Schlechteste aus beidem. Gemessen wird die groessere der beiden Fallhoehen, weil derjenige
+  von beiden, der zuerst gefragt wird, seine eigene schon zurueckgesetzt hat.
 - **Die Ruestung faengt bei groesseren Woelfen mehr Fallschaden ab** (Gerry, 2026-09-27), neuer
   Schluessel `battle_dogs.fall_absorb_size_factor` (Standard 1.5). Dieselbe Leiter: ein doppelt so
   grosser Wolf faellt 7.5 Bloecke frei statt 5, Sif 12.5. Ruestung, die das doppelte Tier bedeckt,
@@ -79,6 +100,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   geschrumpfter auf **2**; aufgeladene Creeper verdoppeln weiterhin obendrauf. Der Radius folgt
   `stat_factor` und nicht `scale_factor`, damit ein grosser Creeper schlimmer ist als ein normaler,
   aber nicht so schlimm wie ein vom Blitz getroffener. Abschaltbar ueber `scale_creeper_blast`.
+
+- **Manche Lebewesen kommen schon in der falschen Groesse zur Welt** (Gerry und Sebi, 2026-09-27),
+  neuer Abschnitt `natural_spawns`. Zwei von hundert **natuerlich** gespawnten Wesen sind zu gross
+  oder zu klein — sieben von zehn davon gross. Es sind ganz gewoehnliche vergroesserte oder
+  geschrumpfte Tiere: dieselbe Marke, die ein Edelstein hinterlaesst, dieselben groessenabhaengigen
+  Werte, und ein Schrumpf-Edelstein holt sie wieder herunter. Spawner, Spawn-Eier, Zucht und alles,
+  was ein Befehl setzt, bleiben aussen vor — dort will jemand ganz gezielt ein bestimmtes Tier, und
+  ein Riese waere dann laestig statt ueberraschend.
+- **Quarks Foxhound ist namentlich dabei.** Das ist der Nether-Hund, nach dem Sebi gefragt hat: er
+  spawnt dort unten ohnehin und laesst sich mit Kohle zaehmen, erbt aber von `Wolf` und nicht von
+  `Monster` — die Regel „alles Feindselige" haette ihn also uebersehen. Ihn einzutragen macht aus ihm
+  einen Nether-Hund, den zu suchen sich lohnt, ganz ohne neues Mob: das Tier gab es schon, es hat nur
+  einen Grund gebraucht, gross zu sein.
 
 ### Changed
 - **Der Rezept-Parser aus `custom_crafting_recipes` liegt jetzt in `util/ConfiguredRecipes`**, weil

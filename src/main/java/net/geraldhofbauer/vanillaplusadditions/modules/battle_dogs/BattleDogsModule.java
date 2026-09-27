@@ -339,13 +339,53 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
             event.setCanceled(true);
             return;
         }
-        // A bigger wolf falls further for free: armour that covers twice the animal covers twice the
-        // landing. Same ladder the size gemstones use, so the two agree without depending on each other.
-        double freeFall = getConfig().getFallAbsorbBlocks() * SizeScaling.multiplier(
-                wolf.getAttributeValue(Attributes.SCALE), getConfig().getFallAbsorbSizeFactor());
+        double freeFall = freeFallBlocks(wolf);
         if (freeFall > 0.0 && event.getSource().is(DamageTypeTags.IS_FALL) && wolf.fallDistance <= freeFall) {
             event.setCanceled(true);
         }
+    }
+
+    /**
+     * Spares the rider the same fall the wolf under them is spared.
+     *
+     * <p>Vanilla hands a mount's fall damage to its passengers on purpose — {@code
+     * AbstractHorse.causeFallDamage} hurts every indirect passenger for the same amount — and a ridden
+     * wolf ends up in the same place. Absorbing it for the animal but not for the person on its back
+     * is the worst of both: the armour visibly saves the wolf and the rider still pays.
+     *
+     * <p>The distance is taken as the larger of the two, because whichever of them is asked first has
+     * already reset its own {@code fallDistance} by the time the other's damage is handled.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public void onRiderIncomingDamage(LivingIncomingDamageEvent event) {
+        if (!isModuleEnabled() || !event.getSource().is(DamageTypeTags.IS_FALL)) {
+            return;
+        }
+        if (!(event.getEntity().getVehicle() instanceof Wolf wolf)) {
+            return;
+        }
+        if (!(wolf.getBodyArmorItem().getItem() instanceof WolfArmorItem)) {
+            return;
+        }
+        double freeFall = freeFallBlocks(wolf);
+        float fallen = Math.max(wolf.fallDistance, event.getEntity().fallDistance);
+        if (freeFall > 0.0 && fallen <= freeFall) {
+            event.setCanceled(true);
+        }
+    }
+
+    /**
+     * How far this wolf falls for free.
+     *
+     * <p>A bigger wolf falls further: armour that covers twice the animal covers twice the landing.
+     * The ladder comes from {@code util/SizeScaling}, the same one {@code special_gemstones} climbs,
+     * so the two agree without either depending on the other.
+     */
+    private double freeFallBlocks(Wolf wolf) {
+        return getConfig().getFallAbsorbBlocks() * SizeScaling.multiplier(
+                wolf.getAttributeValue(Attributes.SCALE),
+                getConfig().getFallAbsorbSizeFactor(),
+                getConfig().getFallAbsorbSizeCurve());
     }
 
     @SubscribeEvent

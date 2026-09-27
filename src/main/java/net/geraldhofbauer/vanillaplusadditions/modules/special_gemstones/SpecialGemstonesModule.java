@@ -15,12 +15,16 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.Unit;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -37,6 +41,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.LootTableLoadEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -230,6 +235,65 @@ public class SpecialGemstonesModule
         if (event.getEntity() instanceof LivingEntity living) {
             EntityScaling.refreshSizeStats(living, getConfig());
         }
+    }
+
+    /**
+     * Lets a few creatures be born the wrong size.
+     *
+     * <p>A small chance, on natural spawns only — never a spawner, an egg, a breeding or anything a
+     * command placed, because those are someone deliberately asking for a creature and getting a
+     * giant instead would be a nuisance rather than a surprise.
+     *
+     * <p>The result is an ordinary grown or shrunk creature: it carries the same marker a gemstone
+     * would leave, earns the same size-derived stats, and a Shrinking Gemstone can walk it back. That
+     * is also what makes an oversized Foxhound worth hunting for rather than just an odd zombie —
+     * Quark's Nether wolf spawns down there already and tames with coal, it simply is not a monster
+     * by type, so it is named in the config rather than caught by the hostile rule.
+     */
+    @SubscribeEvent
+    public void onFinalizeSpawn(FinalizeSpawnEvent event) {
+        if (!isModuleEnabled() || event.getLevel().isClientSide()) {
+            return;
+        }
+        MobSpawnType type = event.getSpawnType();
+        if (type != MobSpawnType.NATURAL && type != MobSpawnType.CHUNK_GENERATION) {
+            return;
+        }
+        double chance = getConfig().getNaturalSpawnChance();
+        if (chance <= 0.0D) {
+            return;
+        }
+
+        LivingEntity entity = event.getEntity();
+        if (!isSpawnEligible(entity)) {
+            return;
+        }
+        RandomSource random = entity.getRandom();
+        if (random.nextDouble() >= chance) {
+            return;
+        }
+
+        if (!deniedEntitiesLoaded) {
+            reloadDeniedEntities();
+        }
+        boolean grow = random.nextDouble() >= getConfig().getNaturalSpawnShrinkShare();
+        if (EntityScaling.applyAtSpawn(entity, grow, getConfig(), deniedEntities) && getConfig().shouldDebugLog()) {
+            getLogger().debug("{} spawned {}", entity.getType(), grow ? "large" : "small");
+        }
+    }
+
+    /** Whether this creature is allowed to be born an odd size at all. */
+    private boolean isSpawnEligible(LivingEntity entity) {
+        if (getConfig().isNaturalSpawnHostile() && entity instanceof Monster) {
+            return true;
+        }
+        String id = EntityType.getKey(entity.getType()).toString();
+        for (String extra : getConfig().getNaturalSpawnExtra()) {
+            if (id.equals(extra.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ------------------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import net.geraldhofbauer.vanillaplusadditions.util.SizeScaling;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.OwnableEntity;
@@ -175,6 +176,40 @@ public final class EntityScaling {
         return new Result(Outcome.CHANGED, natural > 0.0D ? target.getScale() / natural : 1.0D);
     }
 
+    /**
+     * Sizes a creature as it spawns, without a gemstone and without a player.
+     *
+     * <p>Shares every rule the gemstones follow — the denylist, the natural-size band, one step and
+     * no more — so a mob that was born big can be walked back by a Shrinking Gemstone like any other.
+     * What it does NOT do is check for space: a mob is placed by the spawner before this runs, and
+     * refusing here would leave it at ordinary size rather than not spawn it, which is the better
+     * failure anyway.
+     *
+     * @return {@code true} when the creature actually changed size
+     */
+    public static boolean applyAtSpawn(LivingEntity target, boolean grow,
+                                       SpecialGemstonesConfig config, Set<String> denied) {
+        AttributeInstance scale = target.getAttribute(Attributes.SCALE);
+        if (scale == null || currentStep(target) != Step.NATURAL) {
+            return false;
+        }
+        if (denied.contains(EntityType.getKey(target.getType()).toString())) {
+            return false;
+        }
+        double natural = scale.getBaseValue();
+        if (natural < config.getMinNaturalScale() || natural > config.getMaxNaturalScale()) {
+            return false;
+        }
+
+        Step step = grow ? Step.GROWN : Step.SHRUNK;
+        applyStep(target, step, config);
+        refreshSizeStats(target, config);
+        if (config.isCreeperBlastScaled()) {
+            scaleCreeperBlast(target, grow, config.getStatFactor());
+        }
+        return true;
+    }
+
     /** One step in the asked direction, or {@code null} when there is no room left. */
     private static Step nextStep(Step step, boolean grow) {
         if (grow) {
@@ -220,7 +255,7 @@ public final class EntityScaling {
      */
     public static void refreshSizeStats(LivingEntity target, SpecialGemstonesConfig config) {
         double multiplier = SizeScaling.multiplier(
-                target.getAttributeValue(Attributes.SCALE), config.getStatFactor());
+                target.getAttributeValue(Attributes.SCALE), config.getStatFactor(), config.getStatCurve());
         AttributeSupplier defaults = DefaultAttributes.hasSupplier(target.getType())
                 ? DefaultAttributes.getSupplier(asLivingType(target))
                 : null;
@@ -230,7 +265,8 @@ public final class EntityScaling {
                 : 1.0F;
         boolean changed = false;
 
-        for (Holder<Attribute> attribute : scaledAttributes(config)) {
+        for (ScaledAttribute scaled : scaledAttributes(config)) {
+            Holder<Attribute> attribute = scaled.attribute();
             AttributeInstance instance = target.getAttribute(attribute);
             if (instance == null) {
                 continue;
@@ -242,7 +278,7 @@ public final class EntityScaling {
                 instance.removeModifier(SHRUNK_ID);
                 changed = true;
             }
-            double wanted = wantedBonus(instance, attribute, defaults, multiplier);
+            double wanted = wantedBonus(instance, attribute, defaults, capped(multiplier, scaled.cap()));
             AttributeModifier existing = instance.getModifier(SIZE_STATS_ID);
             if (Math.abs((existing == null ? 0.0D : existing.amount()) - wanted) < 1.0E-6D) {
                 continue;
@@ -334,18 +370,53 @@ public final class EntityScaling {
                 new AttributeModifier(id, amount, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
     }
 
-    /** The configured stat attributes that actually exist in the registry. */
-    private static List<Holder<Attribute>> scaledAttributes(SpecialGemstonesConfig config) {
-        List<Holder<Attribute>> holders = new ArrayList<>();
+    /**
+     * One scaled attribute and how far it is allowed to travel.
+     *
+     * <p>{@code cap} is the furthest the multiplier may get from 1 in either direction, or 0 for no
+     * limit. Speed is the reason it exists: {@code getRiddenSpeed} reads {@code MOVEMENT_SPEED}
+     * straight through, so a wolf at size 3.25 with the full 2.49× became unrideable — it outran
+     * chunk loading and snagged on every block edge, because at nearly a block per tick the collision
+     * arrives before the step-up does. Health and damage have no such ceiling; speed does.
+     */
+    private record ScaledAttribute(Holder<Attribute> attribute, double cap) {
+    }
+
+    /** The configured stat attributes that actually exist in the registry, with their caps. */
+    private static List<ScaledAttribute> scaledAttributes(SpecialGemstonesConfig config) {
+        List<ScaledAttribute> scaled = new ArrayList<>();
         for (String raw : config.getScaledAttributes()) {
-            ResourceLocation id = ResourceLocation.tryParse(raw.trim());
+            String[] parts = raw.trim().split(";", 2);
+            ResourceLocation id = ResourceLocation.tryParse(parts[0].trim());
             if (id == null) {
                 continue;
             }
+            double cap = 0.0D;
+            if (parts.length == 2) {
+                try {
+                    cap = Double.parseDouble(parts[1].trim());
+                } catch (NumberFormatException ignored) {
+                    cap = 0.0D;
+                }
+            }
+            final double limit = cap;
             Optional<? extends Holder<Attribute>> holder = BuiltInRegistries.ATTRIBUTE.getHolder(id);
-            holder.ifPresent(holders::add);
+            holder.ifPresent(h -> scaled.add(new ScaledAttribute(h, limit)));
         }
-        return holders;
+        return scaled;
+    }
+
+    /**
+     * The multiplier this attribute may actually use, held within its cap in both directions.
+     *
+     * <p>A cap below 1 means no limit at all; exactly 1 pins the attribute to its own value and
+     * switches scaling off for it alone.
+     */
+    private static double capped(double multiplier, double cap) {
+        if (cap < 1.0D) {
+            return multiplier;
+        }
+        return Mth.clamp(multiplier, 1.0D / cap, cap);
     }
 
     /**
