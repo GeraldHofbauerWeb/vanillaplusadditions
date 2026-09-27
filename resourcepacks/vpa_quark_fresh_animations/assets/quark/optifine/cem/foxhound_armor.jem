@@ -1,0 +1,327 @@
+{
+ "credit": "Vanilla Plus Additions \u2014 Ruestungsschicht, gleiche Bewegung wie das Tier",
+ "textureSize": [
+  64,
+  64
+ ],
+ "models": [
+  {
+   "invertAxis": "xy",
+   "part": "head",
+   "id": "head",
+   "attach": false,
+   "translate": [
+    0.0,
+    -9.5,
+    5.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      20
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -4.0,
+      6.5,
+      -11.5,
+      8.0,
+      6.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftEar",
+   "id": "leftEar",
+   "attach": false,
+   "translate": [
+    0.0,
+    -9.5,
+    5.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      10,
+      47
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -4.0,
+      12.5,
+      -10.5,
+      2.0,
+      2.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftFrontLeg",
+   "id": "leftFrontLeg",
+   "attach": false,
+   "translate": [
+    2.0,
+    -12.0,
+    3.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      12,
+      32
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -3.5,
+      0.0,
+      -5.0,
+      3.0,
+      12.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "tail",
+   "id": "tail",
+   "attach": false,
+   "translate": [
+    0.0,
+    -7.0,
+    -8.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      36,
+      16
+     ],
+     "coordinates": [
+      -2.0,
+      6.0,
+      8.0,
+      4.0,
+      5.0,
+      10.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftBackLeg",
+   "id": "leftBackLeg",
+   "attach": false,
+   "translate": [
+    3.0,
+    -12.0,
+    -4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      36,
+      32
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -4.5,
+      0.0,
+      2.5,
+      3.0,
+      12.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "root",
+   "id": "root",
+   "attach": true,
+   "translate": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "model": "foxhound_animations.jpm"
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightFrontLeg",
+   "id": "rightFrontLeg",
+   "attach": false,
+   "translate": [
+    -2.0,
+    -12.0,
+    3.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      32
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      0.5,
+      0.0,
+      -5.0,
+      3.0,
+      12.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightBackLeg",
+   "id": "rightBackLeg",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -12.0,
+    -4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      24,
+      32
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      1.5,
+      0.0,
+      2.5,
+      3.0,
+      12.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "snout",
+   "id": "snout",
+   "attach": false,
+   "translate": [
+    0.0,
+    -9.5,
+    5.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      29,
+      18
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -2.0,
+      6.5,
+      -15.5,
+      4.0,
+      2.0,
+      4.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightEar",
+   "id": "rightEar",
+   "attach": false,
+   "translate": [
+    0.0,
+    -9.5,
+    5.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      47
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      2.0,
+      12.5,
+      -10.5,
+      2.0,
+      2.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "body",
+   "id": "body",
+   "attach": false,
+   "translate": [
+    0.0,
+    -7.0,
+    -6.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      2
+     ],
+     "sizeAdd": 0.2,
+     "coordinates": [
+      -4.0,
+      7.0,
+      6.5,
+      8.0,
+      12.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "fluff",
+   "id": "fluff",
+   "attach": false,
+   "translate": [
+    0.0,
+    -20.0,
+    -9.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      28,
+      0
+     ],
+     "coordinates": [
+      -5.0,
+      12.0,
+      5.5,
+      10.0,
+      8.0,
+      8.0
+     ]
+    }
+   ]
+  }
+ ]
+}

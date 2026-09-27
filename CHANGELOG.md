@@ -122,6 +122,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Monster` — die Regel „alles Feindselige" haette ihn also uebersehen. Ihn einzutragen macht aus ihm
   einen Nether-Hund, den zu suchen sich lohnt, ganz ohne neues Mob: das Tier gab es schon, es hat nur
   einen Grund gebraucht, gross zu sein.
+- **Ein Ressourcenpaket, das Fresh Animations um Quarks Foxhound ergaenzt** (Gerry, 2026-09-27),
+  neuer Ordner `resourcepacks/vpa_quark_fresh_animations`. Fresh Animations kennt den Nether-Hund
+  nicht, und seit er ein Reittier ist, steht er einem dauernd vor der Nase — der Unterschied zu den
+  Vanilla-Tieren daneben faellt auf. Das Paket ist eine CEM-Ergaenzung (`.jem` fuer die Geometrie,
+  `.jpm` fuer die Ausdruecke), die **Entity Model Features** liest: Ohren zucken, die Schnauze
+  schnuppert, der Schwanz wedelt in Schueben statt ununterbrochen, und die Beine schwingen nicht mehr
+  durch den eigenen Kopf. Die Ruestungsvariante teilt sich dieselbe `.jpm`, damit Tier und Ruestung
+  nie auseinanderlaufen koennen. **Noch von Hand zu aktivieren** — die automatische Aktivierung durch
+  den Mod kommt als eigener Schritt.
+- **Der Foxhound hat Augen bekommen**, die es im Original nicht gibt: Lid, Iris und eine Pupille, die
+  sich bewegt. Sie folgt `head_yaw`, also dem Winkel des Kopfes **relativ zum Koerper** — der ist
+  bereits ungleich null, waehrend der Kopf gedreht ist und der Koerper noch nachzieht. Die Pupille
+  erreicht ihren Anschlag schon nach etwa 17 Grad und ist damit drueben, bevor die Kopfdrehung
+  auffaellt; genau so schauen Hunde zuerst mit den Augen und drehen sich dann. Dazu ein seltener
+  ruhiger Blick zur Seite und ein kurzes Blinzeln. Eine Eigenheit von Quark wird dabei
+  herausgerechnet: Dessen `prepareMobModel` legt den Interessen-Winkel (Spieler haelt Futter) auf die
+  **Gier-Achse** des Kopfes statt wie Vanilla auf die Roll-Achse, wodurch sich der Kopf um bis zu 27
+  Grad am Spieler vorbeidreht. Die Pupillen rollen um genau diesen Ueberschuss zurueck, also schaut
+  der Hund den Spieler an, statt an ihm vorbei.
 
 ### Fixed
 - **Ein gerittener Foxhound starrte in eine feste Richtung und trat sich durch den eigenen Kopf**
