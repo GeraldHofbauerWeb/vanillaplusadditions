@@ -36,12 +36,15 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.LootTableLoadEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -294,6 +297,39 @@ public class SpecialGemstonesModule
             }
         }
         return false;
+    }
+
+    /**
+     * A bigger creature leaves more behind.
+     *
+     * <p>Runs at LOW priority so every other mod has already decided what drops; this only scales
+     * what is on the table. The mechanics are in {@link SizeDrops} — in particular why a fractional
+     * result is settled with a die roll rather than rounded.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void onLivingDrops(LivingDropsEvent event) {
+        if (!isModuleEnabled() || event.getEntity().level().isClientSide()) {
+            return;
+        }
+        double multiplier = SizeDrops.multiplierFor(event.getEntity(), getConfig());
+        if (Math.abs(multiplier - 1.0D) < 1.0E-6D) {
+            return;
+        }
+        SizeDrops.scaleDrops(event.getEntity(), event.getDrops(), multiplier);
+    }
+
+    /** The experience follows the loot, on the same factor, unless scale_experience says otherwise. */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void onExperienceDrop(LivingExperienceDropEvent event) {
+        if (!isModuleEnabled() || !getConfig().isExperienceScaled()) {
+            return;
+        }
+        double multiplier = SizeDrops.multiplierFor(event.getEntity(), getConfig());
+        if (Math.abs(multiplier - 1.0D) < 1.0E-6D) {
+            return;
+        }
+        event.setDroppedExperience(SizeDrops.scaleCount(
+                event.getDroppedExperience(), multiplier, event.getEntity().getRandom()));
     }
 
     // ------------------------------------------------------------------------------------------

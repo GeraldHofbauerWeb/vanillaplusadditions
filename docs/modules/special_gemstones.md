@@ -123,6 +123,24 @@ down there and already tames with coal, but it extends `Wolf` rather than `Monst
 rule alone would pass it by. Listing it is what turns it into a nether dog worth hunting for — the
 animal existed, it only needed a reason to be big.
 
+### A bigger creature leaves more behind
+
+Loot and experience follow the size on the same ladder: a creature at twice the usual size drops half
+again as much, one at three times drops 2.25×, a shrunk one drops less.
+
+The interesting part is the fraction. Most mob drops are one or two items, so "× 1.5" has no honest
+whole-number answer for a single bone — rounding up makes *every* kill a bonus kill, rounding down
+erases the bonus entirely. So the remainder is settled by a **die roll**: one bone becomes one bone
+plus a coin flip for a second. Ten kills then really do average fifteen bones instead of ten or
+twenty.
+
+One deliberate exception: something that dropped at all never drops nothing, so a shrunk creature's
+single bone stays a bone. And overflow past a stack's limit becomes further stacks rather than being
+clamped, or a giant carrying 60 arrows would lose the difference to the 64 ceiling.
+
+Players are excluded outright. A player's drops are their own inventory, and handing out copies of it
+would be a dupe.
+
 ### What stays out of reach
 
 A creature whose **natural** size is outside `min_natural_scale … max_natural_scale` (0.5 … 2.0 by
@@ -278,10 +296,12 @@ left, so a groove lies in shadow along its top and left edge and catches the lig
 and right. A bright shape with a shadow under it — the obvious first attempt — does exactly the
 opposite and reads as a painted symbol every time.
 
-The shadowed rim is taken four steps down the gem's own ramp from the facet it sits on, not from a
-fixed colour, so the cut looks as deep on the bright table as it does on the dark tip. The filled
-core stays bright on purpose: a real groove loses contrast as it deepens, and at 16 pixels there is
-none to spare — the deepest, most convincing cut was also the one that vanished in a hotbar.
+Every tone is taken **relative to the facet the pixel sits on**, never from a fixed colour, so the cut
+looks equally deep on the bright table and on the dark tip: the floor of the groove one step down its
+ramp, the shadowed rim three, the lit rim two steps up. The arrow therefore stays the stone's own
+colour throughout — it is all shadow and highlight, which is what makes it read as cut rather than
+inlaid. Sebi picked this depth out of eight; a brighter filled core reads more clearly in a hotbar but
+sits *on* the stone instead of *in* it.
 
 Run it with `--check` to verify the committed PNGs are current.
 
@@ -320,6 +340,7 @@ Run it with `--check` to verify the committed PNGs are current.
 |---|---|
 | `modules/special_gemstones/SpecialGemstonesModule.java` | item registration, both interact events, the recipe reload listener, the loot-table listener, the denylist cache |
 | `modules/special_gemstones/EntityScaling.java` | the decision and the attribute write: clamping, the space check, the denylist and ownership tests |
+| `modules/special_gemstones/SizeDrops.java` | the loot multiplier, the die roll for the fraction and the stack overflow |
 | `modules/special_gemstones/item/GemstoneItem.java` | the item, its direction flag and its tooltip |
 | `modules/special_gemstones/config/SpecialGemstonesConfig.java` | the config keys and their defaults |
 | `mixin/special_gemstones/CreeperExplosionRadiusAccessor.java` | the one private field a gemstone has to reach |
@@ -340,6 +361,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `check_space` | boolean | `true` | — | Refuse to grow a creature when its new hitbox would not fit where it stands. Without it Entity.refreshDimensions gives up looking for a free spot and the animal suffocates inside the ceiling. |
 | `consume_item` | boolean | `true` | — | Use up the gemstone on a successful change. Creative mode never consumes it, and a refused click never consumes it either. |
 | `denied_entities` | list of strings | `minecraft:ender_dragon, minecraft:wither` | — | Entity types the gemstones refuse to touch. The Ender Dragon ignores the attribute anyway (its sanitizeScale returns a hard 1.0F), but listing it turns a gemstone that silently does nothing into a readable refusal. Ids are validated with containsKey, because ENTITY_TYPE is a DefaultedRegistry and an unknown id would otherwise resolve to minecraft:pig. |
+| `drop_factor` | double | `1.5` | 1.0 ~ 8.0 | What one rung of the size ladder is worth in LOOT when a creature dies, on the curve stat_curve picks. A fractional result is settled by a DIE ROLL rather than rounded: most mob drops are one or two items, so rounding up would make every kill a bonus kill and rounding down would erase the bonus entirely. At 1.5x a single bone is one bone plus a coin flip for a second, so ten kills really do average fifteen bones. Overflow past a stack's limit becomes further stacks rather than being clamped. A player's own drops are never touched — that would be a dupe. 1.0 switches it off. |
 | `growth_recipe` | string | `emerald block, 4 crimson wart blocks, 4 amethyst shards` | — | The crafting recipe for the Growth Gemstone, in the same format custom_crafting_recipes uses: recipe_id;result_item;result_count;pattern;keys. Editable so the pack can re-price the gemstones without a new build. An empty string makes the gemstone uncraftable. |
 | `loot_tables` | list of strings | `seven vanilla structure chests, 8% to 30%` | — | Chests that may contain a gemstone, as loot_table;chance. The chance is rolled once per chest and which of the two gemstones drops is an even 50/50. Applied through LootTableLoadEvent, so any mod's chest table can be added. |
 | `max_natural_scale` | double | `2.0` | 0.0625 ~ 16.0 | Largest NATURAL size a creature may have for the gemstones to work on it. Anything already bigger is out of their reach on purpose: an oversized wolf from a dungeon, or Sif from Grim Kingdoms, stays exactly as rare as it was found and can be neither grown further nor cut down to an ordinary size. |
@@ -350,6 +372,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `natural_spawns.shrink_share` | double | `0.3` | 0.0 ~ 1.0 | Of the creatures that come out odd, the share that come out SMALL rather than large. 0 makes every one of them a giant, 1 makes every one tiny. |
 | `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
 | `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
+| `scale_experience` | boolean | `true` | — | Let the dropped experience follow drop_factor too, settled by the same die roll. Off leaves XP alone and scales only the items. |
 | `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs. |
 | `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed;1.25, jump_strength;1.0, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor as a top-up against the species default. An entry may carry a CAP after a semicolon: the furthest that attribute's multiplier may get from 1 in either direction, where 1.0 pins it (no scaling at all) and anything below 1 means no limit. Speed is capped at 1.25 because a mount reads MOVEMENT_SPEED straight through — LivingEntity.getRiddenSpeed, which wolf_mount overrides to exactly that value times its own multiplier — so a size-3.25 wolf at the full 2.49x reached 0.75 movement speed, outran chunk loading and snagged on every block edge, because at nearly a block per tick the collision arrives before the step-up does. Jump strength is pinned outright: a mount that launches is worse than one that does not jump higher. A creature that lacks an attribute skips it. |
 | `shrinking_recipe` | string | `emerald block, 4 warped wart blocks, 4 amethyst shards` | — | The crafting recipe for the Shrinking Gemstone, same format as growth_recipe. |

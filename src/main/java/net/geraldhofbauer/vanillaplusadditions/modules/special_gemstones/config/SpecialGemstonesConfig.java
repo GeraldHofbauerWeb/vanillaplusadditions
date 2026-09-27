@@ -88,6 +88,8 @@ public class SpecialGemstonesConfig
     private ModConfigSpec.BooleanValue checkSpace;
     private ModConfigSpec.BooleanValue consumeItem;
     private ModConfigSpec.BooleanValue scaleCreeperBlast;
+    private ModConfigSpec.DoubleValue dropFactor;
+    private ModConfigSpec.BooleanValue scaleExperience;
     private ModConfigSpec.DoubleValue naturalSpawnChance;
     private ModConfigSpec.DoubleValue naturalSpawnShrinkShare;
     private ModConfigSpec.BooleanValue naturalSpawnHostile;
@@ -173,6 +175,19 @@ public class SpecialGemstonesConfig
                         "goes from 3 to 4 and a shrunk one down to 2; a charged creeper still doubles on",
                         "top of that. Turn off if you would rather not hand anyone a bigger hole.")
                 .define("scale_creeper_blast", true);
+
+        dropFactor = builder
+                .comment("What one rung of the size ladder is worth in LOOT when a creature dies:",
+                        "a larger creature drops more, a smaller one less, on the curve stat_curve picks.",
+                        "A fractional result is settled by a die roll, not by rounding — at 1.5x a single",
+                        "bone is one bone plus a coin flip for a second, so ten kills really do average",
+                        "fifteen bones. 1.0 switches it off.")
+                .defineInRange("drop_factor", 1.5D, 1.0D, 8.0D);
+
+        scaleExperience = builder
+                .comment("Let the dropped experience follow the same factor. Off leaves XP alone and",
+                        "scales only the items.")
+                .define("scale_experience", true);
 
         deniedEntities = builder
                 .comment("Entity types the gemstones refuse to touch, e.g. minecraft:wither.")
@@ -307,6 +322,14 @@ public class SpecialGemstonesConfig
         return naturalSpawnExtra != null
                 ? new ArrayList<>(naturalSpawnExtra.get())
                 : new ArrayList<>(DEFAULT_NATURAL_SPAWN_EXTRA);
+    }
+
+    public double getDropFactor() {
+        return dropFactor != null ? dropFactor.get() : 1.5D;
+    }
+
+    public boolean isExperienceScaled() {
+        return scaleExperience == null || scaleExperience.get();
     }
 
     public boolean isItemConsumed() {

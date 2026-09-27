@@ -9,7 +9,8 @@ result shares no pixels with any Mojang asset.
 
 The two gems use ONE silhouette and ONE facet layout, exactly the way the four `wolf_armor_*.png`
 icons share a shape and differ only in their metal ramp. They are told apart twice over: by hue and
-by an arrow cut into the pavilion — pointing up on the Growth Gemstone, down on the Shrinking one. Colour alone would be useless to a colour-blind player looking at two gems in a
+by a shallow groove cut into the pavilion — an arrow pointing up on the Growth Gemstone, down on the
+Shrinking one. Colour alone would be useless to a colour-blind player looking at two gems in a
 hotbar. The hues follow the recipe rather than being picked freely: crimson for the gem cut around
 nether wart, warped teal for the one cut around warped wart, which is the same red-means-bigger,
 blue-means-smaller logic the recipe itself carries.
@@ -148,27 +149,28 @@ def render(name: str, glyph: set[tuple[int, int]]) -> Image.Image:
         if pixel in filled and not is_outline(pixel, filled):
             pixels[pixel] = palette["highlight"] + (255,)
 
-    # The direction glyph, cut into the stone and then filled.
+    # The direction glyph, cut into the stone — a shallow groove, nothing filled.
     #
     # An engraving is a relief with the light reversed, and that is the whole trick: the light falls
     # in from the upper left, so a GROOVE lies in shadow along its top and left edge and catches the
     # light along its bottom and right. Doing it the other way round — which is what a bright shape
     # with a shadow under it does — reads as a symbol painted on, never as one cut in.
     #
-    # The shadowed rim is taken four steps down the ramp from the facet it sits on, not from a fixed
-    # colour, so the cut is as deep on the bright table as it is on the dark tip. The filled core
-    # stays bright: a true groove loses contrast as it deepens, and at 16 pixels there is none to
-    # spare.
+    # Every tone is taken RELATIVE to the facet the pixel sits on, never from a fixed colour, so the
+    # cut looks equally deep on the bright table and on the dark tip: the floor of the groove one step
+    # down, its shadowed rim three, its lit rim two steps up. The arrow therefore stays the stone's own
+    # colour throughout — the shape is all shadow and highlight, which is what makes it read as cut
+    # rather than inlaid.
     for pixel in sorted(glyph):
         if pixel not in filled or is_outline(pixel, filled):
             continue
         x, y = pixel
         if (x, y - 1) not in glyph or (x - 1, y) not in glyph:
-            pixels[pixel] = shift(palette, facet(pixel), -4) + (255,)
+            pixels[pixel] = shift(palette, facet(pixel), -3) + (255,)
         elif (x, y + 1) not in glyph or (x + 1, y) not in glyph:
-            pixels[pixel] = palette["highlight"] + (255,)
+            pixels[pixel] = shift(palette, facet(pixel), +2) + (255,)
         else:
-            pixels[pixel] = palette["accent"] + (255,)
+            pixels[pixel] = shift(palette, facet(pixel), -1) + (255,)
 
     return image
 

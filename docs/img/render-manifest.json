@@ -966,9 +966,9 @@
    ]
   },
   "items/growth_gemstone.png": {
-   "inputs": "fc2f7e08bdf13b072691b6fa1e7bf833828a9fdd492db374f5f43396917c13d6",
+   "inputs": "a2049df19a3c44f40cbf7a004f8f2eaa375c5866cf526c5f889aea6d1550ebb2",
    "model": "vanillaplusadditions:item/growth_gemstone",
-   "png": "6362e9dafa26b27ff2a73972b9f3fd7089bfb49815e1c06767d07114a64c3dae",
+   "png": "7c5d88aee6866ac0e63cc076ea4b414a4036ae73744e6dcbe8d307aaa29cc324",
    "sources": [
     "file:models/item/growth_gemstone.json",
     "file:textures/item/growth_gemstone.png",
@@ -976,9 +976,9 @@
    ]
   },
   "items/shrinking_gemstone.png": {
-   "inputs": "9cecad3887058637d1e258b960fb9c17e665e919b368b5f656f548a975301b4b",
+   "inputs": "1f7fd484ca034e641ab4dfd9ea19f422715cf6140d6ff86b412bb9a74472878b",
    "model": "vanillaplusadditions:item/shrinking_gemstone",
-   "png": "6c0fd2ec49128a1814b63b64c573caa3ef41fcbac55e024e743bc30b59f9a89f",
+   "png": "d89da0c84cb88c8b1af8cddf2ce88a6471c28d8ffc80c01113ca04c97b5089ca",
    "sources": [
     "file:models/item/shrinking_gemstone.json",
     "file:textures/item/shrinking_gemstone.png",

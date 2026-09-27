@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   oben gegen einen nach unten — Farbe allein hilft niemandem, der rot-gruen-schwach ist. Die Farben
   sind nicht frei gewaehlt, sondern die der Warzenbloecke im jeweiligen Rezept: Crimson fuer den
   einen, Warped-Tuerkis fuer den anderen. Symbol und Rezept sagen dasselbe. Der Pfeil ist
-  **eingeschnitten**, nicht aufgemalt — und das ist ein Beleuchtungsproblem: eine Gravur ist ein
+  **eingeschnitten** (Variante „Gravur flach", von Sebi aus acht gerenderten gewaehlt), nicht aufgemalt — und das ist ein Beleuchtungsproblem: eine Gravur ist ein
   Relief mit vertauschtem Licht, die Rille liegt an ihrer oberen und linken Kante im Schatten und
   faengt an der unteren rechten das Licht. Die Schattenkante wird vier Stufen tiefer auf der eigenen
   Farbrampe des Steins geholt, nicht aus einer festen Farbe, damit der Schnitt auf der hellen Krone
@@ -108,6 +108,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Werte, und ein Schrumpf-Edelstein holt sie wieder herunter. Spawner, Spawn-Eier, Zucht und alles,
   was ein Befehl setzt, bleiben aussen vor — dort will jemand ganz gezielt ein bestimmtes Tier, und
   ein Riese waere dann laestig statt ueberraschend.
+- **Ein groesseres Lebewesen laesst mehr zurueck** (Sebis Idee, 2026-09-27), neue Schluessel
+  `drop_factor` (Standard 1.5) und `scale_experience`. Beute und Erfahrung folgen derselben Leiter wie
+  alles andere an der Groesse. Der Bruchteil wird **ausgewuerfelt, nicht gerundet**: die meisten
+  Mob-Drops sind ein oder zwei Gegenstaende, „mal 1.5" hat fuer einen einzelnen Knochen also keine
+  ehrliche ganze Zahl — aufrunden machte jeden Kill zum Bonus-Kill, abrunden liesse den Bonus ganz
+  verschwinden. Aus einem Knochen wird darum ein Knochen plus ein Muenzwurf auf den zweiten, und zehn
+  Kills ergeben im Schnitt wirklich fuenfzehn. Was ueber die Stapelgrenze laeuft, wird zu weiteren
+  Stapeln statt abgeschnitten, und Spieler sind ausgenommen — deren Drops sind ihr eigenes Inventar,
+  Kopien davon waeren ein Dupe.
 - **Quarks Foxhound ist namentlich dabei.** Das ist der Nether-Hund, nach dem Sebi gefragt hat: er
   spawnt dort unten ohnehin und laesst sich mit Kohle zaehmen, erbt aber von `Wolf` und nicht von
   `Monster` — die Regel „alles Feindselige" haette ihn also uebersehen. Ihn einzutragen macht aus ihm
