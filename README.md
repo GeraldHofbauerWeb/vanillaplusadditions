@@ -4,12 +4,12 @@
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-brightgreen)](https://www.minecraft.net/)
 [![NeoForge](https://img.shields.io/badge/NeoForge-21.1-orange)](https://neoforged.net/)
-[![Modules](https://img.shields.io/badge/modules-52-blue)](#-modules)
+[![Modules](https://img.shields.io/badge/modules-53-blue)](#-modules)
 [![Release](https://img.shields.io/github/v/release/GeraldHofbauerWeb/vanillaplusadditions?include_prereleases&label=release)](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest)
 [![Code Quality](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/actions/workflows/code-quality.yml/badge.svg)](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/actions/workflows/code-quality.yml)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-**52 small fixes and additions that keep Minecraft feeling like Minecraft.** Nothing here adds a
+**53 small fixes and additions that keep Minecraft feeling like Minecraft.** Nothing here adds a
 new dimension or a tech tree. Each module scratches one itch — a compass that stops forgetting its
 lodestone, cats that actually guard your base, a rail that keeps the chunks loaded while your
 minecart is somewhere else.
@@ -46,7 +46,7 @@ optional and the module degrades gracefully without it.
 | **Battle Dogs**<br><sub>`battle_dogs`</sub> | [Docs](docs/modules/battle_dogs.md) | [`vpa_battle_dogs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_battle_dogs.jar) | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei), [Quark](https://modrinth.com/mod/quark)</sub> |
 | **Cat Guardian**<br><sub>`cat_guardian`</sub> | [Docs](docs/modules/cat_guardian.md) | [`vpa_cat_guardian.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_cat_guardian.jar)<br><sub>+ `vpa_debug_overlay`, `vpa_flying_fish`</sub> | —<br><sub>better with: [Sable](https://modrinth.com/mod/sable), [Create](https://modrinth.com/mod/create), [JEI](https://modrinth.com/mod/jei)</sub> |
 | **Pet Potions**<br><sub>`pet_potions`</sub> | [Docs](docs/modules/pet_potions.md) | [`vpa_pet_potions.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_pet_potions.jar) | — |
-| **Wolf Mount**<br><sub>`wolf_mount`</sub> | [Docs](docs/modules/wolf_mount.md) | [`vpa_wolf_mount.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_wolf_mount.jar) | —<br><sub>better with: Grim Kingdoms: structures & ruins, Creeper Overhaul</sub> |
+| **Wolf Mount**<br><sub>`wolf_mount`</sub> | [Docs](docs/modules/wolf_mount.md) | [`vpa_wolf_mount.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_wolf_mount.jar) | —<br><sub>better with: Grim Kingdoms: structures & ruins, Creeper Overhaul, [Quark](https://modrinth.com/mod/quark)</sub> |
 | **👹 Mobs & Spawning** | | | |
 | **Better Mobs**<br><sub>`better_mobs`</sub> | [Docs](docs/modules/better_mobs.md) | [`vpa_better_mobs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_better_mobs.jar) | — |
 | **Enhanced AI Leader Loot**<br><sub>`enhanced_ai_leader_loot`</sub> | [Docs](docs/modules/enhanced_ai_leader_loot.md) | [`vpa_enhanced_ai_leader_loot.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_enhanced_ai_leader_loot.jar) | **[Enhanced AI](https://modrinth.com/mod/enhanced-ai)** |
@@ -73,7 +73,7 @@ optional and the module degrades gracefully without it.
 | **Free Anvil Repair**<br><sub>`free_anvil_repair`</sub> | [Docs](docs/modules/free_anvil_repair.md) | [`vpa_free_anvil_repair.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_free_anvil_repair.jar) | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei), [Create](https://modrinth.com/mod/create), [Quark](https://modrinth.com/mod/quark)</sub> |
 | **Mo' Arrows**<br><sub>`mo_arrows`</sub> | [Docs](docs/modules/mo_arrows.md) | [`vpa_mo_arrows.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_mo_arrows.jar) | — |
 | **Pathfinder Quills**<br><sub>`pathfinder_quills`</sub> | [Docs](docs/modules/pathfinder_quills.md) | [`vpa_pathfinder_quills.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_pathfinder_quills.jar) | **[Quark](https://modrinth.com/mod/quark)** 4.1-482+ |
-| **Special Gemstones**<br><sub>`special_gemstones`</sub> | [Docs](docs/modules/special_gemstones.md) | [`vpa_special_gemstones.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_special_gemstones.jar) | — |
+| **Special Gemstones**<br><sub>`special_gemstones`</sub> | [Docs](docs/modules/special_gemstones.md) | [`vpa_special_gemstones.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_special_gemstones.jar) | —<br><sub>better with: [Quark](https://modrinth.com/mod/quark)</sub> |
 | **Stackables**<br><sub>`stackables`</sub> | [Docs](docs/modules/stackables.md) | [`vpa_stackables.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_stackables.jar) | —<br><sub>better with: [Tough As Nails](https://modrinth.com/mod/tough-as-nails), [Create](https://modrinth.com/mod/create)</sub> |
 | **Tipped Arrows from Potions**<br><sub>`tipped_arrows`</sub> | [Docs](docs/modules/tipped_arrows.md) | [`vpa_tipped_arrows.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_tipped_arrows.jar) | —<br><sub>better with: [JEI](https://modrinth.com/mod/jei)</sub> |
 | **Waystone Amethyst Repair**<br><sub>`waystone_amethyst_repair`</sub> | [Docs](docs/modules/waystone_amethyst_repair.md) | [`vpa_waystone_amethyst_repair.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_waystone_amethyst_repair.jar) | —<br><sub>better with: [Waystones](https://modrinth.com/mod/waystones)</sub> |
@@ -96,6 +96,7 @@ optional and the module degrades gracefully without it.
 | **🔌 Integrations & Utility** | | | |
 | **BlueMap Signs**<br><sub>`bluemap_signs`</sub> | [Docs](docs/modules/bluemap_signs.md) | [`vpa_bluemap_signs.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_bluemap_signs.jar) | —<br><sub>better with: [BlueMap](https://modrinth.com/plugin/bluemap)</sub> |
 | **Freecam Sub-Level Noclip**<br><sub>`freecam_sublevel_noclip`</sub> | [Docs](docs/modules/freecam_sublevel_noclip.md) | [`vpa_freecam_sublevel_noclip.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_freecam_sublevel_noclip.jar) | —<br><sub>better with: freecam, [Sable](https://modrinth.com/mod/sable)</sub> |
+| **Quark Fresh Animations**<br><sub>`quark_fresh_animations`</sub> | [Docs](docs/modules/quark_fresh_animations.md) | [`vpa_quark_fresh_animations.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_quark_fresh_animations.jar) | —<br><sub>better with: [Quark](https://modrinth.com/mod/quark), entity_model_features</sub> |
 | **Texture Kill**<br><sub>`texture_kill`</sub> | [Docs](docs/modules/texture_kill.md) | [`vpa_texture_kill.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_texture_kill.jar) | — |
 <!-- vpa:table:end -->
 

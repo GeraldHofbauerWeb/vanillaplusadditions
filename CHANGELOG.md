@@ -129,8 +129,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.jpm` fuer die Ausdruecke), die **Entity Model Features** liest: Ohren zucken, die Schnauze
   schnuppert, der Schwanz wedelt in Schueben statt ununterbrochen, und die Beine schwingen nicht mehr
   durch den eigenen Kopf. Die Ruestungsvariante teilt sich dieselbe `.jpm`, damit Tier und Ruestung
-  nie auseinanderlaufen koennen. **Noch von Hand zu aktivieren** — die automatische Aktivierung durch
-  den Mod kommt als eigener Schritt.
+  nie auseinanderlaufen koennen.
 - **Der Foxhound hat Augen bekommen**, die es im Original nicht gibt: Lid, Iris und eine Pupille, die
   sich bewegt. Sie folgt `head_yaw`, also dem Winkel des Kopfes **relativ zum Koerper** — der ist
   bereits ungleich null, waehrend der Kopf gedreht ist und der Koerper noch nachzieht. Die Pupille
@@ -141,6 +140,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Gier-Achse** des Kopfes statt wie Vanilla auf die Roll-Achse, wodurch sich der Kopf um bis zu 27
   Grad am Spieler vorbeidreht. Die Pupillen rollen um genau diesen Ueberschuss zurueck, also schaut
   der Hund den Spieler an, statt an ihm vorbei.
+- **Der Mod schaltet das Paket selbst ein** (Gerry, 2026-09-27), neues Modul
+  `quark_fresh_animations`. Es reist im Jar mit und legt sich beim Start selbst in die Paketliste —
+  aber nur, wenn es etwas zu tun gibt. Zwei Bedingungen, aus zwei verschiedenen Gruenden: **Quark**
+  ist eine Mod, das ist eine exakte Frage mit exakter Antwort (`ModList.isLoaded`); ohne sie
+  beschriebe die Datei ein Tier, das es nicht gibt. **Fresh Animations** ist dagegen ein
+  Ressourcenpaket — es gibt keine ID, nach der man fragen koennte, nur den Dateinamen im
+  `resourcepacks`-Ordner. Das ist eine **Heuristik**, wird auch so dokumentiert und laesst sich ueber
+  `require_fresh_animations` abschalten. Bewusst **nicht** geprueft wird Entity Model Features,
+  obwohl es das Paket liest: ohne EMF liest die Dateien schlicht niemand — wirkungslos, nicht kaputt
+  — eine Pruefung koennte also nur faelschlich ablehnen. Das Paket wird mit `alwaysActive` angemeldet,
+  weil ein so hinzugefuegtes Paket sonst standardmaessig **aus** ist und ein Kompatibilitaetspaket,
+  das niemand einschaltet, nichts tut; der Ausschalter ist darum der `enabled`-Schluessel des Moduls
+  statt die Paketliste. Welches Jar das Paket traegt, wird zur Laufzeit ermittelt statt geraten — die
+  Mod-ID heisst im Bundle anders als in der Standalone-Jar.
 
 ### Fixed
 - **Ein gerittener Foxhound starrte in eine feste Richtung und trat sich durch den eigenen Kopf**

@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 274 module-specific keys across 52 modules,
+Every setting of every module — 275 module-specific keys across 53 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -508,6 +508,14 @@ Splash a potion of Healing or Regeneration onto someone else's wolf, cat or hors
 | `calm_feedback` | boolean | `true` | — | Play 4 heart particles above the animal and an amethyst chime (NEUTRAL, vol 0.7, pitch 1.5) when it is calmed, so it is visible that it worked. Fires only when anger towards the thrower was actually cleared. |
 | `calming_effects` | list | `List.of("minecraft:instant_health", "minecraft:regeneration")` | elements must be String (defineList validator o -> o instanceof String); new entries default to "minecraft:instant_health" | Effect ids (namespace:path) that make an angry owned animal forgive the player who threw the potion; works for splash and lingering potions alike. An empty list switches calming off entirely (isCalming returns false immediately) without affecting the throw-at-pets fix. |
 | `peace_duration_ticks` | int | `200` | 0 ~ 24000 | How long (in ticks) a calmed animal refuses to re-target the thrower; 0 disables the grace period - the anger is still cleared once, it may just come straight back. Only one window per pet exists, so a second player's calm overwrites the first player's protection. |
+
+## `quark_fresh_animations` — Quark Fresh Animations
+
+Fresh Animations only covers vanilla mobs, so Quark's foxhound moves like stock Minecraft while every wolf beside it does not - this module carries a CEM pack that fills the gap and enables it automatically when Quark and a Fresh Animations pack are both installed. · [full page](../modules/quark_fresh_animations.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `require_fresh_animations` | boolean | `true` | — | Only enable the built-in pack when a Fresh Animations pack is found in the game's resourcepacks folder. Unlike the Quark check this is a heuristic - Fresh Animations is a resource pack, not a mod, so there is no id to ask for and the file name is the only handle. The match strips everything but letters and lower-cases the rest, so FreshAnimations_v1.10.4.zip and fresh-animations both count. Turn it off when Fresh Animations lives somewhere the check cannot see (a modpack overlay, a renamed file), and the pack then enables itself on the Quark check alone. |
 
 ## `special_gemstones` — Special Gemstones
 

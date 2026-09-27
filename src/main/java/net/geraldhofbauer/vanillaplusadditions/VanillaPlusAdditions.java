@@ -32,6 +32,7 @@ import net.geraldhofbauer.vanillaplusadditions.modules.options.OptionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.overpacked_extensions.OverpackedExtensionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.pet_potions.PetPotionsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.pathfinder_quills.PathfinderQuillsModule;
+import net.geraldhofbauer.vanillaplusadditions.modules.quark_fresh_animations.QuarkFreshAnimationsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.enhanced_ai_leader_loot.EnhancedAiLeaderLootModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.tipped_arrows.TippedArrowsModule;
 import net.geraldhofbauer.vanillaplusadditions.modules.stackables.StackablesModule;
@@ -202,6 +203,7 @@ public class VanillaPlusAdditions {
         moduleManager.registerModule(new PathfinderQuillsModule());
         moduleManager.registerModule(new EnhancedAiLeaderLootModule());
         moduleManager.registerModule(new WolfMountModule());
+        moduleManager.registerModule(new QuarkFreshAnimationsModule());
 
         LOGGER.info("Registered {} modules", moduleManager.getAllModules().size());
     }
