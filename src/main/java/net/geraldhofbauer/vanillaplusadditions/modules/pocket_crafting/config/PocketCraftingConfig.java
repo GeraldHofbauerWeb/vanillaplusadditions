@@ -16,7 +16,29 @@ public class PocketCraftingConfig extends AbstractModuleConfig<PocketCraftingMod
     private ModConfigSpec.BooleanValue requireEmptyCarried;
     private ModConfigSpec.BooleanValue requireTableWhileOpen;
     private ModConfigSpec.BooleanValue returnToInventoryOnClose;
+    private ModConfigSpec.ConfigValue<List<? extends String>> returnMenuTypes;
     private ModConfigSpec.ConfigValue<List<? extends String>> conflictingMods;
+
+    /**
+     * Containers that are safe to reopen: every one is backed by a block entity, an entity or the
+     * ender chest inventory, and none of their client factories reads extra data. See the config
+     * comment for why this is a list and not "everything".
+     */
+    private static final List<String> DEFAULT_RETURN_MENU_TYPES = List.of(
+            "minecraft:generic_9x1",
+            "minecraft:generic_9x2",
+            "minecraft:generic_9x3",
+            "minecraft:generic_9x4",
+            "minecraft:generic_9x5",
+            "minecraft:generic_9x6",
+            "minecraft:generic_3x3",
+            "minecraft:shulker_box",
+            "minecraft:hopper",
+            "minecraft:furnace",
+            "minecraft:blast_furnace",
+            "minecraft:smoker",
+            "minecraft:brewing_stand"
+    );
 
     public PocketCraftingConfig(PocketCraftingModule module) {
         super(module);
@@ -25,15 +47,17 @@ public class PocketCraftingConfig extends AbstractModuleConfig<PocketCraftingMod
     @Override
     protected void buildModuleSpecificConfig(ModConfigSpec.Builder builder) {
         inventoryClickEnabled = builder
-                .comment("Whether right-clicking a crafting table in your inventory opens the grid. Turning this "
+                .comment("Whether right-clicking a crafting table in your inventory opens the grid - from the survival "
+                        + "inventory and from any container screen (chest, barrel, furnace ...), in survival and "
+                        + "adventure mode, never in creative or spectator. Turning this "
                         + "off leaves the module loaded - and with it the server side that answers the request - "
                         + "but takes away the trigger, which is what you want if another mod claims the same click.")
                 .define("inventory_click_enabled", true);
 
         showTooltip = builder
                 .comment("Add a \"Right-click to open\" line to a crafting table's tooltip. Only shown "
-                        + "in the survival inventory, which is the one place the click actually does "
-                        + "anything - a hint that appears where it does not work is worse than none.")
+                        + "where the click actually works - on a table in your own inventory, in survival or "
+                        + "adventure. A hint that appears where it does not work is worse than none.")
                 .define("show_tooltip", true);
 
         requireEmptyCarried = builder
@@ -50,10 +74,28 @@ public class PocketCraftingConfig extends AbstractModuleConfig<PocketCraftingMod
                 .define("require_table_while_open", false);
 
         returnToInventoryOnClose = builder
-                .comment("Pressing Escape or the inventory key goes back to the inventory instead of straight into "
-                        + "the game. Only applies to closing it yourself: a close forced by the server never runs "
-                        + "through the screen at all.")
+                .comment("Pressing Escape or the inventory key goes back to where the grid was opened from instead "
+                        + "of straight into the game: the survival inventory, or the chest, barrel or furnace you "
+                        + "had open (see return_menu_types). Only applies to closing it yourself: a close forced "
+                        + "by the server never runs through the screen at all.")
                 .define("return_to_inventory_on_close", true);
+
+        returnMenuTypes = builder
+                .comment("Menu types the grid may send you back into after Escape. Anything not listed returns "
+                        + "to the survival inventory instead. This is an allow-list on purpose: going back means "
+                        + "the server opens that container a second time, with the provider that opened it the "
+                        + "first time, and not every mod's provider survives being called twice - one that built "
+                        + "a temporary entity to back its screen (Overpacked's backpack is such a case) would "
+                        + "point at an entity that no longer exists, and that ends in the client being "
+                        + "disconnected. The defaults are vanilla containers backed by a block entity, an entity "
+                        + "or the ender chest, none of which reads extra data on the client. Add a modded "
+                        + "container only once you have checked it reopens cleanly.")
+                .defineList(
+                        "return_menu_types",
+                        DEFAULT_RETURN_MENU_TYPES,
+                        () -> "minecraft:generic_9x3",
+                        o -> o instanceof String s && s.contains(":")
+                );
 
         conflictingMods = builder
                 .comment("Mod ids that switch the inventory trigger off when present. Left empty on purpose - "
@@ -111,6 +153,15 @@ public class PocketCraftingConfig extends AbstractModuleConfig<PocketCraftingMod
      */
     public boolean returnsToInventoryOnClose() {
         return returnToInventoryOnClose == null || returnToInventoryOnClose.get();
+    }
+
+    /**
+     * Menu types the grid may return into after Escape.
+     *
+     * @return the configured menu type ids, never null
+     */
+    public List<? extends String> getReturnMenuTypes() {
+        return returnMenuTypes == null ? DEFAULT_RETURN_MENU_TYPES : returnMenuTypes.get();
     }
 
     /**

@@ -5,11 +5,11 @@ import net.geraldhofbauer.vanillaplusadditions.modules.pocket_crafting.network.O
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CraftingScreen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
@@ -20,9 +20,11 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
+import javax.annotation.Nullable;
+
 /**
- * Client side of Pocket Crafting: the trigger in the inventory, and the screen swap that gives the
- * grid its way back to the inventory.
+ * Client side of Pocket Crafting: the trigger, the tooltip hint, and the screen swap that gives the
+ * grid its way back.
  */
 @EventBusSubscriber(value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class PocketCraftingClientEvents {
@@ -34,11 +36,39 @@ public final class PocketCraftingClientEvents {
     }
 
     /**
-     * Tells the player a crafting table in the inventory can be opened.
+     * The slot under the mouse if it holds a crafting table the player can open the grid from, or
+     * null. Shared by the trigger and the tooltip so the hint appears exactly where the click works.
      *
-     * <p>Only while the survival inventory is on screen. The click does nothing anywhere else - not
-     * in a chest, not in the creative menu, not in a recipe viewer - and a hint that shows up where
-     * it does not work is worse than no hint at all.</p>
+     * <p>Any container screen counts - the survival inventory, a chest, a barrel, a furnace - except
+     * a crafting screen, where opening a second grid makes no sense. The table has to sit in the
+     * player's own inventory, not in the container half. Survival and adventure only: in creative,
+     * {@code E} opens the creative menu, whose slots behave nothing like a survival inventory.</p>
+     *
+     * @param screen the screen currently open
+     * @return the eligible slot, or null
+     */
+    @Nullable
+    private static Slot eligibleSlot(@Nullable Screen screen) {
+        if (!(screen instanceof AbstractContainerScreen<?> containerScreen) || screen instanceof CraftingScreen) {
+            return null;
+        }
+        PocketCraftingModule module = PocketCraftingModule.getInstance();
+        if (module == null || !module.isTriggerActive()) {
+            return null;
+        }
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || player.isCreative() || player.isSpectator()) {
+            return null;
+        }
+        Slot slot = containerScreen.getSlotUnderMouse();
+        if (slot == null || slot.container != player.getInventory() || !slot.getItem().is(Items.CRAFTING_TABLE)) {
+            return null;
+        }
+        return slot;
+    }
+
+    /**
+     * Tells the player a crafting table can be opened, wherever the click would actually work.
      *
      * @param event the tooltip being assembled
      */
@@ -48,49 +78,38 @@ public final class PocketCraftingClientEvents {
             return;
         }
         PocketCraftingModule module = PocketCraftingModule.getInstance();
-        if (module == null || !module.isTriggerActive() || !module.getConfig().showsTooltip()) {
+        if (module == null || !module.getConfig().showsTooltip()) {
             return;
         }
-        if (!(Minecraft.getInstance().screen instanceof InventoryScreen)) {
+        if (eligibleSlot(Minecraft.getInstance().screen) == null) {
             return;
         }
         event.getToolTip().add(Component.translatable(TOOLTIP_KEY).withStyle(ChatFormatting.YELLOW));
     }
 
     /**
-     * Turns a right-click on a crafting table inside the inventory into an open request.
+     * Turns a right-click on a crafting table in the inventory into an open request.
      *
      * <p>{@code ScreenEvent.MouseButtonPressed.Pre} is the same hook the Easy Shulker Boxes family
      * uses for its in-inventory interactions. Mouse Tweaks listens here too but never cancels, and
      * it only arms its right-click drag while the cursor carries something - so the empty-cursor
-     * condition below keeps the two apart. Shift is left alone on purpose: shift-right-click is
-     * vanilla's quick-move and stays that way.</p>
+     * condition keeps the two apart. Shift is left alone on purpose: shift-right-click is vanilla's
+     * quick-move and stays that way.</p>
      *
      * @param event the mouse press about to be handled by the screen
      */
     @SubscribeEvent
     public static void onMouseButtonPressed(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (!(event.getScreen() instanceof InventoryScreen screen)) {
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_RIGHT || Screen.hasShiftDown()) {
             return;
         }
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+        Slot slot = eligibleSlot(event.getScreen());
+        if (slot == null) {
             return;
         }
+        AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) event.getScreen();
         PocketCraftingModule module = PocketCraftingModule.getInstance();
-        if (module == null || !module.isTriggerActive()) {
-            return;
-        }
-        if (Screen.hasShiftDown()) {
-            return;
-        }
         if (module.getConfig().requiresEmptyCarried() && !screen.getMenu().getCarried().isEmpty()) {
-            return;
-        }
-        Slot slot = screen.getSlotUnderMouse();
-        if (slot == null || !slot.getItem().is(Items.CRAFTING_TABLE)) {
-            return;
-        }
-        if (!(slot.container instanceof Inventory)) {
             return;
         }
 
@@ -111,9 +130,10 @@ public final class PocketCraftingClientEvents {
      *
      * <p>Because the menu reports {@code MenuType.CRAFTING}, the client builds a plain
      * {@code CraftingScreen} and cannot tell where the menu came from. The menu title is the marker:
-     * a real crafting table opens under {@code container.crafting}, the pocket grid under a key of
-     * ours. Not the menu type - Visual Workbench registers a crafting menu type of its own for the
-     * real table, so a type check would pass here by accident and break in another pack.</p>
+     * a real crafting table opens under {@code container.crafting}, the pocket grid under one of two
+     * keys of ours - and which of the two also says where Escape leads. Not the menu type - Visual
+     * Workbench registers a crafting menu type of its own for the real table, so a type check would
+     * pass here by accident and break in another pack.</p>
      *
      * @param event the screen about to be opened
      */
@@ -123,15 +143,18 @@ public final class PocketCraftingClientEvents {
                 || craftingScreen instanceof PocketCraftingScreen) {
             return;
         }
-        if (!(craftingScreen.getTitle().getContents() instanceof TranslatableContents contents)
-                || !PocketCraftingModule.MENU_TITLE_KEY.equals(contents.getKey())) {
+        if (!(craftingScreen.getTitle().getContents() instanceof TranslatableContents contents)) {
+            return;
+        }
+        boolean returnToContainer = PocketCraftingModule.MENU_TITLE_RETURN_KEY.equals(contents.getKey());
+        if (!returnToContainer && !PocketCraftingModule.MENU_TITLE_KEY.equals(contents.getKey())) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
         }
-        event.setNewScreen(new PocketCraftingScreen(
-                craftingScreen.getMenu(), minecraft.player.getInventory(), craftingScreen.getTitle()));
+        event.setNewScreen(new PocketCraftingScreen(craftingScreen.getMenu(), minecraft.player.getInventory(),
+                craftingScreen.getTitle(), returnToContainer));
     }
 }

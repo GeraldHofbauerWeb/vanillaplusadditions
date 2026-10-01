@@ -51,6 +51,7 @@
   "item.vanillaplusadditions.wolf_armor_diamond": "Armure de loup en diamant",
   "item.vanillaplusadditions.wolf_armor_netherite": "Armure de loup en netherite",
   "container.vanillaplusadditions.cat_feeding_station": "Station d'alimentation pour chat",
+  "container.vanillaplusadditions.pocket_crafting.return": "Fabrication",
   "container.vanillaplusadditions.pocket_crafting": "Fabrication",
   "container.vanillaplusadditions.cat_inventory": "Inventaire du chat",
   "message.vanillaplusadditions.cat_guardian.associated": "%s chat(s) associé(s) à cette gamelle.",

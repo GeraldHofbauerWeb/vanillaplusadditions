@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 291 module-specific keys across 56 modules,
+Every setting of every module — 292 module-specific keys across 56 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -524,16 +524,17 @@ Splash a potion of Healing or Regeneration onto someone else's wolf, cat or hors
 
 ## `pocket_crafting` — Pocket Crafting
 
-Right-click a crafting table sitting in your own inventory and the ordinary crafting window opens on the spot - the full 3x3 grid and the recipe book, with Escape taking you back to the inventory instead of dropping you into the world. · [full page](../modules/pocket_crafting.md)
+Right-click a crafting table you are carrying - in your inventory or in your half of any open chest, barrel or furnace - and the ordinary crafting window opens on the spot, recipe book and all, with Escape taking you back to where you were instead of dropping you into the world. · [full page](../modules/pocket_crafting.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `conflicting_mods` | list<string> | `[] (empty)` | — | Mod ids that switch the trigger off when installed, checked once in common setup via ModList.isLoaded. Empty on purpose - nothing in the current pack collides. The known candidate is 'iteminteractions', the library behind Easy Shulker Boxes, which hooks the same ScreenEvent.MouseButtonPressed.Pre on container screens. A list rather than a hard-coded set so a collision can be defused without a release. |
-| `inventory_click_enabled` | boolean | `true` | — | Whether a right-click on a crafting table inside the inventory opens the grid. Turning it off leaves the module and its server side loaded but removes the trigger, which is the setting to reach for when another mod claims the same click. Read live by the client handler, so it takes effect without a restart. |
+| `inventory_click_enabled` | boolean | `true` | — | Whether a right-click on a crafting table in the player's own inventory opens the grid - from the survival inventory and from any container screen except a crafting screen, in survival and adventure only. Turning it off leaves the module and its server side loaded but removes the trigger, which is the setting to reach for when another mod claims the same click. Read live by the client handler, so it takes effect without a restart. |
 | `require_empty_carried` | boolean | `true` | — | Only fire while the mouse cursor carries nothing. Also what keeps Mouse Tweaks out of the way: its right-click drag only arms when the cursor is holding something, so an empty cursor is the one branch where the two cannot collide. |
 | `require_table_while_open` | boolean | `false` | — | Make stillValid() check that a crafting table is still in the main inventory or the offhand, closing the grid when it is not. Off by default because the 3x3 grid is a TransientCraftingContainer and not part of Inventory: a player who legitimately puts the table into the grid as an ingredient would read as having none and the menu would close mid-craft. Nothing is lost either way - removed() always empties the grid back into the inventory. |
-| `return_to_inventory_on_close` | boolean | `true` | — | Escape or the inventory key reopens the inventory screen instead of returning to the game. Only covers closing it yourself: a close forced by the server arrives as a packet and never runs through Screen.onClose(), so that case still lands in the world. |
-| `show_tooltip` | boolean | `true` | — | Add a "Right-click to open" line to a crafting table's tooltip. Only drawn while the survival inventory is the open screen - the trigger does nothing in a chest, in the creative menu or in a recipe viewer, and a hint shown where it does not work is worse than none. |
+| `return_menu_types` | list<string> | `generic_9x1..9x6, generic_3x3, shulker_box, hopper, furnace, blast_furnace, smoker, brewing_stand (all minecraft:)` | — | Menu types the grid may send the player back into after Escape; anything else returns to the survival inventory. An allow-list on purpose: going back means replaying the recorded MenuProvider a second time, and a provider is not obliged to survive that - one that built a temporary entity to back its screen (Overpacked's backpack bridge) would point at a discarded entity, and its client factory dereferences that without a null check, which NeoForge answers by disconnecting the client. The defaults are vanilla containers backed by a block entity, an entity or the ender chest inventory, none of which reads extra data on the client. |
+| `return_to_inventory_on_close` | boolean | `true` | — | Escape or the inventory key goes back to where the grid was opened from: the survival inventory, or the container that was open if its menu type is listed in return_menu_types (anything else falls back to the inventory). Off means Escape behaves like a real table and lands in the world. Only covers closing it yourself: a close forced by the server arrives as a packet and never runs through Screen.onClose(). |
+| `show_tooltip` | boolean | `true` | — | Add a "Right-click to open" line to a crafting table's tooltip. Drawn exactly where the click works - a table in the player's own inventory, in any eligible container screen, in survival or adventure - because the tooltip and the trigger share one eligibility check. A table in the chest half, the creative menu or a recipe viewer gets no line. |
 
 ## `quark_fresh_animations` — Quark Fresh Animations
 

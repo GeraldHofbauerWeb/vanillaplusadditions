@@ -4,6 +4,38 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.102] - 2026-10-02
+
+### Changed
+- **Die Werkbank im Rucksack geht jetzt aus jedem Inventar heraus** (Gerry, 2026-10-01),
+  `pocket_crafting`. Bisher reagierte der Rechtsklick nur im Ueberlebens-Inventar; jetzt auch in
+  Kiste, Fass, Shulkerkiste, Ofen und jedem anderen Container-Bildschirm — solange die Werkbank in
+  der **eigenen** Haelfte des Bildschirms liegt. Eine Werkbank, die in der Kiste liegt, reagiert
+  nicht. **Nur im Ueberlebens- und Abenteuermodus**: im Kreativmodus oeffnet `E` das Kreativmenue,
+  das selbst ein Container-Bildschirm ist und sonst mitgemeint waere. Der Tooltip-Hinweis haengt an
+  derselben Pruefung wie der Klick und erscheint damit genau dort, wo der Klick wirkt.
+- **ESC fuehrt zurueck in die Kiste, aus der man kam.** Weil ein Spieler immer nur ein Menue offen
+  hat, schliesst das Raster die Kiste auf dem Server; zurueck heisst also: der Server oeffnet sie ein
+  zweites Mal. Ein offenes Menue weiss aber nicht, womit es gebaut wurde — darum merkt sich ein neuer
+  Mixin auf `ServerPlayer` bei jedem geoeffneten Menue den `MenuProvider` samt NeoForges
+  Zusatzdaten. Ein einziger Haken reicht, weil NeoForge alle `openMenu`-Varianten durch dieselbe
+  Methode schleust. Wiedergeoeffnet wird aber nur, was auf der neuen Liste `return_menu_types`
+  steht (Truhen, Faesser, Endertruhe, Shulker, Spender, Trichter, Oefen, Braustand). Alles andere
+  — Mod-Container, Pferd, Dorfbewohner — fuehrt zurueck ins Inventar. Die Liste ist Absicht: nicht
+  jeder Provider uebersteht einen zweiten Aufruf, und unser eigener Overpacked-Rucksack ist das
+  Beispiel — dessen Bildschirm haengt an einer Hilfs-Entity, die beim Schliessen verworfen wird, und
+  Overpackeds Client greift ohne Null-Pruefung darauf zu. NeoForge beantwortet das mit einem
+  Rauswurf. Wo ESC hinfuehrt, entscheidet der Server beim Oeffnen und schreibt es in den
+  **Fenstertitel** (zwei Schluessel, beide lesen sich "Handwerk") — so reist die Entscheidung im
+  selben Paket wie das Fenster und kann nicht verloren gehen.
+- **Die Rueckkehr ist gegen Missbrauch abgesichert.** "Oeffne mir eine Kiste" ist genau das, was
+  ein manipulierter Client gern haette. Die Anfrage traegt keine Daten, kann also nur die Kiste
+  treffen, die der Server selbst notiert hat; sie gilt einmal, nur binnen zwei Sekunden nach dem
+  Schliessen des Rasters, und das wiedergeoeffnete Menue wird **sofort** auf Reichweite geprueft —
+  noch im Paket-Handler, bevor irgendein Klick des Clients ankommt. Ohne diese Pruefung haette ein
+  Spieler, der sich entfernt hat, einen Tick lang Zugriff auf eine Kiste ausser Reichweite.
+- Hoerbar: die Kiste wird wirklich zu- und wieder aufgemacht, man hoert also den Deckel.
+
 ## [1.0.0-beta.101] - 2026-10-01
 
 > **Die Nummer 1.0.0-beta.100 wird uebersprungen und nicht mehr vergeben.** Sie stand ab dem

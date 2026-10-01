@@ -1,6 +1,7 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.pocket_crafting.menu;
 
 import net.geraldhofbauer.vanillaplusadditions.modules.pocket_crafting.PocketCraftingModule;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -59,5 +60,22 @@ public class PocketCraftingMenu extends CraftingMenu {
             }
         }
         return player.getOffhandItem().is(Items.CRAFTING_TABLE);
+    }
+
+    /**
+     * Empties the grid back into the inventory (inherited) and tells the module the grid is gone,
+     * which opens the short window in which Escape may send the player back into a container.
+     *
+     * @param player the player the menu belonged to
+     */
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        if (player instanceof ServerPlayer serverPlayer) {
+            PocketCraftingModule module = PocketCraftingModule.getInstance();
+            if (module != null) {
+                module.onGridClosed(serverPlayer);
+            }
+        }
     }
 }
