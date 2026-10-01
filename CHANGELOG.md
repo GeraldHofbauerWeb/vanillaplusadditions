@@ -155,6 +155,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   statt die Paketliste. Welches Jar das Paket traegt, wird zur Laufzeit ermittelt statt geraten — die
   Mod-ID heisst im Bundle anders als in der Standalone-Jar.
 
+- **Der Brandpfeil landet nicht mehr lautlos** (Gerry, 2026-09-27), neuer Schluessel
+  `mo_arrows.impact_effects` (Standard an). Wo er einschlaegt, gibt es jetzt einen Knall und eine
+  Stichflamme: `GENERIC_EXPLODE` bei Lautstaerke 0.7 und Tonhoehe 1.3-1.5, dazu ein
+  EXPLOSION-, acht FLAME- und fuenf SMOKE-Partikel. Bewusst **nicht** auf voller Lautstaerke — das
+  ist der Klang von zuendendem TNT und haette jeden in Hoerweite nach dem Krater suchen lassen.
+  Rein kosmetisch: keine Explosion, kein Schaden, kein veraenderter Block. Der Effekt haengt
+  **nicht** an `light_fires`, damit ein Server, der Brandstiftung per Pfeil verbietet, den Einschlag
+  trotzdem sieht — wohl aber daran, dass der Pfeil noch **brennt**: einer, der unterwegs im Wasser
+  erloschen ist, ist ein gewoehnlicher Pfeil und landet auch so. Die Partikel gehen ueber
+  `ServerLevel.sendParticles` raus; auf dem `Level` gespawnt saehe sie niemand.
+
 ### Fixed
 - **Ein gerittener Foxhound starrte in eine feste Richtung und trat sich durch den eigenen Kopf**
   (Gerry, 2026-09-27). Quarks Foxhound legt sich an Waermequellen hin und merkt sich das in einem

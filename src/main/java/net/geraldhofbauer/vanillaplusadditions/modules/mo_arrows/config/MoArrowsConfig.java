@@ -15,6 +15,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public class MoArrowsConfig extends AbstractModuleConfig<MoArrowsModule, MoArrowsConfig> {
 
     private ModConfigSpec.BooleanValue lightFires;
+    private ModConfigSpec.BooleanValue impactEffects;
 
     public MoArrowsConfig(MoArrowsModule module) {
         super(module);
@@ -29,6 +30,14 @@ public class MoArrowsConfig extends AbstractModuleConfig<MoArrowsModule, MoArrow
                         + "alight for five seconds and still lights TNT, campfires and candles — it simply "
                         + "leaves the ground alone.")
                 .define("light_fires", true);
+
+        impactEffects = builder
+                .comment("Give the Fire Arrow a bang and a puff of flame where it lands. Purely "
+                        + "cosmetic: no explosion, no damage, no block broken — the arrow does exactly "
+                        + "what it did before, it just stops landing in silence. The sound is the "
+                        + "explosion one, played quietly and pitched up so it reads as a small burst "
+                        + "rather than TNT going off nearby.")
+                .define("impact_effects", true);
     }
 
     /**
@@ -38,5 +47,14 @@ public class MoArrowsConfig extends AbstractModuleConfig<MoArrowsModule, MoArrow
      */
     public boolean isLightFiresValue() {
         return lightFires != null ? lightFires.get() : true;
+    }
+
+    /**
+     * Whether a Fire Arrow makes a bang and a puff of flame where it lands.
+     *
+     * @return true if the impact should be seen and heard (default true)
+     */
+    public boolean showsImpactEffects() {
+        return impactEffects == null || impactEffects.get();
     }
 }

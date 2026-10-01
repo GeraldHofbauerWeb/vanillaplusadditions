@@ -144,6 +144,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
+| `impact_effects` | boolean | `true` | — | Give the Fire Arrow a bang and a puff of flame where it lands: SoundEvents.GENERIC_EXPLODE at volume 0.7 and pitch 1.3-1.5 (well under the full-volume version, which is the sound of TNT and would send everyone in earshot looking for a crater), plus one EXPLOSION, eight FLAME and five SMOKE particles sent through ServerLevel.sendParticles. Purely cosmetic - no explosion, no damage, no block changed. Independent of light_fires, so a server that forbids arrow-lit fires still gets the impact; but tied to the arrow still burning, so one that was put out in water lands silently. |
 | `light_fires` | boolean | `true` | — | Lets a Fire Arrow start a fire where it lands, exactly as a thrown fire charge would. With it off the arrow still burns in flight, still sets what it hits alight for five seconds and still lights TNT, campfires and candles — it simply leaves the ground alone. Only the block half is switchable; igniting on hit is vanilla's own behaviour for a burning arrow and cannot be separated from the arrow being lit. |
 <!-- vpa:config:end -->
 

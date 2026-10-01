@@ -7,7 +7,9 @@ import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.config.MoArrows
 import net.geraldhofbauer.vanillaplusadditions.modules.mo_arrows.item.FireArrowItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.sounds.SoundEvents;
@@ -31,6 +33,7 @@ import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -113,16 +116,24 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
         if (!isModuleEnabled()) {
             return;
         }
-        if (!getConfig().isLightFiresValue()) {
-            return;
-        }
         if (!(event.getProjectile() instanceof AbstractArrow arrow)
-                || !arrow.getPickupItemStackOrigin().is(FIRE_ARROW.get())
-                || !(event.getRayTraceResult() instanceof BlockHitResult hit)) {
+                || !arrow.getPickupItemStackOrigin().is(FIRE_ARROW.get())) {
             return;
         }
         Level level = arrow.level();
         if (level.isClientSide) {
+            return;
+        }
+
+        // Deliberately not tied to light_fires: a server that does not want archers starting fires
+        // still wants the arrow to land like something that was on fire. Tied to isOnFire() though —
+        // an arrow that went through water on the way is just an arrow, and should land like one.
+        if (getConfig().showsImpactEffects() && arrow.isOnFire()) {
+            playImpactEffects(level, event.getRayTraceResult().getLocation());
+        }
+
+        if (!getConfig().isLightFiresValue()
+                || !(event.getRayTraceResult() instanceof BlockHitResult hit)) {
             return;
         }
         if (!arrow.isOnFire()) {
@@ -166,6 +177,29 @@ public class MoArrowsModule extends AbstractModule<MoArrowsModule, MoArrowsConfi
                     hit.getDirection(), pos.toShortString(), previous,
                     arrow.blockPosition().toShortString());
         }
+    }
+
+    /**
+     * The bang and the puff of flame where a Fire Arrow lands.
+     *
+     * <p>Cosmetic only — nothing here damages anything or changes a block. The explosion sound is
+     * played at well under half volume and pitched up, because the full-volume version is the sound
+     * of TNT going off and would have every player in earshot spinning around looking for the
+     * crater. Particles go out through {@link ServerLevel#sendParticles}, which is what reaches the
+     * clients; spawning them on the server's own {@code Level} would show nobody anything.
+     *
+     * @param level the level the arrow hit in, already known to be server-side
+     * @param at    the exact point of impact from the ray trace
+     */
+    private void playImpactEffects(Level level, Vec3 at) {
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS,
+                0.7F, 1.3F + level.getRandom().nextFloat() * 0.2F);
+        if (!(level instanceof ServerLevel server)) {
+            return;
+        }
+        server.sendParticles(ParticleTypes.EXPLOSION, at.x, at.y, at.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        server.sendParticles(ParticleTypes.FLAME, at.x, at.y, at.z, 8, 0.15D, 0.15D, 0.15D, 0.03D);
+        server.sendParticles(ParticleTypes.SMOKE, at.x, at.y, at.z, 5, 0.1D, 0.1D, 0.1D, 0.01D);
     }
 
     /**
