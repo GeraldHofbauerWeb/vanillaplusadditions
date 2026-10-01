@@ -1,0 +1,74 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "defaultValue": "[] (empty)",
+      "effect": "Mod ids that switch the trigger off when installed, checked once in common setup via ModList.isLoaded. Empty on purpose - nothing in the current pack collides. The known candidate is 'iteminteractions', the library behind Easy Shulker Boxes, which hooks the same ScreenEvent.MouseButtonPressed.Pre on container screens. A list rather than a hard-coded set so a collision can be defused without a release.",
+      "key": "conflicting_mods",
+      "range": "",
+      "type": "list<string>"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Whether a right-click on a crafting table inside the inventory opens the grid. Turning it off leaves the module and its server side loaded but removes the trigger, which is the setting to reach for when another mod claims the same click. Read live by the client handler, so it takes effect without a restart.",
+      "key": "inventory_click_enabled",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Only fire while the mouse cursor carries nothing. Also what keeps Mouse Tweaks out of the way: its right-click drag only arms when the cursor is holding something, so an empty cursor is the one branch where the two cannot collide.",
+      "key": "require_empty_carried",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Make stillValid() check that a crafting table is still in the main inventory or the offhand, closing the grid when it is not. Off by default because the 3x3 grid is a TransientCraftingContainer and not part of Inventory: a player who legitimately puts the table into the grid as an ingredient would read as having none and the menu would close mid-craft. Nothing is lost either way - removed() always empties the grid back into the inventory.",
+      "key": "require_table_while_open",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Escape or the inventory key reopens the inventory screen instead of returning to the game. Only covers closing it yourself: a close forced by the server arrives as a packet and never runs through Screen.onClose(), so that case still lands in the world.",
+      "key": "return_to_inventory_on_close",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Add a \"Right-click to open\" line to a crafting table's tooltip. Only drawn while the survival inventory is the open screen - the trigger does nothing in a chest, in the creative menu or in a recipe viewer, and a hint shown where it does not work is worse than none.",
+      "key": "show_tooltip",
+      "range": "",
+      "type": "boolean"
+    }
+  ],
+  "displayName": "Pocket Crafting",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent (mod event bus; getModEventBus().addListener(this::onRegisterPayloadHandlers) in onInitialize, PocketCraftingModule.java). Registers the C2S open request on registrar \"1\" with .optional().",
+    "net.neoforged.neoforge.client.event.ScreenEvent.MouseButtonPressed.Pre (game event bus, client only; @EventBusSubscriber on PocketCraftingClientEvents). The trigger: right-click on a crafting table in the InventoryScreen. Cancels the event so the click is not also handled as a slot pickup.",
+    "net.neoforged.neoforge.client.event.ScreenEvent.Opening (game event bus, client only; PocketCraftingClientEvents). Swaps the stock CraftingScreen for PocketCraftingScreen when the menu title marks it as ours.",
+    "net.neoforged.neoforge.event.entity.player.ItemTooltipEvent (game event bus, client only; PocketCraftingClientEvents). Appends the \"Right-click to open\" hint to a crafting table's tooltip, gated on Minecraft.getInstance().screen being an InventoryScreen."
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleDeps": [],
+  "moduleId": "pocket_crafting",
+  "notes": "NO ASSETS OF OUR OWN, AND THAT IS THE WHOLE DESIGN. PocketCraftingMenu extends net.minecraft.world.inventory.CraftingMenu instead of registering a menu type. AbstractContainerMenu.menuType is assigned once in the protected constructor and getType() only reads it, so the subclass still reports MenuType.CRAFTING - which is what ServerPlayer.openMenu puts into ClientboundOpenScreenPacket. Any client, including a vanilla one, therefore builds the stock CraftingScreen (MenuScreens registers MenuType.CRAFTING -> CraftingScreen::new). No DeferredRegister, no RegisterMenuScreensEvent, no texture, no mixin, and every recipe viewer in the pack (EMI, Not Enough Recipe Book, TooManyRecipeViewers) sees a crafting screen it already understands. The only language key added is the menu title.\n\nTHE CONTAINERLEVELACCESS TRAP. CraftingMenu(int, Inventory) delegates to ContainerLevelAccess.NULL, whose evaluate() never invokes the function it is handed, and whose execute() is a default method built on evaluate(). With NULL, two things in the superclass silently break: slotsChanged() never reaches slotChangedCraftingGrid, so the result slot is never computed and the grid is inert; and removed(Player) never reaches clearContainer, so the nine items in the grid are destroyed when the screen closes. So a real access is required - ContainerLevelAccess.create(level, player.blockPosition()). Only the level is ever used by the superclass (slotChangedCraftingGrid asks it for the recipe manager, onCraftedBy takes it); the position is read exclusively by the inherited stillValid, which is overridden.\n\nSTILLVALID MUST BE OVERRIDDEN. The inherited implementation is AbstractContainerMenu.stillValid(access, player, Blocks.CRAFTING_TABLE), which looks for a crafting table block at the access position. There is none - that is the point of the module - so Player.tick() would close the menu on the next tick. The override returns true unless require_table_while_open is on.\n\nWHY THE MENU TITLE IS THE MARKER. Because the menu reports MenuType.CRAFTING, the client cannot tell our grid from a real table by type. The title can: a real crafting table opens under container.crafting (CraftingTableBlock.CONTAINER_TITLE), the pocket grid under container.vanillaplusadditions.pocket_crafting. Deliberately NOT a menu-type check: Visual Workbench, which is installed in this pack, registers its own crafting menu type for the real table, so a type comparison would pass here by coincidence and break in a pack without it. Weak spot to be aware of: a mod that rewrites screen titles would defeat the marker.\n\nESC RETURN IS NOT A RACE, AND IT IS PROVABLE FROM THE PACKET ORDER. PocketCraftingScreen.onClose() calls super.onClose() first, which runs AbstractContainerScreen.onClose -> LocalPlayer.closeContainer(): that sends ServerboundContainerClosePacket, then clientSideCloseContainer() sets containerMenu = inventoryMenu and clears the screen. Only then does the override set a fresh InventoryScreen, which binds exactly that inventoryMenu. Clicks in the new screen address containerId 0, and the close packet went out earlier on the same ordered connection. Server side, doCloseContainer() -> removed() empties the grid back into the inventory through our access. One cosmetic artefact remains: a single frame with no screen (mouse grab) between the two, unavoidable because LocalPlayer.closeContainer calls setScreen(null) itself.\n\nSERVER SIDE RE-VALIDATES EVERYTHING. The packet carries only a slot index, and it is not carried for convenience: without it the packet would be a free \"open me a crafting grid anywhere\" for any client. openGrid() checks that containerMenu == inventoryMenu (so only from the plain inventory), that the index is in range, that slot.container is an Inventory (which rules out the inventory menu's own 2x2 grid and result slot, both backed by a transient container; main inventory, hotbar, armour and offhand all share the one Inventory object, and of those only the armour slots cannot hold a crafting table in the first place - the offhand can, and opening from there is intentionally allowed), and that the item in that slot really is a crafting table.\n\nOPTIONAL NETWORK CHANNEL. The registrar uses .optional() and the client guards the send with connection.hasChannel(). Same reasoning as battle_dogs: NetworkComponentNegotiator fails the whole handshake over a non-optional channel the other side lacks, and the client is disconnected as incompatible. A server running only vpa_pocket_crafting would throw out every vanilla player over a convenience window. Note that item_vault_viewer and overpacked_extensions do register non-optional channels, so games2 already requires VPA client-side in practice - that is a reason not to add a third, not a reason to match them.\n\nSHIFT IS LEFT ALONE. Shift-right-click stays vanilla's quick-move. The trigger also requires the slot's container to be the player Inventory, so the inventory's own crafting slots and armour slots never respond.\n\nTHE TABLE IS NEVER CONSUMED and never placed. What the grid gives you is the 3x3 recipes without putting a block down, using it and mining it again.\n\nMOUSE TWEAKS COEXISTENCE, VERIFIED FROM BYTECODE. MouseTweaksNeo.onGuiMouseClickedPre listens on the same event and can cancel in principle, but all four return paths of Main.onMouseClicked are iconst_0/ireturn - it never cancels. Its right-click drag only arms when player.containerMenu.getCarried() is non-empty, so require_empty_carried puts us in the one branch where it does nothing. Visual Workbench, Easy Magic and Easy Anvils are all block-bound (CraftingTableWithInventoryBlock, EnchantmentTableWithInventoryBlock, AnvilWithInventoryBlock) and never touch InventoryScreen.\n\nNOT MODELLED ON EASY SHULKER BOXES, DESPITE THE REQUEST. That mod opens no screen at all: fuzs.iteminteractions renders the contents as a tooltip inside the existing inventory screen and routes clicks through ItemStack.overrideStackedOnOther / overrideOtherStackedOnMe, i.e. through vanilla's already-synchronised slot-click path, which is why it has no \"return to the previous screen\" problem to solve. A crafting grid needs real recipe resolution and a ResultSlot, so that trick does not carry. What was taken from it is the event and reading the hovered slot.\n\nTHE TOOLTIP IS GATED ON THE SCREEN, NOT ON THE ITEM. ItemTooltipEvent fires wherever a tooltip is assembled - the creative menu, a chest, EMI's recipe panel, a held item - but the trigger only works in InventoryScreen. The handler therefore checks Minecraft.getInstance().screen before adding the line, so the hint appears exactly where acting on it does something. Appended rather than inserted, so it lands below the mod name line, matching where Easy Shulker Boxes puts its own.",
+  "oneLiner": "Right-click a crafting table sitting in your own inventory and the ordinary crafting window opens on the spot - the full 3x3 grid and the recipe book, with Escape taking you back to the inventory instead of dropping you into the world.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [],
+  "requiredMods": [],
+  "shortDescription": "Right-click a crafting table in your inventory to open the 3x3 crafting grid",
+  "side": "both",
+  "sinceCommit": "",
+  "sinceVersion": "unreleased"
+}

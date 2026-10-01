@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 275 module-specific keys across 53 modules,
+Every setting of every module — 291 module-specific keys across 56 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -394,6 +394,18 @@ Hold Ctrl and right-click a Create Item Vault while wearing Engineering Goggles 
 
 No settings of its own.
 
+## `kill_items` — Kill Items
+
+An operator command that sweeps up the dropped items lying around you - sixteen blocks by default, any radius you name, with a dry run that tells you what it would clear before anything disappears. · [full page](../modules/kill_items.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `default_radius` | int | `16` | 1 ~ 512 | Radius in blocks used when the command is given no radius argument. |
+| `feedback_details` | boolean | `true` | — | List the most common item types (up to three, then a +N remainder) in the answer, counted by stack size rather than by entity. |
+| `max_radius` | int | `256` | 1 ~ 2048 | Largest radius the command accepts. Checked while the command runs, not while the command tree is built - a limit baked into IntegerArgumentType.integer(1, max) would be read once at server start and then ignore edits to this file until the next /reload. |
+| `permission_level` | int | `2` | 0 ~ 4 | Permission level required to run the command. 0 opens it to every player, 2 is the usual operator level, 4 is a full server operator. Read live inside the requires predicate, so a change takes effect without a restart. |
+| `spherical` | boolean | `true` | — | Measure the radius as a true sphere. Off means the axis-aligned box handed to getEntitiesOfClass is used as-is, which is a cube whose corner reaches about 1.7 times the typed radius. |
+
 ## `minecart_chunk_loading` — Minecart Chunk Loading
 
 A craftable rail that keeps the chunks around a traveling minecart loaded, so long-distance cart lines keep running instead of stalling at the edge of the loaded world. · [full page](../modules/minecart_chunk_loading.md)
@@ -412,6 +424,7 @@ An arrow crafted from an arrow and a fire charge: it flies burning, sets alight 
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
+| `impact_effects` | boolean | `true` | — | Give the Fire Arrow a bang and a puff of flame where it lands: SoundEvents.GENERIC_EXPLODE at volume 0.7 and pitch 1.3-1.5 (well under the full-volume version, which is the sound of TNT and would send everyone in earshot looking for a crater), plus one EXPLOSION, eight FLAME and five SMOKE particles sent through ServerLevel.sendParticles. Purely cosmetic - no explosion, no damage, no block changed. Independent of light_fires, so a server that forbids arrow-lit fires still gets the impact; but tied to the arrow still burning, so one that was put out in water lands silently. |
 | `light_fires` | boolean | `true` | — | Lets a Fire Arrow start a fire where it lands, exactly as a thrown fire charge would. With it off the arrow still burns in flight, still sets what it hits alight for five seconds and still lights TNT, campfires and candles — it simply leaves the ground alone. Only the block half is switchable; igniting on hit is vanilla's own behaviour for a burning arrow and cannot be separated from the arrow being lit. |
 
 ## `mob_cart_loader` — Mob Cart Loader
@@ -509,6 +522,19 @@ Splash a potion of Healing or Regeneration onto someone else's wolf, cat or hors
 | `calming_effects` | list | `List.of("minecraft:instant_health", "minecraft:regeneration")` | elements must be String (defineList validator o -> o instanceof String); new entries default to "minecraft:instant_health" | Effect ids (namespace:path) that make an angry owned animal forgive the player who threw the potion; works for splash and lingering potions alike. An empty list switches calming off entirely (isCalming returns false immediately) without affecting the throw-at-pets fix. |
 | `peace_duration_ticks` | int | `200` | 0 ~ 24000 | How long (in ticks) a calmed animal refuses to re-target the thrower; 0 disables the grace period - the anger is still cleared once, it may just come straight back. Only one window per pet exists, so a second player's calm overwrites the first player's protection. |
 
+## `pocket_crafting` — Pocket Crafting
+
+Right-click a crafting table sitting in your own inventory and the ordinary crafting window opens on the spot - the full 3x3 grid and the recipe book, with Escape taking you back to the inventory instead of dropping you into the world. · [full page](../modules/pocket_crafting.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `conflicting_mods` | list<string> | `[] (empty)` | — | Mod ids that switch the trigger off when installed, checked once in common setup via ModList.isLoaded. Empty on purpose - nothing in the current pack collides. The known candidate is 'iteminteractions', the library behind Easy Shulker Boxes, which hooks the same ScreenEvent.MouseButtonPressed.Pre on container screens. A list rather than a hard-coded set so a collision can be defused without a release. |
+| `inventory_click_enabled` | boolean | `true` | — | Whether a right-click on a crafting table inside the inventory opens the grid. Turning it off leaves the module and its server side loaded but removes the trigger, which is the setting to reach for when another mod claims the same click. Read live by the client handler, so it takes effect without a restart. |
+| `require_empty_carried` | boolean | `true` | — | Only fire while the mouse cursor carries nothing. Also what keeps Mouse Tweaks out of the way: its right-click drag only arms when the cursor is holding something, so an empty cursor is the one branch where the two cannot collide. |
+| `require_table_while_open` | boolean | `false` | — | Make stillValid() check that a crafting table is still in the main inventory or the offhand, closing the grid when it is not. Off by default because the 3x3 grid is a TransientCraftingContainer and not part of Inventory: a player who legitimately puts the table into the grid as an ingredient would read as having none and the menu would close mid-craft. Nothing is lost either way - removed() always empties the grid back into the inventory. |
+| `return_to_inventory_on_close` | boolean | `true` | — | Escape or the inventory key reopens the inventory screen instead of returning to the game. Only covers closing it yourself: a close forced by the server arrives as a packet and never runs through Screen.onClose(), so that case still lands in the world. |
+| `show_tooltip` | boolean | `true` | — | Add a "Right-click to open" line to a crafting table's tooltip. Only drawn while the survival inventory is the open screen - the trigger does nothing in a chest, in the creative menu or in a recipe viewer, and a hint shown where it does not work is worse than none. |
+
 ## `quark_fresh_animations` — Quark Fresh Animations
 
 Fresh Animations only covers vanilla mobs, so Quark's foxhound moves like stock Minecraft while every wolf beside it does not - this module carries a CEM pack that fills the gap and enables it automatically when Quark and a Fresh Animations pack are both installed. · [full page](../modules/quark_fresh_animations.md)
@@ -595,6 +621,17 @@ Adds a blue Create train track that force-loads the chunks around any train roll
 | `only_while_players_online` | boolean | `true` | — | Only force-load chunks while at least one player is online; false keeps loading with nobody online (e.g. perpetual loops). |
 | `overlay.chunk_border_scan_radius` | int | `8` | 1 ~ 16 | Debug overlay: how many chunks around the player are scanned for loader tracks to draw chunk borders for. |
 | `overlay.chunk_border_vertical_span` | int | `24` | 4 ~ 256 | Debug overlay: vertical extent in blocks above and below the track of the rendered chunk border band. |
+
+## `trial_spawner_glow` — Trial Spawner Glow
+
+Click a trial spawner and every mob it currently has out is outlined for twenty seconds, straight through the walls of the chamber - so you can see at a glance whether the wave is finished or one straggler is still hiding in a corner. · [full page](../modules/trial_spawner_glow.md)
+
+| Key | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `feedback_message` | boolean | `true` | — | Tell the clicking player in the action bar how many mobs were highlighted. Only sent when at least one mob was reached, so a click on a spawner in cooldown stays silent. |
+| `glow_duration_seconds` | int | `20` | 1 ~ 3600 | How long the outline lasts. Clicking again re-applies it, but MobEffectInstance.update only takes the new duration when it is longer at equal amplifier - so a second click never shortens a glow that is still running; it only picks up mobs that were not there the first time. |
+| `require_empty_hand` | boolean | `false` | — | Only react when the main hand is empty. Off by default because in a trial chamber you are usually holding a weapon. The interaction is never cancelled either way, so placing a block against the spawner or changing its mob with a spawn egg keeps working exactly as in vanilla. |
+| `show_particles` | boolean | `false` | — | Show the effect's swirling particles. Off by default: the outline is the point, and a chamber full of particles hides more than it shows. Passed as the visible flag of the MobEffectInstance, which also drives showIcon. |
 
 ## `waystone_amethyst_repair` — Waystone Amethyst Repair
 

@@ -24,6 +24,7 @@
     "hostile_endermen.TeleportAntiCheeseMixin",
     "pet_potions.AreaEffectCloudAccessor",
     "special_gemstones.CreeperExplosionRadiusAccessor",
+    "trial_spawner_glow.TrialSpawnerCurrentMobsAccessor",
     "wolf_mount.WolfMountMixin"
   ],
   "client": [

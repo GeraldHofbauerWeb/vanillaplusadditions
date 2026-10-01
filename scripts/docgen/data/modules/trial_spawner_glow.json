@@ -1,0 +1,61 @@
+{
+  "blocks": [],
+  "commands": [],
+  "configKeys": [
+    {
+      "defaultValue": "20",
+      "effect": "How long the outline lasts. Clicking again re-applies it, but MobEffectInstance.update only takes the new duration when it is longer at equal amplifier - so a second click never shortens a glow that is still running; it only picks up mobs that were not there the first time.",
+      "key": "glow_duration_seconds",
+      "range": "1 ~ 3600",
+      "type": "int"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Only react when the main hand is empty. Off by default because in a trial chamber you are usually holding a weapon. The interaction is never cancelled either way, so placing a block against the spawner or changing its mob with a spawn egg keeps working exactly as in vanilla.",
+      "key": "require_empty_hand",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "false",
+      "effect": "Show the effect's swirling particles. Off by default: the outline is the point, and a chamber full of particles hides more than it shows. Passed as the visible flag of the MobEffectInstance, which also drives showIcon.",
+      "key": "show_particles",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Tell the clicking player in the action bar how many mobs were highlighted. Only sent when at least one mob was reached, so a click on a spawner in cooldown stays silent.",
+      "key": "feedback_message",
+      "range": "",
+      "type": "boolean"
+    }
+  ],
+  "displayName": "Trial Spawner Glow",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock (game event bus; NeoForge.EVENT_BUS.register(this) in onInitialize, @SubscribeEvent on onRightClickBlock). Never cancelled - see notes."
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [
+    "trial_spawner_glow.TrialSpawnerCurrentMobsAccessor"
+  ],
+  "moduleDeps": [],
+  "moduleId": "trial_spawner_glow",
+  "notes": "WHAT IT SOLVES. A trial chamber is a dark, cornered room, and the spawner gives no hint whether the wave is done or whether one straggler is standing behind a wall. The spawner already knows - it keeps the ids of the mobs it is tracking, because that is how it decides when to move on - so the module only makes that knowledge visible.\n\nTHE DATA IS PROTECTED AND NOT SYNCED. TrialSpawnerData.currentMobs is a protected final Set<UUID> with no getter; the public API only aggregates it (haveAllCurrentMobsDied() asks whether it is empty, isReadyToSpawnNextMob asks for its size). The route to it is otherwise public: TrialSpawnerBlockEntity.getTrialSpawner() -> TrialSpawner.getData(). Hence the @Accessor mixin.\n\nTHE MIXIN IS CONVENIENCE, NOT NECESSITY - recorded so nobody later reads it as \"there was no other way\". BlockEntity.saveCustomOnly(HolderLookup.Provider) is public final and writes the full TrialSpawner.codec(), which includes the current_mobs field, and UUIDUtil.CODEC_SET is public and could read it back. That route allocates an entire TrialSpawnerConfig tree per call and couples to an NBT key name instead of a field name. The accessor is a single field read. Both couple to a vanilla internal; this one is typed.\n\nTHE RETURNED SET IS LIVE. The accessor hands out the spawner's own set, so applyGlow copies it before iterating.\n\nWHY A SERVER-SIDE EFFECT AND NOT THE CLIENT GLOW FLAG. TrialSpawnerData.getUpdateTag writes only next_mob_spawns_at (and only in the ACTIVE state) and spawn_data - current_mobs never reaches the client. The client-side approach used by cat_guardian and axolotl_guardian (EntitySharedFlagInvoker, shared flag 6, an expiry map) would therefore need an extra S2C packet carrying the ids, a network channel and a client events class, for a visually identical result. MobEffects.GLOWING needs none of that, every player sees it, a vanilla client needs nothing installed, and the remaining duration persists across a restart in the mob's own NBT. Effect icons are only ever drawn for the local player, so an effect on a mob adds no HUD clutter; the only visible side effect is the particles, and show_particles turns those off. setGlowingTag(true) was rejected: it persists as Glowing:1b in the entity NBT, so a crash inside the window would leave mobs glowing forever. All three routes end up setting the same shared flag 6 and are equally visible through walls (Minecraft.shouldEntityAppearGlowing -> isCurrentlyGlowing -> the outline is drawn into a separate framebuffer target and composited over the frame), so seeing through walls is not a discriminator between them.\n\nTWO GUARDS AGAINST FIRING TWICE. RightClickBlock is posted on both logical sides (MultiPlayerGameMode and ServerPlayerGameMode) and once per hand. The handler returns unless the level is a ServerLevel and the hand is MAIN_HAND.\n\nTHE INTERACTION IS NEVER CANCELLED. TrialSpawnerBlock overrides neither useWithoutItem nor useItemOn, so right-clicking a trial spawner is a vanilla no-op and there is nothing to suppress. It must stay that way: TrialSpawnerBlockEntity implements Spawner, and SpawnEggItem.useOn legitimately rewrites the spawner's mob type and consumes the egg. Cancelling on the server alone would also desync the client's prediction of the held item.\n\nNO STATE CHECK, ON PURPOSE. Outside the ACTIVE state currentMobs is empty anyway - reset() and the transition to WAITING_FOR_REWARD_EJECTION clear it, and resetAfterBecomingOminous discards it - so a click during the cooldown is already a no-op. An explicit TrialSpawnerState comparison would be redundant code that can go wrong at the next vanilla update.\n\nOMINOUS SPAWNERS BEHAVE THE SAME. isOminous only selects which config applies. The extra OminousItemSpawner entities an ominous spawner produces are not in currentMobs and are not LivingEntity, so the instanceof filter skips them regardless.\n\nNO TICK HANDLER, SO NO CATCH-UP. Mobs the spawner releases after the click do not light up; TrialSpawnerState.tickAndGetNext adds to currentMobs as it spawns, and nothing re-reads the set afterwards. Clicking again covers the next wave. This is a deliberate scope decision, not an oversight - it keeps the module to a single event handler with no watch map and no cleanup on level unload.\n\nVANILLA FORGETS DISTANT MOBS. TrialSpawner.tickServer untracks any mob that is dead, in another dimension, or more than MAX_MOB_TRACKING_DISTANCE (47) blocks from the spawner. A mob that wandered off keeps glowing until its effect runs out, but a second click will no longer find it. ServerLevel.getEntity(UUID) also only resolves entities in loaded chunks of that level, which in practice is always true because the player is standing at the spawner.",
+  "oneLiner": "Click a trial spawner and every mob it currently has out is outlined for twenty seconds, straight through the walls of the chamber - so you can see at a glance whether the wave is finished or one straggler is still hiding in a corner.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [
+    "mob_glow"
+  ],
+  "requiredMods": [],
+  "shortDescription": "Clicking a trial spawner outlines the mobs it currently has out",
+  "side": "server",
+  "sinceCommit": "",
+  "sinceVersion": "unreleased"
+}

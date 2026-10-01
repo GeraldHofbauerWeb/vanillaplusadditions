@@ -4,7 +4,7 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-beta.100] - 2026-09-27
+## [1.0.0-beta.100] - 2026-10-01
 
 ### Added
 - **Zwei neue Items: die Special Gemstones** (Gerry, 2026-09-26), neues Modul `special_gemstones`.
@@ -166,7 +166,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   erloschen ist, ist ein gewoehnlicher Pfeil und landet auch so. Die Partikel gehen ueber
   `ServerLevel.sendParticles` raus; auf dem `Level` gespawnt saehe sie niemand.
 
+- **Ein Klick auf den Trial Spawner zeigt, wo seine Mobs stecken** (Gerry, 2026-09-30), neues
+  Modul `trial_spawner_glow`. Rechtsklick auf den Spawner umrandet die Mobs, die er gerade draussen
+  hat — 20 Sekunden lang (`glow_duration_seconds`), durch Waende sichtbar. Eine Trial Chamber ist ein
+  dunkles Zimmer voller Ecken, und der Spawner sagt einem nur, was als **naechstes** kommt, nicht was
+  noch lebt. Die Information liegt aber schon da: der Spawner merkt sich die Mobs, die er gespawnt
+  hat, weil er genau daran erkennt, wann die Welle vorbei ist. Das Modul macht diese Menge nur kurz
+  sichtbar. Serverseitig per `MobEffects.GLOWING`, also **sehen es alle** und ein Vanilla-Client
+  braucht nichts — der clientseitige Weg (`cat_guardian`) ginge hier nicht ohne Zusatzpaket, weil
+  `current_mobs` nicht im Update-Tag des Spawners steht und den Client nie erreicht.
+  `setGlowingTag` war ausgeschlossen: das landet als `Glowing:1b` im Mob-NBT, ein Absturz im
+  20-Sekunden-Fenster liesse Mobs fuer immer leuchten. Die Interaktion wird **nie** abgebrochen,
+  damit ein Spawn-Egg den Spawner weiterhin umprogrammieren kann. **Nachgespawnte Mobs leuchten
+  nicht mit** (bewusst, Gerry): wer die naechste Welle sehen will, klickt noch einmal — so bleibt das
+  Modul ein einzelner Event-Handler ohne mitlaufende Buchfuehrung.
+
+- **`/kill-items` raeumt die herumliegenden Drops auf** (Gerry, 2026-09-30), neues Modul
+  `kill_items`. Ohne Argument im Umkreis von **16 Bloecken** (`default_radius`), mit Zahl im
+  genannten Radius, und `dry-run` zaehlt erst einmal nur. Vanilla kann das auch, aber unbequem:
+  `/kill @e[type=item]` leert die ganze Dimension, `/kill @e[type=item,distance=..16]` messt immer
+  vom Ausfuehrenden, kennt keinen Standardwert und sagt nichts darueber, was es gerade vernichtet
+  hat. Hier kommt der Ursprung aus der **Befehlsquelle**, nicht von einem Spieler — damit
+  funktionieren `/execute in the_nether positioned 0 64 0 run kill-items 32` und
+  `/execute at Sebi run kill-items`, und der Befehl laeuft auch aus der Konsole. Jede Antwort nennt
+  Anzahl, Radius, Position, Dimension und die drei haeufigsten Item-Typen. Der Radius ist eine echte
+  **Kugel**: die Box, die Minecraft durchsucht, ist ein Wuerfel, dessen Ecke sonst das 1,7-fache des
+  getippten Radius erreicht. Trichter, Baender, Rutschen und Funnel sind strukturell sicher — was
+  darin liegt, sind `ItemStack`s in einem Block-Inventar und keine Entities, der Filter sieht sie gar
+  nicht. Rechte per `permission_level` (Standard 2, live gelesen). Bewusst **ohne**
+  Bestaetigungs-Flow wie `/chunkreset`: `dry-run` beantwortet die einzige Frage, die zaehlt, und
+  haelt dabei keinen Zustand. Ein `all` fuer die ganze Dimension gibt es absichtlich nicht.
+  Zweite Wurzel `/vpakillitems`, weil jeder andere Befehl hier fugenlos und `vpa`-praefixiert ist.
+
+- **Die Werkbank im Rucksack ist nicht mehr totes Gewicht** (Gerry, 2026-09-30), neues Modul
+  `pocket_crafting`. Rechtsklick auf eine Werkbank **im Inventar** oeffnet das 3x3-Raster, ESC bringt
+  zurueck ins Inventar. Unterwegs bedeutet ein 3x3-Rezept sonst: Block hinstellen, benutzen, abbauen,
+  einsammeln — vier Handgriffe fuer etwas, das man im Rucksack mit sich traegt. Die Werkbank wird
+  **nicht** verbraucht und nicht gesetzt. **Keine eigenen Assets** (Gerrys Vorgabe): das Menue ist
+  eine Unterklasse von `CraftingMenu` und meldet weiter `MenuType.CRAFTING`, weil `menuType` einmal
+  im Basiskonstruktor gesetzt und danach nur gelesen wird — jeder Client baut daraufhin seinen
+  eigenen `CraftingScreen`. Kein Registry-Eintrag, keine Textur, kein Mixin, ein einziger
+  Sprachschluessel (der Fenstertitel), und Rezeptbuch wie EMI funktionieren gratis. Die Falle, an der
+  das haengt: `CraftingMenu(int, Inventory)` nimmt `ContainerLevelAccess.NULL`, und dessen `evaluate`
+  ruft die uebergebene Funktion **nie** auf — damit wuerde `slotsChanged` nie ein Ergebnis berechnen
+  (das Raster waere funktionslos) und `removed` nie `clearContainer` aufrufen: die neun Items im
+  Raster waeren beim Schliessen **weg**. Es braucht also einen echten Zugriff, und dann muss
+  `stillValid` ueberschrieben werden, weil das geerbte nach einem Werkbank-Block an der
+  Spielerposition sucht und der Server das Menue im naechsten Tick zumachen wuerde. Erkannt wird
+  unser Fenster am **Titel**, nicht am MenuType — Visual Workbench registriert fuer die echte
+  Werkbank einen eigenen Typ, eine Typpruefung wuerde hier zufaellig stimmen und in einem anderen
+  Pack brechen. Kanal `optional()` plus `hasChannel`-Guard, damit ein Server mit nur
+  `vpa_pocket_crafting` keine Vanilla-Clients wegen eines Komfortfensters kickt. Der Ausloeser
+  verlangt einen **leeren Mauszeiger** — das ist genau der Zweig, in dem Mouse Tweaks nichts tut
+  (dessen Rechtsklick-Griff schaltet sich nur scharf, wenn der Zeiger etwas traegt).
+  Die Werkbank traegt ausserdem einen gelben Hinweis **Rechtsklick zum Oeffnen** unten im Tooltip
+  (Gerry, 2026-10-01, nach dem Vorbild von Easy Shulker Boxes), neuer Schluessel `show_tooltip`.
+  Der Hinweis erscheint **nur**, solange das Ueberlebens-Inventar offen ist: `ItemTooltipEvent`
+  feuert auch in Kisten, im Kreativmenue und in Rezept-Browsern, und dort tut der Klick nichts —
+  ein Hinweis, der dort steht, wo er nicht gilt, ist schlechter als keiner.
+
 ### Fixed
+- **Drei Module fehlten seit ihrer Einfuehrung in der README** (2026-09-30):
+  `create_redstone_link_rebinder`, `create_stock_link_keepalive` und `glow_mushroom` standen nicht in
+  `categories.json` und damit in keiner Uebersicht (50 von 53 erfasst). `gen_readme.py` bricht
+  darueber ab, `check_docs.py` merkt es aber nicht, weil es `gen_readme.py` nicht mitlaufen laesst —
+  darum ist es so lange durchgegangen. Jetzt einsortiert; der Modulzaehler stimmt wieder.
+
 - **Ein gerittener Foxhound starrte in eine feste Richtung und trat sich durch den eigenen Kopf**
   (Gerry, 2026-09-27). Quarks Foxhound legt sich an Waermequellen hin und merkt sich das in einem
   synchronisierten `IS_RESTING`-Flag. Sein Modell liest das Flag **zweimal**: `prepareMobModel` stellt

@@ -1,0 +1,70 @@
+{
+  "blocks": [],
+  "commands": [
+    "/kill-items",
+    "/kill-items <radius>",
+    "/kill-items dry-run",
+    "/kill-items <radius> dry-run",
+    "/vpakillitems"
+  ],
+  "configKeys": [
+    {
+      "defaultValue": "16",
+      "effect": "Radius in blocks used when the command is given no radius argument.",
+      "key": "default_radius",
+      "range": "1 ~ 512",
+      "type": "int"
+    },
+    {
+      "defaultValue": "256",
+      "effect": "Largest radius the command accepts. Checked while the command runs, not while the command tree is built - a limit baked into IntegerArgumentType.integer(1, max) would be read once at server start and then ignore edits to this file until the next /reload.",
+      "key": "max_radius",
+      "range": "1 ~ 2048",
+      "type": "int"
+    },
+    {
+      "defaultValue": "2",
+      "effect": "Permission level required to run the command. 0 opens it to every player, 2 is the usual operator level, 4 is a full server operator. Read live inside the requires predicate, so a change takes effect without a restart.",
+      "key": "permission_level",
+      "range": "0 ~ 4",
+      "type": "int"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "Measure the radius as a true sphere. Off means the axis-aligned box handed to getEntitiesOfClass is used as-is, which is a cube whose corner reaches about 1.7 times the typed radius.",
+      "key": "spherical",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
+      "effect": "List the most common item types (up to three, then a +N remainder) in the answer, counted by stack size rather than by entity.",
+      "key": "feedback_details",
+      "range": "",
+      "type": "boolean"
+    }
+  ],
+  "displayName": "Kill Items",
+  "enabledByDefault": true,
+  "entities": [],
+  "events": [
+    "net.neoforged.neoforge.event.RegisterCommandsEvent (game event bus; NeoForge.EVENT_BUS.register(this) in onInitialize, @SubscribeEvent on onRegisterCommands, which returns early when !isModuleEnabled())"
+  ],
+  "hasStandaloneJar": true,
+  "items": [],
+  "keybinds": [],
+  "mixins": [],
+  "moduleDeps": [],
+  "moduleId": "kill_items",
+  "notes": "WHY A COMMAND OF ITS OWN. /kill @e[type=item] clears the whole dimension, and /kill @e[type=item,distance=..16] measures from whoever runs it and cannot be given a default radius. This one defaults to a configured radius, takes its origin from the command source, and can report what it would remove before removing it.\n\nTHE HYPHEN IS LEGAL, AND IT DOES NOT COLLIDE WITH /kill. Verified against brigadier-1.3.10: LiteralCommandNode.parse does not use StringReader.isAllowedInUnquotedString at all - it compares substring(cursor, cursor + literal.length()) to the literal and only fails if the following character is not a space, so a literal may contain any character except a space. listSuggestions uses startsWith, so tab completion works. And /kill-items does not reach the vanilla /kill node: it matches the first four characters, then sees '-' where it needs a space, resets the cursor and fails, leaving the kill-items node to take it. Searched every jar in the pack for kill-items and killitems: no other mod defines either.\n\nSECOND ROOT, NOT A REDIRECT. The same tree is registered twice, under kill-items (as asked for) and vpakillitems (every other command in this mod is unhyphenated and mostly vpa-prefixed: vpaunstuck, vparelink, chunkreset, mobglow, blockglow). Deliberately not Brigadier's redirect(), which rewrites the context and makes parse errors talk about the other name.\n\nORIGIN COMES FROM THE SOURCE, NOT FROM A PLAYER. source.getPosition() and source.getLevel() rather than getPlayerOrException(), which throws for the console and for /execute as a non-player entity. That makes /execute in the_nether positioned 0 64 0 run kill-items 32 and /execute at <player> run kill-items work as written. One surprise worth knowing: from the server console the origin is the overworld's shared spawn position (MinecraftServer.createCommandSourceStack), not 0/0/0 - which is why every answer states the position and the dimension it used.\n\nLOADED CHUNKS, ONE DIMENSION. EntityGetter.getEntitiesOfClass asks the level's own LevelEntityGetter, which holds only entities in that level's loaded sections and loads no chunk to answer. Running it in the overworld never touches the nether.\n\nTHE BOX IS A CUBE. AABB.ofSize is axis-aligned, so with spherical = true an explicit distanceToSqr check cuts the sphere out of it - the same correction pet_potions makes for its splash radius. Without it, a corner of the search reaches sqrt(3) times the typed radius.\n\ndiscard(), NOT kill(). Entity.kill() is remove(RemovalReason.KILLED) and discard() is remove(RemovalReason.DISCARDED); both reasons are (destroy=true, save=false) and ItemEntity overrides neither, so for an item entity the two are behaviourally identical. DISCARDED is chosen because it is the reason vanilla itself uses for \"removed administratively\", and it reads correctly to any mod that inspects getRemovalReason(). remove(RemovalReason) is never called directly - discard() is the API.\n\nHOPPERS, BELTS AND FUNNELS ARE SAFE, STRUCTURALLY. Items inside a hopper, a chest, a Create belt, a chute or a funnel are ItemStacks or TransportedItemStacks held by a block inventory, not ItemEntity instances, so the filter cannot see them. There is no half-state to catch either: HopperBlockEntity.suckInItems collects and inserts within one tick, and a command runs on the server thread inside that tick. The one thing that IS hit is an item entity physically hovering above a hopper that would have been sucked up next tick - which is a real dropped item and is meant to be included.\n\nNO CONFIRMATION FLOW, ON PURPOSE. chunk_reset keeps a pendingResets map and cleans it up on PlayerLoggedOutEvent because its damage is irreversible and the confirmation has to survive a session. Neither applies here, so the protection is dry-run instead: it answers \"what would happen now\" while holding no state at all. A whole-dimension variant was deliberately not added.\n\nWHAT IT COUNTS AND REPORTS. The Brigadier return value is the number of item entities removed (0 when none were found, so execute store result sees a real count), and the summary counts stack sizes, not entities - twelve cobblestone in one stack reads as 12x Cobblestone.",
+  "oneLiner": "An operator command that sweeps up the dropped items lying around you - sixteen blocks by default, any radius you name, with a dry run that tells you what it would clear before anything disappears.",
+  "optionalMods": [],
+  "recipes": [],
+  "registeredInBundle": true,
+  "relatedModules": [],
+  "requiredMods": [],
+  "shortDescription": "Command that removes dropped item entities within a radius",
+  "side": "server",
+  "sinceCommit": "",
+  "sinceVersion": "unreleased"
+}
