@@ -69,6 +69,6 @@
   "requiredMods": [],
   "shortDescription": "Right-click a crafting table in your inventory to open the 3x3 crafting grid",
   "side": "both",
-  "sinceCommit": "",
-  "sinceVersion": "unreleased"
+  "sinceCommit": "e3fb153",
+  "sinceVersion": "v1.0.0-beta.101"
 }

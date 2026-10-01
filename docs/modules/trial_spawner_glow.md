@@ -11,7 +11,7 @@
 | **Works with** | — |
 | **Download** | [`vpa_trial_spawner_glow.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_trial_spawner_glow.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.trial_spawner_glow]` |
-| **Since** | the next release |
+| **Since** | `v1.0.0-beta.101` |
 <!-- vpa:meta:end -->
 
 ## What it does

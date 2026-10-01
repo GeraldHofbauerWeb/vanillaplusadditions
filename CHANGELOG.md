@@ -4,7 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-beta.100] - 2026-10-01
+## [1.0.0-beta.101] - 2026-10-01
+
+> **Die Nummer 1.0.0-beta.100 wird uebersprungen und nicht mehr vergeben.** Sie stand ab dem
+> 26.09. in `gradle.properties` und wurde dadurch zum Dateinamen mehrerer Entwicklungsstaende —
+> auf games2 lief ab dem 28.09. eine `vanillaplusadditions-1.0.0-beta.100.jar` mit 52 Modulen.
+> Ein Release unter derselben Nummer haette zwei verschiedene Jars mit identischem Namen in
+> Umlauf gebracht, die sich nur ueber die Pruefsumme unterscheiden lassen. Darum traegt dieser
+> Stand die 101.
+
 
 ### Added
 - **Zwei neue Items: die Special Gemstones** (Gerry, 2026-09-26), neues Modul `special_gemstones`.

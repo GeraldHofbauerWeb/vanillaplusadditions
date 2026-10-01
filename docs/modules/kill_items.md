@@ -11,7 +11,7 @@
 | **Works with** | — |
 | **Download** | [`vpa_kill_items.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_kill_items.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.kill_items]` |
-| **Since** | the next release |
+| **Since** | `v1.0.0-beta.101` |
 <!-- vpa:meta:end -->
 
 ## What it does

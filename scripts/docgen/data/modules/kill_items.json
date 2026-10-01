@@ -65,6 +65,6 @@
   "requiredMods": [],
   "shortDescription": "Command that removes dropped item entities within a radius",
   "side": "server",
-  "sinceCommit": "",
-  "sinceVersion": "unreleased"
+  "sinceCommit": "e3fb153",
+  "sinceVersion": "v1.0.0-beta.101"
 }

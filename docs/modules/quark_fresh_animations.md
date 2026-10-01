@@ -11,7 +11,7 @@
 | **Works with** | [Quark](https://modrinth.com/mod/quark) <sub>tested 4.1-482</sub>, `entity_model_features` |
 | **Download** | [`vpa_quark_fresh_animations.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_quark_fresh_animations.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.quark_fresh_animations]` |
-| **Since** | the next release |
+| **Since** | `v1.0.0-beta.101` |
 <!-- vpa:meta:end -->
 
 ## What it does

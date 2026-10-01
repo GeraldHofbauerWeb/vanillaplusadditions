@@ -56,6 +56,6 @@
   "requiredMods": [],
   "shortDescription": "Clicking a trial spawner outlines the mobs it currently has out",
   "side": "server",
-  "sinceCommit": "",
-  "sinceVersion": "unreleased"
+  "sinceCommit": "e3fb153",
+  "sinceVersion": "v1.0.0-beta.101"
 }

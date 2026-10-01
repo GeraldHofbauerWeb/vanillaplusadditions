@@ -11,7 +11,7 @@
 | **Works with** | — |
 | **Download** | [`vpa_pocket_crafting.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_pocket_crafting.jar) · also needs `vpa_core` |
 | **Config section** | `[modules.pocket_crafting]` |
-| **Since** | the next release |
+| **Since** | `v1.0.0-beta.101` |
 <!-- vpa:meta:end -->
 
 ## What it does
