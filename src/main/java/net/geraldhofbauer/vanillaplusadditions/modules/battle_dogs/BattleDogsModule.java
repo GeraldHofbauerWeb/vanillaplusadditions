@@ -135,6 +135,15 @@ public class BattleDogsModule extends AbstractModule<BattleDogsModule, BattleDog
     }
 
     /**
+     * Whether Quark's foxhounds may bite fire-immune and fire-resistant targets.
+     *
+     * @return true if the module is active and the option is on
+     */
+    public static boolean foxhoundsBiteFireImmune() {
+        return isModuleActive() && instance.getConfig().isFoxhoundsBiteFireImmune();
+    }
+
+    /**
      * Whether a biting wolf should visibly snap its head.
      *
      * @return true if the bite animation is enabled

@@ -21,6 +21,7 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
     private ModConfigSpec.BooleanValue biteAnimation;
     private ModConfigSpec.BooleanValue biteAnimationOnlyWhenRidden;
     private ModConfigSpec.DoubleValue biteAnimationStrength;
+    private ModConfigSpec.BooleanValue foxhoundsBiteFireImmune;
 
     public BattleDogsConfig(BattleDogsModule module) {
         super(module);
@@ -54,6 +55,13 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
                         "same setting unless you want them to disagree on purpose.")
                 .defineEnum("fall_absorb_size_curve", SizeScaling.Curve.ADDITIVE);
 
+        foxhoundsBiteFireImmune = builder
+                .comment("Let TAMED Quark foxhounds bite targets that cannot burn. Quark drops every bite",
+                        "on a fire-immune or fire-resistant target (zombified piglins, wither skeletons,",
+                        "blazes, ...), so a foxhound chases them without ever dealing damage. On by",
+                        "default; without Quark this key does nothing.")
+                .define("foxhounds_bite_fire_immune", true);
+
         builder.comment("Client-side bite animation. Vanilla wolves have none at all -- their model",
                         "never reads attackAnim, so an attacking wolf deals damage without moving.").push("bite_animation");
         biteAnimation = builder
@@ -70,8 +78,9 @@ public class BattleDogsConfig extends AbstractModuleConfig<BattleDogsModule, Bat
         builder.pop();
     }
 
-
-
+    public boolean isFoxhoundsBiteFireImmune() {
+        return foxhoundsBiteFireImmune == null || foxhoundsBiteFireImmune.get();
+    }
 
     public boolean isBiteAnimation() {
         return biteAnimation == null || biteAnimation.get();

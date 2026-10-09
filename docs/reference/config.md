@@ -1,6 +1,6 @@
 # Configuration Reference
 
-Every setting of every module — 292 module-specific keys across 56 modules,
+Every setting of every module — 293 module-specific keys across 56 modules,
 generated from the source. For what the file is and where it lives, see the
 [Configuration Guide](../guides/configuration.md).
 
@@ -59,6 +59,7 @@ Tamed wolves can wear iron, gold, diamond or netherite body armor that soaks up 
 | `fall_absorb_blocks` | double | `5.0` | 0.0 ~ 256.0 | Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright - so no hurt flash and no armor sound either. |
 | `fall_absorb_size_curve` | enum (ADDITIVE, MULTIPLICATIVE) | `ADDITIVE` | — | Which ladder fall_absorb_size_factor climbs, the same choice special_gemstones offers under stat_curve. ADDITIVE gives a size-3.25 wolf 12.5 free blocks, MULTIPLICATIVE 10.0. Keep both modules on the same setting unless you want them to disagree on purpose. |
 | `fall_absorb_size_factor` | double | `1.5` | 1.0 ~ 8.0 | How much further a bigger wolf falls for free: fall_absorb_blocks is multiplied by this factor raised to (size - 1), the same ladder util/SizeScaling gives the size gemstones. A wolf at twice the usual size gets 1.5x the free fall (7.5 blocks at the defaults), one at three times gets 2.25x, and Sif at 3.25 gets 12.5 blocks. Armour that covers twice the animal covers twice the landing. 1.0 switches it off and every wolf falls the same. |
+| `foxhounds_bite_fire_immune` | boolean | `true` | — | Let tamed Quark foxhounds bite targets that cannot burn (wild ones keep Quark's behaviour, so Fire Resistance still protects players from them). Quark's Foxhound.doHurtTarget returns false before any damage when the target is fireImmune(), has Fire Resistance or a BURNING_TIME of 0 or less (zombified piglins, wither skeletons, blazes, ...), so the hound chases them without ever hurting them. FoxhoundFireImmuneBiteMixin neutralises those three checks; the hit then ignites (harmless to fire-immune mobs) and bites normally. Without Quark the key does nothing. |
 | `thorns_reflect_fraction` | double | `0.33` | 0.0 ~ 1.0 | Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). Total reflect is capped at 1.0 (min(1.0, fraction * thornsLevel)). |
 
 ## `better_mobs` — Better Mobs

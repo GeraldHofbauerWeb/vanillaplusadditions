@@ -4,6 +4,18 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.103] - 2026-10-10
+
+### Fixed
+- **Foxhounds beissen jetzt auch, was nicht brennt** (Gerry, 2026-10-02), `battle_dogs`. Quarks
+  `Foxhound.doHurtTarget` bricht ohne jeden Schaden ab, sobald das Ziel feuerimmun ist, Feuerresistenz
+  hat oder ein `BURNING_TIME` von 0 — Zombie-Piglins, Wither-Skelette, Lohen, Magmawuerfel. Der Hund
+  jagte sie also endlos, ohne je zu treffen, ausgerechnet im Nether. Der neue Mixin
+  `FoxhoundFireImmuneBiteMixin` schaltet diese drei Pruefungen ab, **nur fuer gezaehmte Foxhounds** —
+  gegen wilde schuetzt Feuerresistenz weiterhin wie in Quark gedacht; der Biss zuendet dann (harmlos fuer
+  Feuerimmune) und verursacht den normalen Nahkampfschaden. Abschaltbar ueber
+  `foxhounds_bite_fire_immune` (Standard `true`).
+
 ## [1.0.0-beta.102] - 2026-10-02
 
 ### Changed

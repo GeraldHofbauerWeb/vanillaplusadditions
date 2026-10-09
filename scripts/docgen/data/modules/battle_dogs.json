@@ -32,6 +32,13 @@
     },
     {
       "defaultValue": "true",
+      "effect": "Let tamed Quark foxhounds bite targets that cannot burn (wild ones keep Quark's behaviour, so Fire Resistance still protects players from them). Quark's Foxhound.doHurtTarget returns false before any damage when the target is fireImmune(), has Fire Resistance or a BURNING_TIME of 0 or less (zombified piglins, wither skeletons, blazes, ...), so the hound chases them without ever hurting them. FoxhoundFireImmuneBiteMixin neutralises those three checks; the hit then ignites (harmless to fire-immune mobs) and bites normally. Without Quark the key does nothing.",
+      "key": "foxhounds_bite_fire_immune",
+      "range": "",
+      "type": "boolean"
+    },
+    {
+      "defaultValue": "true",
       "effect": "Snap the wolf's head down when it lands a bite. Also gates the lunge and the server-side bite-direction packet; it does NOT gate the swing-timer mixin.",
       "key": "bite_animation.enabled",
       "range": "",
