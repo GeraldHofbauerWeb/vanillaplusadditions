@@ -73,6 +73,11 @@ die Supertyp-Hierarchie auflösen muss, auch wenn unser Code Zeta nie direkt ref
 lädt sie in `.github/workflows/build.yml` nach — lokal von dort die URLs nehmen oder aus einem
 Mods-Ordner kopieren.
 
+## CHANGELOG: English from 1.0.0 on (Gerry, 2026-10-10)
+`CHANGELOG.md` feeds the GitHub release body **and** the Modrinth version changelog
+(`release.yml`), so new sections are written in **English**. Entries up to beta.105 stay German
+as they are. Wherever German is still written (commit messages, docs), use real umlauts (ä ö ü ß).
+
 ## Recipes & block loot: ALWAYS via code, never JSON
 JSON-Datapack-Dateien laden in diesem Mod **nicht zuverlässig** (mehrfach bestätigt — auch im
 korrekten 1.21-Singular-Ordner `recipe/`/`loot_table/`). Daher alles im Code, **vier Fälle**:

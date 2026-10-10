@@ -6,16 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-10-10
 
-> **Die erste oeffentliche Version** — ab jetzt auch auf
-> [Modrinth](https://modrinth.com/mod/vanillaplusadditions). Inhaltlich ist das beta.105; der Schritt
-> auf 1.0.0 haelt fest, dass der Mod auch fuer Fremde bereit ist: er startet ohne Create, liefert keine
-> fremden Pixel mehr aus (die Chunk-Loader-Gleise werden zur Ladezeit gemalt), nennt seine Quellen
-> und laesst `/blockglow` nur noch OPs benutzen. Alle Module bleiben standardmaessig an — die
-> Modrinth-Seite sagt das ausdruecklich und listet die, die man zuerst merkt.
+> **The first public release** — now also on
+> [Modrinth](https://modrinth.com/mod/vanillaplusadditions). Feature-wise this is beta.105; the step
+> to 1.0.0 marks the mod as ready for people outside our own server: it starts without Create, ships
+> no third-party pixels any more (the Chunk Loader Track textures are painted at load time), credits
+> its sources, and `/blockglow` is limited to operators. All modules stay enabled by default — the
+> Modrinth page says so up front and lists the ones you will notice first.
+>
+> From this version on, the changelog is written in English.
 
 ### Changed
-- Formulierung zu `/blockglow` auf der Modulseite und im Modrinth-Text: er umrandet *Bloecke*
-  (Erze eingeschlossen), nicht nur Erze.
+- Wording of `/blockglow` on its module page and in the Modrinth description: it outlines *blocks*
+  (ores included), not just ores.
 
 ## [1.0.0-beta.105] - 2026-10-10
 
