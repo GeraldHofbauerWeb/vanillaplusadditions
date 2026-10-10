@@ -38,9 +38,17 @@ enough — `iron_ore` resolves to `minecraft:iron_ore`. Radius must be at least 
 Brigadier rejects anything else before the command runs. Exactly one highlight is active at a time,
 so a second `/blockglow` replaces the first.
 
-This is a **client command**. It is registered into the client's own dispatcher with no permission
-gate, so it runs on your machine, asks the server for nothing, and works on a server that has never
-heard of this mod. The feedback is printed locally: *Block glow enabled for minecraft:iron\_ore
+This is a **client command**. It is registered into the client's own dispatcher, runs on your
+machine, asks the server for nothing, and works on a server that has never heard of this mod.
+
+**It needs operator rights (permission level 2).** Outlining ore through walls is x-ray, so an
+ordinary player on a server cannot use it: the command is hidden for them, refuses to run, and a
+highlight that is already on disappears the moment the rights are gone. The check uses the
+permission level the server reports to every client, the same value vanilla uses for F3+F4. In
+singleplayer that means *cheats enabled*. The level is a fixed constant on purpose, not a config
+key — the config file belongs to the player, who could otherwise lower it. (Until beta.104 there
+was no gate at all.) A modified client can of course draw whatever it likes; this stops everyone
+else. The feedback is printed locally: *Block glow enabled for minecraft:iron\_ore
 (radius=24, duration=60 seconds)* in aqua, *Block glow cleared* in yellow.
 
 ## In detail

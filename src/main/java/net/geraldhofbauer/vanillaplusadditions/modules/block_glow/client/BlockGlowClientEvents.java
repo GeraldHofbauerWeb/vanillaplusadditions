@@ -67,7 +67,28 @@ public final class BlockGlowClientEvents {
                     builder
             );
 
+    /**
+     * Permission level a player needs for {@code /blockglow}: 2, the "game master" level vanilla uses
+     * for {@code /gamemode}, {@code /tp} and F3+F4.
+     *
+     * <p>Highlighting ore through walls is x-ray, so it must not be open to every player on a server.
+     * This is a <em>client</em> command - the server never sees it - so the only authority available
+     * is the permission level the server reports to the client ({@code LocalPlayer.hasPermissions},
+     * synced by vanilla through the op-level entity event). That stops ordinary players; a modified
+     * client can always draw whatever it likes, with or without this mod.
+     *
+     * <p>Deliberately a constant and not a config key: the config file lives with the player, who
+     * could otherwise simply lower the requirement. In singleplayer this means "cheats enabled".
+     */
+    private static final int REQUIRED_PERMISSION_LEVEL = 2;
+
     private BlockGlowClientEvents() {
+    }
+
+    /** Whether the local player may use block glow right now (op level can change mid-session). */
+    private static boolean mayUseBlockGlow() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null && minecraft.player.hasPermissions(REQUIRED_PERMISSION_LEVEL);
     }
 
     @SubscribeEvent
@@ -79,6 +100,7 @@ public final class BlockGlowClientEvents {
 
         event.getDispatcher().register(
                 Commands.literal("blockglow")
+                        .requires(source -> mayUseBlockGlow())
                         .then(Commands.literal("clear")
                                 .executes(BlockGlowClientEvents::executeClear)
                         )
@@ -119,6 +141,11 @@ public final class BlockGlowClientEvents {
 
         BlockGlowState state = module.getClientState();
         if (!state.enabled()) {
+            return;
+        }
+        if (!mayUseBlockGlow()) {
+            // Op revoked, or a highlight carried over from a world where it was allowed.
+            module.clearClientState();
             return;
         }
 
@@ -243,6 +270,11 @@ public final class BlockGlowClientEvents {
         }
 
         CommandSourceStack source = context.getSource();
+        if (!mayUseBlockGlow()) {
+            source.sendFailure(Component.literal("Block glow needs operator rights (permission level "
+                    + REQUIRED_PERMISSION_LEVEL + ")").withStyle(ChatFormatting.RED));
+            return 0;
+        }
         ResourceLocation blockId = ResourceLocationArgument.getId(context, "block_id");
         if (!BuiltInRegistries.BLOCK.containsKey(blockId)) {
             source.sendFailure(Component.literal("Unknown block type: " + blockId)

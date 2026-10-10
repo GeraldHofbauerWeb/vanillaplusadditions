@@ -4,6 +4,16 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.105] - 2026-10-10
+
+### Fixed
+- **`/blockglow` verlangt jetzt OP-Rechte** (Gerry, 2026-10-10), `block_glow`. Der Befehl ist ein
+  reiner Client-Befehl und hatte keinerlei Rechtepruefung — auf jedem Server ein Erz-Roentgenblick fuer
+  jeden Spieler. Jetzt braucht er Rechtestufe 2 (wie `/gamemode`), gelesen aus dem Wert, den der Server
+  dem Client meldet. Fuer Nicht-OPs ist er unsichtbar, verweigert die Ausfuehrung, und ein laufender
+  Highlight erlischt, sobald die Rechte weg sind. Bewusst fest und nicht konfigurierbar: die Config
+  liegt beim Spieler. Im Einzelspieler heisst das: Cheats an.
+
 ## [1.0.0-beta.104] - 2026-10-10
 
 ### Fixed
