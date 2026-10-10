@@ -1,0 +1,48 @@
+name: Publish Quark x Fresh Animations
+
+# Manual (re)publish of the standalone resource pack to its Modrinth project, from an existing
+# GitHub release - for when the release workflow's own step did not run (1.1.0: the step before it
+# failed). Re-running the whole release workflow is not an option: it would upload the mod again.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version without the v, e.g. 1.1.0'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download the zip from the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "v${{ inputs.version }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "Quark-x-Fresh-Animations-${{ inputs.version }}.zip"
+          ls -l Quark-x-Fresh-Animations-*.zip
+
+      - name: Publish to Modrinth
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: grrDGo53
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          modrinth-unfeature-mode: none
+          files: Quark-x-Fresh-Animations-${{ inputs.version }}.zip
+          name: Quark x Fresh Animations ${{ inputs.version }}
+          version: ${{ inputs.version }}
+          changelog: |
+            Built from VanillaPlusAdditions ${{ inputs.version }} - see the
+            [changelog](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/CHANGELOG.md).
+            The Toretoise is only animated with the VanillaPlusAdditions mod installed.
+          loaders: minecraft
+          game-versions: 1.21.1
+          dependencies: |
+            fresh-animations(required){modrinth:50dA9Sha}
+            entity-model-features(required){modrinth:4I1XuqiY}
+            entitytexturefeatures(required){modrinth:BVzZfTc1}
+            quark(required){modrinth:qnQsVE2z}
+            vanillaplusadditions(optional){modrinth:kdnu0x8t}

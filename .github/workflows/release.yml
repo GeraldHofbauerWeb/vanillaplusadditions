@@ -151,6 +151,9 @@ jobs:
         with:
           modrinth-id: kdnu0x8t
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          # Unfeaturing older versions edits them, which needs "Write versions" - the token only
+          # creates versions (least privilege). 1.1.0 failed exactly there with a 401.
+          modrinth-unfeature-mode: none
           files: build/libs/vanillaplusadditions-${{ env.VERSION }}.jar
           name: VanillaPlusAdditions ${{ env.VERSION }}
           version: ${{ env.VERSION }}
@@ -177,6 +180,9 @@ jobs:
         with:
           modrinth-id: grrDGo53
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          # Unfeaturing older versions edits them, which needs "Write versions" - the token only
+          # creates versions (least privilege). 1.1.0 failed exactly there with a 401.
+          modrinth-unfeature-mode: none
           files: build/resourcepacks/Quark-x-Fresh-Animations-${{ env.VERSION }}.zip
           name: Quark x Fresh Animations ${{ env.VERSION }}
           version: ${{ env.VERSION }}
