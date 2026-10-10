@@ -21,7 +21,7 @@ The ones you'll notice first:
   `stackables` (potions, stews and pearls stack to 64)
 - **Server behaviour** — `idle_gamerules` (daylight and weather pause while nobody is online),
   `death_coordinates` (death positions are announced in chat), `static_fov`
-- **Commands for operators** — `/chunkreset`, `/kill-items`, `/mobglow`, and `/blockglow` (outlines ore through walls, so it needs operator rights)
+- **Commands for operators** — `/chunkreset`, `/kill-items`, `/mobglow`, and `/blockglow` (outlines blocks — ores included — through walls, so it needs operator rights)
 
 Disabling a module stops what it does. Its blocks and items stay registered, so nothing you built
 disappears from your world.

@@ -4,6 +4,19 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-10-10
+
+> **Die erste oeffentliche Version** — ab jetzt auch auf
+> [Modrinth](https://modrinth.com/mod/vanillaplusadditions). Inhaltlich ist das beta.105; der Schritt
+> auf 1.0.0 haelt fest, dass der Mod auch fuer Fremde bereit ist: er startet ohne Create, liefert keine
+> fremden Pixel mehr aus (die Chunk-Loader-Gleise werden zur Ladezeit gemalt), nennt seine Quellen
+> und laesst `/blockglow` nur noch OPs benutzen. Alle Module bleiben standardmaessig an — die
+> Modrinth-Seite sagt das ausdruecklich und listet die, die man zuerst merkt.
+
+### Changed
+- Formulierung zu `/blockglow` auf der Modulseite und im Modrinth-Text: er umrandet *Bloecke*
+  (Erze eingeschlossen), nicht nur Erze.
+
 ## [1.0.0-beta.105] - 2026-10-10
 
 ### Fixed
