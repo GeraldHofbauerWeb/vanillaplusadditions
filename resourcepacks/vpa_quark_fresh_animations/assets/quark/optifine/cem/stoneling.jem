@@ -1,0 +1,691 @@
+{
+ "credit": "Vanilla Plus Additions — Fresh Animations add-on for Quark",
+ "models": [
+  {
+   "invertAxis": "xy",
+   "part": "leg_right",
+   "id": "leg_right",
+   "attach": false,
+   "translate": [
+    -2.25,
+    -5.0,
+    -0.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      27,
+      13
+     ],
+     "coordinates": [
+      0.75,
+      0.0,
+      -1.0,
+      3.0,
+      4.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "arm_right",
+   "id": "arm_right",
+   "attach": false,
+   "translate": [
+    -4.0,
+    -9.0,
+    -0.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      16
+     ],
+     "coordinates": [
+      4.0,
+      2.0,
+      -1.5,
+      3.0,
+      7.0,
+      4.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "root",
+   "id": "root",
+   "attach": true,
+   "translate": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "model": "stoneling_animations.jpm"
+  },
+  {
+   "invertAxis": "xy",
+   "part": "lychen",
+   "id": "lychen",
+   "attach": false,
+   "translate": [
+    3.0,
+    -12.0,
+    -3.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      10,
+      12
+     ],
+     "coordinates": [
+      -3.0,
+      12.0,
+      1.0,
+      0.0,
+      4.0,
+      4.0
+     ]
+    },
+    {
+     "textureOffset": [
+      10,
+      16
+     ],
+     "coordinates": [
+      -5.0,
+      12.0,
+      3.0,
+      4.0,
+      4.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "dripstone",
+   "id": "dripstone",
+   "attach": false,
+   "translate": [
+    0.0,
+    -12.0,
+    -1.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      14,
+      16
+     ],
+     "coordinates": [
+      -0.0,
+      12.0,
+      -2.0,
+      0.0,
+      5.0,
+      6.0
+     ]
+    },
+    {
+     "textureOffset": [
+      14,
+      22
+     ],
+     "coordinates": [
+      -3.0,
+      12.0,
+      1.0,
+      6.0,
+      5.0,
+      0.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "body",
+   "id": "body",
+   "attach": false,
+   "translate": [
+    0.0,
+    -3.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      0
+     ],
+     "coordinates": [
+      -4.0,
+      3.0,
+      -3.0,
+      8.0,
+      9.0,
+      7.0
+     ]
+    },
+    {
+     "textureOffset": [
+      36,
+      13
+     ],
+     "coordinates": [
+      -4.0,
+      3.0,
+      -4.0,
+      8.0,
+      2.0,
+      1.0
+     ]
+    },
+    {
+     "textureOffset": [
+      44,
+      7
+     ],
+     "coordinates": [
+      -4.0,
+      8.0,
+      -5.0,
+      8.0,
+      4.0,
+      2.0
+     ]
+    },
+    {
+     "textureOffset": [
+      23,
+      0
+     ],
+     "coordinates": [
+      -2.0,
+      12.0,
+      -1.0,
+      4.0,
+      3.0,
+      4.0
+     ]
+    },
+    {
+     "textureOffset": [
+      30,
+      7
+     ],
+     "coordinates": [
+      -2.0,
+      9.0,
+      -6.0,
+      4.0,
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "textureOffset": [
+      25,
+      24
+     ],
+     "coordinates": [
+      -2.0,
+      9.0,
+      -5.0,
+      4.0,
+      6.0,
+      3.0
+     ]
+    },
+    {
+     "textureOffset": [
+      36,
+      17
+     ],
+     "coordinates": [
+      -2.0,
+      9.0,
+      3.0,
+      4.0,
+      5.0,
+      3.0
+     ]
+    },
+    {
+     "textureOffset": [
+      0,
+      27
+     ],
+     "coordinates": [
+      -2.0,
+      0.0,
+      -4.0,
+      4.0,
+      5.0,
+      2.0
+     ]
+    }
+   ],
+   "submodels": [
+    {
+     "id": "eyes",
+     "invertAxis": "xy",
+     "translate": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "submodels": [
+      {
+       "id": "r_socket",
+       "invertAxis": "xy",
+       "translate": [
+        -2.5,
+        7.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.48,
+          0.02,
+          -0.06,
+          2.96,
+          0.96,
+          0.06
+         ],
+         "uvNorth": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvSouth": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvUp": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvDown": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvEast": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvWest": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "r_pupil",
+       "invertAxis": "xy",
+       "translate": [
+        -2.5,
+        7.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -0.48,
+          0.04,
+          -0.1,
+          0.96,
+          0.92,
+          0.04
+         ],
+         "uvNorth": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ],
+         "uvSouth": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ],
+         "uvUp": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ],
+         "uvDown": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ],
+         "uvEast": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ],
+         "uvWest": [
+          8.05,
+          11.05,
+          8.95,
+          11.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "r_lid",
+       "invertAxis": "xy",
+       "translate": [
+        -2.5,
+        8.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.5,
+          -1.0,
+          -0.16,
+          3.0,
+          1.0,
+          0.16
+         ],
+         "uvNorth": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvSouth": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvUp": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvDown": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvEast": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvWest": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "l_socket",
+       "invertAxis": "xy",
+       "translate": [
+        2.5,
+        7.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.48,
+          0.02,
+          -0.06,
+          2.96,
+          0.96,
+          0.06
+         ],
+         "uvNorth": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvSouth": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvUp": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvDown": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvEast": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ],
+         "uvWest": [
+          7.05,
+          11.05,
+          7.95,
+          11.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "l_pupil",
+       "invertAxis": "xy",
+       "translate": [
+        2.5,
+        7.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -0.48,
+          0.04,
+          -0.1,
+          0.96,
+          0.92,
+          0.04
+         ],
+         "uvNorth": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ],
+         "uvSouth": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ],
+         "uvUp": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ],
+         "uvDown": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ],
+         "uvEast": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ],
+         "uvWest": [
+          13.05,
+          11.05,
+          13.95,
+          11.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "l_lid",
+       "invertAxis": "xy",
+       "translate": [
+        2.5,
+        8.0,
+        -3.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.5,
+          -1.0,
+          -0.16,
+          3.0,
+          1.0,
+          0.16
+         ],
+         "uvNorth": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvSouth": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvUp": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvDown": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvEast": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ],
+         "uvWest": [
+          7.05,
+          10.05,
+          7.95,
+          10.95
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leg_left",
+   "id": "leg_left",
+   "attach": false,
+   "translate": [
+    2.25,
+    -5.0,
+    -0.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      27,
+      13
+     ],
+     "coordinates": [
+      -3.75,
+      0.0,
+      -1.0,
+      3.0,
+      4.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "arm_left",
+   "id": "arm_left",
+   "attach": false,
+   "translate": [
+    4.0,
+    -9.0,
+    -0.5
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      16
+     ],
+     "coordinates": [
+      -7.0,
+      2.0,
+      -1.5,
+      3.0,
+      7.0,
+      4.0
+     ]
+    }
+   ]
+  }
+ ],
+ "textureSize": [
+  64,
+  64
+ ]
+}

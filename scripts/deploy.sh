@@ -28,6 +28,9 @@
 #                                        #   deselects the ones you did not name
 #   scripts/deploy.sh --server --no-restart  # push jar to server, do NOT restart
 #   scripts/deploy.sh --no-build         # skip gradle build, use existing jar
+#   scripts/deploy.sh --pack             # standalone Quark Fresh Animations pack only:
+#                                        #   into the client's resourcepacks folder, works
+#                                        #   while the game RUNS -> press F3+T to reload
 #
 # The modpack step REFUSES to publish a version that has no matching git tag.
 # The archive is public and people install from it; two different jars carrying
@@ -113,12 +116,13 @@ print(os.path.join(root, name) if root and name else '')
 
 # Empty means "not named". Naming any target switches the unnamed ones off, so
 # --server --client works as a combination instead of the last flag winning.
-DO_SERVER=; DO_CLIENT=; DO_MODPACK=; DO_BUILD=1; DO_RESTART=1; MODPACK_UNTAGGED=0
+DO_SERVER=; DO_CLIENT=; DO_MODPACK=; DO_PACK=; DO_BUILD=1; DO_RESTART=1; MODPACK_UNTAGGED=0
 for arg in "$@"; do
   case "$arg" in
     --server)     DO_SERVER=1 ;;
     --client)     DO_CLIENT=1 ;;
     --modpack)    DO_MODPACK=1 ;;
+    --pack)       DO_PACK=1 ;;
     --modpack-untagged) DO_MODPACK=1; MODPACK_UNTAGGED=1 ;;
     --no-build)   DO_BUILD=0 ;;
     --no-restart) DO_RESTART=0 ;;
@@ -128,13 +132,13 @@ for arg in "$@"; do
     *) echo "unknown arg: $arg" >&2; exit 2 ;;
   esac
 done
-if [[ -z "${DO_SERVER}${DO_CLIENT}${DO_MODPACK}" ]]; then
+if [[ -z "${DO_SERVER}${DO_CLIENT}${DO_MODPACK}${DO_PACK}" ]]; then
   DO_SERVER=1; DO_CLIENT=1; DO_MODPACK=1
 fi
-DO_SERVER=${DO_SERVER:-0}; DO_CLIENT=${DO_CLIENT:-0}; DO_MODPACK=${DO_MODPACK:-0}
+DO_SERVER=${DO_SERVER:-0}; DO_CLIENT=${DO_CLIENT:-0}; DO_MODPACK=${DO_MODPACK:-0}; DO_PACK=${DO_PACK:-0}
 
 # Only the client and modpack targets care where the instance lives.
-if [[ "$DO_CLIENT" == 1 || "$DO_MODPACK" == 1 ]]; then resolve_client_dir; fi
+if [[ "$DO_CLIENT" == 1 || "$DO_MODPACK" == 1 || "$DO_PACK" == 1 ]]; then resolve_client_dir; fi
 
 cd "$REPO_ROOT"
 VERSION="$(grep -E '^mod_version=' gradle.properties | cut -d= -f2)"
@@ -142,12 +146,23 @@ JAR="build/libs/vanillaplusadditions-${VERSION}.jar"
 echo "==> VanillaPlusAdditions ${VERSION}"
 
 # ---- build ------------------------------------------------------------------
-if [[ "$DO_BUILD" == 1 ]]; then
-  echo "==> Building (./gradlew build) ..."
-  ./gradlew build -q
+# A pack-only run needs no jar: zipping a few JSON files takes seconds, the full
+# build (Checkstyle, SpotBugs, every standalone jar) a good minute.
+PACK_ONLY=0
+[[ "$DO_PACK" == 1 && "${DO_SERVER}${DO_CLIENT}${DO_MODPACK}" == 000 ]] && PACK_ONLY=1
+if [[ "$PACK_ONLY" == 1 ]]; then
+  if [[ "$DO_BUILD" == 1 ]]; then
+    echo "==> Packing resource packs (quarkFreshAnimationsPack, quarkToretoiseDevPack) ..."
+    ./gradlew quarkFreshAnimationsPack quarkToretoiseDevPack -q
+  fi
+else
+  if [[ "$DO_BUILD" == 1 ]]; then
+    echo "==> Building (./gradlew build) ..."
+    ./gradlew build -q
+  fi
+  [[ -f "$JAR" ]] || { echo "!! jar not found: $JAR" >&2; exit 1; }
+  echo "    jar: $JAR ($(du -h "$JAR" | cut -f1))"
 fi
-[[ -f "$JAR" ]] || { echo "!! jar not found: $JAR" >&2; exit 1; }
-echo "    jar: $JAR ($(du -h "$JAR" | cut -f1))"
 
 # ---- server -----------------------------------------------------------------
 if [[ "$DO_SERVER" == 1 ]]; then
@@ -175,6 +190,27 @@ if [[ "$DO_SERVER" == 1 ]]; then
   else
     echo "    jar pushed, NOT restarted (--no-restart) — restart later to load it."
   fi
+fi
+
+# ---- standalone resource pack -----------------------------------------------
+# Safe while the game runs, unlike the jar: the new zip is written next to the
+# old one and renamed over it, so a pack the game still holds open keeps its old
+# inode until the next reload (F3+T) opens the new file. The name carries no
+# version on purpose - the pack list in options.txt remembers it by file name.
+if [[ "$DO_PACK" == 1 ]]; then
+  PACK_ZIP="build/resourcepacks/Quark-x-Fresh-Animations-${VERSION}.zip"
+  [[ -f "$PACK_ZIP" ]] || ./gradlew quarkFreshAnimationsPack -q
+  ./gradlew quarkToretoiseDevPack -q
+  PACK_DIR="$CLIENT_DIR/resourcepacks"
+  PACK_DEST="$PACK_DIR/VPA-Quark-Fresh-Animations.zip"
+  echo "==> Resource pack -> $PACK_DEST"
+  cp "$PACK_ZIP" "$PACK_DEST.tmp"
+  mv -f "$PACK_DEST.tmp" "$PACK_DEST"
+  # Dev-only Toretoise pack (needs the mod's mixin, never published) - same atomic swap.
+  cp build/resourcepacks/dev/VPA-Quark-Toretoise-DEV.zip "$PACK_DIR/VPA-Quark-Toretoise-DEV.zip.tmp"
+  mv -f "$PACK_DIR/VPA-Quark-Toretoise-DEV.zip.tmp" "$PACK_DIR/VPA-Quark-Toretoise-DEV.zip"
+  echo "    pack OK — enable it once in Options > Resource Packs, then F3+T reloads it."
+  echo "    (the mod drops its built-in copy while this file is present - after the next game start)"
 fi
 
 # ---- local client -----------------------------------------------------------

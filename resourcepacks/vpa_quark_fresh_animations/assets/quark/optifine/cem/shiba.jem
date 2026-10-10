@@ -1,0 +1,588 @@
+{
+ "credit": "Vanilla Plus Additions — Fresh Animations add-on for Quark",
+ "models": [
+  {
+   "invertAxis": "xy",
+   "part": "rEar",
+   "id": "rEar",
+   "attach": false,
+   "translate": [
+    3.0,
+    -21.0,
+    3.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      0
+     ],
+     "coordinates": [
+      -4.0,
+      19.0,
+      -6.0,
+      2.0,
+      2.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "head",
+   "id": "head",
+   "attach": false,
+   "translate": [
+    0.0,
+    -9.0,
+    5.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      16,
+      0
+     ],
+     "coordinates": [
+      -4.0,
+      8.0,
+      -9.0,
+      8.0,
+      11.0,
+      6.0
+     ]
+    },
+    {
+     "textureOffset": [
+      44,
+      0
+     ],
+     "coordinates": [
+      -1.5,
+      12.0,
+      -13.0,
+      3.0,
+      3.0,
+      4.0
+     ]
+    }
+   ],
+   "submodels": [
+    {
+     "id": "eyes",
+     "invertAxis": "xy",
+     "translate": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "submodels": [
+      {
+       "id": "r_lid",
+       "invertAxis": "xy",
+       "translate": [
+        -3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.0,
+          0.0,
+          -0.01,
+          2.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          23.05,
+          8.05,
+          23.95,
+          8.95
+         ],
+         "uvSouth": [
+          23.05,
+          8.05,
+          23.95,
+          8.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "r_iris",
+       "invertAxis": "xy",
+       "translate": [
+        -3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.0,
+          0.0,
+          -0.02,
+          2.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          22.05,
+          9.05,
+          22.95,
+          9.95
+         ],
+         "uvSouth": [
+          22.05,
+          9.05,
+          22.95,
+          9.95
+         ],
+         "sizeAdd": 0.005
+        }
+       ]
+      },
+      {
+       "id": "r_pupil",
+       "invertAxis": "xy",
+       "translate": [
+        -3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -0.5,
+          0.0,
+          -0.03,
+          1.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          23.0,
+          9.0,
+          24.0,
+          10.0
+         ],
+         "uvSouth": [
+          23.0,
+          9.0,
+          24.0,
+          10.0
+         ],
+         "sizeAdd": 0.01
+        }
+       ]
+      },
+      {
+       "id": "l_lid",
+       "invertAxis": "xy",
+       "translate": [
+        3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.0,
+          0.0,
+          -0.01,
+          2.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          23.05,
+          8.05,
+          23.95,
+          8.95
+         ],
+         "uvSouth": [
+          23.05,
+          8.05,
+          23.95,
+          8.95
+         ]
+        }
+       ]
+      },
+      {
+       "id": "l_iris",
+       "invertAxis": "xy",
+       "translate": [
+        3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -1.0,
+          0.0,
+          -0.02,
+          2.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          29.05,
+          9.05,
+          29.95,
+          9.95
+         ],
+         "uvSouth": [
+          29.05,
+          9.05,
+          29.95,
+          9.95
+         ],
+         "sizeAdd": 0.005
+        }
+       ]
+      },
+      {
+       "id": "l_pupil",
+       "invertAxis": "xy",
+       "translate": [
+        3.0,
+        15.0,
+        -9.0
+       ],
+       "boxes": [
+        {
+         "coordinates": [
+          -0.5,
+          0.0,
+          -0.03,
+          1.0,
+          1.0,
+          0.0
+         ],
+         "uvNorth": [
+          23.0,
+          9.0,
+          24.0,
+          10.0
+         ],
+         "uvSouth": [
+          23.0,
+          9.0,
+          24.0,
+          10.0
+         ],
+         "sizeAdd": 0.01
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tongue_out",
+     "invertAxis": "xy",
+     "translate": [
+      0.0,
+      12.3,
+      -12.5
+     ],
+     "boxes": [
+      {
+       "coordinates": [
+        -1.0,
+        -0.5,
+        -2.5,
+        2.0,
+        0.5,
+        2.5
+       ],
+       "uvUp": [
+        39.0,
+        34.0,
+        41.0,
+        37.0
+       ],
+       "uvDown": [
+        39.0,
+        34.0,
+        41.0,
+        37.0
+       ],
+       "uvNorth": [
+        39.05,
+        36.05,
+        40.95,
+        36.95
+       ],
+       "uvSouth": [
+        39.05,
+        36.05,
+        40.95,
+        36.95
+       ],
+       "uvEast": [
+        39.05,
+        34.05,
+        39.95,
+        36.95
+       ],
+       "uvWest": [
+        39.05,
+        34.05,
+        39.95,
+        36.95
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "lFrontLeg",
+   "id": "lFrontLeg",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -8.0,
+    5.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      21
+     ],
+     "coordinates": [
+      1.0,
+      0.0,
+      -6.0,
+      3.0,
+      8.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "tongue",
+   "id": "tongue",
+   "attach": false,
+   "translate": [
+    0.0,
+    -13.0,
+    13.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      36,
+      34
+     ],
+     "coordinates": [
+      -1.0,
+      13.0,
+      -16.0,
+      2.0,
+      0.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "torso",
+   "id": "torso",
+   "attach": false,
+   "translate": [
+    0.0,
+    -11.0,
+    7.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      36,
+      10
+     ],
+     "coordinates": [
+      -3.0,
+      -3.0,
+      -11.0,
+      6.0,
+      14.0,
+      8.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "tail",
+   "id": "tail",
+   "attach": false,
+   "translate": [
+    0.0,
+    3.0,
+    3.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      32
+     ],
+     "coordinates": [
+      -2.0,
+      -6.0,
+      -6.0,
+      4.0,
+      6.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rFrontLeg",
+   "id": "rFrontLeg",
+   "attach": false,
+   "translate": [
+    3.0,
+    -8.0,
+    5.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      21
+     ],
+     "coordinates": [
+      -4.0,
+      0.0,
+      -6.0,
+      3.0,
+      8.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "root",
+   "id": "root",
+   "attach": true,
+   "translate": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "model": "shiba_animations.jpm"
+  },
+  {
+   "invertAxis": "xy",
+   "part": "lEar",
+   "id": "lEar",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -21.0,
+    3.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      0
+     ],
+     "coordinates": [
+      2.0,
+      19.0,
+      -6.0,
+      2.0,
+      2.0,
+      3.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rBackLeg",
+   "id": "rBackLeg",
+   "attach": false,
+   "translate": [
+    3.0,
+    -9.0,
+    -4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      12,
+      18
+     ],
+     "coordinates": [
+      -4.0,
+      0.0,
+      2.0,
+      3.0,
+      10.0,
+      4.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "main",
+   "id": "main",
+   "attach": false,
+   "translate": [
+    0.0,
+    -24.0,
+    0.0
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "lBackLeg",
+   "id": "lBackLeg",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -9.0,
+    -4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      12,
+      18
+     ],
+     "coordinates": [
+      1.0,
+      0.0,
+      2.0,
+      3.0,
+      10.0,
+      4.0
+     ]
+    }
+   ]
+  }
+ ],
+ "textureSize": [
+  80,
+  48
+ ]
+}

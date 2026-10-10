@@ -1,0 +1,24 @@
+{
+ "credit": "Vanilla Plus Additions — motion modelled after Fresh Animations",
+ "animations": [
+  {
+   "var.r": "random(id)*pi*4",
+   "var.t": "(time*pi*2)/6",
+   "var.ls": "limb_swing*0.4",
+   "var.stride": "clamp(limb_speed*1.6, 0, 1.1)",
+   "leg_right.rx": "cos(var.ls)*var.stride",
+   "leg_left.rx": "cos(var.ls +pi)*var.stride",
+   "var.step": "abs(sin(var.ls))*clamp(limb_speed*1.6, 0, 1)",
+   "arm_right.rz": "torad(3) +torad(2)*sin(var.r +var.t/7) +var.step*0.3",
+   "arm_left.rz": "-torad(3) -torad(2)*sin(var.r +var.t/7 +1.3) -var.step*0.3",
+   "var.blink": "clamp(cos(var.r +var.t/45)*25 -24, 0, 1)",
+   "var.droop": "0.5 +0.12*sin(var.r +var.t/25)",
+   "r_lid.sy": "min(var.droop +var.blink, 1)",
+   "l_lid.sy": "min(var.droop +var.blink, 1)",
+   "var.gaze": "clamp(cos(var.r +var.t/37)*5 -4, 0, 1)",
+   "var.look": "clamp(-head_yaw/50 +sin(var.r*1.7 +var.t/70)*0.6*var.gaze, -0.95, 0.95)",
+   "r_pupil.tx": "2.5 +var.look",
+   "l_pupil.tx": "-2.5 +var.look"
+  }
+ ]
+}

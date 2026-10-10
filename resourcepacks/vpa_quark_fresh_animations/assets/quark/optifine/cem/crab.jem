@@ -1,0 +1,383 @@
+{
+ "credit": "Vanilla Plus Additions — Fresh Animations add-on for Quark",
+ "models": [
+  {
+   "invertAxis": "xy",
+   "part": "leftLeg2",
+   "id": "leftLeg2",
+   "attach": false,
+   "translate": [
+    3.0,
+    -4.0,
+    -0.9
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      -9.0,
+      3.5,
+      0.39999998,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftLeg1",
+   "id": "leftLeg1",
+   "attach": false,
+   "translate": [
+    3.0,
+    -4.0,
+    -2.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      -9.0,
+      3.5,
+      1.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftClaw",
+   "id": "leftClaw",
+   "attach": false,
+   "translate": [
+    3.0,
+    -4.0,
+    4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      14,
+      11
+     ],
+     "coordinates": [
+      -6.0,
+      1.5,
+      -10.0,
+      3.0,
+      5.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftLeg4",
+   "id": "leftLeg4",
+   "attach": false,
+   "translate": [
+    3.0,
+    -4.0,
+    1.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      -9.0,
+      3.5,
+      -1.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftLeg3",
+   "id": "leftLeg3",
+   "attach": false,
+   "translate": [
+    3.0,
+    -4.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      -9.0,
+      3.5,
+      -0.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "leftEye",
+   "id": "leftEye",
+   "attach": false,
+   "translate": [
+    0.0,
+    -4.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      11
+     ],
+     "coordinates": [
+      -3.0,
+      4.5,
+      -2.85,
+      1.0,
+      3.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightClaw",
+   "id": "rightClaw",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -4.0,
+    4.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      14,
+      11
+     ],
+     "coordinates": [
+      3.0,
+      1.5,
+      -10.0,
+      3.0,
+      5.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightLeg1",
+   "id": "rightLeg1",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -4.0,
+    -2.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      3.0,
+      3.5,
+      1.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "body",
+   "id": "body",
+   "attach": false,
+   "translate": [
+    0.0,
+    -4.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      0
+     ],
+     "coordinates": [
+      -4.0,
+      1.5,
+      -3.0,
+      8.0,
+      5.0,
+      6.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightEye",
+   "id": "rightEye",
+   "attach": false,
+   "translate": [
+    0.0,
+    -4.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      11
+     ],
+     "coordinates": [
+      2.0,
+      4.5,
+      -2.85,
+      1.0,
+      3.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightLeg3",
+   "id": "rightLeg3",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -4.0,
+    0.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      3.0,
+      3.5,
+      -0.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightLeg2",
+   "id": "rightLeg2",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -4.0,
+    -0.9
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      3.0,
+      3.5,
+      0.39999998,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "rightLeg4",
+   "id": "rightLeg4",
+   "attach": false,
+   "translate": [
+    -3.0,
+    -4.0,
+    1.0
+   ],
+   "boxes": [
+    {
+     "textureOffset": [
+      0,
+      19
+     ],
+     "coordinates": [
+      3.0,
+      3.5,
+      -1.5,
+      6.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "invertAxis": "xy",
+   "part": "root",
+   "id": "root",
+   "attach": true,
+   "translate": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "model": "crab_animations.jpm"
+  },
+  {
+   "invertAxis": "xy",
+   "part": "group",
+   "id": "group",
+   "attach": false,
+   "translate": [
+    0.0,
+    -24.0,
+    0.0
+   ]
+  }
+ ],
+ "textureSize": [
+  32,
+  32
+ ]
+}

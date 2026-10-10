@@ -19,6 +19,8 @@ Flags (combine as needed):
 - `--client`     local client only
 - `--no-restart` (server) push the jar but do **not** restart the container
 - `--no-build`   skip the gradle build, reuse the existing jar
+- `--pack`       only the standalone Quark Fresh Animations resource pack into the client's
+  `resourcepacks/` folder — allowed while the game runs (atomic rename), then F3+T reloads it
 
 After it runs, report to the user: which version, server status (restarted / pushed-only),
 and — if the client got a new jar — remind them Minecraft must be started fresh

@@ -10,8 +10,36 @@ diesen Ordner als zusätzliches Ressourcenverzeichnis auf, die Dateien liegen im
 
 ## `vpa_quark_fresh_animations`
 
-Ergänzt **Fresh Animations** um Tiere aus **Quark**, die FA selbst nicht abdeckt. Zurzeit: der
-Foxhound.
+Ergänzt **Fresh Animations** um Tiere aus **Quark**, die FA selbst nicht abdeckt. Zurzeit:
+Foxhound, Crab, Stoneling, Wraith und Shiba. Der Forgotten braucht nichts, Quark zeichnet ihn mit
+dem Vanilla-Skelettmodell. Beim Shiba bewegt Quark Kopf, Ohren, Schwanz und Zunge auf allen Achsen
+selbst; das Paket gibt ihm nur Augen wie dem Foxhound und schaltet die Sichtbarkeit der Zunge.
+
+**Nie einen Teil lesen, den die `.jpm` selbst schreibt.** `teil.rx = teil.rx + …` liefert in EMF
+den *eigenen* Wert aus dem letzten Frame zurück, nicht Quarks frischen – die Bewegung summiert sich
+jedes Frame auf (der Wraith hat sich so um die eigene Achse gedreht). Also nur Achsen bewegen, die
+Quark nicht setzt, und zwar absolut. Welche das sind, steht in Quarks `setupAnim`
+(`javap -c -p … <Tier>Model`, nach `putfield …xRot/yRot/zRot` suchen).
+
+**Absolut heißt: ab Quarks Grundpose.** Wer eine Achse schreibt, ersetzt auch die Ausgangsdrehung,
+die Quark in `createBodyLayer` per `PartPose.offsetAndRotation(…)` vergibt. Bei der Krabbe sind die
+Beine dort aufgefächert, die Klauen nach innen gedreht und die Augen geneigt – ohne diese Werte
+klappen die Beine zusammen und die Klauen stehen gerade nach vorn. Also immer
+`<Grundwert> + Bewegung`, den Grundwert aus dem Bytecode.
+
+**Der Toretoise braucht den Mod.** Sobald es für ihn irgendeine `.jem` gibt, baut EMF das ganze
+Modell um und schiebt alle Würfel in Unterteile. Quark bewegt die Beine beim Zeichnen selbst und
+holt sich per `getRandomCube` eine Würfelecke als Drehpunkt für den Schritt – aus einer jetzt leeren
+Liste, das Spiel stürzt ab. Der Mixin `ToretoiseRandomCubeMixin` reicht Quark den Würfel aus dem
+Unterteil weiter, so behält der Schritt seinen echten Drehpunkt. Weil das eigenständige ZIP
+keinen Mixin hat, liegt der Toretoise im eigenen Paket `vpa_quark_toretoise`, das nur der Mod lädt
+(auch dann, wenn das ZIP installiert ist). Vor jedem neuen Tier prüfen, ob dessen Modellklasse auf
+die eigenen Teile zugreift (`javap -c … | grep getRandomCube`).
+
+Jeder Build schreibt das Paket zusätzlich als eigenständiges ZIP nach
+`build/resourcepacks/Quark-x-Fresh-Animations-<version>.zip`; `scripts/deploy.sh --pack` legt es
+auch bei laufendem Spiel in die Client-Instanz, danach lädt F3+T es neu. Liegt das ZIP im
+`resourcepacks`-Ordner, lässt der Mod seine eingebaute Kopie weg.
 
 Das Paket besteht aus CEM-Dateien (`.jem` für die Geometrie, `.jpm` für die Animationsausdrücke),
 die **Entity Model Features** liest. Ohne EMF ist es eine Datei, die niemand anschaut; ohne Quark

@@ -4,6 +4,40 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-10
+
+### Added
+- **Fresh Animations for Quark's mobs**, `quark_fresh_animations`. Besides the Foxhound, the
+  built-in pack now covers:
+  - **Crab** — claws open and close slowly now and then, the eye stalks look around on their own,
+    and the legs shuffle a little while it stands.
+  - **Stoneling** — heavy, slow steps with the arms swinging along, and drowsy eyes: lids that
+    hang half shut, a slow heavy blink, a pupil that follows you.
+  - **Wraith** — the chain between its wrists is now a solid, pixel-for-pixel 3D chain that
+    swings, glowing pupils drift through the eye hollows, and body and arms drift like a ghost's.
+  - **Shiba** — eyes like the Foxhound's (lid, white, a pupil that follows your gaze, a rare
+    glance and a blink), and a real 3D tongue instead of Quark's flat one: it slides out now and
+    then, while sitting and while running, and pants.
+  - **Toretoise** — a heavy, rowing walk that lifts its feet in diagonal pairs, side eyes under
+    heavy upper and lower lids that blink slowly, and slow chewing.
+  - The **Forgotten** needs nothing: Quark draws it with the vanilla skeleton model, so Fresh
+    Animations' skeleton already applies.
+
+  Everything only moves axes Quark leaves alone and starts from Quark's own rest pose, so Quark's
+  animation keeps running underneath.
+- **The Toretoise needs the mod.** Once any `.jem` exists for it, EMF rebuilds the model and moves
+  every cube into child parts, while Quark walks the Toretoise's legs during drawing, pivoting each
+  around a corner of a random cube of the leg - picked from an empty list, which crashes the game
+  ("Bound must be positive"). A client mixin hands Quark the cube EMF moved into the leg's child
+  part, so the step keeps its real pivot. The Toretoise model therefore lives in a built-in pack of
+  its own (`resourcepacks/vpa_quark_toretoise`) that only the mod adds.
+- **[Quark x Fresh Animations](https://modrinth.com/resourcepack/quark-x-fresh-animations)** - the
+  pack on its own as a Modrinth resource pack: every mob except the Toretoise. Every build writes
+  it as `Quark-x-Fresh-Animations-<version>.zip`, the release workflow attaches it to the GitHub
+  release and publishes it to Modrinth. While that zip sits in the `resourcepacks` folder, the mod
+  leaves its built-in copy out so the two cannot cover each other (the Toretoise still comes from
+  the mod).
+
 ## [1.0.0] - 2026-10-10
 
 > **The first public release** — now also on

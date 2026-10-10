@@ -109,6 +109,7 @@ jobs:
             build/libs/*.jar
             build/libs/modules/*.jar
             build/libs/permalink/*.jar
+            build/resourcepacks/Quark-x-Fresh-Animations-*.zip
           draft: false
           prerelease: false
 
@@ -165,6 +166,32 @@ jobs:
             sable(optional){modrinth:T9PomCSv}
             bluemap(optional){modrinth:swbUV1cr}
             quark(optional){modrinth:qnQsVE2z}
+
+      - name: Publish Quark x Fresh Animations to Modrinth
+        # The standalone resource pack of the quark_fresh_animations module, as its own Modrinth
+        # project. Never the Toretoise: that model needs the mod's mixin and lives in a separate
+        # built-in pack (resourcepacks/vpa_quark_toretoise) the zip does not contain. The dev zip
+        # under build/resourcepacks/dev/ is never published.
+        if: ${{ env.MODRINTH_TOKEN != '' }}
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: grrDGo53
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: build/resourcepacks/Quark-x-Fresh-Animations-${{ env.VERSION }}.zip
+          name: Quark x Fresh Animations ${{ env.VERSION }}
+          version: ${{ env.VERSION }}
+          changelog: |
+            Built from VanillaPlusAdditions ${{ env.VERSION }} - see the
+            [changelog](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/blob/master/CHANGELOG.md).
+            The Toretoise is only animated with the VanillaPlusAdditions mod installed.
+          loaders: minecraft
+          game-versions: 1.21.1
+          dependencies: |
+            fresh-animations(required){modrinth:50dA9Sha}
+            entity-model-features(required){modrinth:4I1XuqiY}
+            entitytexturefeatures(required){modrinth:BVzZfTc1}
+            quark(required){modrinth:qnQsVE2z}
+            vanillaplusadditions(optional){modrinth:kdnu0x8t}
 
       - name: Upload to CurseForge
         if: false  # Disabled until CurseForge API key is configured

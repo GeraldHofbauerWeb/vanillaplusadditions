@@ -34,7 +34,8 @@
     "compass_overhaul.CompassAngleSubLevelMixin",
     "compass_overhaul.QuarkCompassAngleMixin",
     "freecam_sublevel_noclip.EntityMoveFreecamMixin",
-    "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin"
+    "mob_spawn_overlay.KeyboardHandlerDebugKeyMixin",
+    "quark_fresh_animations.ToretoiseRandomCubeMixin"
   ],
   "injectors": {
     "defaultRequire": 1

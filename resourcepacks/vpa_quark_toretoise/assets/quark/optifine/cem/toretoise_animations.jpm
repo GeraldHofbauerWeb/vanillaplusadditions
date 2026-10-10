@@ -1,0 +1,28 @@
+{
+ "credit": "Vanilla Plus Additions — motion modelled after Fresh Animations",
+ "animations": [
+  {
+   "var.r": "random(id)*pi*4",
+   "var.t": "(time*pi*2)/6",
+   "var.gait": "clamp(limb_speed*30, 0, 1)",
+   "var.idle": "1 -var.gait",
+   "var.pace": "var.t*0.2",
+   "var.chew": "clamp((cos(var.r +var.t/20) -0.6)*5, 0, 1)*(1 -var.gait)",
+   "mouth.rx": "torad(10)*var.chew*(0.5 +0.5*sin(var.t*0.45))",
+   "var.blink": "clamp(cos(var.r +var.t/50)*25 -24, 0, 1)",
+   "var.droop": "0.35 +0.1*sin(var.r +var.t/30)",
+   "r_lid.sy": "min(var.droop +var.blink, 1)",
+   "l_lid.sy": "min(var.droop +var.blink, 1)",
+   "leftFrontLeg.ry": "-0.7853982 +(torad(18)*sin(var.pace +0.0)*var.gait +torad(2)*sin(var.r +var.t/9 +0.0)*var.idle)",
+   "rightBackLeg.ry": "0.7853982 -(torad(18)*sin(var.pace +0.0)*var.gait +torad(2)*sin(var.r +var.t/9 +0.0)*var.idle)",
+   "rightFrontLeg.ry": "0.7853982 -(torad(18)*sin(var.pace +3.14159)*var.gait +torad(2)*sin(var.r +var.t/9 +3.14159)*var.idle)",
+   "leftBackLeg.ry": "-0.7853982 +(torad(18)*sin(var.pace +3.14159)*var.gait +torad(2)*sin(var.r +var.t/9 +3.14159)*var.idle)",
+   "leftFrontLeg.rz": "torad(7)*clamp(cos(var.pace +0.0), 0, 1)*var.gait",
+   "rightBackLeg.rz": "-torad(7)*clamp(cos(var.pace +0.0), 0, 1)*var.gait",
+   "rightFrontLeg.rz": "-torad(7)*clamp(cos(var.pace +3.14159), 0, 1)*var.gait",
+   "leftBackLeg.rz": "torad(7)*clamp(cos(var.pace +3.14159), 0, 1)*var.gait",
+   "r_lower_lid.sy": "1 +0.6*var.blink",
+   "l_lower_lid.sy": "1 +0.6*var.blink"
+  }
+ ]
+}

@@ -1,5 +1,5 @@
 {
- "credit": "Vanilla Plus Additions \u2014 Bewegungssprache an Fresh Animations angelehnt",
+ "credit": "Vanilla Plus Additions \u2014 motion modelled after Fresh Animations",
  "animations": [
   {
    "var.r": "random(id)*pi*4",

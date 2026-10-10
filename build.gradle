@@ -122,6 +122,40 @@ file('atlases').eachDir { atlasDir ->
     atlasOutputs["bundle/${target}"] = merge(parts)
     parts.each { atlasOutputs["${it.name - '.json'}/${target}"] = merge([it]) }
 }
+// Eigenständige Kopie des eingebauten Quark-Fresh-Animations-Pakets: für alle, die es ohne den Mod
+// in ihren resourcepacks-Ordner legen wollen, und zum schnellen Testen (F3+T lädt es neu, ohne
+// Neustart). Läuft mit jedem `build` mit; deploy.sh --pack legt es in die Client-Instanz.
+// Der Mod tritt mit seinem eingebauten Paket zurück, sobald diese Datei im Ordner liegt
+// (QuarkFreshAnimationsPack.standalonePackInstalled), sonst würden sich die beiden überdecken.
+tasks.register('quarkFreshAnimationsPack', Zip) {
+    group = 'build'
+    description = 'Packs resourcepacks/vpa_quark_fresh_animations as a standalone resource pack zip.'
+    from('resourcepacks/vpa_quark_fresh_animations')
+    from('LICENSE') {
+        rename { 'LICENSE_vanillaplusadditions' }
+    }
+    archiveFileName = "Quark-x-Fresh-Animations-${mod_version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('resourcepacks')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+tasks.named('assemble') {
+    dependsOn 'quarkFreshAnimationsPack'
+}
+
+// Nur zum Testen in der eigenen Instanz, wird NIE veröffentlicht: das Toretoise-Modell braucht den
+// Mixin aus dem Mod und darf deshalb nie ohne ihn reisen. Liegt diese Datei im resourcepacks-Ordner,
+// lässt der Mod seine eingebaute Toretoise-Kopie weg - so lädt F3+T Änderungen ohne Neustart.
+tasks.register('quarkToretoiseDevPack', Zip) {
+    group = 'build'
+    description = 'DEV ONLY: packs resourcepacks/vpa_quark_toretoise for F3+T testing next to the mod.'
+    from('resourcepacks/vpa_quark_toretoise')
+    archiveFileName = 'VPA-Quark-Toretoise-DEV.zip'
+    destinationDirectory = layout.buildDirectory.dir('resourcepacks/dev')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
 tasks.register('generateAtlases') {
     def root = atlasGenRoot.get().asFile
     def contents = atlasOutputs
@@ -527,7 +561,8 @@ def standaloneModules = [
     [ moduleId: 'pet_potions', displayName: 'Vanilla Plus: Pet Potions',
       mixins: ['pet_potions.AreaEffectCloudAccessor'] ],
     [ moduleId: 'quark_fresh_animations', displayName: 'Vanilla Plus: Quark Fresh Animations',
-      assetGlobs: ['resourcepacks/vpa_quark_fresh_animations/**'] ],
+      assetGlobs: ['resourcepacks/vpa_quark_fresh_animations/**', 'resourcepacks/vpa_quark_toretoise/**'],
+      clientMixins: ['quark_fresh_animations.ToretoiseRandomCubeMixin'] ],
     [ moduleId: 'kill_items', displayName: 'Vanilla Plus: Kill Items' ],
     [ moduleId: 'pocket_crafting', displayName: 'Vanilla Plus: Pocket Crafting',
       mixins: ['pocket_crafting.ServerPlayerMenuMemoryMixin'] ],

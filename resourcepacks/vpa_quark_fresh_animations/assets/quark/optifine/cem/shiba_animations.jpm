@@ -1,0 +1,37 @@
+{
+ "credit": "Vanilla Plus Additions — motion modelled after Fresh Animations",
+ "animations": [
+  {
+   "var.r": "random(id)*pi*4",
+   "var.t": "(time*pi*2)/6",
+   "var.gait": "clamp(limb_speed*1.2, 0, 1)",
+   "var.blink": "clamp(cos(var.r +var.t/40)*300 -299, 0, 1)",
+   "var.gaze": "clamp(cos(var.r +var.t/31)*6 -5, 0, 1)",
+   "var.head_off": "head.ry -torad(head_yaw)",
+   "var.eye_x": "clamp(-head_yaw/35 +var.head_off*1.1, -0.5, 0.5)",
+   "var.eye_y": "clamp(head_pitch/90, -0.3, 0.3)",
+   "var.look": "clamp(var.eye_x +sin(var.r*1.7 +var.t/90)*0.35*var.gaze, -0.5, 0.5)",
+   "var.look2": "clamp(var.eye_y +sin(var.r*2.3 +var.t/140)*0.25*var.gaze, -0.3, 0.3)",
+   "r_pupil.tx": "3.0 +var.look",
+   "r_pupil.ty": "-15.0 +var.look2",
+   "r_iris.sy": "1 -var.blink",
+   "r_pupil.sy": "1 -var.blink",
+   "r_iris.visible": "r_iris.sy != 0",
+   "r_pupil.visible": "r_pupil.sy != 0",
+   "l_pupil.tx": "-3.0 +var.look",
+   "l_pupil.ty": "-15.0 +var.look2",
+   "l_iris.sy": "1 -var.blink",
+   "l_pupil.sy": "1 -var.blink",
+   "l_iris.visible": "l_iris.sy != 0",
+   "l_pupil.visible": "l_pupil.sy != 0",
+   "tongue.visible": "false",
+   "var.pant": "clamp((cos(var.r +var.t/30) -0.35)*4, 0, 1)",
+   "var.sit_pant": "clamp((cos(var.r*1.3 +var.t/24) +0.2)*3, 0, 1)*if(is_sitting, 1, 0)",
+   "var.run_pant": "clamp((var.gait -0.4)*4, 0, 1)",
+   "var.out": "max(var.pant, max(var.sit_pant, var.run_pant))",
+   "tongue_out.sz": "var.out",
+   "tongue_out.visible": "var.out > 0.02",
+   "tongue_out.rx": "torad(28) +torad(5)*sin(var.t*0.75)"
+  }
+ ]
+}
