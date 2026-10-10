@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # Secrets cannot be tested in an `if:`, an env var can.
+      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -138,6 +141,30 @@ jobs:
               gh release edit "$TAG" --notes-file /tmp/release_notes.txt 2>/dev/null || true
             fi
           done
+
+      - name: Publish to Modrinth
+        # Only the bundle jar goes to Modrinth; the standalone module jars stay on GitHub.
+        # Version type (release/beta/alpha) is derived from the version string by mc-publish.
+        if: ${{ env.MODRINTH_TOKEN != '' }}
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: kdnu0x8t
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          files: build/libs/vanillaplusadditions-${{ env.VERSION }}.jar
+          name: VanillaPlusAdditions ${{ env.VERSION }}
+          version: ${{ env.VERSION }}
+          changelog: ${{ env.RELEASE_NOTES }}
+          loaders: neoforge
+          game-versions: 1.21.1
+          java: 21
+          # Explicit, because the mod ids in neoforge.mods.toml are not all Modrinth slugs
+          # (toughasnails vs. tough-as-nails) and every one of them is optional.
+          dependencies: |
+            create(optional){modrinth:LNytGWDc}
+            toughasnails(optional){modrinth:ge1sOdFH}
+            sable(optional){modrinth:T9PomCSv}
+            bluemap(optional){modrinth:swbUV1cr}
+            quark(optional){modrinth:qnQsVE2z}
 
       - name: Upload to CurseForge
         if: false  # Disabled until CurseForge API key is configured

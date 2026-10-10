@@ -69,11 +69,15 @@ public class TrainChunkLoadingModule
 
     // Vanilla-typed on purpose: the suppliers only classload the Create-typed compat class when
     // invoked, and the registers are only bound to the bus in onInitialize() (Create present).
+    // They MUST stay lambdas, not method references: a method reference is linked by
+    // LambdaMetafactory right here in <clinit>, which loads and verifies ChunkLoaderTrackCompat and
+    // with it Create's TrackBlock - a NoClassDefFoundError that kept the whole mod from booting
+    // without Create (beta.103). A lambda body is only resolved when the supplier actually runs.
     public static final DeferredBlock<Block> CHUNK_LOADER_TRACK =
-            BLOCKS.register("chunk_loader_track", ChunkLoaderTrackCompat::createBlock);
+            BLOCKS.register("chunk_loader_track", () -> ChunkLoaderTrackCompat.createBlock());
 
     public static final DeferredItem<BlockItem> CHUNK_LOADER_TRACK_ITEM =
-            ITEMS.register("chunk_loader_track", ChunkLoaderTrackCompat::createItem);
+            ITEMS.register("chunk_loader_track", () -> ChunkLoaderTrackCompat.createItem());
 
     private static TrainChunkLoadingModule instance;
 

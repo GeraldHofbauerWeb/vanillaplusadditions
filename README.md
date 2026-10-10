@@ -225,15 +225,28 @@ Contributions are welcome — please read the [Contributing Guidelines](CONTRIBU
 
 ## 📝 License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The code is ours throughout; for the artwork, three things are worth
+knowing:
 
-The 32 `world_compass` needle frames are recoloured from the vanilla compass sprites and are
-therefore derived Mojang assets; they are not covered by the MIT licence above.
+* Several textures (wolf armour, flying fish, End Conduit, station skins and a few more) are
+  recoloured from vanilla Minecraft sprites. They are derived Mojang assets and not covered by the
+  MIT licence.
+* The four Foxhound armour textures are recoloured from Quark's `foxhound_armor.png`, with
+  Vazkii's permission (see Credits).
+* The `world_compass` needle and the Chunk Loader Track ship **no pixels at all**: they are painted
+  at load time from the compass and Create track textures already installed, so they also follow
+  your resource pack.
 
 ## 🌟 Credits
 
 **Developer**: Gerald Hofbauer · **Framework**: [NeoForge](https://neoforged.net/) ·
 **Built with**: [Claude Code](https://claude.com/claude-code) as a pair programmer
+
+* **[Vazkii](https://github.com/VazkiiMods) / [Quark](https://modrinth.com/mod/quark)** — the
+  Foxhound armour textures are recolours of Quark's own, used with permission (2026-09-24).
+* **[Fresh Animations](https://modrinth.com/resourcepack/fresh-animations) by FreshLX** — the
+  Quark mob animations in `quark_fresh_animations` are modelled after Fresh Animations' style.
+  No Fresh Animations file is included; the add-on only works alongside it.
 
 ## 🔗 Links
 

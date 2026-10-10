@@ -1,0 +1,24 @@
+{
+  "sources": [
+    {
+      "type": "vanillaplusadditions:chunk_loader_track",
+      "source": "create:block/standard_track",
+      "sprite": "vanillaplusadditions:block/chunk_loader_track"
+    },
+    {
+      "type": "vanillaplusadditions:chunk_loader_track",
+      "source": "create:block/standard_track_mip",
+      "sprite": "vanillaplusadditions:block/chunk_loader_track_mip"
+    },
+    {
+      "type": "vanillaplusadditions:chunk_loader_track",
+      "source": "create:block/standard_track_crossing",
+      "sprite": "vanillaplusadditions:block/chunk_loader_track_crossing"
+    },
+    {
+      "type": "vanillaplusadditions:chunk_loader_track",
+      "source": "create:item/track",
+      "sprite": "vanillaplusadditions:item/chunk_loader_track"
+    }
+  ]
+}

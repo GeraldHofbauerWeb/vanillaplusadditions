@@ -204,13 +204,24 @@ ascending piece, five crossings and two diagonals. Curved bezier connections add
 the same kind, wrapped as Flywheel `PartialModel`s: `tie.obj`, `segment_left.obj` and
 `segment_right.obj`.
 
-What is ours is three 32 × 32 textures, and those are Create's `standard_track`, `standard_track_mip`
-and `standard_track_crossing` with every opaque pixel hue-rotated into the blue. Brightness survives
-the rotation intact: across all 648 opaque pixels of the main texture the brightest channel keeps its
-exact value, and in ours that channel is always blue. The wooden sleepers therefore go
-`#59473E → #073859` and `#70574C → #054570`, while the metal rails keep their grey and pick up only a
-faint cast (`#6C6E77 → #657077`). That is why the block reads as "a track, but blue" at a glance and
-still tiles cleanly against ordinary Create track.
+None of the track's pixels ship in the jar. Create's textures are "All Rights Reserved", so the
+blue look is painted at load time: `ChunkLoaderTrackSpriteSource` reads Create's `standard_track`,
+`standard_track_mip`, `standard_track_crossing` and `item/track` from the player's own resources and
+writes them into the atlas under our sprite IDs (`vanillaplusadditions:block/chunk_loader_track`
+and so on), so not one model had to change. Until beta.103 those four textures were committed PNGs.
+
+The recolour works in HSV. Brightness (V, the brightest channel) is kept exactly, so the shading
+survives and the piece still tiles against ordinary Create track. The hue goes to a signal blue
+(about 204°), and saturation follows `0.06 + 0.6·s + 6·s²`, capped at 1. That curve was fitted to
+the old hand-made PNGs (mean deviation below 3 of 255 per channel): the nearly grey rails keep their
+grey with a faint blue cast, while the brown sleepers turn a saturated blue (`#59473E → #073859`).
+A resource pack that redraws Create's track now gets a blue version of *its* track.
+
+The atlas entry lives in `atlases/blocks/train_chunk_loading.json`, not under `src/main/resources`:
+Minecraft reads one `assets/minecraft/atlases/blocks.json` per pack, so the build merges every
+module's part for the bundle and gives each standalone jar only its own (see `atlases/README.md`).
+The sprite source type is registered whether Create is present or not; without Create it simply
+finds no textures and adds nothing.
 
 <!-- vpa:config:start -->
 ## Configuration

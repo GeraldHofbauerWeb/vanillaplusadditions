@@ -94,6 +94,47 @@ processResources {
         into 'resourcepacks'
         exclude 'README.md'
     }
+    // MIT verlangt, dass der Lizenztext jede Kopie begleitet - also auch jedes Jar. Mit Modnamen,
+    // damit er sich nicht mit dem LICENSE einer anderen Mod im selben Classpath ueberschneidet.
+    from('LICENSE') {
+        rename { 'LICENSE_vanillaplusadditions' }
+    }
+    // Atlas-Definitionen: im Bundle alle Modul-Teile zusammengefuehrt (siehe atlases/README.md).
+    dependsOn 'generateAtlases'
+    from(layout.buildDirectory.dir('generated/atlases/bundle'))
+}
+
+// ── Atlas parts → one file per jar (atlases/README.md) ───────────────────────
+// Minecraft liest pro Pack genau EINE Datei assets/minecraft/atlases/<atlas>.json. Teilen sich
+// zwei Module diese Datei und fehlt in einem Standalone-Jar das Modul, das einen der Typen
+// registriert, verwirft Minecraft die ganze Datei. Darum: Teile pro Modul, zusammengefuehrt
+// fuers Bundle, einzeln fuer jedes Modul-Jar.
+def atlasGenRoot = layout.buildDirectory.dir('generated/atlases')
+def atlasOutputs = [:]   // relative path -> content
+file('atlases').eachDir { atlasDir ->
+    def parts = (atlasDir.listFiles() ?: []).findAll { it.name.endsWith('.json') }.sort { it.name }
+    def merge = { List<File> ps ->
+        def sources = []
+        ps.each { sources.addAll(new groovy.json.JsonSlurper().parse(it).sources) }
+        groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([sources: sources])) + '\n'
+    }
+    def target = "assets/minecraft/atlases/${atlasDir.name}.json"
+    atlasOutputs["bundle/${target}"] = merge(parts)
+    parts.each { atlasOutputs["${it.name - '.json'}/${target}"] = merge([it]) }
+}
+tasks.register('generateAtlases') {
+    def root = atlasGenRoot.get().asFile
+    def contents = atlasOutputs
+    inputs.property('atlases', contents)
+    outputs.dir(root)
+    doLast {
+        root.deleteDir()
+        contents.each { rel, text ->
+            def f = new File(root, rel)
+            f.parentFile.mkdirs()
+            f.text = text
+        }
+    }
 }
 
 // Sets up a dependency configuration called 'localRuntime'.
@@ -424,7 +465,7 @@ def standaloneModules = [
       // schmerzhaft gelernt: kein Fehler im Log, nur fehlende Sprites).
       // Sie nennt einen SpriteSource-Typ, den NUR dieses Modul registriert, und darf deshalb nicht
       // in vpa_core liegen - sonst meldet jede Installation ohne dieses Modul einen unbekannten Typ.
-      assetGlobs: ['assets/minecraft/atlases/**'],
+      // Seit beta.104 kommt sie aus atlases/blocks/compass_overhaul.json (generateAtlases).
       mixins: ['compass_overhaul.LodestoneTrackerMixin'],
       clientMixins: ['compass_overhaul.CompassAngleSubLevelMixin',
                      'compass_overhaul.QuarkCompassAngleMixin'] ],
@@ -503,6 +544,9 @@ def standaloneModules = [
     [ moduleId: 'train_chunk_loading', displayName: 'Vanilla Plus: Train Chunk Loading',
       dataGlobs: ['data/create/tags/block/tracks.json',
                   'data/create/tags/block/girdable_tracks.json'],
+      // Blockstate + Modelle laden Creates OBJ-Meshes und liegen darum in einem Pack, das nur mit
+      // Create zugeschaltet wird (ChunkLoaderTrackModelPack) - sonst 11 Fehler im Log ohne Create.
+      assetGlobs: ['resourcepacks/vpa_create_track/**'],
       moduleDeps: ['vpa_debug_overlay'] ],
     [ moduleId: 'waystone_amethyst_repair', displayName: 'Vanilla Plus: Waystone Amethyst Repair' ],
     [ moduleId: 'wither_skeleton', displayName: 'Vanilla Plus: Wither Skeleton' ],
@@ -665,6 +709,7 @@ tasks.register('coreJar', Jar) {
         // Atlas-Definitionen liegen unter assets/minecraft/atlases/ (siehe compass_overhaul) und
         // damit ohnehin ausserhalb dieses Include - sie kommen ueber assetGlobs ins Modul-Jar.
         include 'logo.png'
+        include 'LICENSE_vanillaplusadditions'
     }
     // Third-party compat tags that belong to no single module: they repair how ANOTHER pair of mods
     // gets along and are inert unless both are installed (every entry is required:false). Own
@@ -703,6 +748,12 @@ standaloneModules.each { d ->
         // (reproduced with 2+ globs). Separate from-blocks avoid the quirk.
         d.dataGlobs.each { g -> from(sourceSets.main.output) { include g } }
         d.assetGlobs.each { g -> from(sourceSets.main.output) { include g } }
+        from(sourceSets.main.output) { include 'LICENSE_vanillaplusadditions' }
+        // Only this module's own atlas parts (atlases/<atlas>/<moduleId>.json), never the merged file.
+        if (atlasOutputs.keySet().any { it.startsWith("${d.moduleId}/") }) {
+            dependsOn 'generateAtlases'
+            from(atlasGenRoot.map { it.dir(d.moduleId) })
+        }
         // Mixin classes owned by this module (name*.class also catches inner classes). Entries may
         // be subpackage-qualified ("cat_guardian.ChestBlockCatMixin") — dots map to directories.
         d.allMixins.each { mx ->

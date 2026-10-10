@@ -4,6 +4,34 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-beta.104] - 2026-10-10
+
+### Fixed
+- **Der Mod startet wieder ohne Create** (Gerry, 2026-10-10), `train_chunk_loading`. Ohne Create
+  brach der Start mit `NoClassDefFoundError: ...TrackBlock` ab, obwohl Create als optional
+  deklariert ist. Ursache: die beiden Registrierungen standen als Methodenreferenz
+  (`ChunkLoaderTrackCompat::createBlock`) im statischen Initialisierer, und eine Methodenreferenz wird
+  dort sofort verlinkt — samt Create-Klassen. Jetzt Lambdas, die erst beim Aufruf aufloesen.
+  Geprueft auf einem leeren Server ohne Create: startet bis `Done`.
+
+### Changed
+- **Die Chunk-Loader-Gleise liefern keine Create-Pixel mehr aus.** Die vier umgefaerbten Kopien von
+  Create-Texturen sind aus dem Jar verschwunden (Create-Assets sind "All Rights Reserved"). Die blaue
+  Variante wird jetzt beim Laden aus Creates eigenen Texturen gemalt, wie schon der Weltkompass. Sieht
+  aus wie vorher und folgt nun auch einem Resource Pack, das Creates Gleise umgestaltet.
+- **Gleis-Modelle nur noch mit Create.** Blockstate und Modelle der Chunk-Loader-Gleise laden Creates
+  OBJ-Meshes; ohne Create stand dafuer elfmal `Failed to load model` rot im Log. Sie liegen jetzt im
+  eingebauten Paket `resourcepacks/vpa_create_track`, das nur bei geladenem Create zugeschaltet wird.
+- **Atlas-Definitionen pro Modul** unter `atlases/`. Der Build fuehrt sie fuers Bundle zusammen und gibt
+  jedem Einzel-Jar nur seinen Teil — sonst wuerde ein Einzel-Jar an einem fremden Eintrag die ganze
+  Atlas-Datei verlieren.
+- **Lizenztext liegt jetzt in jedem Jar** (`LICENSE_vanillaplusadditions`), Nennungen fuer Vazkii
+  (Foxhound-Ruestungstexturen) und Fresh Animations in README und `mods.toml`.
+
+### Removed
+- Ueberbleibsel aus der MDK-Vorlage (`assets/examplemod`) und eine versehentlich eingecheckte
+  Sicherungsdatei (`cat_armor_diamond.png~`).
+
 ## [1.0.0-beta.103] - 2026-10-10
 
 ### Fixed

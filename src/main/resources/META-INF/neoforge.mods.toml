@@ -39,7 +39,7 @@ displayURL="https://geraldhofbauer.net" #optional
 logoFile="logo.png" #optional
 
 # A text field displayed in the mod UI
-#credits="" #optional
+credits="Foxhound armour textures recoloured from Quark with permission of Vazkii. Quark mob animations modelled after Fresh Animations by FreshLX." #optional
 
 # A text field displayed in the mod UI
 authors="${mod_authors}" #optional

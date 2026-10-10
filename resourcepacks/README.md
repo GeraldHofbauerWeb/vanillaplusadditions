@@ -30,3 +30,14 @@ Warum exportieren statt abtippen: In einer `.jem` ist `"part": "head"` der Schl�
 das Originalteil ersetzt. Stimmt der Name nicht, passiert **nichts** — kein Fehler, keine Animation,
 keine Meldung. Aus dem Bytecode der fremden Mod abgeschrieben wäre jeder Tippfehler so ein stiller
 Ausfall.
+
+## `vpa_create_track`
+
+Blockstate und Modelle der **Chunk Loader Track** (`train_chunk_loading`). Die Modelle laden Creates
+OBJ-Meshes (`create:models/block/track/*.obj`). Minecraft lädt beim Start **jede** Modelldatei im
+Namespace einer Mod, ob ein Block sie braucht oder nicht — ohne Create stand darum für jedes dieser
+Modelle ein roter `Failed to load model …` im Log. Als Paket, das `ChunkLoaderTrackModelPack` nur bei
+geladenem Create zuschaltet, werden die Dateien ohne Create gar nicht erst gelesen.
+
+Bedingung ist **nur Create**, nicht der `enabled`-Schalter des Moduls: mit Create ist der Block
+registriert und braucht seine Modelle, sonst rendert er als lila-schwarzer Würfel.
