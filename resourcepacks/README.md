@@ -15,6 +15,12 @@ Foxhound, Crab, Stoneling, Wraith und Shiba. Der Forgotten braucht nichts, Quark
 dem Vanilla-Skelettmodell. Beim Shiba bewegt Quark Kopf, Ohren, Schwanz und Zunge auf allen Achsen
 selbst; das Paket gibt ihm nur Augen wie dem Foxhound und schaltet die Sichtbarkeit der Zunge.
 
+**Lizenz: CC BY-NC-SA 3.0, nicht MIT.** Die `.jem`-Dateien sind Quarks Modellgeometrie, per EMF
+re-exportiert, und Quark steht unter CC BY-NC-SA 3.0 — die Share-Alike-Klausel zieht die Ableitung
+mit. Darum liegt in diesem Ordner (und in `vpa_quark_toretoise`) eine eigene `LICENSE`, die über
+`processResources` mit ins Jar und über `quarkFreshAnimationsPack` in das Standalone-Zip wandert;
+der Java-Code des Moduls bleibt MIT. `vpa_create_track` ist davon nicht betroffen.
+
 **Nie einen Teil lesen, den die `.jpm` selbst schreibt.** `teil.rx = teil.rx + …` liefert in EMF
 den *eigenen* Wert aus dem letzten Frame zurück, nicht Quarks frischen – die Bewegung summiert sich
 jedes Frame auf (der Wraith hat sich so um die eigene Achse gedreht). Also nur Achsen bewegen, die

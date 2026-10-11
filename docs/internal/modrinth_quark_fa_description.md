@@ -51,5 +51,6 @@ walking, sitting and attacking, this pack adds the life around it.
 > 🤖 **AI collaboration notice:** this pack was built together with AI coding assistants. The ideas
 > and the testing are human; the AI helped with modelling, animation maths and documentation.
 
-MIT · [Source & issues](https://github.com/GeraldHofbauerWeb/vanillaplusadditions) ·
+[CC BY-NC-SA 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/), like Quark, whose models
+it derives from · [Source & issues](https://github.com/GeraldHofbauerWeb/vanillaplusadditions) ·
 part of [VanillaPlusAdditions](https://modrinth.com/mod/vanillaplusadditions)

@@ -4,6 +4,15 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-11
+
+### Changed
+- **License of the Quark x Fresh Animations packs.** Quark is CC BY-NC-SA 3.0 and the packs'
+  `.jem` files are Quark's entity models re-exported, so the two pack folders
+  (`resourcepacks/vpa_quark_fresh_animations`, `resourcepacks/vpa_quark_toretoise`) now carry a
+  CC BY-NC-SA 3.0 `LICENSE` of their own — inside the jar and in the standalone zip, which no
+  longer ships the MIT text. The mod's code stays MIT.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

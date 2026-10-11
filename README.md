@@ -233,6 +233,11 @@ knowing:
   MIT licence.
 * The four Foxhound armour textures are recoloured from Quark's `foxhound_armor.png`, with
   Vazkii's permission (see Credits).
+* The two Quark x Fresh Animations packs (`resourcepacks/vpa_quark_fresh_animations` and
+  `resourcepacks/vpa_quark_toretoise`) are Quark's entity models re-exported, with our animations
+  on top. Quark is CC BY-NC-SA 3.0, so these two folders are **CC BY-NC-SA 3.0 as well**, not
+  MIT — each carries its own `LICENSE`, inside the jar and in the standalone zip. The module's
+  Java code is ours and stays MIT.
 * The `world_compass` needle and the Chunk Loader Track ship **no pixels at all**: they are painted
   at load time from the compass and Create track textures already installed, so they also follow
   your resource pack.

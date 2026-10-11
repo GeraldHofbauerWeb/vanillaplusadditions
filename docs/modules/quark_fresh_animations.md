@@ -130,6 +130,15 @@ has to be **standing** — telling it to sit is what prevents it from lying down
 `LIT_FURNACE`, a `FURNACE` or any `GLOWING` block (anything emitting light that is not a fluid,
 campfires included) with air above it, and settles there on its own.
 
+## License
+
+Quark is licensed CC BY-NC-SA 3.0, and the pack's `.jem` files are Quark's entity models
+re-exported through EMF, so the ShareAlike clause applies: both pack folders
+(`resourcepacks/vpa_quark_fresh_animations`, `resourcepacks/vpa_quark_toretoise`) are
+**CC BY-NC-SA 3.0** and carry their own `LICENSE`, which travels inside the jar and the standalone
+zip. The module's Java code, like the rest of the mod, stays MIT. No Quark or Fresh Animations file
+is shipped; Quark's textures are read from the installed mod at runtime.
+
 ## See also
 
 * [Configuration Guide](../guides/configuration.md)

@@ -130,10 +130,9 @@ file('atlases').eachDir { atlasDir ->
 tasks.register('quarkFreshAnimationsPack', Zip) {
     group = 'build'
     description = 'Packs resourcepacks/vpa_quark_fresh_animations as a standalone resource pack zip.'
+    // Kein MIT-Text hier: das Paket ist eine Ableitung von Quarks Modellen (CC BY-NC-SA 3.0) und
+    // bringt seine eigene LICENSE im Ordner mit (siehe resourcepacks/README.md).
     from('resourcepacks/vpa_quark_fresh_animations')
-    from('LICENSE') {
-        rename { 'LICENSE_vanillaplusadditions' }
-    }
     archiveFileName = "Quark-x-Fresh-Animations-${mod_version}.zip"
     destinationDirectory = layout.buildDirectory.dir('resourcepacks')
     preserveFileTimestamps = false
@@ -560,6 +559,8 @@ def standaloneModules = [
     [ moduleId: 'pathfinder_quills', displayName: "Vanilla Plus: Pathfinder's Quills" ],
     [ moduleId: 'pet_potions', displayName: 'Vanilla Plus: Pet Potions',
       mixins: ['pet_potions.AreaEffectCloudAccessor'] ],
+    // Die beiden Pack-Ordner tragen ihre eigene LICENSE (CC BY-NC-SA 3.0, von Quarks Modellen
+    // abgeleitet) und nehmen sie über die Globs mit ins Modul-Jar; der Code bleibt MIT.
     [ moduleId: 'quark_fresh_animations', displayName: 'Vanilla Plus: Quark Fresh Animations',
       assetGlobs: ['resourcepacks/vpa_quark_fresh_animations/**', 'resourcepacks/vpa_quark_toretoise/**'],
       clientMixins: ['quark_fresh_animations.ToretoiseRandomCubeMixin'] ],
