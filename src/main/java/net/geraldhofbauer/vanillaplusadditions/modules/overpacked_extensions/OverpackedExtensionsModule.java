@@ -40,7 +40,7 @@ public class OverpackedExtensionsModule
         super("overpacked_extensions",
                 "Overpacked Extensions",
                 "Quality-of-life extensions for Overpacked giant backpacks: configurable slowdown "
-                        + "override, keybinds to open worn compartments, and a Quark-style sort button.",
+                        + "override and keybinds to open worn compartments.",
                 OverpackedExtensionsConfig::new);
     }
 
