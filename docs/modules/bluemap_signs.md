@@ -1,8 +1,8 @@
 # BlueMap Signs
 
 > **TL;DR** — Put `[bm]` on the first line of any sign and that spot shows up as a labelled,
-> icon-picked pin on your server's BlueMap web map — plus `/bmsigns` to place and edit pins that
-> have no sign at all.
+> icon-picked pin on your server's BlueMap web map; `/bmsigns` places and edits pins that have no
+> sign at all.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -22,7 +22,7 @@ BlueMap renders the world in a browser, but it knows nothing about what is *in* 
 makes the world label itself: the sign you already put at the door of a place becomes the pin for
 that place on the web map.
 
-Write four lines on any sign — standing, wall or hanging:
+Write four lines on any sign (standing, wall or hanging):
 
 ```
 [bm]              line 1  the trigger, and the only mandatory line
@@ -33,7 +33,7 @@ North line, 3 platforms   line 4  popup text (optional)
 
 Finish the edit and the pin is on the map immediately: no reload, no restart, no command. Change
 the sign and the pin follows; break it, or take `[bm]` off line 1, and the pin is gone. Nobody
-needs a client mod — everything happens on the server, and players see the result in BlueMap's web
+needs a client mod: everything happens on the server, and players see the result in BlueMap's web
 UI.
 
 Thirty-four icons ship with the module, from `base` and `shop` to `grave` and `airport`. Line 3
@@ -53,7 +53,7 @@ to this page in the middle of a build.
 Line 1 is compared with the configured `prefix` (default `[bm]`) after both have been trimmed, and
 the comparison is case-insensitive: `[BM]` and ` [bm] ` both work. The text is taken through
 `Component.getString()`, which strips formatting, so a coloured or glowing sign is read the same as
-a plain one — and it is the *raw* line (`getMessage(i, false)`), not the profanity-filtered one.
+a plain one. It also reads the *raw* line (`getMessage(i, false)`), not the profanity-filtered one.
 
 Lines 2, 3 and 4 become label, icon key and popup detail; all three are trimmed, and the icon key is
 lower-cased. Only line 1 must be there. A `[bm]` sign with nothing else on it produces a default pin
@@ -61,12 +61,11 @@ labelled `(unnamed)`.
 
 **Both faces are read, and the front wins.** `SignReader.readMarker` tries the front text first and
 only falls back to the back. Two different `[bm]` markers on the two faces of one sign are therefore
-not two pins — the back one is simply never used, because a sign is one block position and one
-marker id.
+not two pins. The back one is never used, because a sign is one block position and one marker id.
 
 ### When the module looks at a sign
 
-Three entry points, and they cover different things:
+There are three entry points, and each covers a different case:
 
 | Trigger | Fires on | Effect |
 |---|---|---|
@@ -75,7 +74,7 @@ Three entry points, and they cover different things:
 | `BlockEvent.BreakEvent` | a **player** breaking a sign block | Drops the marker at that position |
 
 The mixin is the fast path and the one you notice. It hangs on `setText`, which is what
-`updateSignText` calls when the edit screen is confirmed — **not** on NBT load. A sign that arrives
+`updateSignText` calls when the edit screen is confirmed, and **not** on NBT load. A sign that arrives
 with its text already set, from `/setblock`, a structure, a schematic paste or another mod writing
 the block entity directly, never passes through it and waits for the chunk pass instead.
 
@@ -87,7 +86,7 @@ touched by it. Switch the module on for the first time and your old signs appear
 time, as people walk the world.
 
 `BlockEvent.BreakEvent` exists so that a sign broken by hand disappears from the map instantly
-rather than at the next chunk load. It only fires for player breaks — an explosion, a piston, water,
+rather than at the next chunk load. It only fires for player breaks: an explosion, a piston, water,
 `/fill` or a mod removing the block leaves the pin standing until that chunk reloads.
 
 ### What the map gets
@@ -97,7 +96,7 @@ Every marker becomes a BlueMap `POIMarker` in a `MarkerSet` with the id `vpa_map
 
 | Property | Value |
 |---|---|
-| Position | block centre — `x + 0.5`, `y + 0.5`, `z + 0.5` |
+| Position | block centre (`x + 0.5`, `y + 0.5`, `z + 0.5`) |
 | Label | line 2, or the literal `(unnamed)` when it is blank |
 | Icon | the resolved icon PNG, anchored bottom-centre at (16, 42) for the 32 × 42 images |
 | Detail | line 4, HTML-escaped (`&`, `<`, `>`), and attached only when it is not blank |
@@ -114,7 +113,7 @@ sign reaches the web UI unaltered.
 ### Icons
 
 Line 3 (or the `icon` argument) is matched case-insensitively against the 34 keys below. Blank and
-unknown keys resolve to `default` rather than failing, so a typo costs you the icon, not the pin.
+unknown keys resolve to `default` instead of failing, so a typo loses the icon but keeps the pin.
 
 | Key | Meaning | Key | Meaning |
 |---|---|---|---|
@@ -156,7 +155,7 @@ The PNGs are handed to BlueMap once per API enable, through `WebApp.createImage`
 | `/bmsigns edit <id> pos here\|<x y z>` | 2 | Moves the pin |
 
 `help` is the only subcommand that works without BlueMap installed; every other one answers
-*"BlueMap is not installed on this server."* and does nothing — including `list`, which would
+*"BlueMap is not installed on this server."* and does nothing. That includes `list`, which would
 otherwise only read our own storage.
 
 The two `label` arguments are not spelled the same way. `add` and `addat` take a Brigadier *string*,
@@ -174,20 +173,20 @@ markers out entirely, so their ids can only be reached by typing them in full.
 
 ### Persistence and ids
 
-The source of truth is `MapSignData`, a `SavedData` named `vanillaplusadditions_map_signs` — one
-file per dimension, next to the other level data. BlueMap's marker set is only a mirror of it:
+The source of truth is `MapSignData`, a `SavedData` named `vanillaplusadditions_map_signs` (one
+file per dimension, next to the other level data). BlueMap's marker set is only a mirror of it:
 whenever BlueMap enables, `rebuildAllFromStorage` walks every level and rebuilds the whole set from
 storage. A BlueMap restart, a map reload or a fresh server start therefore all end with the map
 agreeing with the world, without anyone touching a sign.
 
 Ids are stable, but only the command ids are never reused: `nextCommandId()` does nothing but
-increment a counter that lives in the saved data. A sign id is not allocated at all — it *is* the
+increment a counter that lives in the saved data. A sign id is not allocated at all; it *is* the
 position, so breaking a `[bm]` sign and putting a new one back on the same block produces the same
 id again, and the new marker takes over the old record.
 
 | Source | Id | Built from |
 |---|---|---|
-| Sign | `s/<packed pos>` | `Long.toUnsignedString(BlockPos.asLong())` — a sign at 100/64/-200 is `s/27762667782208` |
+| Sign | `s/<packed pos>` | `Long.toUnsignedString(BlockPos.asLong())`; a sign at 100/64/-200 is `s/27762667782208` |
 | Command | `c<n>` | A counter in the saved data, incremented on every `add` |
 
 Because the sign id is the position, a sign marker cannot be moved; it can only vanish and
@@ -202,8 +201,8 @@ chunk reconcile and the break handler all return at their first line, and **noth
 saved data**. `/bmsigns help` still prints the full listing, plus a red line saying BlueMap is
 missing.
 
-Install BlueMap later and every `[bm]` sign is picked up chunk by chunk as the world is walked —
-nothing was lost, because nothing was ever stored.
+Install BlueMap later and every `[bm]` sign is picked up chunk by chunk as the world is walked.
+Nothing is lost, because nothing was ever stored.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -228,21 +227,21 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | BlueMap not installed | Only `/bmsigns help` works. Signs do nothing and nothing is persisted; the module is otherwise inert. |
 | Sign removed by anything but a player | Explosion, piston, water, `/fill`, `/setblock`, another mod: the pin stays on the map until that chunk is loaded again and the reconcile pass drops it. |
 | Sign created by anything but the edit screen | `/setblock` with sign NBT, structures, schematics: no `setText`, so the pin appears only at the next chunk load of that position. |
-| A break that is cancelled afterwards | The handler does not check `isCanceled()`, but it only ever sees breaks that are still live. `@SubscribeEvent` defaults to `receiveCanceled = false`, so a break that vanilla pre-cancels before posting (adventure mode, spawn protection, a game-master block) or that a listener above `NORMAL` priority cancels never reaches `onBlockBreak` at all, and the marker is kept. Only a listener that runs *after* ours — a lower priority, or `NORMAL` and registered later — costs the marker until that chunk reloads. Read from the source; not reproduced. |
+| A break that is cancelled afterwards | The handler does not check `isCanceled()`, but it only ever sees breaks that are still live. `@SubscribeEvent` defaults to `receiveCanceled = false`, so a break that vanilla pre-cancels before posting (adventure mode, spawn protection, a game-master block) or that a listener above `NORMAL` priority cancels never reaches `onBlockBreak` at all, and the marker is kept. Only a listener that runs *after* ours (a lower priority, or `NORMAL` and registered later) costs the marker until that chunk reloads. Read from the source; not reproduced. |
 | Editing across dimensions | Only `list` takes a dimension. `add`, `addat`, `remove`, `edit` and the id suggestions all use the level you are standing in, and a correct id from another dimension fails with the same "no marker with id" message as a typo. |
 | Module disabled while the server runs | The two gated handlers (chunk load, block break) and the sign mixin hook stop, but the command was registered at startup and is never gated: `/bmsigns add\|edit\|remove` keeps writing to the saved data and keeps pushing to BlueMap. Disabling only takes full effect after a restart, where the module is never initialized and the command never registered. |
-| Config changed while the server runs | `marker_set_name`, `toggleable` and `default_hidden` are read when a marker set is built, `max_distance` when a marker is built. Existing ones keep the old values until the next rebuild — a BlueMap re-enable, a restart, or the next edit of that marker. |
+| Config changed while the server runs | `marker_set_name`, `toggleable` and `default_hidden` are read when a marker set is built, `max_distance` when a marker is built. Existing ones keep the old values until the next rebuild: a BlueMap re-enable, a restart, or the next edit of that marker. |
 | `prefix` changed | Markers created under the old prefix are not dropped retroactively. Each one goes when its chunk next loads and the reconcile pass finds no match. |
 | HTML in a label | Only `detail` is escaped. Line 2 reaches the web UI as written. |
 | Chunk-load cost | While the module is active and BlueMap is present, every server chunk load iterates that chunk's block entities. Cheap per chunk, but it is not free on a world being explored fast. |
-| Standalone jar, custom icons | `BlueMapBridge` loads the PNGs via `getResourceAsStream("/assets/vanillaplusadditions/bluemap_icons/…")`, but the module jar ships only its own classes — all assets live in `vpa_core.jar`. Whether that lookup crosses NeoForge's module layer could not be settled from the repository; if it does not, every marker silently falls back to the default pin. The all-in-one bundle is unaffected. <!-- TODO: verify in game with vpa_bluemap_signs.jar + vpa_core.jar; the fallback is silent, so "plain pins everywhere" is the symptom to look for --> |
+| Standalone jar, custom icons | `BlueMapBridge` loads the PNGs via `getResourceAsStream("/assets/vanillaplusadditions/bluemap_icons/…")`, but the module jar ships only its own classes; all assets live in `vpa_core.jar`. Whether that lookup crosses NeoForge's module layer could not be settled from the repository; if it does not, every marker silently falls back to the default pin. The all-in-one bundle is unaffected. <!-- TODO: verify in game with vpa_bluemap_signs.jar + vpa_core.jar; the fallback is silent, so "plain pins everywhere" is the symptom to look for --> |
 | Translations | The 48 `bmsigns` strings exist in `en_us` and `de_de` only. `de_at`, `fr_fr`, `es_es` and `cs_cz` fall back. |
 
 ## Under the hood
 
 | File | Role |
 |---|---|
-| `modules/bluemap_signs/BluemapSignsModule.java` | Five `@SubscribeEvent` handlers — server start/stop, chunk load, block break, command registration — plus the `ModList` gate and the static mixin hook |
+| `modules/bluemap_signs/BluemapSignsModule.java` | Five `@SubscribeEvent` handlers (server start/stop, chunk load, block break, command registration), plus the `ModList` gate and the static mixin hook |
 | `modules/bluemap_signs/SignReader.java` | Sign text → `Optional<MapSignMarker>` |
 | `modules/bluemap_signs/MapSignManager.java` | BlueMap-free orchestration: storage plus mirror pushes |
 | `modules/bluemap_signs/MapSignData.java` | Per-level `SavedData`, the source of truth |
@@ -259,9 +258,9 @@ and [Overpacked Extensions](overpacked_extensions.md) cites it as such. `MarkerB
 interface in module code; `BlueMapBridge` is its only implementation and the only class in the whole
 module that names a BlueMap type. It is constructed *inside* the `ModList.get().isLoaded("bluemap")`
 branch of `onInitialize`, so in a pack without BlueMap the class is never loaded, never verified and
-never linked. The manager talks to the interface and nothing else. Getting this wrong — putting the
-gate on the class that also holds the optional types — is what crashed mod construction in beta.70
-for a neighbouring module.
+never linked. The manager talks to the interface and nothing else. Putting the gate on the class that also holds
+the optional types is the mistake that crashed mod construction in beta.70 for a neighbouring
+module.
 
 **The mixin** injects at `RETURN` of `setText(SignText, boolean)` and does nothing but call
 `BluemapSignsModule.onSignChanged`. All guarding lives in that static method: module instance,
@@ -269,8 +268,8 @@ BlueMap present, module enabled, and `sign.getLevel() instanceof ServerLevel`. T
 common (`"mixins"`) block of `vanillaplusadditions.mixins.json`, so it is applied on both sides, but
 the level check means the client half returns immediately.
 
-**No registry content at all.** No items, blocks, entities, recipes, keybinds or network payloads —
-events, a command, a `SavedData` and the bridge. That is why the module is server-only: there is not
+**No registry content at all.** No items, blocks, entities, recipes, keybinds or network
+payloads; the module is events, a command, a `SavedData` and the bridge. That is why the module is server-only: there is not
 one `Dist.CLIENT` reference in it, and the only client-visible artefacts are the chat strings.
 
 **Thread safety.** `BlueMapAPI.onEnable` may run on a BlueMap thread, so the rebuild is dispatched
@@ -280,12 +279,12 @@ hook, the chunk and break events and the commands all run on the server thread.
 
 The icons are the exception. `setupIcons` clears and refills the two plain `HashMap`s
 `iconAddresses` and `iconAnchors` on BlueMap's thread, while `buildPoi` reads them from the server
-thread — unsynchronised. And `onEnable` sets `live = true` *before* it uploads the icons, so a
+thread without synchronisation. And `onEnable` sets `live = true` *before* it uploads the icons, so a
 marker pushed during that window may find no address yet and falls back to
-`POIMarker.defaultIcon()` — the maps are cleared first and refilled key by key. That last part is
-self-correcting: `onEnable` queues `rebuildAllFromStorage` through `server.execute` only *after*
+`POIMarker.defaultIcon()`, because the maps are cleared first and refilled key by key. That last
+part is self-correcting: `onEnable` queues `rebuildAllFromStorage` through `server.execute` only *after*
 `setupIcons` has returned, and that task builds a fresh `MarkerSet` per map from storage and
-replaces the whole set, so a plain pin from this window lasts only until the rebuild runs — every
+replaces the whole set, so a plain pin from this window lasts only until the rebuild runs. Every
 push writes to the `SavedData` first, so nothing is missing from it. The unsynchronised map access
 itself has no such backstop.
 
@@ -297,7 +296,7 @@ without downloading anything.
 
 **Standalone jar.** `vpa_bluemap_signs` carries the module classes, the standalone entry point and
 the mixin, with a generated `vpa_bluemap_signs.mixins.json`. Its generated `neoforge.mods.toml` lists
-only `vpa_core`, NeoForge, Minecraft and the incompatibility with the bundle — the optional BlueMap
+only `vpa_core`, NeoForge, Minecraft and the incompatibility with the bundle. The optional BlueMap
 dependency that the bundle declares (`ordering="AFTER"`, `side="SERVER"`) is **not** reproduced
 there. `BlueMapAPI.onEnable` is a callback, so load order should not matter, but the asymmetry is
 real and has not been tested.
@@ -307,7 +306,7 @@ of writing this page.
 
 ## See also
 
-* [Overpacked Extensions](overpacked_extensions.md) — the same optional-mod gate, and what happens
+* [Overpacked Extensions](overpacked_extensions.md): the same optional-mod gate, and what happens
   when it is put on the wrong class
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

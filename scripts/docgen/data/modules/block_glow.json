@@ -2,7 +2,7 @@
   "moduleId": "block_glow",
   "displayName": "Block Glow",
   "shortDescription": "Highlights selected block types with render outlines via /blockglow",
-  "oneLiner": "Type /blockglow iron_ore and every matching block within a set radius is outlined in glowing cyan through walls, until a timer runs out or you clear it.",
+  "oneLiner": "Type `/blockglow iron_ore` and every matching block around you is outlined in cyan, straight through the rock, until the timer runs out or you clear it.",
   "side": "client",
   "enabledByDefault": true,
   "registeredInBundle": true,

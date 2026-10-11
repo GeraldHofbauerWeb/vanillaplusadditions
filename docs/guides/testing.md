@@ -11,8 +11,8 @@ VanillaPlusAdditions provides several ways to verify and test mod features durin
 
 is a no-op that always succeeds. Do not read a green `test` task as evidence of anything.
 
-What the build *does* check is style and static analysis, and that check is strict — one Checkstyle
-warning fails it:
+What the build *does* check is style and static analysis, and that check is strict: a single
+Checkstyle warning fails it:
 
 ```bash
 ./gradlew build                      # includes Checkstyle and SpotBugs
@@ -22,10 +22,10 @@ warning fails it:
 Verification of behaviour is therefore manual, in the game, using the environments below.
 
 ## Manual Testing Environments
-We provide pre-configured environments for manual testing on both the server and client.
+There are pre-configured environments for manual testing on both the server and the client.
 
 ### Test Server
-Located in the `test-server/` directory. This is ideal for testing server-side logic, networking, and multiplayer compatibility.
+Located in the `test-server/` directory. Use it to test server-side logic, networking and multiplayer compatibility.
 
 **Quick Start:**
 ```bash

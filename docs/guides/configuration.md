@@ -14,12 +14,12 @@ Each standalone jar carries its own file with the global settings plus its own m
 running three module jars gives you three small config files instead of one large one.
 
 The config is a NeoForge `COMMON` config: on a dedicated server it lives in the server's `config/`
-folder, in single player in your instance's `config/` folder. Values are read at startup — the file
+folder, in single player in your instance's `config/` folder. Values are read at startup; the file
 is not re-read while the game is running.
 
 ## Structure
 
-A top-level block of global settings, then one section per module under `[modules]`:
+The file starts with a block of global settings, followed by one section per module under `[modules]`:
 
 ```toml
 #Enable debug logging for all modules (can be overridden by individual module settings)
@@ -35,14 +35,14 @@ globalDebugLogging = false
 ```
 
 Every key carries its own explanation as a comment, and numeric keys additionally state their
-default and their permitted range. The file is self-documenting — you rarely need this guide open
-next to it.
+default and their permitted range. With those comments in place, you rarely need this guide open
+next to the file.
 
 ## Global settings
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `globalDebugLogging` | Boolean | `false` | Turns on debug logging for all modules at once. Individual modules can still override it — see the [Debug Logging Guide](debug-logging.md). |
+| `globalDebugLogging` | Boolean | `false` | Turns on debug logging for all modules at once. Individual modules can still override it; see the [Debug Logging Guide](debug-logging.md). |
 | `worldgenCrashGuardEnabled` | Boolean | `false` | Emergency workaround that suppresses an `IndexOutOfBoundsException` during structure generation. Only meant to keep a server running while you track down an incompatible worldgen mod. |
 
 ## Settings every module has
@@ -52,7 +52,7 @@ next to it.
 | `enabled` | Boolean | varies | Whether the module is active. Most default to `true`; a few ship disabled. |
 | `debug_logging` | Enum | `AUTO` | `AUTO` follows `globalDebugLogging`, `ON` and `OFF` force it for this module. |
 
-A module whose required mod is missing stays inert regardless of `enabled` — for instance
+A module whose required mod is missing stays inert regardless of `enabled`; for instance,
 `copycat_pathfinding` does nothing without Create.
 
 ## Value types beyond true/false
@@ -73,26 +73,26 @@ A module whose required mod is missing stays inert regardless of `enabled` — f
 
 1. Stop the server, or close the game.
 2. Edit the file in any text editor.
-3. Start again — the new values are read at startup.
+3. Start again. The new values are read at startup.
 
 To reset, delete the file and restart; a fresh one is generated with all defaults.
 
 ## Every key, in one place
 
 The two settings above are the ones shared by all modules. For the complete list of every key in
-every module, with defaults, ranges and effects, see the **[Configuration Reference](../reference/config.md)** —
-it is generated from the source, so it cannot drift out of date.
+every module, with defaults, ranges and effects, see the **[Configuration Reference](../reference/config.md)**.
+It is generated from the source, so it cannot drift out of date.
 
 Each module's own page documents its keys in context, which is usually the more useful place to
 start: see the [module list](../../README.md#modules).
 
 ## How it works
 
-* `AbstractModuleConfig` — base class every module's config extends; provides `enabled` and
+* `AbstractModuleConfig`: base class every module's config extends; provides `enabled` and
   `debug_logging` and calls `buildModuleSpecificConfig` for the module's own keys.
-* `ModulesConfig` — assembles the `ModConfigSpec` for the bundle, or for a single module in a
+* `ModulesConfig`: assembles the `ModConfigSpec` for the bundle, or for a single module in a
   standalone jar (`buildStandaloneSpec`).
-* `ConfigHelper` — shared helpers for recurring patterns.
+* `ConfigHelper`: shared helpers for recurring patterns.
 
 Adding a module means adding its config class; the file layout follows automatically. See the
 [Module System](module-system.md) guide.
@@ -101,4 +101,4 @@ Adding a module means adding its config class; the file layout follows automatic
 
 * [Debug Logging Guide](debug-logging.md)
 * [Module System](module-system.md)
-* [Configuration Reference](../reference/config.md) — every key, generated
+* [Configuration Reference](../reference/config.md): every key, generated

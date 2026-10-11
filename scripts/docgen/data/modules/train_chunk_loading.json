@@ -2,7 +2,7 @@
   "moduleId": "train_chunk_loading",
   "displayName": "Train Chunk Loading",
   "shortDescription": "Chunk Loader Track keeps chunks loaded around traveling Create trains.",
-  "oneLiner": "Adds a blue Create train track that force-loads the chunks around any train rolling over it, so the drills, deployers and item transfers on board keep running even when no player is nearby.",
+  "oneLiner": "A blue Create train track that force-loads the chunks around any train rolling over it, so the drills, deployers and item transfers on board keep running with no player anywhere near.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,

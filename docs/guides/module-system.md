@@ -1,6 +1,6 @@
 # Module System Overview
 
-VanillaPlusAdditions is built on a flexible and decoupled module system. This architecture allows for easy addition of new features and granular control over existing ones.
+VanillaPlusAdditions is built from independent modules. New features can be added as new modules, and each existing one can be configured and switched on or off on its own.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Most modules extend `AbstractModule`, which provides:
 - Automatic configuration handling.
 - Built-in logging.
 - Lifecycle management.
-- Ease-of-use methods like `isModuleEnabled()`.
+- Convenience methods like `isModuleEnabled()`.
 
 ### 3. `ModuleManager`
 The central registry that manages all modules. It handles:

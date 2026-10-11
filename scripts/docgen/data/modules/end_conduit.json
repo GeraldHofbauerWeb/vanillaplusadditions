@@ -2,7 +2,7 @@
   "moduleId": "end_conduit",
   "displayName": "End Conduit",
   "shortDescription": "An End-only conduit upgrade: activates in the End, grants Conduit Power (and thus air) with a Glowstone/End Stone/End Stone Bricks/Sea Lantern frame, no water needed.",
-  "oneLiner": "A craftable violet conduit for the End: surround it with 16 Glowstone, End Stone, End Stone Bricks or Sea Lanterns - no water needed - and it grants Conduit Power on dry End ground, which (with the End Oxygen module enabled) means you can breathe there indefinitely.",
+  "oneLiner": "A craftable violet conduit for the End. Ring it with 16 Glowstone, End Stone, End Stone Bricks or Sea Lanterns (no water needed) and it grants Conduit Power on dry End ground, which with the End Oxygen module enabled means you can breathe there indefinitely.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,

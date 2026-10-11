@@ -17,8 +17,8 @@
 
 ## What it does
 
-Adds a **Chunk Loader Rail**. It rides like an ordinary rail — straights, curves, ascending pieces,
-waterlogging, and vanilla track connects and curves into it — but while a minecart is on one, a
+Adds a **Chunk Loader Rail**. It rides like an ordinary rail (straights, curves, ascending pieces,
+waterlogging, and vanilla track connects and curves into it), but while a minecart is on one, a
 square of chunks around that rail is force-loaded and kept ticking. Fifteen seconds after the last
 cart left, the square is released again.
 
@@ -40,11 +40,11 @@ cart left, the square is released again.
 </table>
 
 Place one every 32 blocks along a line and a cart carries its own loaded window with it: it keeps
-rolling with nobody watching, and it arrives instead of standing halfway there waiting to be found.
+rolling with nobody watching and reaches the far end on its own.
 Leave a cart parked on a loader rail and that chunk stays loaded for as long as it stands there.
 
-The chunks are forced with *ticking* tickets, so they do not merely exist — blocks, block entities
-and entities in them run as if a player were nearby.
+The chunks are forced with *ticking* tickets: blocks, block entities and entities in them run as if
+a player were nearby.
 
 ## Why it exists
 
@@ -74,8 +74,8 @@ this.entityTickList.forEach(entity -> {
 });
 ```
 
-So a cart that rolls out of the loaded region does not slow down or get simulated — it stops dead,
-mid-track, and stays there until a player comes close enough to pull its chunk back into
+So a cart that rolls out of the loaded region stops dead in mid-track. There is no slowed-down or
+reduced simulation; the cart stays there until a player comes close enough to pull its chunk back into
 entity-ticking range. On a line longer than one simulation distance, an unattended cart never
 reaches the far end.
 
@@ -83,11 +83,11 @@ reaches the far end.
 
 ### The loop: mark, reconcile, release
 
-Three steps, all server-side.
+All three steps run on the server.
 
 **Mark.** On `EntityTickEvent.Post`, every `AbstractMinecart` in a `ServerLevel` is checked against
 the block it is standing on. `railAt` accepts a Chunk Loader Rail at the cart's own block position
-**or one block below it** — the same `j--` offset vanilla applies in the code quoted above, because a
+**or one block below it**, the same `j--` offset vanilla applies in the code quoted above, because a
 cart rides slightly above the rail it is on. If it finds one, the rail is stamped with the current game time.
 
 **Reconcile.** Every 10 game ticks (`RECONCILE_INTERVAL`, `now % 10 != 0` returns early), each level
@@ -96,15 +96,15 @@ is older than `active_timeout_seconds × 20` ticks unforces its square and is dr
 
 **Release.** Nothing else *in the loop* releases chunks. Breaking a loader rail, picking the cart up
 or derailing it all end the same way: the stamp stops being refreshed and the square falls away after
-the timeout. Two paths release chunks outside the loop: the players-online pause below — `releaseAll`
-unforces a level's chunks at once and does not wait for any timeout — and, on world load, the
+the timeout. Two paths release chunks outside the loop: the players-online pause below (`releaseAll`
+unforces a level's chunks at once and does not wait for any timeout) and, on world load, the
 `LoadingValidationCallback` under *Across a restart*, which drops every ticket the controller owns.
 
-The square is Chebyshev — a `(2R+1) × (2R+1)` block of chunks centred on the rail's own chunk:
+The square is Chebyshev: a `(2R+1) × (2R+1)` block of chunks centred on the rail's own chunk:
 
 | `chunk_load_radius` | Forced chunks | Reach beyond the rail's own chunk |
 |---|---|---|
-| `0` | 1 | none — the rail's chunk only |
+| `0` | 1 | none (the rail's chunk only) |
 | `1` | 9 (3×3) | 16 blocks |
 | `2` (default) | 25 (5×5) | 32 blocks |
 | `4` | 81 (9×9) | 64 blocks |
@@ -115,27 +115,26 @@ interfere: a shared chunk is released only when the last rail holding it lets go
 
 ### How far apart to place them
 
-This is the rule that decides whether a line works, and it follows from the mark step: **the forcing
+Whether a line works depends on one rule, and it follows from the mark step: **the forcing
 follows the cart, and the cart only ticks inside a loaded chunk.** A loader rail sitting in an
 already-unloaded chunk is never visited, never stamped, and never loads anything. The window has to
 roll forward before the cart falls off its trailing edge.
 
-So place a loader rail **at most `chunk_load_radius × 16` blocks apart** along the line — 32 blocks
+So place a loader rail **at most `chunk_load_radius × 16` blocks apart** along the line: 32 blocks
 with the default radius of 2. The config calls this the "rolling-load LOOKAHEAD"; the Train Chunk
 Loading ponder scene states the same rule of thumb in game for the track version.
 
-Spacing them tighter costs nothing but rails. Spacing them wider is the one way to build a line that
-silently does not work.
+Tighter spacing costs only rails. With wider spacing the line fails, and nothing tells you so.
 
 ### A parked cart is a permanent chunk loader
 
 There is no movement or velocity check anywhere in this module. `markActive` fires for any minecart
 sitting on a loader rail, every tick. The forced chunk keeps the cart ticking, the ticking cart keeps
-refreshing the stamp, and the persisted rail set survives a restart — so a cart left standing on a
-loader rail is a chunk loader that never switches off.
+refreshing the stamp, and the persisted rail set survives a restart. A cart left standing on a
+loader rail is therefore a chunk loader that never switches off.
 
-That makes the rail useful for a second thing entirely: park a cart on one beside a farm and the farm
-keeps running. The only thing that interrupts it is the players-online gate below.
+This gives the rail a second use: park a cart on one beside a farm and the farm keeps running. The
+only thing that interrupts it is the players-online gate below.
 
 ### Pausing while nobody is online
 
@@ -149,34 +148,34 @@ Only the two transitions do any work:
 
 | Transition | What happens |
 |---|---|
-| off → on (server start with `only_while_players_online = false`, or the first player joining — in single player normally once per game session) | `resume(level, radius)` on every level: re-forces every rail in the persisted set and stamps each one active *now* |
+| off → on (server start with `only_while_players_online = false`, or the first player joining; in single player normally once per game session) | `resume(level, radius)` on every level: re-forces every rail in the persisted set and stamps each one active *now* |
 | on → off (the last player leaving) | `releaseAll(level)` on every level: unforces everything and clears the in-memory active set, but **keeps** the persisted set |
 
-With the default `only_while_players_online = true` an empty server forces nothing at all — carts
+With the default `only_while_players_online = true` an empty server forces nothing at all: carts
 freeze where they are and pick up again on the next join, which is normally what you want from a
 chunk loader on a survival server. Set it to `false` and the loop keeps running through the night.
 
 ### Across a restart
 
 NeoForge persists forced chunks itself and would reinstate this module's tickets on world load. The
-module throws them away on purpose — its `LoadingValidationCallback` removes every ticket the
-controller owns — and rebuilds the state from its own record instead:
+module throws them away on purpose (its `LoadingValidationCallback` removes every ticket the
+controller owns) and rebuilds the state from its own record instead:
 
 | | |
 |---|---|
 | Record | `ChunkLoaderData`, a `SavedData` named `vanillaplusadditions_chunk_loader` |
-| Contents | NBT long array `active_rails` — the `BlockPos.asLong()` of every rail that is currently forcing |
+| Contents | NBT long array `active_rails`, the `BlockPos.asLong()` of every rail that is currently forcing |
 | Written | when a rail starts forcing (`add`) and when its timeout expires (`remove`) |
 | Read | by `resume`, on the off → on transition |
 
-That is why a rail is *not* removed from the record by `releaseAll`: pausing is not the same as
-giving up. Only an expired timeout takes a rail out of the set.
+That is why a rail is *not* removed from the record by `releaseAll`: a paused rail has to come back
+on `resume`. Only an expired timeout takes a rail out of the set.
 
-The rebuild is self-healing. `resume` stamps every recorded rail as active at the current game time,
-so a rail whose cart vanished while the server was down holds its chunks for one
+The rebuild cleans up after itself. `resume` stamps every recorded rail as active at the current
+game time, so a rail whose cart vanished while the server was down holds its chunks for one
 `active_timeout_seconds` window, finds no cart to refresh it, expires and drops itself from the
-record. Nothing accumulates. It only happens on the off → on transition, though, and in single
-player that transition may not fire again for a second world in the same game session — see
+record, and stale entries do not pile up. It only happens on the off → on transition, though, and in
+single player that transition may not fire again for a second world in the same game session; see
 *Second world in the same game session* below.
 
 ### Seeing what is loaded
@@ -188,16 +187,16 @@ every nearby chunk that contains a loader rail is outlined:
 | Colour | Meaning |
 |---|---|
 | Blue | a chunk containing a loader rail, not currently being force-loaded |
-| Red | within the load radius of a rail that has a minecart on it — currently forced |
+| Red | within the load radius of a rail that has a minecart on it, so currently forced |
 
 The band is drawn `overlay.chunk_border_vertical_span` blocks (24 by default) above and below a
 representative rail Y inside that chunk, depth-tested so terrain occludes it, and walls shared
 between two chunks of the same colour are culled so the translucent fills do not stack into fog.
 
-Two things to know about it. It is a **client-side approximation**: it re-derives "loaded" from the
-minecarts the client can actually see and from the client's own config values, and the config is
-registered as `COMMON` and is not synced — on a server with a different `chunk_load_radius` or
-`active_timeout_seconds` the borders will disagree with reality. And the rail scan is brute force:
+The overlay is a **client-side approximation**: it re-derives "loaded" from the minecarts the
+client can see and from the client's own config values. The config is registered as `COMMON` and is
+not synced, so on a server with a different `chunk_load_radius` or `active_timeout_seconds` the
+borders will disagree with reality. The rail scan is also brute force:
 every 10 client ticks it walks the non-empty sections of `(2·scan_radius+1)²` chunks, which is 289
 chunks at the default `overlay.chunk_border_scan_radius` of 8.
 
@@ -205,9 +204,9 @@ chunks at the default `overlay.chunk_border_scan_radius` of 8.
 
 | | Block | Details |
 |---|---|---|
-| <img src="../img/items/chunk_loader_rail.png" width="40"> | **Chunk Loader Rail** | `vanillaplusadditions:chunk_loader_rail`. Strength 0.7, no collision, `METAL` sound — identical to a vanilla rail, except that it is cyan on maps (`MapColor.COLOR_CYAN`) where a vanilla rail is blank. Carries `RAIL_SHAPE` and `WATERLOGGED`; the blockstate maps all ten rail shapes, so curves and ascending pieces work. |
+| <img src="../img/items/chunk_loader_rail.png" width="40"> | **Chunk Loader Rail** | `vanillaplusadditions:chunk_loader_rail`. Strength 0.7, no collision, `METAL` sound, the same as a vanilla rail except that it is cyan on maps (`MapColor.COLOR_CYAN`) where a vanilla rail is blank. Carries `RAIL_SHAPE` and `WATERLOGGED`; the blockstate maps all ten rail shapes, so curves and ascending pieces work. |
 
-**Recipe** — shaped, category *misc*, 8 rails per craft:
+**Recipe**: shaped, category *misc*, 8 rails per craft:
 
 ```
  R R R        R = Powered Rail
@@ -223,10 +222,10 @@ in `AddReloadListenerEvent` merges it into the `RecipeManager` on every datapack
 table is consulted at all, so Silk Touch, Fortune and every loot condition are irrelevant here.
 
 **Tags.** The module adds the block to `minecraft:rails` (a `replace: false` tag with that one value),
-and that single entry does more than it looks:
+and that single entry has several effects:
 
-* `BaseRailBlock.isRail` is `state.is(BlockTags.RAILS) && state.getBlock() instanceof BaseRailBlock` —
-  without the tag a minecart would not ride the block at all.
+* `BaseRailBlock.isRail` is `state.is(BlockTags.RAILS) && state.getBlock() instanceof BaseRailBlock`,
+  so without the tag a minecart would not ride the block at all.
 * Vanilla rails connect and curve into it, because `RailState` uses the same test.
 * Vanilla's `mineable/pickaxe` lists `#minecraft:rails` rather than the four rail blocks, so a pickaxe
   mines the loader rail at full speed without the module adding a tool tag of its own.
@@ -253,17 +252,17 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| A loader rail in an already-unloaded chunk | Never activates — the cart that would stamp it is not ticking either. This is the spacing rule above, and it is the usual reason a line "does not work". |
+| A loader rail in an already-unloaded chunk | Never activates, because the cart that would stamp it is not ticking either. This is the spacing rule above, and it is the usual reason a line "does not work". |
 | Only `AbstractMinecart` counts | Anything that is not a minecart subclass is ignored. Create trains have their own [Train Chunk Loading](train_chunk_loading.md); a loader with no vehicle at all is [Stationary Chunk Loader](stationary_chunk_loader.md). |
-| Second world in the same game session (single player) | `forcingEnabled` is a module-instance field that no handler resets when the integrated server stops — it is written only in `ServerTickEvent.Post`. If the shutdown does not include one server tick with zero players, the flag is still `true` when the next world starts, so the off → on transition does not fire: `resume` is skipped, the persisted set is not re-forced, and a cart parked in an unloaded chunk stays unloaded until a player comes near or the game is restarted. A dedicated server is unaffected — fresh JVM per start. Read off the source; not reproduced. |
+| Second world in the same game session (single player) | `forcingEnabled` is a module-instance field that no handler resets when the integrated server stops; it is written only in `ServerTickEvent.Post`. If the shutdown does not include one server tick with zero players, the flag is still `true` when the next world starts, so the off → on transition does not fire: `resume` is skipped, the persisted set is not re-forced, and a cart parked in an unloaded chunk stays unloaded until a player comes near or the game is restarted. A dedicated server is unaffected, since every start is a fresh JVM. Read off the source; not reproduced. |
 | Module disabled while chunks are forced | The reconcile and the players-online handler are both gated on `isModuleEnabled()`, and nothing else releases a ticket. Chunks already forced stay forced until the world is reloaded, where the validation callback drops them. Read off the source; not reproduced. |
-| Module disabled at startup (bundle) | In the all-in-one jar `ModuleManager` initializes only the enabled modules, so `onInitialize` never runs, `vanillaplusadditions:chunk_loader_rail` is not registered and rails already placed in the world become unknown blocks. Do not use `enabled = false` to switch a built network off — `only_while_players_online` or taking the carts off the rails are the safe ways. In the **standalone** jar `StandaloneModuleBootstrap` initializes the module regardless of `enabled`, so the rail stays registered there and only the handlers (and the recipe) go quiet. |
-| Overlay without Create or Create: Aeronautics | Unreachable. The overlay renders only while the player wears goggles, and the accepted items are Create's Engineer's Goggles (helmet or a Curios slot) or an item in `vanillaplusadditions:arm_goggles`, which lists `create:goggles` and `aeronautics:aviators_goggles`. The chunk loading itself is completely unaffected. |
+| Module disabled at startup (bundle) | In the all-in-one jar `ModuleManager` initializes only the enabled modules, so `onInitialize` never runs, `vanillaplusadditions:chunk_loader_rail` is not registered and rails already placed in the world become unknown blocks. Do not use `enabled = false` to switch a built network off; the safe ways are `only_while_players_online` or taking the carts off the rails. In the **standalone** jar `StandaloneModuleBootstrap` initializes the module regardless of `enabled`, so the rail stays registered there and only the handlers (and the recipe) go quiet. |
+| Overlay without Create or Create: Aeronautics | Unreachable. The overlay renders only while the player wears goggles, and the accepted items are Create's Engineer's Goggles (helmet or a Curios slot) or an item in `vanillaplusadditions:arm_goggles`, which lists `create:goggles` and `aeronautics:aviators_goggles`. The chunk loading itself is unaffected. |
 | Overlay colours on a server | Client-side approximation from visible carts and the client's own unsynced `COMMON` config. Treat red as "this is roughly what the server should be doing". |
 | Structure blocks and block-state rotation | `ChunkLoaderRailBlock` overrides neither `rotate` nor `mirror`, and `BaseRailBlock` does not either, so both fall through to `BlockBehaviour`'s identity default, where vanilla's `RailBlock` overrides both. A rotated or mirrored copy keeps its original rail shape and has to be re-laid. |
-| Redstone next to a T-junction | Vanilla's `RailBlock` overrides the four-argument `updateState` to re-run `updateDir` when a signal-source neighbour changes at a three-way junction — the quirk that flips which way a rail curves. This block extends `BaseRailBlock` directly and inherits the empty implementation, so that flip does not happen here. |
+| Redstone next to a T-junction | Vanilla's `RailBlock` overrides the four-argument `updateState` to re-run `updateDir` when a signal-source neighbour changes at a three-way junction, the quirk that flips which way a rail curves. This block extends `BaseRailBlock` directly and inherits the empty implementation, so that flip does not happen here. |
 | `only_while_players_online = false` | Chunks stay forced with nobody online, including under a parked cart. That is the intended setting for perpetual loops, and it is also the setting that keeps a server working when it should be idle. |
-| Shared bookkeeping | `ChunkLoaderManager` and `ChunkLoaderData` are shared with [Train Chunk Loading](train_chunk_loading.md) — each module supplies its own SavedData name and its own ticket controller, but a change in those two classes affects both. [Stationary Chunk Loader](stationary_chunk_loader.md) does *not* share them: it carries a parallel copy of the same pattern in `StationaryChunkLoaderManager` and `ChunkAnchorData`, which has to be kept in step by hand. |
+| Shared bookkeeping | `ChunkLoaderManager` and `ChunkLoaderData` are shared with [Train Chunk Loading](train_chunk_loading.md). Each module supplies its own SavedData name and its own ticket controller, but a change in those two classes affects both. [Stationary Chunk Loader](stationary_chunk_loader.md) does *not* share them: it carries a parallel copy of the same pattern in `StationaryChunkLoaderManager` and `ChunkAnchorData`, which has to be kept in step by hand. |
 | Standalone jar | `vpa_minecart_chunk_loading` requires `vpa_core` **and** `vpa_debug_overlay`, and declares the all-in-one `vanillaplusadditions` bundle as incompatible. |
 | Testing | This repository has no unit tests; nothing here is covered by an automated test. |
 
@@ -275,7 +274,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `EntityTickEvent.Post` | game | Marks the loader rail under a ticking minecart as active |
 | `LevelTickEvent.Post` | game | Reconciles force and release every 10 ticks per `ServerLevel`, gated on the module *and* the players-online flag |
 | `ServerTickEvent.Post` | game | The players-online gate itself: `resume` / `releaseAll` on a transition |
-| `LevelEvent.Unload` | game | Drops in-memory tracking for that level. The one handler that does **not** re-check `isModuleEnabled()` — tickets vanish with the level anyway |
+| `LevelEvent.Unload` | game | Drops in-memory tracking for that level. The one handler that does **not** re-check `isModuleEnabled()`; tickets vanish with the level anyway |
 | `AddReloadListenerEvent` | game | Adds the recipe reload listener |
 
 The client-side chunk borders hang off no event of their own: `onClientSetup` registers a
@@ -284,9 +283,9 @@ drives it from `ClientTickEvent.Post` and `RenderLevelStageEvent` at stage
 `AFTER_TRANSLUCENT_BLOCKS`. In the bundle `ModuleManager.clientSetup()` walks only the enabled
 modules, so a disabled module registers no renderer. The standalone jar does not go through
 `ModuleManager`'s lifecycle: `StandaloneModuleBootstrap` calls `clientSetup()` straight from
-`FMLClientSetupEvent`, and `AbstractModule.clientSetup()` carries no enabled check — so there the
-renderer is registered even with `enabled = false`. Only the drawing, though; the server-side
-handlers still check `isModuleEnabled()` and force nothing — and that check itself resolves through
+`FMLClientSetupEvent`, and `AbstractModule.clientSetup()` carries no enabled check, so there the
+renderer is registered even with `enabled = false`. That affects only the drawing: the server-side
+handlers still check `isModuleEnabled()` and force nothing, and that check resolves through
 `ModuleManager.resolveModuleEnabled` in either jar.
 
 **Classes.**
@@ -297,17 +296,17 @@ handlers still check `isModuleEnabled()` and force nothing — and that check it
 | `modules/minecart_chunk_loading/block/ChunkLoaderRailBlock` | `BaseRailBlock` with `isStraight = false`, its own `MapCodec`, and the `getDrops` override |
 | `modules/minecart_chunk_loading/config/MinecartChunkLoadingConfig` | The five config values, two of them in the pushed `overlay` sub-section |
 | `modules/minecart_chunk_loading/client/ChunkLoaderBorderRenderer` | The blue/red chunk borders |
-| `util/chunkload/ChunkLoaderManager` | The active/forced bookkeeping — **shared** |
-| `util/chunkload/ChunkLoaderData` | The persistent rail set — **shared** |
+| `util/chunkload/ChunkLoaderManager` | The active/forced bookkeeping (**shared**) |
+| `util/chunkload/ChunkLoaderData` | The persistent rail set (**shared**) |
 | `standalone/minecart_chunk_loading/MinecartChunkLoadingStandalone` | `@Mod("vpa_minecart_chunk_loading")` entry point |
 
 **Why `BaseRailBlock` and not `RailBlock`.** Extending `RailBlock` would inherit its `MapCodec`,
 which is typed to `RailBlock`; the block needs its own so that `codec()` returns the right type.
-The cost is the two overrides `RailBlock` carries and this block does not — `rotate`/`mirror` and
+The cost is the two overrides `RailBlock` carries and this block does not: `rotate`/`mirror` and
 the redstone `updateState` quirk, both listed above.
 
 **Recipe injection.** The listener copies the whole recipe map into a `LinkedHashMap`, adds
-`vanillaplusadditions:chunk_loader_rail` and calls `RecipeManager.replaceRecipes` — a full replace,
+`vanillaplusadditions:chunk_loader_rail` and calls `RecipeManager.replaceRecipes`, a full replace
 once per datapack reload, on the game thread after `barrier.wait(...)`. Several modules stack this
 same pattern; because every one of them runs on the game executor after the barrier, the copies
 happen one after another and the additions accumulate instead of clobbering each other. This module
@@ -330,9 +329,9 @@ instance wins.
 
 ## See also
 
-* [Train Chunk Loading](train_chunk_loading.md) — the same idea for Create trains, on the same shared bookkeeping
-* [Stationary Chunk Loader](stationary_chunk_loader.md) — a redstone-gated anchor block, for when there is no vehicle to follow
-* [Debug Overlay](debug_overlay.md) — the toggle, the goggles gate and the other overlays it drives
-* [Custom Crafting Recipes](custom_crafting_recipes.md) — why recipes are built in code here
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Train Chunk Loading](train_chunk_loading.md): the same idea for Create trains, on the same shared bookkeeping
+* [Stationary Chunk Loader](stationary_chunk_loader.md): a redstone-gated anchor block, for when there is no vehicle to follow
+* [Debug Overlay](debug_overlay.md): the toggle, the goggles gate and the other overlays it drives
+* [Custom Crafting Recipes](custom_crafting_recipes.md): why recipes are built in code here
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

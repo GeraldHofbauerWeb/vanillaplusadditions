@@ -1,8 +1,8 @@
 {
   "moduleId": "better_mobs",
   "displayName": "Better Mobs",
-  "shortDescription": "Enhances mob equipment and effects for a more engaging gameplay experience.",
-  "oneLiner": "Hostile mobs spawn kitted out - battle-worn armour, permanent potion effects and, for skeletons, a random enchanted weapon - with the loot table getting nastier below Y=0 and nastiest of all in the Nether and the End.",
+  "shortDescription": "Gives hostile mobs random equipment and permanent potion effects.",
+  "oneLiner": "Hostile mobs spawn kitted out with battle-worn armour, permanent potion effects and, for skeletons, a random enchanted weapon; the loot table gets nastier below Y=0 and nastiest of all in the Nether and the End.",
   "side": "server",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -29,7 +29,7 @@
       "type": "int",
       "defaultValue": "100",
       "range": "1 ~ 100",
-      "effect": "Config comment: \"Maximum durability for enhanced gear as percentage (1-100%)\". Actually the REMAINING durability in percent (100 = pristine, 1 = nearly broken) and it is applied ONLY to the main-hand weapon (BetterMobsModule.java:141-145), never to armor - armor uses the per-zone ARMOR_DURABILITY rolls instead."
+      "effect": "Config comment: \"Maximum durability for enhanced gear as percentage (1-100%)\". It is really the REMAINING durability in percent (100 = pristine, 1 = nearly broken) and it is applied ONLY to the main-hand weapon (BetterMobsModule.java:141-145), never to armor; armor uses the per-zone ARMOR_DURABILITY rolls instead."
     },
     {
       "key": "above_zero",
@@ -50,7 +50,7 @@
       "type": "list",
       "defaultValue": "GEAR_TYPES;netherite;30, ARMOR_CHANCES;helmet;80, ARMOR_CHANCES;chestplate;70, ARMOR_CHANCES;leggings;65, ARMOR_CHANCES;boots;60, HELMET_ENCHANTMENTS;protection;30, HELMET_ENCHANTMENTS;fire_protection;15, HELMET_ENCHANTMENTS;blast_protection;15, HELMET_ENCHANTMENTS;projectile_protection;15, HELMET_ENCHANTMENTS;thorns;10, WEAPON_ENCHANTMENTS;sharpness;30, WEAPON_ENCHANTMENTS;fire_aspect;15, WEAPON_ENCHANTMENTS;knockback;15, WEAPON_ENCHANTMENTS;unbreaking;25, WEAPON_ENCHANTMENTS;power;25, WEAPON_ENCHANTMENTS;punch;15, WEAPON_ENCHANTMENTS;flame;15, CHESTPLATE_ENCHANTMENTS;protection;30, CHESTPLATE_ENCHANTMENTS;fire_protection;15, CHESTPLATE_ENCHANTMENTS;blast_protection;15, CHESTPLATE_ENCHANTMENTS;projectile_protection;15, CHESTPLATE_ENCHANTMENTS;thorns;10, LEGGINGS_ENCHANTMENTS;protection;30, LEGGINGS_ENCHANTMENTS;fire_protection;15, LEGGINGS_ENCHANTMENTS;blast_protection;15, LEGGINGS_ENCHANTMENTS;projectile_protection;15, LEGGINGS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;protection;30, BOOTS_ENCHANTMENTS;fire_protection;15, BOOTS_ENCHANTMENTS;blast_protection;15, BOOTS_ENCHANTMENTS;projectile_protection;15, BOOTS_ENCHANTMENTS;feather_falling;20, BOOTS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;depth_strider;10, BOOTS_ENCHANTMENTS;frost_walker;10, ENCHANTMENT_LEVELS;min_level;2, ENCHANTMENT_LEVELS;max_level;4, ARMOR_DURABILITY;min_percent;5, ARMOR_DURABILITY;max_percent;20, POTION_EFFECTS;speed;20, POTION_EFFECTS;strength;10, POTION_EFFECTS;haste;10, POTION_EFFECTS;fire_resistance;10, WEAPON_TYPES;gold;65, WEAPON_TYPES;netherite;35, WEAPON_RANDOMIZER;minecraft:skeleton;sword;45, WEAPON_RANDOMIZER;minecraft:skeleton;axe;35",
       "range": "no validator - plain builder.define(...) with a List<String> default, NOT defineList(), so there is no per-element type check and no range. Entry grammar: <CONFIG_KEY>;<property>;<chance-or-value>, except WEAPON_RANDOMIZER which is 4 parts: WEAPON_RANDOMIZER;<mob_id>;<weapon_type>;<chance>. Valid CONFIG_KEYs (BetterMobsConfigKey.java): GEAR_TYPES, HELMET_ENCHANTMENTS, CHESTPLATE_ENCHANTMENTS, LEGGINGS_ENCHANTMENTS, BOOTS_ENCHANTMENTS, ENCHANTMENT_LEVELS, ARMOR_DURABILITY, POTION_EFFECTS, ARMOR_CHANCES, WEAPON_RANDOMIZER, WEAPON_TYPES, WEAPON_ENCHANTMENTS. Unknown keys are silently skipped (BetterMobsConfig.java:530-532); a non-numeric chance throws (see notes).",
-      "effect": "Config comment: \"Configuration for mobs spawned in the Nether or End dimension\". Applies at every Y in those two dimensions, and it is ONE shared block for both - there is no way to configure Nether and End separately (see the TODO at BetterMobsConfig.java:287)."
+      "effect": "Config comment: \"Configuration for mobs spawned in the Nether or End dimension\". Applies at every Y in those two dimensions, and it is ONE shared block for both; there is no way to configure Nether and End separately (see the TODO at BetterMobsConfig.java:287)."
     },
     {
       "key": "enabled_mobs",
@@ -64,7 +64,7 @@
       "type": "list",
       "defaultValue": "minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:wither_skeleton",
       "range": "defineList with element validator o instanceof String; no id validation.",
-      "effect": "List of mob entity IDs that can receive armor. A second gate applied on top of enabled_mobs (BetterMobsModule.java:171) - a mob missing here still gets weapons and potion effects, but no armor."
+      "effect": "List of mob entity IDs that can receive armor. A second gate applied on top of enabled_mobs (BetterMobsModule.java:171). A mob missing here still gets weapons and potion effects, but no armor."
     }
   ],
   "events": [

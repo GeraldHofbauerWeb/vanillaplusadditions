@@ -85,7 +85,7 @@
       "type": "boolean",
       "defaultValue": "true",
       "range": "",
-      "effect": "Enable the fog (Darkness) effect for players inside target structures. Careful: this also gates the whole per-player tick pipeline - setting it to false disables the spawn-spot cache refresh AND direct area spawning too (HauntedHouseModule.java:1218 returns before both)."
+      "effect": "Enable the fog (Darkness) effect for players inside target structures. Careful: this also gates the whole per-player tick pipeline, so setting it to false disables the spawn-spot cache refresh AND direct area spawning too (HauntedHouseModule.java:1218 returns before both)."
     },
     {
       "key": "fog_effect_amplifier",
@@ -197,7 +197,7 @@
       "type": "int",
       "defaultValue": "40",
       "range": "20 ~ 1200",
-      "effect": "Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect rather than cancel: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval) - with 30 that is every 60 ticks. No value silently stops the spawner."
+      "effect": "Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval); with 30 that is every 60 ticks. No value silently stops the spawner."
     },
     {
       "key": "direct_spawn_replacement_chance",
@@ -225,7 +225,7 @@
       "type": "int",
       "defaultValue": "3",
       "range": "1 ~ 8",
-      "effect": "Step size for cache area scans; higher means less CPU and less precision."
+      "effect": "Step size for cache area scans; higher values cost less CPU and lose precision."
     },
     {
       "key": "cache_query_chunk_radius",

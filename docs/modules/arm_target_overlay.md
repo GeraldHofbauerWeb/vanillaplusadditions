@@ -1,7 +1,7 @@
 # Arm Target Overlay
 
 > **TL;DR** — Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm, and every
-> block it takes from is outlined in orange, every block it deposits into in teal — through walls.
+> block it takes from is outlined in orange, every block it deposits into in teal, even through walls.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -32,12 +32,12 @@ looks normal again. There is no radius, no toggle and no "show every arm" mode.
 
 ### What has to be true
 
-The overlay is drawn once per frame, and every one of these has to hold — in this order:
+The overlay is drawn once per frame, and every one of these has to hold, in this order:
 
 | # | Condition | If it fails |
 |---|---|---|
 | 1 | Create is loaded | The handler returns on its first statement; nothing else is ever touched |
-| 2 | Render stage is `AFTER_TRANSLUCENT_BLOCKS` | Skipped — the other stages of the same frame do nothing |
+| 2 | Render stage is `AFTER_TRANSLUCENT_BLOCKS` | Skipped; the other stages of the same frame do nothing |
 | 3 | The module is registered and `enabled` | Nothing is drawn |
 | 4 | A level and a player exist | Nothing is drawn |
 | 5 | You are wearing goggles | Nothing is drawn |
@@ -46,42 +46,42 @@ The overlay is drawn once per frame, and every one of these has to hold — in t
 | 8 | That block's block entity is an `ArmBlockEntity` | Nothing is drawn |
 | 9 | The arm has at least one input or output | Nothing is drawn |
 
-Step 7 is the ordinary crosshair pick, so the arm has to be within your normal reach — the same
+Step 7 is the ordinary crosshair pick, so the arm has to be within your normal reach, the same
 distance at which you could break it.
 
 ### The peek key
 
 | | |
 |---|---|
-| Mapping | `key.vanillaplusadditions.arm_target_overlay.peek_modifier` — *Show Mechanical Arm Targets (hold + look at arm)* |
+| Mapping | `key.vanillaplusadditions.arm_target_overlay.peek_modifier`, *Show Mechanical Arm Targets (hold + look at arm)* |
 | Default | Left Ctrl (`GLFW_KEY_LEFT_CONTROL`) |
 | Category | *Vanilla+ Additions* |
 | Type | Hold, not toggle |
 
 It is rebindable to any key **or mouse button** in the Controls screen. The check reads the raw
 window state (`InputConstants.isKeyDown`, or `glfwGetMouseButton` for a mouse binding) rather than
-`KeyMapping.isDown()`, because what is wanted is "held right now", not a press event. A mapping set
-to *None* returns false, which means the overlay can never appear.
+`KeyMapping.isDown()`, because what is wanted is the held state of the key at that moment. A mapping
+set to *None* returns false, which means the overlay can never appear.
 
 **The Controls screen will flag a conflict on a fresh install.** Five Vanilla+ mappings share Left
-Ctrl as their default — this one, `item_vault_viewer`, `cat_guardian`, `axolotl_guardian` and
+Ctrl as their default: this one, `item_vault_viewer`, `cat_guardian`, `axolotl_guardian` and
 `wolf_mount`. They are separate `KeyMapping` objects and every one of them reads the raw window
-state independently, so all five work while Ctrl is held and the red conflict marker — vanilla wraps
-the button label in red brackets — is cosmetic. Rebind if the marker bothers you; nothing breaks
+state independently, so all five work while Ctrl is held and the red conflict marker (vanilla wraps
+the button label in red brackets) is cosmetic. Rebind if the marker bothers you; nothing breaks
 either way.
 
 ### Which goggles count
 
-Two separate checks, and the difference matters:
+Two separate checks apply, and they cover different slots:
 
 | Item | Helmet slot | Curios head slot |
 |---|---|---|
 | Create's **Engineering Goggles** | yes | yes, if Curios is installed |
-| Anything in `vanillaplusadditions:arm_goggles` — by default Create: Aeronautics' **aviator's goggles** | yes | **no** |
+| Anything in `vanillaplusadditions:arm_goggles` (by default Create: Aeronautics' **aviator's goggles**) | yes | **no** |
 
 The first row goes through `GogglesItem.isWearingGoggles(player)`, and Create itself registers the
 Curios predicate behind it; this module writes no Curios code at all. The second row is a plain
-`player.getItemBySlot(EquipmentSlot.HEAD).is(ARM_GOGGLES_TAG)` — hard-wired to the vanilla head
+`player.getItemBySlot(EquipmentSlot.HEAD).is(ARM_GOGGLES_TAG)`, hard-wired to the vanilla head
 slot. Aviator's goggles in a Curios slot therefore do nothing.
 
 The tag is the extension point. Both of its entries are `"required": false`, so neither mod has to
@@ -98,7 +98,7 @@ be present, and a datapack can add any helmet you like:
 
 ### What is drawn
 
-One line box per interaction point, over `new AABB(point.getPos())` — exactly one full block, never
+One line box per interaction point, over `new AABB(point.getPos())`: exactly one full block, never
 a partial hitbox. Create's own two modes map straight onto the two colours:
 
 | Create mode | Called here | Default colour | |
@@ -106,8 +106,8 @@ a partial hitbox. Create's own two modes map straight onto the two colours:
 | `TAKE` | input | `1.0 / 0.6 / 0.1` at alpha `0.8` | orange |
 | `DEPOSIT` | output | `0.1 / 0.9 / 0.7` at alpha `0.8` | teal |
 
-All eight channels are config values in the 0.0–1.0 range and are read fresh on every frame, so a
-changed value takes effect the moment the config is reloaded — no restart. The **line width is
+All eight channels are config values in the 0.0 to 1.0 range and are read fresh on every frame, so a
+changed value takes effect the moment the config is reloaded, with no restart. The **line width is
 not** configurable: the render type is built with `OptionalDouble.empty()`, vanilla's default.
 
 Setting an alpha to 0 makes that colour invisible but saves nothing: the arm is still read and the
@@ -136,24 +136,24 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| No Create installed | The module still loads, still initialises, still has its config section and its keybind — it just never draws. `shouldInitialize()` is deliberately **not** overridden; the render handler returns on the `CREATE_LOADED` check instead, before any Create class is resolved. |
-| A future Create renaming `inputs` / `outputs` | Fails soft and silently. `warnOnce()` puts a single line in the log and both getters return an empty list from then on — the overlay simply stops appearing, with nothing said in game. |
+| No Create installed | The module still loads, initialises, and has its config section and its keybind; it just never draws. `shouldInitialize()` is deliberately **not** overridden. The render handler returns on the `CREATE_LOADED` check instead, before any Create class is resolved. |
+| A future Create renaming `inputs` / `outputs` | Fails soft and silently. `warnOnce()` puts a single line in the log and both getters return an empty list from then on, so the overlay stops appearing and nothing is said in game. |
 | Aviator's goggles in a Curios slot | Not detected. The tag check only ever looks at `EquipmentSlot.HEAD`; only Create's own goggles reach the Curios path. |
-| Module disabled in config | The keybind is registered anyway — *Show Mechanical Arm Targets* stays in the Controls screen even with the module off or Create absent, because `ArmTargetOverlayKeybinds` subscribes on the mod bus with no gate at all. |
+| Module disabled in config | The keybind is registered anyway. *Show Mechanical Arm Targets* stays in the Controls screen even with the module off or Create absent, because `ArmTargetOverlayKeybinds` subscribes on the mod bus with no gate at all. |
 | Dedicated server | The eight colour keys are registered into the **common** spec although the feature is purely client-side, so a server's `vanillaplusadditions-common.toml` carries them and they do nothing there. |
-| Standalone jar and Create | `vpa_arm_target_overlay`'s generated `mods.toml` declares only `vpa_core`, NeoForge and Minecraft as required — plus the bundle `vanillaplusadditions` as `incompatible`, so jar and bundle refuse to load together — and has no Create dependency at all, therefore no `ordering="AFTER" create`. Only the bundle declares Create as optional with that ordering. |
+| Standalone jar and Create | `vpa_arm_target_overlay`'s generated `mods.toml` declares only `vpa_core`, NeoForge and Minecraft as required, plus the bundle `vanillaplusadditions` as `incompatible` (so jar and bundle refuse to load together). It has no Create dependency at all and therefore no `ordering="AFTER" create`. Only the bundle declares Create as optional with that ordering. |
 | Two arms side by side | Only the one under the crosshair is drawn. There is no way to see several at once. |
-| Shared with `debug_overlay` | The `arm_goggles` tag is read by [Debug Overlay](debug_overlay.md) as well, through its own copy of the goggles logic. The tag file ships in *this* module's standalone jar only, so a `vpa_debug_overlay` jar installed without `vpa_arm_target_overlay` has no tag content to match — Create's own goggles still work there, tag-based ones do not. |
+| Shared with `debug_overlay` | The `arm_goggles` tag is read by [Debug Overlay](debug_overlay.md) as well, through its own copy of the goggles logic. The tag file ships in *this* module's standalone jar only, so a `vpa_debug_overlay` jar installed without `vpa_arm_target_overlay` has no tag content to match. Create's own goggles still work there; tag-based ones do not. |
 
 ## Under the hood
 
-No mixins, no server code, no network payloads, no registries, no commands. `ArmTargetOverlayModule.onInitialize()`
-logs one line; everything else lives in two `@EventBusSubscriber(Dist.CLIENT)` classes with one
-`@SubscribeEvent` method each.
+The module has no mixins, server code, network payloads, registries or commands.
+`ArmTargetOverlayModule.onInitialize()` logs one line; everything else lives in two
+`@EventBusSubscriber(Dist.CLIENT)` classes with one `@SubscribeEvent` method each.
 
 | Event | Bus | Purpose |
 |---|---|---|
-| `RenderLevelStageEvent` | game, client | The whole overlay — gate chain, reflection read, two loops of `renderLineBox` |
+| `RenderLevelStageEvent` | game, client | The whole overlay: gate chain, reflection read, two loops of `renderLineBox` |
 | `RegisterKeyMappingsEvent` | mod, client | Registers `PEEK_MODIFIER`; ungated |
 
 ### The render type
@@ -188,10 +188,11 @@ Klassendatei für net.createmod.ponder.api.VirtualBlockEntity nicht gefunden
 
 That blocker is gone today: `libs/create-nested/ponder-neoforge-1.0.81+mc1.21.1.jar`, extracted from
 Create's own jar-in-jar for the `train_chunk_loading` module, is on the compile classpath as
-`compileOnly`. The reflection stayed anyway — it works, and this module still needs no mixin config.
+`compileOnly`. The reflection stayed anyway, since it works and keeps this module free of a mixin
+config.
 
 `ArmBlockEntityReflection` resolves both fields once inside a `synchronized` block, caches them and
-calls `setAccessible(true)`. Any `ReflectiveOperationException` — at resolve time or at read time —
+calls `setAccessible(true)`. Any `ReflectiveOperationException`, at resolve time or at read time,
 goes through `warnOnce`, which logs a single `Vpa.LOGGER.warn` line and sets a flag; after that the
 getters return `Collections.emptyList()` for the rest of the session. The reasoning is written up in
 full in the [case study](../internal/arm_target_overlay_case_study.md).
@@ -210,9 +211,9 @@ full in the [case study](../internal/arm_target_overlay_case_study.md).
 
 ## See also
 
-* [Item Vault Viewer](item_vault_viewer.md) — same goggles, same Left Ctrl modifier, for Create's Item Vault
-* [Debug Overlay](debug_overlay.md) — reads the same `arm_goggles` tag
-* [Block Glow](block_glow.md) — the x-ray line render type this module copied
-* [Arm Target Overlay case study](../internal/arm_target_overlay_case_study.md) — how it was built, in German
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Item Vault Viewer](item_vault_viewer.md): same goggles and Left Ctrl modifier, for Create's Item Vault
+* [Debug Overlay](debug_overlay.md): reads the same `arm_goggles` tag
+* [Block Glow](block_glow.md): the x-ray line render type this module copied
+* [Arm Target Overlay case study](../internal/arm_target_overlay_case_study.md): how it was built, in German
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

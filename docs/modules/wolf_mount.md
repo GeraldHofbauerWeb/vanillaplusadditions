@@ -1,8 +1,8 @@
 # Wolf Mount
 
-> **TL;DR** — Hold Ctrl and right-click a big, armoured, tamed wolf to ride it like a horse: steer
-> it, charge a jump, swim on it, fight from its back — and stop killing it by accident with your own
-> sword.
+> **TL;DR** — Hold Ctrl and right-click a huge, armored, tamed wolf to ride it like a horse: steer
+> it, charge up big jumps, swim on it, and fight from its back while it bites the nearest monster
+> for you. Your own sword swings no longer kill it by accident.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -18,7 +18,7 @@
 
 ## What it does
 
-Hold the mount modifier — **left Ctrl** by default, rebindable in Controls as *Mount Wolf* — and
+Hold the mount modifier (**left Ctrl** by default, rebindable in Controls as *Mount Wolf*) and
 right-click a wolf that is big enough, tamed and wearing body armour. WASD steers, the mouse turns
 the mount, space charges a jump on the same meter horses use, and sneaking gets you off again.
 
@@ -28,7 +28,7 @@ sit/stand toggle all keep working unchanged.
 
 While you are up there:
 
-* the mount **fights alongside you** — it bites whatever bites you, takes over the target you strike,
+* the mount **fights alongside you**: it bites whatever bites you, takes over the target you strike,
   and keeps switching to the nearest threat instead of chasing the first one it saw;
 * it **cannot be hurt by you**, sweeping-edge splash included, and it is not shoved around while you
   steer it;
@@ -37,10 +37,10 @@ While you are up there:
 
 With the defaults **no naturally occurring wolf qualifies**: the scale gate wants `generic.scale` ≥
 2.0 and a vanilla wolf is 1.0. The module was built around **Sif**, the giant wolf from *Grim
-Kingdoms: structures & ruins* — who turned out not to be a mod entity at all, but a plain
+Kingdoms: structures & ruins*, who turned out not to be a mod entity at all but a plain
 `minecraft:wolf` on a spawn egg with `generic.scale = 3.25`, 350 max health, 25 attack damage,
 armour 12 and permanent Resistance IV. Only the first two of those figures appear anywhere in this
-repository — 3.25 in the `eligibility.min_scale` comment, and "a 350 HP wolf" in the
+repository: 3.25 in the `eligibility.min_scale` comment, and "a 350 HP wolf" in the
 `hud.compact_mount_health` comment, which does not name him. The attack damage, the armour value and
 the Resistance IV were read off that spawn egg in game, not off a source file here. There is no code
 integration with that mod and no dependency on it; any sufficiently large wolf works, and [*Getting
@@ -54,7 +54,7 @@ corrected before the ride was worth having.
 ### Your own sweep kills your own wolf
 
 `Player.attack` hits every living thing in the swept box that is not you, not the main target and not
-on your team, and that stands inside your entity reach — a tamed wolf beside you fails none of those
+on your team, and that stands inside your entity reach. A tamed wolf beside you fails none of those
 exclusions and is well inside the reach check:
 
 ```java
@@ -70,7 +70,7 @@ for (LivingEntity livingentity2 : this.level()
 }
 ```
 
-The box is a NeoForge patch point — `getSweepHitBox` is an item extension, and its default is the
+The box is a NeoForge patch point: `getSweepHitBox` is an item extension, and its default is the
 target's bounding box inflated by 1.0 / 0.25 / 1.0, which an item may widen or narrow.
 
 Two things follow from that order. Cancelling the damage cannot undo the shove, which is why
@@ -79,7 +79,7 @@ hit and for every sweep victim, so one attacker check covers both cases.
 
 ### A ridden wolf cannot swim
 
-Goals tick in `Mob.serverAiStep`, which is **server-side only** — and `serverAiStep` is `final`, so
+Goals tick in `Mob.serverAiStep`, which is **server-side only**, and `serverAiStep` is `final`, so
 it could not have been overridden anyway. A ridden entity is driven by the other side:
 
 ```java
@@ -102,9 +102,8 @@ public boolean wantsToAttack(LivingEntity target, LivingEntity owner) {
         return false;
 ```
 
-Sensible for a pet that dies to the blast. Silly for an armoured mount that can eat one — and the
-creeper is walking at the rider either way, so ignoring it does not avoid the explosion, it
-guarantees it. The blanket `instanceof` is also why **modded** creepers were ignored: Creeper
+That is sensible for a pet that dies to the blast and silly for an armoured mount that can eat one.
+The creeper is walking at the rider either way, so ignoring it only guarantees the explosion. The blanket `instanceof` is also why **modded** creepers were ignored: Creeper
 Overhaul's whole family extends vanilla `Creeper`.
 
 ### A wolf never re-picks a live target
@@ -121,16 +120,16 @@ public boolean canBeReplacedBy(WrappedGoal other) {
 So the first mob that hits the rider owns the mount for the rest of the fight: it keeps snapping at
 an archer fifteen blocks away while a zombie stands in its face. Further out it does not even manage
 that: `TargetGoal.canContinueToUse` drops a target beyond the wolf's `generic.follow_range` of 16 and
-`stop()` clears it, so vanilla simply loses the archer. The other half of the problem is what a
-tamed wolf attacks unprompted at all — goal 7, `NearestAttackableTargetGoal<>(this,
+`stop()` clears it, so vanilla loses the archer. The other half of the problem is what a
+tamed wolf attacks unprompted at all: goal 7, `NearestAttackableTargetGoal<>(this,
 AbstractSkeleton.class, false)`, and nothing else.
 
 ## In detail
 
 ### Mounting
 
-The modifier is client-only state, so the gesture starts on the client — an `EntityInteract` event,
-main hand only — and travels to the server as `MountWolfPacket`. Everything in that packet is
+The modifier is client-only state, so the gesture starts on the client (an `EntityInteract` event,
+main hand only) and travels to the server as `MountWolfPacket`. Everything in that packet is
 untrusted: the handler re-checks the module state, that the id really names a `Wolf`, the distance,
 that the player is neither spectating nor already a passenger, and the full eligibility gate.
 
@@ -144,7 +143,7 @@ wolf's, and plays a wolf ambient sound at 0.4 volume. `tickRidden` re-clears the
 tick server-side as a backstop.
 
 The sit clear is load-bearing twice over: a sitting wolf renders haunched under its rider, and both
-`OwnerHurtByTargetGoal` and `OwnerHurtTargetGoal` bail out on `isOrderedToSit()` — which would
+`OwnerHurtByTargetGoal` and `OwnerHurtTargetGoal` bail out on `isOrderedToSit()`, which would
 silently disable the whole fight-alongside behaviour.
 
 ### Who may be ridden
@@ -158,10 +157,10 @@ silently disable the whole fight-alongside behaviour.
 
 An ongoing ride is re-checked every `eligibility_recheck_ticks` (20, measured on the rider's
 `tickCount`) against the same rules minus the "nobody else aboard" one; a ride that stops qualifying
-ends there and then. Armour coming off is handled faster than that — see below.
+ends there and then. Armour coming off is handled faster than that; see below.
 
-**Both kinds of armour count.** The test is structural — *is this an `AnimalArmorItem` with
-`BodyType.CANINE`* — rather than a check against a specific item class, so vanilla
+**Both kinds of armour count.** The test is structural (*is this an `AnimalArmorItem` with
+`BodyType.CANINE`*) rather than a check against a specific item class, so vanilla
 `minecraft:wolf_armor` and all four `battle_dogs` tiers pass it without this module importing a
 single `battle_dogs` class, and third-party canine armour is picked up for free.
 
@@ -202,7 +201,7 @@ blocks by itself.
 
 ### Jumping
 
-Space charges the same meter a horse uses — while mounted it replaces the XP bar, which is vanilla
+Space charges the same meter a horse uses; while mounted it replaces the XP bar, which is vanilla
 HUD behaviour for anything implementing `PlayerRideableJumping`, not something this module draws.
 Releasing it fires on the next tick the mount is on the ground and locally controlled.
 
@@ -212,14 +211,14 @@ Anything from 90 up counts as a full charge and the rest is mapped **linearly** 
 1.0 only at 90, which makes the shortest tap already 40 % as strong as a full hold. At the default
 floor of 0.15 the meter is worth watching.
 
-The launch itself mirrors `AbstractHorse.executeRidersJump` — vertical velocity set to the jump
-power, `hasImpulse`, and a forward nudge of `0.4 · charge` if the rider is holding forward — with one
+The launch itself mirrors `AbstractHorse.executeRidersJump` (vertical velocity set to the jump
+power, `hasImpulse`, and a forward nudge of `0.4 · charge` if the rider is holding forward), with one
 addition:
 
 | | Value |
 |---|---|
 | Jump power | `getJumpPower(charge) × jump_strength` = `0.42 × charge × 1.6` at the defaults |
-| Shortest tap | `0.42 × 0.15 × 1.6` = 0.1008 blocks/tick — a nudge |
+| Shortest tap | `0.42 × 0.15 × 1.6` = 0.1008 blocks/tick, a nudge |
 | Full charge | 0.672 blocks/tick, against a player's 0.42 |
 | `instant_jump` | a tap is a full charge; `min_jump_charge` is then ignored |
 
@@ -235,7 +234,7 @@ released on the same tick the mount lands cannot fire twice.
 
 ### Swimming
 
-`float_in_water` re-creates `FloatGoal`'s effect on whichever side is actually driving, straight
+`float_in_water` re-creates `FloatGoal`'s effect on whichever side is driving, straight
 from `tickRidden`:
 
 ```java
@@ -249,7 +248,7 @@ mention that.
 
 **Clearing the flag again is not optional.** The only thing that normally lowers `jumping` on a mob
 is `JumpControl.tick()`, which is also server-only. Left raised on the client, `LivingEntity.aiStep`
-answers it with `jumpFromGround()` on every grounded tick where `noJumpDelay` has run down — and the
+answers it with `jumpFromGround()` on every grounded tick where `noJumpDelay` has run down, and the
 jump resets it to 10, so the mount hops again the moment it is back on the ground with the delay
 expired, forever, after its first swim. The delay is not what sets the pace: a 0.42 jump is still in
 the air when those ten ticks are up, so the hang time does. A plain ballistic integration puts the
@@ -271,7 +270,7 @@ outright, and none of the follow-on effects happen:
 
 **By default this is not limited to the mount.** With `owner_immunity_only_when_ridden` and
 `owner_immunity_requires_armor` both off, every tamed wolf you own that passes the scale gate is
-immune to you — armoured or not, ridden or not, standing three chunks away or under your sword. And
+immune to you, armoured or not, ridden or not, standing three chunks away or under your sword. And
 `isLargeEnough()` returns true unconditionally when `require_large_scale` is off, so switching that
 gate off makes *all* of your tamed wolves immune to you.
 
@@ -283,9 +282,9 @@ gate off makes *all* of your tamed wolves immune to you.
 | `false` | — | — | nobody; vanilla behaviour |
 
 Knockback is a separate switch because of the ordering above. `suppress_ridden_knockback` cancels
-`LivingKnockBackEvent` for **any** wolf whose controlling passenger is a `Player` — matched
-structurally, because the event carries no damage source, and therefore from every source, not only
-from the rider. A mount under a rider's control is not shoved around at all any more.
+`LivingKnockBackEvent` for **any** wolf whose controlling passenger is a `Player`. The match is
+structural, because the event carries no damage source, so it applies to every source and not only
+to the rider. A mount under a rider's control is not shoved around at all any more.
 
 ### Fighting from the saddle
 
@@ -302,16 +301,16 @@ The mount picks up a target from three places:
 | Periodic sweep, every `target_recheck_ticks` (10) | `PlayerTickEvent.Post` | the nearest threat |
 
 All three go through the same attackable test: alive, neither the rider nor the wolf, and accepted
-by `Wolf.wantsToAttack` — except that a `Creeper` is decided by `attack_creepers` (on) instead.
+by `Wolf.wantsToAttack`, except that a `Creeper` is decided by `attack_creepers` (on) instead.
 Ghasts, armour stands, tamed animals including your other pets and tamed horses therefore stay off
 the list; **creepers are the one vanilla exclusion this module overrides**, and because Creeper
 Overhaul's family extends vanilla `Creeper`, that override covers those too.
 
 A single incoming hit or a strike of your own only re-points the mount within `defend_rider_radius`
 (32). If it already holds a live, still-attackable target, the new one has to be `retarget_margin`
-(3.0) blocks closer to win — pure hysteresis, so two mobs at roughly the same distance cannot make
+(3.0) blocks closer to win. This is pure hysteresis, so two mobs at roughly the same distance cannot make
 it flip-flop and bite neither. That comparison sits behind `target_nearest` as well: with that switch
-off, neither of these two paths ever displaces a live target, however much closer the newcomer is —
+off, neither of these two paths ever displaces a live target, however much closer the newcomer is;
 the mount stays on what it has until that target dies or becomes off-limits.
 
 **The sweep** is the half vanilla cannot do. It scans out to `max(defend_rider_radius,
@@ -323,12 +322,12 @@ picks the nearest of two kinds of threat, each with its own reach:
 | Aggressors | a `Mob` already targeting rider or mount | `defend_rider_radius` (32) |
 | Hostiles that have not done anything yet | `instanceof Enemy`, not a boss | `hostile_scan_radius` (16) |
 
-Passive and neutral bystanders are never picked up, however close they stand — the local cows are
+Passive and neutral bystanders are never picked up, however close they stand, so the local cows are
 safe. Warden, Wither and Ender Dragon are never picked up unprovoked; once one of them attacks it
 becomes an ordinary aggressor, because at that point the fight is happening anyway. Setting
 `hostile_scan_radius` to 0 makes the mount purely retaliatory.
 
-The biting itself is vanilla `MeleeAttackGoal` throughout — only the target is ever set here. One
+The biting itself is vanilla `MeleeAttackGoal` throughout; only the target is ever set here. One
 pleasant consequence: `battle_dogs` still applies its Sharpness bonus (+0.5 + 0.5 per level) to
 bites made from under a rider.
 
@@ -340,22 +339,22 @@ Two rows on the right, above the hotbar.
 `battle_dogs` armour its *health does not move at all*: `battle_dogs` armour absorbs 100 % of the
 damage in its own handler and drains one durability point per damage point, and vanilla
 `minecraft:wolf_armor` does the same inside `Wolf.actuallyHurt`, except for the
-`BYPASSES_WOLF_ARMOR` damage types (drowning, suffocation, cramming, magic, wither, freeze,
-starvation and Thorns among them — thirteen in all), which go past vanilla's absorption straight to
+`BYPASSES_WOLF_ARMOR` damage types (thirteen in all, among them drowning, suffocation, cramming,
+magic, wither, freeze, starvation and Thorns), which go past vanilla's absorption straight to
 the health bar; `battle_dogs` never consults that tag, so its own armour eats even those. Durability
 is therefore the real health pool, and when it runs out the armour breaks,
 `dismount_when_armor_removed` fires and the rider is dropped mid-fight. Third-party canine armour
-passes the mount gate but has no absorber behind it — `Wolf.hasArmor()` only recognises
-`minecraft:wolf_armor`, and the `battle_dogs` handler only its own item — so for that armour the bar
+passes the mount gate but has no absorber behind it (`Wolf.hasArmor()` only recognises
+`minecraft:wolf_armor`, and the `battle_dogs` handler only its own item), so for that armour the bar
 is decoration and health is still the real pool. Ten icons, tinted by tier (an explicit dye wins;
 otherwise the tier is read off the item id, so third-party canine armour gets a sane colour for
 free). Below `armor_warning_threshold` (0.25) the row pulses red on a 900 ms sine and the rider gets
-one action-bar line — once per damage run, not once per frame; the latch re-arms when the armour is
+one action-bar line, once per damage run and not once per frame; the latch re-arms when the armour is
 healthy again or the ride ends. Armour that is absent or undamageable draws nothing and consumes no
 row.
 
 **The health row is collapsed.** `Gui.getVehicleMaxHearts` caps at 30 hearts, so a 350 HP wolf fills
-three rows that never visibly move — 30 px of screen spent on a constant. `compact_mount_health`
+three rows that never visibly move: 30 px of screen spent on a constant. `compact_mount_health`
 cancels vanilla's layer and draws a single ten-heart row showing health as a fraction. Turn it off
 and vanilla's rows come back with the armour bar stacked on top of them.
 
@@ -370,7 +369,7 @@ No packet is involved: body armour reaches the client as a complete `ItemStack` 
 
 ### Getting a wolf that qualifies
 
-Sif is a plain `minecraft:wolf` with tuned attributes, so he can be rebuilt from a command — handy
+Sif is a plain `minecraft:wolf` with tuned attributes, so he can be rebuilt from a command, which is handy
 for trying the module out without hunting down a Grim Kingdoms ruin. Swap the owner for your own name
 or UUID; a plain `Owner:"PlayerName"` works on a server that has seen that player, because
 `OldUsersConverter` resolves it against the profile cache.
@@ -387,10 +386,10 @@ Three things are load-bearing:
 * **`Health:350f` has to be set explicitly.** The `max_health` attribute raises the ceiling, not the
   current value; without it he spawns at a wolf's default health.
 * **The `body_armor_item` above is a Battle Dogs item.** With that module absent use
-  `minecraft:wolf_armor` instead — the mount gate accepts either.
+  `minecraft:wolf_armor` instead; the mount gate accepts either.
 
 He is 3.25 blocks of wolf; summon him outdoors, not in a two-block corridor. For a portable version,
-put the same data on a spawn egg — which is exactly how Grim Kingdoms ships him, in an invisible item
+put the same data on a spawn egg, which is how Grim Kingdoms ships him, in an invisible item
 frame:
 
 ```mcfunction
@@ -409,51 +408,51 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `combat.attack_creepers` | boolean | `true` | — | Let the ridden mount attack creepers, short-circuiting Wolf.wantsToAttack's blanket refusal (covers modded creepers that extend vanilla Creeper). Only reachable while a player is riding the wolf, so loose pets keep vanilla's caution. |
 | `combat.defend_rider` | boolean | `true` | — | Master switch for the whole combat half: the mount attacks whatever attacks its rider, takes over the rider's own target when the rider strikes something, and (together with target_nearest) runs the periodic nearest-threat sweep. Off means none of the other combat.* keys do anything except attack_creepers, which is only consulted from those same paths and so goes dead too. |
 | `combat.defend_rider_radius` | double | `32.0` | 0.0 ~ 128.0 | Maximum distance between mount and attacker for the defend behaviour to trigger, and the reach for "aggressors" (mobs already targeting rider or mount) in the sweep. Vanilla's own OwnerHurtByTargetGoal is capped at follow range (16), which is why this exists. |
-| `combat.hostile_scan_radius` | double | `16.0` | 0.0 ~ 64.0 | How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on — it is only ever read from retargetNearest/isThreatTo. |
-| `combat.retarget_margin` | double | `3.0` | 0.0 ~ 32.0 | How much closer (in blocks) a new threat has to be before the mount switches to it — pure hysteresis against flip-flopping. Only consulted when target_nearest is on. |
+| `combat.hostile_scan_radius` | double | `16.0` | 0.0 ~ 64.0 | How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on; it is only ever read from retargetNearest/isThreatTo. |
+| `combat.retarget_margin` | double | `3.0` | 0.0 ~ 32.0 | How much closer (in blocks) a new threat has to be before the mount switches to it (pure hysteresis against flip-flopping). Only consulted when target_nearest is on. |
 | `combat.rider_reach_bonus` | double | `2.0` | 0.0 ~ 8.0 | Extra ENTITY_INTERACTION_RANGE while mounted (transient ADD_VALUE modifier vanillaplusadditions:wolf_mount_reach), so a rider sitting ~2.7 blocks up can still reach the ground. Applied to any player riding any Wolf, eligible or not; 0 removes the modifier. |
 | `combat.target_nearest` | boolean | `true` | — | Keep the mount on the NEAREST threat instead of the first one it locked onto. Also the second gate on the periodic sweep: retargetNearest only runs when defend_rider AND target_nearest are both true. |
 | `combat.target_recheck_ticks` | int | `10` | 1 ~ 100 | How often (in ticks, measured on the rider's tickCount) the mount re-picks the nearest threat while ridden. Dead unless defend_rider AND target_nearest are both on. |
 | `dismount_when_armor_removed` | boolean | `true` | — | Eject the rider the moment the mount's body armor is removed or breaks. Silently requires eligibility.require_body_armor to be on as well. |
 | `eligibility.min_scale` | double | `2.0` | 1.0 ~ 64.0 | Minimum generic.scale a wolf needs to be rideable (vanilla wolves are 1.0; the "Sif" wolf from Grim Kingdoms is 3.25). Ignored when require_large_scale is off. |
-| `eligibility.require_body_armor` | boolean | `true` | — | Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor — anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well. |
+| `eligibility.require_body_armor` | boolean | `true` | — | Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor, i.e. anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well. |
 | `eligibility.require_large_scale` | boolean | `true` | — | Only wolves scaled up via the vanilla generic.scale attribute can be ridden. Switching it OFF also widens protection.owner_damage_immunity to every tamed wolf you own, because that handler shares the same isLargeEnough() gate. |
 | `eligibility.require_tamed_owner` | boolean | `true` | — | Only a wolf that is tamed and belongs to the rider can be ridden. |
 | `eligibility_recheck_ticks` | int | `20` | 1 ~ 200 | How often (in ticks, on the rider's tickCount) an ongoing ride is re-checked against the eligibility rules; the same tick also re-applies or heals the reach modifier. |
 | `hud.armor_warning_threshold` | double | `0.25` | 0.0 ~ 1.0 | Below this fraction of remaining armor durability the bar pulses red and the rider gets a one-off action bar warning (message.vanillaplusadditions.wolf_mount.armor_low); 0 disables it. The latch re-arms when the armor is healthy again or the ride ends. Client-only read. |
 | `hud.compact_mount_health` | boolean | `true` | — | Cancel vanilla's multi-row VEHICLE_HEALTH layer and draw a single ten-heart row showing health as a fraction (vanilla would spend three rows on a 350 HP wolf). Client-only read. |
-| `hud.show_armor_bar` | boolean | `true` | — | Show the mount's body armor durability while riding — the number that actually matters with battle_dogs armor, since it absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server. |
+| `hud.show_armor_bar` | boolean | `true` | — | Show the mount's body armor durability while riding. With battle_dogs armor this is the number that matters, since that armor absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server. |
 | `movement.backward_multiplier` | double | `0.25` | 0.0 ~ 1.0 | Backwards input scaling (vanilla horses use 0.25); applied whenever the rider's forward input is <= 0. |
 | `movement.float_in_water` | boolean | `true` | — | Keep the mount at the surface instead of sinking, by pulsing the jump flag from tickRidden (vanilla's FloatGoal only runs server-side, while a ridden entity is driven by the client). Undocumented in the config comment: the same code also fires in LAVA (isInLava()), not only water. |
 | `movement.instant_jump` | boolean | `false` | — | Jump at full power on tap instead of charging the meter by holding the key; min_jump_charge is then ignored. |
 | `movement.jump_strength` | double | `1.6` | 0.0 ~ 8.0 | Multiplies getJumpPower(charge); a wolf's generic.jump_strength is only 0.42, and the default puts a full charge at roughly 2.5 blocks. |
 | `movement.min_jump_charge` | double | `0.15` | 0.0 ~ 1.0 | Jump scale at the shortest possible tap, as a fraction of a full charge; the client's 0..90 charge is mapped onto min_jump_charge..1.0 (vanilla horses effectively use 0.4). |
 | `movement.speed_multiplier` | double | `1.0` | 0.1 ~ 3.0 | Multiplies the wolf's movement speed attribute while ridden; MUST match between client and server or the server's "moved too quickly" check rubber-bands the rider. |
-| `movement.strafe_multiplier` | double | `0.5` | 0.0 ~ 1.0 | Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config — keep it identical on both sides. |
-| `protection.owner_damage_immunity` | boolean | `true` | — | A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts — see notes. |
-| `protection.owner_immunity_only_when_ridden` | boolean | `false` | — | Narrow the owner immunity to a wolf whose controlling passenger is that same owner — i.e. the wolf the damaging player is riding right now, not just any ridden wolf. |
-| `protection.owner_immunity_requires_armor` | boolean | `false` | — | Narrow the owner immunity to wolves that actually wear canine body armor. |
-| `protection.suppress_ridden_knockback` | boolean | `true` | — | Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player — from every source, not just the owner — because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove. |
+| `movement.strafe_multiplier` | double | `0.5` | 0.0 ~ 1.0 | Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config, so keep it identical on both sides. |
+| `protection.owner_damage_immunity` | boolean | `true` | — | A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts; see notes. |
+| `protection.owner_immunity_only_when_ridden` | boolean | `false` | — | Narrow the owner immunity to a wolf whose controlling passenger is that same owner, i.e. the wolf the damaging player is riding right now, not just any ridden wolf. |
+| `protection.owner_immunity_requires_armor` | boolean | `false` | — | Narrow the owner immunity to wolves that wear canine body armor. |
+| `protection.suppress_ridden_knockback` | boolean | `true` | — | Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player, from every source and not just the owner, because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove. |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits
 
 | Limit | Effect |
 |---|---|
-| The config is a NeoForge **COMMON** config | NeoForge does not sync it, and the client is authoritative for a ridden entity. `enabled` and every `movement.*` key must be identical on client and server: a mismatch either freezes the mount or trips the server's "moved too quickly" check. The `hud` section is the documented exception — it is read client-side only and may differ. |
+| The config is a NeoForge **COMMON** config | NeoForge does not sync it, and the client is authoritative for a ridden entity. `enabled` and every `movement.*` key must be identical on client and server: a mismatch either freezes the mount or trips the server's "moved too quickly" check. The `hud` section is the documented exception: it is read client-side only and may differ. |
 | `dismount_when_armor_removed` with `require_body_armor` off | Does nothing. The handler returns early unless **both** are on, whatever `dismount_when_armor_removed` says, and `stillEligible` stops testing for armour as well. The config comment does not mention it. |
 | `hostile_scan_radius`, `target_recheck_ticks` with `defend_rider` or `target_nearest` off | Dead. The sweep is the only thing that reads either of them, and it runs only when `defend_rider` **and** `target_nearest` are both true. |
-| `attack_creepers` with `defend_rider` off | Dead. It is only ever read from the defend paths and the sweep, and the two defend paths are gated on `defend_rider` alone — turning `target_nearest` off silences the sweep but still lets them set a creeper as the target. |
+| `attack_creepers` with `defend_rider` off | Dead. It is only ever read from the defend paths and the sweep, and the two defend paths are gated on `defend_rider` alone; turning `target_nearest` off silences the sweep but still lets them set a creeper as the target. |
 | `defend_rider_radius` above 16 | An upper bound, not a promise. A wolf's `generic.follow_range` is 16, and while any vanilla target goal is running, `TargetGoal.canContinueToUse` clears a target further away than that on its next tick. Read off vanilla's code, not measured. |
-| Owner immunity with the defaults | Covers every tamed wolf you own at or above `min_scale`, not only the one you are riding — and every tamed wolf you own at all if `require_large_scale` is off. |
+| Owner immunity with the defaults | Covers every tamed wolf you own at or above `min_scale`, not only the one you are riding, and every tamed wolf you own at all if `require_large_scale` is off. |
 | An **unridden** owned wolf and your sweep | Still receives the harmless 0.4-strength nudge. It takes no damage. Removing the shove would mean mixing into `Player.attack` itself, which is far more invasive than the symptom warrants. |
-| Knockback suppression | Applies to any wolf whose controlling passenger is a player, from **every** source — an arrow, an explosion, another player. Not just from the owner. |
+| Knockback suppression | Applies to any wolf whose controlling passenger is a player, from **every** source (an arrow, an explosion, another player), not just from the owner. |
 | `rider_reach_bonus` | Applied by `EntityMountEvent` to any player mounting any wolf, eligible or not. Setting it to 0 removes the modifier instead of adding one. |
 | Module disabled | The keybind is registered regardless, so *Mount Wolf* still appears in the Controls screen; and the mixin is still applied, so every wolf in the game answers `instanceof PlayerRideableJumping`. Nothing else runs: `ModuleManager` never initialises a disabled module, the static instance stays null, and `isModuleActive()` is false. |
-| Enabling the module at runtime | Needs a restart: a module that was off at startup was never initialised. Disabling at runtime takes effect immediately instead — every handler and the mixin re-read the config, so a ride in progress stops responding to its rider. |
-| Vanilla wolf armour and the armour bar | The bar shows durability, which is the real health pool for both of the armours that have an absorber (vanilla's and `battle_dogs`'). `Wolf.actuallyHurt` skips `super.actuallyHurt` outright while `minecraft:wolf_armor` is worn and drains `ceil(damage)` durability instead; `battle_dogs` does the equivalent in its own handler. With vanilla armour the wolf's health still moves for damage tagged `BYPASSES_WOLF_ARMOR` (drowning, suffocation, cramming, magic, wither, freeze, starvation and Thorns among them — thirteen in all); `battle_dogs` never consults that tag, so its armour absorbs even those — either way health moves once the armour has broken. Third-party canine armour has neither absorber, so its durability never moves and the bar above it is decoration. The genuine difference is elsewhere: vanilla's absorption is hard-wired to `Items.WOLF_ARMOR` through `hasArmor()`, which is why `battle_dogs` needs a handler of its own. |
+| Enabling the module at runtime | Needs a restart: a module that was off at startup was never initialised. Disabling at runtime takes effect immediately instead: every handler and the mixin re-read the config, so a ride in progress stops responding to its rider. |
+| Vanilla wolf armour and the armour bar | The bar shows durability, which is the real health pool for both of the armours that have an absorber (vanilla's and `battle_dogs`'). `Wolf.actuallyHurt` skips `super.actuallyHurt` outright while `minecraft:wolf_armor` is worn and drains `ceil(damage)` durability instead; `battle_dogs` does the equivalent in its own handler. With vanilla armour the wolf's health still moves for damage tagged `BYPASSES_WOLF_ARMOR` (thirteen in all, among them drowning, suffocation, cramming, magic, wither, freeze, starvation and Thorns); `battle_dogs` never consults that tag, so its armour absorbs even those. Either way, health moves once the armour has broken. Third-party canine armour has neither absorber, so its durability never moves and the bar above it is decoration. The genuine difference is elsewhere: vanilla's absorption is hard-wired to `Items.WOLF_ARMOR` through `hasArmor()`, which is why `battle_dogs` needs a handler of its own. |
 | Grim Kingdoms | Not required and not integrated. It only supplies a conveniently large wolf; with the default `min_scale` of 2.0 you otherwise have to scale one up yourself. |
-| Testing | This repository has no unit tests, and none of the numbers above were measured in game. Everything on this page is read off the source, except three of Sif's attribute values — his attack damage, his armour and his Resistance IV — which were read off his spawn egg in game rather than measured. |
+| Testing | This repository has no unit tests, and none of the numbers above were measured in game. Everything on this page is read off the source, except three of Sif's attribute values (his attack damage, his armour and his Resistance IV), which were read off his spawn egg in game rather than measured. |
 
 ## Under the hood
 
@@ -468,10 +467,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `mixin/wolf_mount/WolfMountMixin.java` | Steering, jumping, floating, seating, dismounting |
 | `standalone/wolf_mount/WolfMountStandalone.java` | `@Mod("vpa_wolf_mount")` entry point |
 
-**The AI needed no suppression at all** — the single most useful finding while building this.
+**The AI needed no suppression at all**; that was the single most useful finding while building this.
 `Mob.serverAiStep` runs the goals and writes `xxa`/`zza` through the move control and `yHeadRot`
 through the look control, but `LivingEntity.aiStep` then routes into `travelRidden`, whose first act
-is `getRiddenInput(...)` — our override ignores its argument entirely — and `tickRidden` overwrites
+is `getRiddenInput(...)` (our override ignores its argument entirely), and `tickRidden` overwrites
 the rotations right after. The one goal that moves the entity directly, `LeapAtTargetGoal`, already
 returns false from `canUse()` while `hasControllingPassenger()`. Because the *target*-selecting goals
 keep running, the mount fights alongside its rider with no extra machinery; overriding `isImmobile()`
@@ -481,21 +480,21 @@ to stand the AI down would have broken exactly that, since both goal selectors s
 **Mixin style.** One class, targeting `Wolf`, with no `@Inject` and no `@Overwrite` anywhere. Every
 hook it needs (`getControllingPassenger`, `tickRidden`, `getRiddenInput`, `getRiddenSpeed`,
 `positionRider`, `getDismountLocationForPassenger`) is declared on `Mob`/`LivingEntity`/`Entity` and
-not on `Wolf` itself, and `@Inject` requires the target method to exist in the target class — so the
+not on `Wolf` itself, and `@Inject` requires the target method to exist in the target class, so the
 overrides are declared in the mixin and merged. It declares `extends TamableAnimal` because Mixin
 needs the declared superclass to be in the target's hierarchy for `super.` calls to resolve. It is
 listed in the `"mixins"` array of `vanillaplusadditions.mixins.json`, **never** `"client"`:
 `LocalPlayer.jumpableVehicle()` does an `instanceof PlayerRideableJumping` check client-side and the
 server needs `getControllingPassenger` to agree.
 
-**`getControllingPassenger` consults `isModuleActive()` and nothing else** — deliberately. It feeds
+**`getControllingPassenger` consults `isModuleActive()` and nothing else**, deliberately. It feeds
 `Entity.isControlledByLocalInstance()`, which decides which side owns the vehicle's movement. Reading
 gameplay config there would let a client/server config mismatch freeze the mount, so scale, owner and
 armour are enforced at mount time and by the periodic recheck instead.
 
 **Seat position is free.** `EntityType.WOLF` already declares `passengerAttachments(new Vec3(0.0,
 0.81875, -0.0625))`, and the attachment scales with `generic.scale`. At 3.25 the seat lands at
-y ≈ 2.66 against a 2.76-block hitbox — just below the withers — and a live scale change tracks
+y ≈ 2.66 against a 2.76-block hitbox (just below the withers), and a live scale change tracks
 automatically. Only the *dismount* location is overridden: `Entity`'s default answer is "the top of my
 bounding box", which is a 2.8-block drop every time. The override mirrors `AbstractHorse`: the
 rider's dominant side first, then the other, then the wolf's own position, scanning upwards from the
@@ -506,7 +505,7 @@ wolf's feet for a pose that fits.
 | Event | Bus | Purpose |
 |---|---|---|
 | `RegisterPayloadHandlersEvent` | mod | Registers `MountWolfPacket` play-to-server on registrar `"1"` |
-| `RegisterKeyMappingsEvent` | mod, client | The mount modifier — registered unconditionally |
+| `RegisterKeyMappingsEvent` | mod, client | The mount modifier, registered unconditionally |
 | `EntityMountEvent` | game | Applies and removes the reach modifier |
 | `PlayerTickEvent.Post` | game | Target sweep, eligibility recheck, reach-modifier self-heal |
 | `LivingEquipmentChangeEvent` | game | Ejects the rider when `BODY` armour comes off |
@@ -517,11 +516,11 @@ wolf's feet for a pose that fits.
 | `RenderGuiLayerEvent.Pre` / `.Post` | game, client | Compact health row, armour row |
 
 **Why the damage hook is `LivingIncomingDamageEvent`.** `battle_dogs` uses `LivingDamageEvent.Pre`,
-which fires far later — past the i-frame bookkeeping and past armour absorption, from inside
+which fires far later: past the i-frame bookkeeping and past armour absorption, from inside
 `LivingEntity.actuallyHurt`. Zeroing the damage there would still not stop the wolf registering its
 owner as an attacker: `hurt()` carries on to `setLastHurtByMob` afterwards whatever the damage ended
 up being, and only cancelling at `LivingIncomingDamageEvent` makes it return false before that line.
-The two modules compose cleanly precisely because they hook different points of the same call: when
+The two modules compose cleanly because they hook different points of the same call: when
 the immunity cancels, the `battle_dogs` handler is never reached.
 
 **The reach modifier** is transient, so it is never written to disk; the worst case for a leaked
@@ -553,27 +552,27 @@ Any port past 1.21.1 must re-verify the `travelRidden` branch of `LivingEntity.a
 
 ## Foxhounds
 
-Quark's Foxhound extends `Wolf`, so every rule above already covers it — an armoured, large enough,
-tamed foxhound rides like any other. It needed one fix, and it is a good example of how a mod's own
-animation can be broken by a use it never expected.
+Quark's Foxhound extends `Wolf`, so every rule above already covers it: an armoured, large enough,
+tamed foxhound rides like any other. It needed one fix, because Quark's own animation was never written with a rider in
+mind.
 
 A foxhound lies down near a heat source and remembers it in a synced `IS_RESTING` flag. Its model
 reads that flag **twice**: `prepareMobModel` poses the head and body for lying down, and `setupAnim`
 then takes a branch that ignores the look direction entirely and wobbles the head on a timer instead.
 Nothing clears the flag while a passenger is in control, because the goal that would clear it does
 not run. A ridden foxhound therefore stared in one fixed direction while its legs kept swinging from
-the walk animation — straight through its own posed-down head.
+the walk animation, straight through its own posed-down head.
 
 `tickRidden` now clears the flag. The class that names `Foxhound` is reached only through a
-`ModList` check, so it is never loaded on an installation without Quark — the trap that crashed
+`ModList` check, so it is never loaded on an installation without Quark; that trap is what crashed
 beta.70.
 
 ## See also
 
-* [Special Gemstones](special_gemstones.md) — the Growth Gemstone is the way to get a wolf past the
+* [Special Gemstones](special_gemstones.md): the Growth Gemstone is the way to get a wolf past the
   `min_scale` gate without a command
-* [Battle Dogs](battle_dogs.md) — the canine armour this pairs with, and the 100 % absorption the
+* [Battle Dogs](battle_dogs.md): the canine armour this pairs with, and the 100 % absorption the
   armour bar exists for
-* [Companion Armor](../guides/companion-armor.md) — how that armour is enchanted and repaired
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Companion Armor](../guides/companion-armor.md): how that armour is enchanted and repaired
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

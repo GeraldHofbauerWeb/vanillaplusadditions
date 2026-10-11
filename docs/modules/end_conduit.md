@@ -1,8 +1,8 @@
 # End Conduit
 
-> **TL;DR** — A violet conduit for the End: ring it with 16 Glowstone, End Stone, End Stone Bricks
-> or Sea Lanterns — no water anywhere — and it grants Conduit Power on dry End ground, which with
-> End Oxygen running means you can breathe there.
+> **TL;DR** — A craftable violet conduit for the End. Ring it with 16 Glowstone, End Stone, End Stone
+> Bricks or Sea Lanterns (no water needed) and it grants Conduit Power on dry End ground, which with
+> the End Oxygen module enabled means you can breathe there indefinitely.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -21,7 +21,7 @@
 The End has no water, so a vanilla conduit cannot be built there at all. This module adds a second
 one that can: a separate craftable block, rendered as a conduit tinted violet and endstone-gold,
 which activates only in `minecraft:the_end`, takes its frame from Glowstone, End Stone, End Stone
-Bricks or Sea Lantern, and needs no water — neither around the block nor on the player.
+Bricks or Sea Lantern, and needs no water, either around the block or on the player.
 
 You build it the way you build a conduit. Block in the middle, 16 frame blocks in the usual ring two
 blocks out. It comes up with the conduit's own activation sound, the cage starts turning, nautilus
@@ -30,8 +30,8 @@ particles drift in from the frame, and every player within 32 blocks has Conduit
 Conduit Power on its own is water breathing, underwater night vision and a mining-speed bonus. On
 dry End stone only the mining bonus survives: vanilla consults the water-breathing branch only when
 your head is *not* in air, and the night vision scales with `getWaterVision()`, which is zero out of
-water. Breaking End stone 20% faster is not why you build this block — the reason is the
-[End Oxygen](end_oxygen.md) module: with `conduit_power_grants_air` left on, Conduit Power refills a
+water. Nobody builds this block to break End stone 20% faster; it is there for the
+[End Oxygen](end_oxygen.md) module. With `conduit_power_grants_air` left on, Conduit Power refills a
 player's air every tick in the End. One End Conduit therefore turns a patch of End stone into a base
 you can stand in without a backtank, indefinitely and without line of sight to anything.
 
@@ -84,8 +84,8 @@ private static final Block[] VALID_FRAME = {
 
 Sea Lantern is the one block in both sets, which is what lets a sea lantern frame do double duty.
 
-**And it never hunts.** Vanilla's `updateDestroyTarget` — the part that picks a hostile mob and deals
-4 magic damage to it every two seconds — has no counterpart at all. Neither has the target UUID it
+**And it never hunts.** Vanilla's `updateDestroyTarget`, the part that picks a hostile mob and deals
+4 magic damage to it every two seconds, has no counterpart at all. Neither has the target UUID it
 saves to NBT.
 
 | | Vanilla conduit | End Conduit |
@@ -102,7 +102,7 @@ saves to NBT.
 
 ### Activation
 
-The frame ring is vanilla's, position for position — the same `-2..2` triple loop with the same
+The frame ring is vanilla's, position for position: the same `-2..2` triple loop with the same
 "exactly one axis at zero, another at ±2" test. Counted out, that ring holds exactly **42**
 positions, which is why 42 is both the upper bound of `min_frames` and the hardcoded number at which
 the eye opens.
@@ -111,15 +111,15 @@ Three things must hold for the block to light up:
 
 1. at least `min_frames` of the ring's 42 positions carry a frame block (default 16),
 2. `level.dimension() == Level.END`,
-3. the module is enabled — `EndConduitModule.isModuleActive()`, which resolves through the module
-   manager on every call, so `/vpa module disable end_conduit` takes effect at the next check *on the
-   side that ran the command* — `/vpa` is server-side, so on a dedicated server the client keeps its
-   own answer; see the compatibility table.
+3. the module is enabled. `EndConduitModule.isModuleActive()` resolves through the module manager
+   on every call, so `/vpa module disable end_conduit` takes effect at the next check *on the side
+   that ran the command*. `/vpa` is server-side, so on a dedicated server the client keeps its own
+   answer (see the compatibility table).
 
 All three are re-tested **only when `gameTime % 40 == 0`**, so finishing the last frame block, or
-walking back into a chunk, can take up to two seconds to register. Nothing is written to NBT — the
-block entity overrides neither `saveAdditional` nor `loadAdditional` — so the state after a chunk
-load is always rebuilt from the world, never restored.
+walking back into a chunk, can take up to two seconds to register. Nothing is written to NBT (the
+block entity overrides neither `saveAdditional` nor `loadAdditional`), so the state after a chunk
+load is always rebuilt from the world.
 
 Client and server each run their own ticker (`clientTick` / `serverTick`) and each recomputes the
 shape for itself. That is vanilla's design and it means activation, rotation and the hunting flag
@@ -140,19 +140,19 @@ default divisor of 1 the table is vanilla's:
 
 | Frame blocks | Radius |
 |---|---|
-| 16–20 | 32 |
-| 21–27 | 48 |
-| 28–34 | 64 |
-| 35–41 | 80 |
+| 16 to 20 | 32 |
+| 21 to 27 | 48 |
+| 28 to 34 | 64 |
+| 35 to 41 | 80 |
 | 42 | 96 |
 
 The effect itself is `MobEffects.CONDUIT_POWER` for 260 ticks (13 seconds), amplifier 0, ambient and
-visible, re-applied every 40 ticks — a comfortable margin over the two-second gap, so the icon never
-flickers while you stay in range.
+visible, re-applied every 40 ticks. That leaves a comfortable margin over the two-second gap, so the
+icon never flickers while you stay in range.
 
-One quirk worth knowing: `min_frames` goes down to 1, but the radius does not follow. Build fewer
-than seven frame blocks and `frames / 7` is 0, so the radius collapses to the `Math.max(1, …)` floor
-of one block — the conduit activates, plays its sounds and reaches nobody standing next to it.
+`min_frames` goes down to 1, but the radius does not follow. Build fewer than seven frame blocks and
+`frames / 7` is 0, so the radius collapses to the `Math.max(1, …)` floor of one block: the conduit
+activates and plays its sounds, but reaches nobody standing next to it.
 
 The candidate box is vanilla's odd one: an AABB inflated by the radius and then
 `expandTowards(0, level.getHeight(), 0)`. The per-player test afterwards is
@@ -171,8 +171,7 @@ this.eye.render(poseStack,
         packedLight, packedOverlay);
 ```
 
-The End Conduit has no attack code whatsoever. The open eye is decoration for a full 42-block frame,
-nothing more. Because 42 is hardcoded while `min_frames` is configurable up to 42, setting
+The End Conduit has no attack code. The open eye only marks a full 42-block frame. Because 42 is hardcoded while `min_frames` is configurable up to 42, setting
 `min_frames = 42` makes the eye open the moment the conduit activates.
 
 ### Sounds and particles
@@ -186,11 +185,11 @@ nothing more. Because 42 is hardcoded while `min_frames` is configurable up to 4
 
 The particles are spawned from a point that bobs above the block
 (`sin((tickCount + 35) · 0.1) / 2 + 0.5`, squared and scaled) and fly towards the conduit from the
-frame block that produced them — vanilla's nautilus behaviour, reused verbatim, with our tinted
-sprite bound to it.
+frame block that produced them. That is vanilla's nautilus behaviour, reused verbatim, with our
+tinted sprite bound to it.
 
-One difference from vanilla, easy to miss: vanilla calls `animationTick` on every client tick
-regardless of the active flag, this module calls it only while active. An End Conduit that is short
+Vanilla calls `animationTick` on every client tick regardless of the active flag; this module calls
+it only while active. An End Conduit that is short
 of its frame count therefore stays completely still, where a vanilla conduit sitting in water with
 too few frame blocks still draws particles.
 
@@ -209,8 +208,8 @@ if (getConfig().conduitPowerGrantsAir() && player.hasEffect(MobEffects.CONDUIT_P
 
 `conduit_power_grants_air` lives in `[modules.end_oxygen]`, not here, and defaults to `true`. Turn
 that key off, or disable End Oxygen entirely, and the End Conduit is back to being a source of
-Conduit Power and nothing else. The effect is not exclusive to this block either — any Conduit Power,
-from a vanilla conduit or a command, opens the same branch.
+Conduit Power and nothing else. Nor is the branch tied to this block: any Conduit Power, from a
+vanilla conduit or a command, opens it.
 
 ## Items, blocks and recipes
 
@@ -219,15 +218,15 @@ geometry in both the world and the inventory, so there is no flat sprite to show
 
 | | Details |
 |---|---|
-| **End Conduit** (block) | `vanillaplusadditions:end_conduit`. Purple map colour, hardness and blast resistance 3.0, metal sounds, `noOcclusion`, light level **15 unconditionally** — it glows at full brightness even when inactive and outside the End. Hitbox is the vanilla conduit's 6×6×6 core, `Block.box(5, 5, 5, 11, 11, 11)`. `RenderShape.ENTITYBLOCK_ANIMATED`, so every visual comes from the block entity renderer. Not waterloggable, on purpose. |
+| **End Conduit** (block) | `vanillaplusadditions:end_conduit`. Purple map colour, hardness and blast resistance 3.0, metal sounds, `noOcclusion`, light level **15 unconditionally**, so it glows at full brightness even when inactive and outside the End. Hitbox is the vanilla conduit's 6×6×6 core, `Block.box(5, 5, 5, 11, 11, 11)`. `RenderShape.ENTITYBLOCK_ANIMATED`, so every visual comes from the block entity renderer. Not waterloggable, on purpose. |
 | **End Conduit** (item) | A plain `BlockItem` with default properties: stacks to 64, no rarity, in the mod's main creative tab. Its inventory look is the 3D tinted shell, drawn by `EndConduitItemRenderer`. |
 
 `block.vanillaplusadditions.end_conduit` is the only lang key the module has; the item inherits it.
 
 **Drops.** `getDrops` returns `List.of(new ItemStack(this))` and ignores everything else it is handed
-— tool, Silk Touch, explosion context. The End Conduit always drops itself, including when blown up.
+(tool, Silk Touch, explosion context). The End Conduit always drops itself, including when blown up.
 
-**Recipe** — shaped, category `MISC`, id `vanillaplusadditions:end_conduit`:
+**Recipe** (shaped, category `MISC`, id `vanillaplusadditions:end_conduit`):
 
 ```
  F E F        F = Chorus Fruit
@@ -257,20 +256,20 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| **The standalone jar does not work** | `vpa_end_conduit.jar` is built and published, but there is no `standalone/end_conduit/` package in the source tree, so the jar carries no `@Mod` entry point. Nothing constructs `EndConduitModule`, `onInitialize` never runs, no register is ever attached to a mod bus — the jar ships no block, no item and no recipe. Use the bundle. Read off `build.gradle` (the descriptor at line 422, the jar task's `standalone/${entrypointPkg}/**` include) and a `git log` that has never seen that package; not tried in a real instance. |
+| **The standalone jar does not work** | `vpa_end_conduit.jar` is built and published, but there is no `standalone/end_conduit/` package in the source tree, so the jar carries no `@Mod` entry point. Nothing constructs `EndConduitModule`, `onInitialize` never runs, no register is ever attached to a mod bus, so the jar ships no block, no item and no recipe. Use the bundle. Read off `build.gradle` (the descriptor at line 422, the jar task's `standalone/${entrypointPkg}/**` include) and a `git log` that has never seen that package; not tried in a real instance. |
 | Modded conduit frame blocks | Vanilla asks `isConduitFrame`, which any mod can answer; this module tests a fixed four-block array. A modded block that works in a vanilla conduit frame will not work here. |
-| `enabled = false` is not a content switch | Registration happens before the config spec exists (`ModuleManager.initializeModules` runs at `VanillaPlusAdditions.java:114`, `registerConfig` at `:131`), so `isEnabled()` still falls back to the module default at that point and block, item, block entity type and particle type are **always** registered. Disabling the module stops activation — no Conduit Power, no particles, a dark shell — and stops the recipe injection on the next reload. Placed blocks stay placed, keep dropping themselves, and the item stays in the creative tab. |
-| Toggling at runtime | `/vpa module enable\|disable end_conduit` resolves on every check, so activation follows immediately — **on the server**. The command is a runtime override kept in that JVM's `ModuleManager`, and `/vpa` is registered server-side only, so on a dedicated server the client keeps rendering the conduit active (cage turning, particles) while the server has already stopped granting Conduit Power. In singleplayer both sides share one manager, so there it matches. The recipe follows only at the next datapack reload. |
+| `enabled = false` is not a content switch | Registration happens before the config spec exists (`ModuleManager.initializeModules` runs at `VanillaPlusAdditions.java:114`, `registerConfig` at `:131`), so `isEnabled()` still falls back to the module default at that point and block, item, block entity type and particle type are **always** registered. Disabling the module stops activation (no Conduit Power, no particles, a dark shell) and stops the recipe injection on the next reload. Placed blocks stay placed, keep dropping themselves, and the item stays in the creative tab. |
+| Toggling at runtime | `/vpa module enable\|disable end_conduit` resolves on every check, so activation follows immediately, but only **on the server**. The command is a runtime override kept in that JVM's `ModuleManager`, and `/vpa` is registered server-side only, so on a dedicated server the client keeps rendering the conduit active (cage turning, particles) while the server has already stopped granting Conduit Power. In singleplayer both sides share one manager, so there it matches. The recipe follows only at the next datapack reload. |
 | Config is not synced to the client | `min_frames` and the enabled flag live in a **common** config, which is per installation. Both sides evaluate activation for themselves, so a client whose local file disagrees with the server renders the conduit active when it is not, or the other way round. Derived from the code; not reproduced in game. |
 | Break and step particles are white | `models/block/end_conduit.json` carries nothing but `"particle": "minecraft:block/sea_lantern"`. Mining it throws sea-lantern-white particles, not violet ones. The item model does point at our tinted `base` sprite. |
-| It glows in the dark everywhere | `lightLevel` is 15 with no state test — inactive, in the Overworld, in a chest room, it is still a full light source. |
-| Never attacks | Despite the open eye at 42 frame blocks. If you want a conduit that shoots things, that is a vanilla conduit plus [Conduit Attack Range](conduit_attack_range.md) — a separate module that mixes into vanilla's `ConduitBlockEntity` and does not touch this block at all. |
+| It glows in the dark everywhere | `lightLevel` is 15 with no state test, so it is a full light source even when inactive, in the Overworld or in a chest room. |
+| Never attacks | Despite the open eye at 42 frame blocks. If you want a conduit that shoots things, that is a vanilla conduit plus [Conduit Attack Range](conduit_attack_range.md), a separate module that mixes into vanilla's `ConduitBlockEntity` and does not touch this block at all. |
 | No tests | This repository has no unit tests, and nothing in it records an in-game test of this module. Everything above is read off the source. |
 
 ## Under the hood
 
 No mixins, no commands, no keybinds, no network payloads, no `ModList.isLoaded` checks, and no data
-files — the module is four registrations and a block entity ticker.
+files. The module is four registrations and a block entity ticker.
 
 | Class | Role |
 |---|---|
@@ -288,7 +287,7 @@ files — the module is four registrations and a block entity ticker.
 | Block | `vanillaplusadditions:end_conduit` |
 | Item | `vanillaplusadditions:end_conduit` (plain `BlockItem`) |
 | Block entity type | `vanillaplusadditions:end_conduit` |
-| Particle type | `vanillaplusadditions:end_nautilus` (`SimpleParticleType`, `overrideLimiter = false` — it respects the client's particle limiter) |
+| Particle type | `vanillaplusadditions:end_nautilus` (`SimpleParticleType`, `overrideLimiter = false`, so it respects the client's particle limiter) |
 
 | Event | Bus | Purpose |
 |---|---|---|
@@ -299,7 +298,7 @@ files — the module is four registrations and a block entity ticker.
 
 The three client handlers sit in `EndConduitClientSetup`, which is an FML-scanned
 `@EventBusSubscriber(value = Dist.CLIENT, bus = MOD)` and is therefore **not** gated on the module.
-In the bundle that is harmless — registration always ran, so `END_CONDUIT_BE`, `END_NAUTILUS` and
+In the bundle that is harmless: registration always ran, so `END_CONDUIT_BE`, `END_NAUTILUS` and
 `END_CONDUIT_ITEM` are always bound by the time it dereferences them.
 
 **Rendering.** `EndConduitBER` registers no model layer of its own. It bakes the vanilla-registered
@@ -308,13 +307,13 @@ sprites, so the geometry and the animation are the vanilla conduit's and only th
 wind layer cycles through three orientations on `tickCount / 66 % 3`, the eye billboards to the
 camera, and an inactive conduit draws the shell alone, turned to its last rotation.
 
-**Textures.** Six sprites under `assets/vanillaplusadditions/textures/block/end_conduit/` — `base`,
-`cage`, `wind`, `wind_vertical`, `open_eye`, `closed_eye` — violet and endstone-gold recolours of the
+**Textures.** Six sprites under `assets/vanillaplusadditions/textures/block/end_conduit/` (`base`,
+`cage`, `wind`, `wind_vertical`, `open_eye`, `closed_eye`), violet and endstone-gold recolours of the
 vanilla conduit's. They sit under `block/`, so the vanilla block atlas stitches them without any
 registration; `EndConduitTextures` only names them. Both wind sprites carry a `.mcmeta` with
-`frametime: 3` and `height: 32` — 32-pixel-high frames down a 64×704 strip, so 22 frames each. The
-particle is a seventh tinted sprite, `textures/particle/end_nautilus.png`, wired up through
-`particles/end_nautilus.json`.
+`frametime: 3` and `height: 32`, which makes 32-pixel-high frames down a 64×704 strip, 22 frames
+each. The particle is a seventh tinted sprite, `textures/particle/end_nautilus.png`, wired up
+through `particles/end_nautilus.json`.
 
 **Version trail.** The module landed in `v1.0.0-beta.46` (`d73a4b0`) as a working but
 vanilla-looking conduit. The tinted block and item textures and the 3D item renderer arrived one day
@@ -325,8 +324,8 @@ state and are out of date.
 
 ## See also
 
-* [End Oxygen](end_oxygen.md) — the module that turns Conduit Power into breathable air
-* [Conduit Attack Range](conduit_attack_range.md) — the *vanilla* conduit's attack, not this one
-* [Custom Crafting Recipes](custom_crafting_recipes.md) — why recipes are built in code here
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [End Oxygen](end_oxygen.md): the module that turns Conduit Power into breathable air
+* [Conduit Attack Range](conduit_attack_range.md): the *vanilla* conduit's attack, not this one
+* [Custom Crafting Recipes](custom_crafting_recipes.md): why recipes are built in code here
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

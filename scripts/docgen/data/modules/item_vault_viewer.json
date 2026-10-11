@@ -19,7 +19,7 @@
   ],
   "mixins": [],
   "moduleId": "item_vault_viewer",
-  "oneLiner": "Hold Ctrl and right-click a Create Item Vault while wearing Engineering Goggles to see everything stored inside it in a searchable, sortable read-only grid — including vaults mounted on moving contraptions, where Create itself opens nothing.",
+  "oneLiner": "Hold Ctrl and right-click a Create Item Vault while wearing Engineering Goggles to see everything stored inside it in a searchable, sortable read-only grid. It also works on vaults mounted on moving contraptions, where Create itself opens nothing.",
   "optionalMods": [],
   "recipes": [],
   "registeredInBundle": true,

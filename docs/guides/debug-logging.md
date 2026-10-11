@@ -1,13 +1,13 @@
 # Debug Logging Configuration
 
-VanillaPlusAdditions includes a flexible debug logging system with both global and per-module control. This is useful for troubleshooting issues, verifying that modules are working correctly, or reporting bugs.
+VanillaPlusAdditions has a debug logging system with a global switch and per-module control. Use it to troubleshoot a problem, to check that a module is working, or when reporting a bug.
 
 ## How It Works
 
 Debug logging operates on two levels:
 
-1. **Global** — a single toggle that enables debug output for all modules.
-2. **Per-module** — each module has its own `debug_logging` setting that can override the global value.
+1. **Global**: a single toggle that enables debug output for all modules.
+2. **Per-module**: each module has its own `debug_logging` setting that can override the global value.
 
 ### Per-Module Modes
 
@@ -91,7 +91,7 @@ so if a module looks silent, check `debug.log` before concluding that debug logg
 
 ## Tips
 
-- **Don't leave global debug logging on in production** — it can generate a lot of output.
+- **Don't leave global debug logging on in production**; it can generate a lot of output.
 - Use `debug_logging = "ON"` on individual modules when investigating a specific issue.
 - If an item or effect ID is wrong, debug logging will show warnings about missing registry entries.
-- To reset everything, delete the config file and restart — defaults will be regenerated.
+- To reset everything, delete the config file and restart; defaults will be regenerated.

@@ -1,12 +1,12 @@
 # Mob Spawn Overlay
 
-> **TL;DR** — Hold F3 and press M to light up every block around you where hostile mobs can spawn —
-> red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a
+> **TL;DR** — Hold F3 and press M to light up every block around you where hostile mobs can spawn.
+> Red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a
 > spider fits there too.
 
-> **Status:** switching the overlay on used to crash the client, and the cause is worth knowing if
-> you write another renderer in this repository — `SpawnOverlayRenderer` held all three vertex
-> consumers at once and wrote to them in turn, which is exactly what a shared
+> **Status:** switching the overlay on used to crash the client. If you write another renderer in
+> this repository, know the cause: `SpawnOverlayRenderer` held all three vertex
+> consumers at once and wrote to them in turn, which a shared
 > `MultiBufferSource.BufferSource` does not allow. It now draws one render type per pass and fetches
 > each consumer at the start of its own pass. **Not yet confirmed in game**; everything below
 > describes what the renderer is written to draw, read off the source.
@@ -28,14 +28,14 @@
 Press **F3 + M** and every position around you where a hostile mob could stand lights up as a flat
 striped field lying on the floor. Red fields spawn mobs right now, yellow ones once it
 gets dark, and a violet outline marks a spot roomy enough for a spider. The same combo switches it off
-again; an action-bar line — *Mob spawn overlay: ON* / *OFF* — confirms either way.
+again, and an action-bar line (*Mob spawn overlay: ON* / *OFF*) confirms either way.
 
-This is meant to be the spawn view OptiFine's `F7` used to give you and that Sodium/Iris do not bring
+It stands in for the spawn view OptiFine's `F7` used to give you, which Sodium/Iris do not bring
 along. It is built for spawn-proofing: light a room, walk through it, and the fields that are still
 there tell you where the torches are missing.
 
-The check mirrors vanilla's own spawn code — ground placement, block and sky light, hitbox clearance
-— and reads its light limits from the dimension instead of assuming a hardcoded 0–7, so the Nether
+The check mirrors vanilla's own spawn code (ground placement, block and sky light, hitbox clearance)
+and reads its light limits from the dimension instead of assuming a hardcoded 0–7, so the Nether
 and the End come out right as well. Key, scan radii, colours and the animated stripes are
 configurable.
 
@@ -55,10 +55,10 @@ case 71:
     return true;
 ```
 
-It answers to `1 2 3 A B C D G H I L N P Q S T` and `F4` — seventeen codes. **M**, GLFW code 77, is
+It answers to `1 2 3 A B C D G H I L N P Q S T` and `F4`, seventeen codes in all. **M**, GLFW code 77, is
 free, and this module takes it.
 
-The `true` matters as much as the key. Its caller feeds the result into the flag that decides what
+The returned `true` is needed as well. Its caller feeds the result into the flag that decides what
 releasing F3 does:
 
 ```java
@@ -110,21 +110,21 @@ if (!fits(level, pos, GROUND_MONSTER)) {
 | 4 | Does the mob's spawn hitbox fit without colliding? | `level.noCollision(type.getSpawnAABB(x + 0.5, y, z + 0.5))` |
 
 Questions 3 and 4 together are `fits(…)`. Question 3 is vanilla's own: the block below must pass
-`isValidSpawn`, and this block plus the one above must pass `NaturalSpawner.isValidEmptySpawnBlock` —
+`isValidSpawn`, and this block plus the one above must pass `NaturalSpawner.isValidEmptySpawnBlock`:
 no full collision shape, not a signal source, no fluid, not in `#prevent_mob_spawning_inside`, and
 not dangerous for the entity type. Question 4 is what keeps a wide mob out of a narrow gap.
 
 `noCollision` is called with a `null` entity, which makes it collect entity collisions against
 `EntitySelector.CAN_BE_COLLIDED_WITH`. In vanilla only `Boat` and `Shulker` override
 `Entity.canBeCollidedWith()`, so a parked boat hides the marker under it while an ordinary mob or
-another player does not. Vanilla's own spawn attempt tests the same set, so this is faithful rather
-than a fault.
+another player does not. Vanilla's own spawn attempt tests the same set, so it behaves the same way
+there.
 
 Everything that survives all four becomes a marker.
 
 ### Red or yellow
 
-Vanilla's light test is two dice rolls, not a threshold:
+Vanilla's light test is two dice rolls:
 
 ```java
 public static boolean isDarkEnoughToSpawn(ServerLevelAccessor level, BlockPos pos, RandomSource random) {
@@ -143,17 +143,17 @@ public static boolean isDarkEnoughToSpawn(ServerLevelAccessor level, BlockPos po
 }
 ```
 
-The colours are the honest answer to "can both rolls still fail here?":
+The colours answer the question "can both rolls still fail here?":
 
 ```java
 boolean spawnsNow = localBrightness <= alwaysDarkEnough
         && level.getBrightness(LightLayer.SKY, pos) == 0;
 ```
 
-* **Red** — sky light is exactly 0, so the first roll can never reject; and the local brightness is at
+* **Red**: sky light is exactly 0, so the first roll can never reject, and the local brightness is at
   or below `monsterSpawnLightTest().getMinValue()`, so the second roll cannot either. Mobs spawn here
   on every attempt.
-* **Yellow** — the position passes everything deterministic, but at least one roll can still come up
+* **Yellow**: the position passes everything deterministic, but at least one roll can still come up
   against it.
 
 Sky light 1 is already yellow, although it only fails one attempt in 32. The overlay errs towards
@@ -169,38 +169,38 @@ Both limits come from the `DimensionType`, never from a constant:
 | `the_nether` | 15 | constant 7 | none |
 | `the_end` | 0 | uniform 0–7 | none |
 
-Which has a consequence worth knowing before you go looking for it: **in vanilla's dimensions, yellow
+Before you go looking for yellow fields, note that **in vanilla's dimensions, yellow
 only ever appears in the Overworld, and only on blocks that see the sky.**
 
-* Overworld — the block-light limit is 0, so check 1 already throws out every position with any block
+* Overworld: the block-light limit is 0, so check 1 already throws out every position with any block
   light at all. What is left has block light 0, and `getMaxLocalRawBrightness` reduces to
   `max(0, skyLight − skyDarken)`. Sky light 0 makes that 0 and the marker red; anything above 0 makes it
   yellow.
-* Nether — the block-light limit is 15, so check 1 never rejects, and min equals max equals 7, so
+* Nether: the block-light limit is 15, so check 1 never rejects, and min equals max equals 7, so
   everything surviving check 2 is at or below the minimum. There is no sky light. Every Nether marker
   is red.
-* End — the block-light limit is 0 again and there is no sky light, so every surviving position sits
+* End: the block-light limit is 0 again and there is no sky light, so every surviving position sits
   at brightness 0. Every End marker is red.
 
-`skyDarken` is the whole day/night cycle in one number — `Level.updateSkyBrightness()` ends in
+`skyDarken` carries the day/night cycle. `Level.updateSkyBrightness()` ends in
 `this.skyDarken = (int)((1.0 - d2 * d0 * d1) * 11.0)`, which is 0 at noon under a clear sky and 11 at
-midnight. So the yellow fields on an open surface are not static — they appear as the sun goes down
-and are gone again by midday, while an enclosed room's red fields never move.
+midnight. The yellow fields on an open surface therefore appear as the sun goes down and are gone
+again by midday, while an enclosed room's red fields never move.
 
 ### The spider outline
 
 With `scan.mark_spider_spots` on, every position that already passed gets the same `fits(…)` test a
 second time with `EntityType.SPIDER`. A zombie's spawn box is 0.6 × 1.95 and fits in one block; a
 spider's is 1.4 × 0.9 and reaches 0.7 blocks past the block centre in every horizontal direction, so
-the outline means "there is room around this block too", not just "there is room here".
+the outline means there is room around this block as well.
 
 `SpawnMarker`'s javadoc calls the outline "relevant below Y=0, where this pack turns every naturally
-spawned spider into a cave spider". Nothing in this repository does that conversion, so treat the
-outline as what the code actually computes — a spider-sized clearance test — and nothing more.
+spawned spider into a cave spider". Nothing in this repository does that conversion, so read the
+outline as what the code computes: a spider-sized clearance test.
 
 ### Where the marker sits
 
-The field is drawn on the floor the mob would stand on, not at the block boundary:
+The field is drawn on the floor the mob would stand on:
 
 ```java
 VoxelShape shape = level.getBlockState(below).getCollisionShape(level, below);
@@ -208,15 +208,15 @@ double top = shape.isEmpty() ? 1.0D : shape.max(Direction.Axis.Y);
 return (float) (below.getY() + Mth.clamp(top, 0.0D, 1.0D));
 ```
 
-So a marker on a slab, on farmland or on a carpet lies flush on it instead of hovering at full block
-height. It is then lifted by `LIFT` = 0.015 against z-fighting and inset by `INSET` = 0.03 per side,
-which makes each field 0.94 × 0.94 blocks and leaves a visible seam between neighbours.
+A marker on a slab, on farmland or on a carpet therefore lies flush on it instead of hovering at
+full block height. It is then lifted by `LIFT` = 0.015 against z-fighting and inset by
+`INSET` = 0.03 per side, which makes each field 0.94 × 0.94 blocks and leaves a visible seam between neighbours.
 
 ### What it deliberately does not check
 
-The 24-block player distance and the mob cap are both momentary. Neither is evaluated: while you are
-spawn-proofing you want the permanent state of a room, not whether a mob happens to be allowed this
-second. The overlay also cannot say *which* mob would spawn — see the limits below.
+The 24-block player distance and the mob cap are both momentary. Neither is evaluated, because while you
+are spawn-proofing you want the permanent state of a room. The overlay also cannot say *which* mob
+would spawn; see the limits below.
 
 ### What it costs
 
@@ -229,8 +229,8 @@ height, run every `scan.rescan_interval_ticks`:
 | Maximum (48 / 32) | 97 × 97 × 65 = 611,585 | twice a second |
 
 `scan.max_markers` (6000) caps the markers collected, not the positions visited. When the cap is hit
-the loops break out with `y` outermost, so the scan box loses its top first and then its higher X —
-the cut-off is a plane, not a fade.
+the loops break out with `y` outermost, so the scan box loses its top first and then its higher X.
+The cut-off is a hard plane.
 
 Toggling the overlay on resets the tick counter and scans immediately, so the first markers appear
 without waiting out the interval.
@@ -259,7 +259,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `display.scroll_speed` | double | `0.35` | 0.0 ~ 5.0 | How fast the stripes travel (blocks per second). |
 | `display.see_through_blocks` | boolean | `false` | — | Draw markers through terrain (x-ray) instead of hiding them behind blocks. |
 | `display.shimmer_strength` | double | `0.35` | 0.0 ~ 1.0 | Strength of the additive enchantment-style shimmer; 0 skips the whole shimmer pass. |
-| `display.stripe_scale` | double | `0.5` | 0.05 ~ 4.0 | Width of one diagonal stripe in blocks — smaller means denser stripes. |
+| `display.stripe_scale` | double | `0.5` | 0.05 ~ 4.0 | Width of one diagonal stripe in blocks; smaller means denser stripes. |
 | `scan.horizontal_radius` | int | `16` | 4 ~ 48 | How far around the player spawn positions are scanned (blocks). |
 | `scan.mark_spider_spots` | boolean | `true` | — | Additionally outline positions with enough room (2x2) for a spider to spawn. |
 | `scan.max_markers` | int | `6000` | 100 ~ 60000 | Safety cap on how many markers a single scan may collect. |
@@ -272,18 +272,18 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| One render type per pass, not per marker | `SpawnOverlayRenderer.render` used to fetch its three `VertexConsumer`s (stripes, the shimmer when `display.shimmer_strength > 0`, and the outline) before the marker loop and then write to them in turn. None of the render types is registered through `RegisterRenderBuffersEvent`, so they all land on the same `ByteBufferBuilder`, and `getBuffer` ends the previous shared batch before handing out the next one — `BufferBuilder.build()` leaves the earlier builder with `building = false`. The first write to the already-ended stripe consumer hit `ensureBuilding()` and threw `IllegalStateException: Not building!` inside `RenderLevelStageEvent`, which nothing catches — `ClientHooks.dispatchRenderStage` is a bare `NeoForge.EVENT_BUS.post`, so it unwound out of `LevelRenderer.renderLevel` into the `catch (Throwable)` in `Minecraft.run` and the client went to a crash report, as soon as the overlay was on with at least one marker. The renderer now walks the markers once per render type and takes each consumer at the start of its own pass, so only one batch is ever open. Not yet confirmed in game. |
-| It cannot say *which* mob spawns | `Biome.NETWORK_CODEC` strips `MobSpawnSettings`, so the client never receives a biome's spawn lists. The answer is "is this a valid ground-spawn position for monsters", not "what spawns here" — a biome with no monsters in its list still lights up. |
+| One render type per pass, not per marker | `SpawnOverlayRenderer.render` used to fetch its three `VertexConsumer`s (stripes, the shimmer when `display.shimmer_strength > 0`, and the outline) before the marker loop and then write to them in turn. None of the render types is registered through `RegisterRenderBuffersEvent`, so they all land on the same `ByteBufferBuilder`, and `getBuffer` ends the previous shared batch before handing out the next one (`BufferBuilder.build()` leaves the earlier builder with `building = false`). The first write to the already-ended stripe consumer hit `ensureBuilding()` and threw `IllegalStateException: Not building!` inside `RenderLevelStageEvent`, which nothing catches. `ClientHooks.dispatchRenderStage` is a bare `NeoForge.EVENT_BUS.post`, so the exception unwound out of `LevelRenderer.renderLevel` into the `catch (Throwable)` in `Minecraft.run` and the client went to a crash report, as soon as the overlay was on with at least one marker. The renderer now walks the markers once per render type and takes each consumer at the start of its own pass, so only one batch is ever open. Not yet confirmed in game. |
+| It cannot say *which* mob spawns | `Biome.NETWORK_CODEC` strips `MobSpawnSettings`, so the client never receives a biome's spawn lists. The overlay answers "is this a valid ground-spawn position for monsters", so a biome with no monsters in its list still lights up. |
 | One stand-in hitbox | Every position is tested with `EntityType.ZOMBIE` as the 1-wide monster, plus `EntityType.SPIDER` for the outline. Mobs with other dimensions are only approximated. |
 | Ground spawners only | Only `SpawnPlacementTypes.ON_GROUND` is evaluated. Drowned and other `IN_WATER` mobs, striders, phantoms and anything with `NO_RESTRICTIONS` are not represented at all. |
 | Thunderstorms | While it thunders, vanilla substitutes a fixed darkening of 10 (`getMaxLocalRawBrightness(pos, 10)`); the scanner always uses the plain form. During a storm a sky-lit position can therefore spawn mobs that the overlay leaves unmarked. |
 | Mob cap and the 24-block radius | Not checked, by design. A marked position need not be spawning anything at this moment. |
 | Truncated scans are silent | `SpawnOverlayState.isTruncated()` is written by the scanner but read nowhere in the repository. Nothing tells you that `max_markers` cut the scan short. |
-| Module disabled while the overlay is on | `onClientTick` checks `isActiveClientSide()`, `onRenderLevelStage` does not. Switch the overlay on and then disable the module (config key `enabled`, or the core module command): the last scan's markers keep rendering, no rescan happens, and the F3 combo is dead because the mixin bails out too. Re-enabling the module revives both — the timer rescans and F3 + M answers again, so switching the overlay off clears the list; short of that, only a restart. Read off the source, not reproduced. |
+| Module disabled while the overlay is on | `onClientTick` checks `isActiveClientSide()`, `onRenderLevelStage` does not. Switch the overlay on and then disable the module (config key `enabled`, or the core module command): the last scan's markers keep rendering, no rescan happens, and the F3 combo is dead because the mixin bails out too. Re-enabling the module revives both: the timer rescans and F3 + M answers again, so switching the overlay off clears the list. Short of that, only a restart helps. Read off the source, not reproduced. |
 | The toggle is a session-wide static | `SpawnOverlayState.enabled` has no world-unload or disconnect hook, so it stays on across world changes. Switching it off does clear the marker list; leaving the world does not. |
 | `toggle_key` set to a code vanilla uses | The mixin injects at HEAD, so our toggle wins and vanilla's own F3 shortcut for that key never runs. Codes below 32 cannot be configured at all (the range is 32–348). |
 | Dedicated server | The module registers nothing server-side; `onInitialize` only logs. Its config is still a common config, so the keys exist in the server's file and do nothing. |
-| Shader packs | The stripe animation goes through UVs rather than a texture matrix specifically to stay predictable under Iris/Sodium, per the render-type javadoc. This repository contains no test that covers it. |
+| Shader packs | Per the render-type javadoc, the stripe animation goes through UVs instead of a texture matrix so that it stays predictable under Iris/Sodium. This repository contains no test that covers it. |
 | No tests | There are no unit tests in this repository, and none of the behaviour above is covered by an automated check. |
 
 ## Under the hood
@@ -303,7 +303,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 Those ten files are the module in full: no registries, no commands, no network payloads, no `data/`
 files. There is no `KeyMapping` and no `RegisterKeyMappingsEvent` anywhere in it, so the combo does
-**not** appear in the vanilla Controls screen — it is rebound through the `toggle_key` config value
+**not** appear in the vanilla Controls screen. It is rebound through the `toggle_key` config value
 and nowhere else.
 
 **The mixin** is client-only. `KeyboardHandler` does not exist on a dedicated server, so it is listed
@@ -327,7 +327,7 @@ private void vpaToggleSpawnOverlay(int key, CallbackInfoReturnable<Boolean> cir)
 `Stage.AFTER_TRANSLUCENT_BLOCKS`. The pose stack is translated by `-cameraPos` once and every marker
 is then emitted in absolute world coordinates.
 
-**Three render types**, each in a depth-tested and an x-ray variant — six constants in all:
+**Three render types**, each in a depth-tested and an x-ray variant, make six constants in all:
 `POSITION_TEX_COLOR` quads with translucent blending for the stripes, the same with additive blending
 for the shimmer, and `POSITION_COLOR_NORMAL` lines for the spider outline. All of them use
 `VIEW_OFFSET_Z_LAYERING`, the item-entity output target, a colour-only write mask (so markers never
@@ -342,19 +342,18 @@ for (var type : SpawnOverlayRenderTypes.all(config.isSeeThroughBlocks())) {
 
 **The stripes** come from one 194-byte texture,
 `assets/vanillaplusadditions/textures/misc/spawn_overlay_stripes.png`, a seamless 45° pattern carried
-in the alpha channel. Its UVs are derived from world coordinates rather than per block, so the
-diagonal runs continuously across neighbouring markers, and each quad's UV origin is wrapped into
-`[0,1)` — the texture repeats with period 1, so wrapping is free and keeps float precision usable far
-from the world origin. The shimmer pass reuses the marker's own colour at alpha
+in the alpha channel. Its UVs are derived from world coordinates, so the diagonal runs continuously across neighbouring
+markers, and each quad's UV origin is wrapped into `[0,1)`. The texture repeats with period 1, so
+wrapping is free and keeps float precision usable far from the world origin. The shimmer pass reuses the marker's own colour at alpha
 `display.shimmer_strength`, with bands `1 / 0.35` ≈ 2.9× wider than the base stripes travelling 3.5×
-faster; keeping the hue is deliberate, because additive blending multiplies rgb by alpha and a white
-glint would wash the field out. `display.shimmer_strength = 0` skips the pass entirely.
+faster. The hue is kept on purpose: additive blending multiplies rgb by alpha, and a white glint
+would wash the field out. `display.shimmer_strength = 0` skips the pass entirely.
 
 The animation clock is `level.getGameTime() % 24000L + partialTick`, so the stripes stop while the
 game is paused and the phase wraps once per Minecraft day.
 
 **Gating.** `MobSpawnOverlayModule.isActiveClientSide()` resolves through
-`AbstractModule.isModuleEnabled()`, which asks `ModuleManager.resolveModuleEnabled` on every call —
+`AbstractModule.isModuleEnabled()`, which asks `ModuleManager.resolveModuleEnabled` on every call,
 so disabling the module takes effect live for the key and the rescan timer. It is not consulted by the
 render handler; see the limits above.
 
@@ -362,12 +361,12 @@ render handler; see the limits above.
 lang keys (`message.vanillaplusadditions.mob_spawn_overlay.on` / `.off`, translated in `de_de`,
 `de_at`, `cs_cz`, `fr_fr` and `es_es`) live in `vpa_core`, which every module jar requires anyway.
 
-**History.** Exactly one commit ever touched this module, its mixin and its standalone entry point —
-`cbb4dc8`, 2026-08-05 — and nothing has changed since. That commit also introduced the build's
+**History.** Exactly one commit ever touched this module, its mixin and its standalone entry point
+(`cbb4dc8`, 2026-08-05), and nothing has changed since. That commit also introduced the build's
 `clientMixins` support, which the `KeyboardHandler` hook needed.
 
 ## See also
 
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
-* [Module System](../guides/module-system.md) — enabling and disabling modules
+* [Configuration Guide](../guides/configuration.md): where the config file lives
+* [Module System](../guides/module-system.md): enabling and disabling modules
 * [All modules](../../README.md#-modules)

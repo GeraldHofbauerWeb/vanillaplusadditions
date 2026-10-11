@@ -13,7 +13,7 @@ Two keys exist in every module and are not repeated below:
 
 ## `arm_target_overlay` — Arm Target Overlay
 
-Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm to see glowing boxes around every block it takes from (orange) and deposits into (teal) - even through walls. · [full page](../modules/arm_target_overlay.md)
+Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm, and every block it takes from is outlined in orange, every block it deposits into in teal, even through walls. · [full page](../modules/arm_target_overlay.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -28,7 +28,7 @@ Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm to s
 
 ## `axolotl_guardian` — Axolotl Guardian
 
-Tame axolotls with raw fish, put a bowl or feeding station in your underwater base, and the fed axolotls patrol a configurable radius around it, killing hostile mobs in the water and hauling their loot and XP back to the station. · [full page](../modules/axolotl_guardian.md)
+Tame axolotls with fish, put a bowl or a feeding station in your underwater base, and the fed axolotls patrol the water around it, kill what swims in and carry the loot and the experience back. · [full page](../modules/axolotl_guardian.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -38,7 +38,7 @@ Tame axolotls with raw fish, put a bowl or feeding station in your underwater ba
 | `fed_duration_ticks` | int | `6000` | 20 ~ 144000 | How many ticks a single tropical fish keeps an axolotl in the 'fed' (guarding) state (20 ticks = 1 second). |
 | `glow_duration_seconds` | int | `30` | 1 ~ 300 | How many seconds your own associated axolotls glow (client-side only) when looking at their bowl. The getter multiplies by 20, so the code works in ticks (default 600). |
 | `guard_radius` | double | `32.0` | 2.0 ~ 128.0 | Horizontal radius (blocks, XZ) around the associated bowl in which a fed axolotl scans for hostile mobs in water. |
-| `guard_radius_y` | double | `16.0` | 2.0 ~ 128.0 | Vertical radius (blocks, Y) around the associated bowl - axolotls ignore mobs further away vertically. |
+| `guard_radius_y` | double | `16.0` | 2.0 ~ 128.0 | Vertical radius (blocks, Y) around the associated bowl; axolotls ignore mobs further away vertically. |
 | `heal_recovery_target` | double | `1.0` | 0.0 ~ 1.0 | While at/near its home block (distance squared <= 16), a guardian axolotl keeps regenerating until its health reaches this fraction of max HP. |
 | `heal_return_threshold` | double | `0.60` | 0.0 ~ 1.0 | A fed, out-of-combat guardian whose health drops below this fraction of max HP proactively swims back to its bowl/station to heal. |
 | `max_axolotls_per_station` | int | `8` | 1 ~ 64 | Maximum number of axolotls that can be associated with a single bowl or station. Also the divisor of the feeding station's comparator output. |
@@ -49,22 +49,22 @@ Tame axolotls with raw fish, put a bowl or feeding station in your underwater ba
 
 ## `battle_dogs` — Battle Dogs
 
-Tamed wolves can wear iron, gold, diamond or netherite body armor that soaks up every point of incoming damage until it breaks, makes the wolf hit noticeably harder, and finally gives a biting wolf a visible head-snap and lunge instead of vanilla's motionless attack. · [full page](../modules/battle_dogs.md)
+Tamed wolves can wear iron, gold, diamond or netherite body armor that soaks up every point of incoming damage until it breaks, makes the wolf hit noticeably harder, and gives a biting wolf a visible head-snap and lunge instead of vanilla's motionless attack. · [full page](../modules/battle_dogs.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `bite_animation.enabled` | boolean | `true` | — | Snap the wolf's head down when it lands a bite. Also gates the lunge and the server-side bite-direction packet; it does NOT gate the swing-timer mixin. |
 | `bite_animation.only_when_ridden` | boolean | `false` | — | Restrict the animation to a wolf that is being ridden (off by default, because a dog that only bites visibly while carrying someone looks stranger than one that always does). |
 | `bite_animation.strength` | double | `1.0` | 0.0 ~ 2.0 | Scales how far the head swings and how far the lunge travels; 1.0 is about 50 degrees of head pitch (BITE_PITCH = 0.9 rad). |
-| `fall_absorb_blocks` | double | `5.0` | 0.0 ~ 256.0 | Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright - so no hurt flash and no armor sound either. |
+| `fall_absorb_blocks` | double | `5.0` | 0.0 ~ 256.0 | Fall distance up to which an armored wolf takes no fall damage at all and its armor no wear. Measured on the wolf's fallDistance, not on the damage, so 5 means a five-block drop is free; vanilla already subtracts three blocks before a fall hurts. 0 switches it off. Enforced in onWolfIncomingDamage, which cancels LivingEntity.hurt outright, so there is no hurt flash and no armor sound either. |
 | `fall_absorb_size_curve` | enum (ADDITIVE, MULTIPLICATIVE) | `ADDITIVE` | — | Which ladder fall_absorb_size_factor climbs, the same choice special_gemstones offers under stat_curve. ADDITIVE gives a size-3.25 wolf 12.5 free blocks, MULTIPLICATIVE 10.0. Keep both modules on the same setting unless you want them to disagree on purpose. |
-| `fall_absorb_size_factor` | double | `1.5` | 1.0 ~ 8.0 | How much further a bigger wolf falls for free: fall_absorb_blocks is multiplied by this factor raised to (size - 1), the same ladder util/SizeScaling gives the size gemstones. A wolf at twice the usual size gets 1.5x the free fall (7.5 blocks at the defaults), one at three times gets 2.25x, and Sif at 3.25 gets 12.5 blocks. Armour that covers twice the animal covers twice the landing. 1.0 switches it off and every wolf falls the same. |
+| `fall_absorb_size_factor` | double | `1.5` | 1.0 ~ 8.0 | How much further a bigger wolf falls for free: fall_absorb_blocks is multiplied by this factor raised to (size - 1), the same ladder util/SizeScaling gives the size gemstones. A wolf at twice the usual size gets 1.5x the free fall (7.5 blocks at the defaults), one at three times gets 2.25x, and Sif at 3.25 gets 12.5 blocks. 1.0 switches it off and every wolf falls the same. |
 | `foxhounds_bite_fire_immune` | boolean | `true` | — | Let tamed Quark foxhounds bite targets that cannot burn (wild ones keep Quark's behaviour, so Fire Resistance still protects players from them). Quark's Foxhound.doHurtTarget returns false before any damage when the target is fireImmune(), has Fire Resistance or a BURNING_TIME of 0 or less (zombified piglins, wither skeletons, blazes, ...), so the hound chases them without ever hurting them. FoxhoundFireImmuneBiteMixin neutralises those three checks; the hit then ignites (harmless to fire-immune mobs) and bites normally. Without Quark the key does nothing. |
 | `thorns_reflect_fraction` | double | `0.33` | 0.0 ~ 1.0 | Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). Total reflect is capped at 1.0 (min(1.0, fraction * thornsLevel)). |
 
 ## `better_mobs` — Better Mobs
 
-Hostile mobs spawn kitted out - battle-worn armour, permanent potion effects and, for skeletons, a random enchanted weapon - with the loot table getting nastier below Y=0 and nastiest of all in the Nether and the End. · [full page](../modules/better_mobs.md)
+Hostile mobs spawn kitted out with battle-worn armour, permanent potion effects and, for skeletons, a random enchanted weapon; the loot table gets nastier below Y=0 and nastiest of all in the Nether and the End. · [full page](../modules/better_mobs.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -72,13 +72,13 @@ Hostile mobs spawn kitted out - battle-worn armour, permanent potion effects and
 | `below_zero` | list | `GEAR_TYPES;gold;10, GEAR_TYPES;iron;30, GEAR_TYPES;leather;10, GEAR_TYPES;diamond;30, ARMOR_CHANCES;helmet;80, ARMOR_CHANCES;chestplate;70, ARMOR_CHANCES;leggings;65, ARMOR_CHANCES;boots;60, HELMET_ENCHANTMENTS;protection;30, HELMET_ENCHANTMENTS;fire_protection;15, HELMET_ENCHANTMENTS;blast_protection;15, HELMET_ENCHANTMENTS;projectile_protection;15, HELMET_ENCHANTMENTS;respiration;20, HELMET_ENCHANTMENTS;aqua_affinity;15, HELMET_ENCHANTMENTS;thorns;10, WEAPON_ENCHANTMENTS;sharpness;25, WEAPON_ENCHANTMENTS;fire_aspect;10, WEAPON_ENCHANTMENTS;knockback;10, WEAPON_ENCHANTMENTS;unbreaking;20, WEAPON_ENCHANTMENTS;power;20, WEAPON_ENCHANTMENTS;punch;10, WEAPON_ENCHANTMENTS;flame;10, CHESTPLATE_ENCHANTMENTS;protection;30, CHESTPLATE_ENCHANTMENTS;fire_protection;15, CHESTPLATE_ENCHANTMENTS;blast_protection;15, CHESTPLATE_ENCHANTMENTS;projectile_protection;15, CHESTPLATE_ENCHANTMENTS;thorns;10, LEGGINGS_ENCHANTMENTS;protection;30, LEGGINGS_ENCHANTMENTS;fire_protection;15, LEGGINGS_ENCHANTMENTS;blast_protection;15, LEGGINGS_ENCHANTMENTS;projectile_protection;15, LEGGINGS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;protection;30, BOOTS_ENCHANTMENTS;fire_protection;15, BOOTS_ENCHANTMENTS;blast_protection;15, BOOTS_ENCHANTMENTS;projectile_protection;15, BOOTS_ENCHANTMENTS;feather_falling;20, BOOTS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;depth_strider;10, BOOTS_ENCHANTMENTS;frost_walker;10, ENCHANTMENT_LEVELS;min_level;2, ENCHANTMENT_LEVELS;max_level;4, ARMOR_DURABILITY;min_percent;5, ARMOR_DURABILITY;max_percent;20, POTION_EFFECTS;speed;10, POTION_EFFECTS;strength;10, POTION_EFFECTS;haste;10, POTION_EFFECTS;fire_resistance;10, WEAPON_TYPES;iron;50, WEAPON_TYPES;gold;20, WEAPON_TYPES;diamond;30, WEAPON_RANDOMIZER;minecraft:skeleton;sword;40, WEAPON_RANDOMIZER;minecraft:skeleton;axe;30` | no validator - plain builder.define(...) with a List<String> default, NOT defineList(), so there is no per-element type check and no range. Entry grammar: <CONFIG_KEY>;<property>;<chance-or-value>, except WEAPON_RANDOMIZER which is 4 parts: WEAPON_RANDOMIZER;<mob_id>;<weapon_type>;<chance>. Valid CONFIG_KEYs (BetterMobsConfigKey.java): GEAR_TYPES, HELMET_ENCHANTMENTS, CHESTPLATE_ENCHANTMENTS, LEGGINGS_ENCHANTMENTS, BOOTS_ENCHANTMENTS, ENCHANTMENT_LEVELS, ARMOR_DURABILITY, POTION_EFFECTS, ARMOR_CHANCES, WEAPON_RANDOMIZER, WEAPON_TYPES, WEAPON_ENCHANTMENTS. Unknown keys are silently skipped (BetterMobsConfig.java:530-532); a non-numeric chance throws (see notes). | Config comment: "Configuration for mobs spawned below Y=0 or in the Nether/End". The Nether/End half of that comment is WRONG: getDimensionConfigEntries (BetterMobsConfig.java:697-704) routes Level.NETHER and Level.END to nether_end first, so below_zero only ever applies to Y < 0 in all other dimensions. |
 | `drop_chance` | int | `10` | 0 ~ 100 | Chance (in percentage) for mobs to drop their enhanced gear upon death (0-100). Written per filled equipment slot via Mob#setDropChance(slot, value/100f); slots the module does not fill keep their vanilla drop chance. |
 | `enabled_mobs` | list | `minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:stray, minecraft:drowned, minecraft:spider, minecraft:cave_spider, minecraft:witch, minecraft:pillager, minecraft:vindicator, minecraft:evoker, minecraft:illusioner, minecraft:blaze, minecraft:wither_skeleton, minecraft:guardian, minecraft:elder_guardian, minecraft:shulker, minecraft:warden, minecraft:piglin, minecraft:zombified_piglin` | defineList with element validator o instanceof String; no id validation, so a typo or an unloaded mod's entity id is simply never matched. Only entities that extend net.minecraft.world.entity.monster.Monster are ever processed, whatever is listed here. | List of mob entity IDs that should receive random equipment. minecraft:shulker in the default list is a permanent no-op (Shulker extends AbstractGolem, not Monster). |
-| `enabled_mobs_with_armor` | list | `minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:wither_skeleton` | defineList with element validator o instanceof String; no id validation. | List of mob entity IDs that can receive armor. A second gate applied on top of enabled_mobs (BetterMobsModule.java:171) - a mob missing here still gets weapons and potion effects, but no armor. |
-| `max_durability` | int | `100` | 1 ~ 100 | Config comment: "Maximum durability for enhanced gear as percentage (1-100%)". Actually the REMAINING durability in percent (100 = pristine, 1 = nearly broken) and it is applied ONLY to the main-hand weapon (BetterMobsModule.java:141-145), never to armor - armor uses the per-zone ARMOR_DURABILITY rolls instead. |
-| `nether_end` | list | `GEAR_TYPES;netherite;30, ARMOR_CHANCES;helmet;80, ARMOR_CHANCES;chestplate;70, ARMOR_CHANCES;leggings;65, ARMOR_CHANCES;boots;60, HELMET_ENCHANTMENTS;protection;30, HELMET_ENCHANTMENTS;fire_protection;15, HELMET_ENCHANTMENTS;blast_protection;15, HELMET_ENCHANTMENTS;projectile_protection;15, HELMET_ENCHANTMENTS;thorns;10, WEAPON_ENCHANTMENTS;sharpness;30, WEAPON_ENCHANTMENTS;fire_aspect;15, WEAPON_ENCHANTMENTS;knockback;15, WEAPON_ENCHANTMENTS;unbreaking;25, WEAPON_ENCHANTMENTS;power;25, WEAPON_ENCHANTMENTS;punch;15, WEAPON_ENCHANTMENTS;flame;15, CHESTPLATE_ENCHANTMENTS;protection;30, CHESTPLATE_ENCHANTMENTS;fire_protection;15, CHESTPLATE_ENCHANTMENTS;blast_protection;15, CHESTPLATE_ENCHANTMENTS;projectile_protection;15, CHESTPLATE_ENCHANTMENTS;thorns;10, LEGGINGS_ENCHANTMENTS;protection;30, LEGGINGS_ENCHANTMENTS;fire_protection;15, LEGGINGS_ENCHANTMENTS;blast_protection;15, LEGGINGS_ENCHANTMENTS;projectile_protection;15, LEGGINGS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;protection;30, BOOTS_ENCHANTMENTS;fire_protection;15, BOOTS_ENCHANTMENTS;blast_protection;15, BOOTS_ENCHANTMENTS;projectile_protection;15, BOOTS_ENCHANTMENTS;feather_falling;20, BOOTS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;depth_strider;10, BOOTS_ENCHANTMENTS;frost_walker;10, ENCHANTMENT_LEVELS;min_level;2, ENCHANTMENT_LEVELS;max_level;4, ARMOR_DURABILITY;min_percent;5, ARMOR_DURABILITY;max_percent;20, POTION_EFFECTS;speed;20, POTION_EFFECTS;strength;10, POTION_EFFECTS;haste;10, POTION_EFFECTS;fire_resistance;10, WEAPON_TYPES;gold;65, WEAPON_TYPES;netherite;35, WEAPON_RANDOMIZER;minecraft:skeleton;sword;45, WEAPON_RANDOMIZER;minecraft:skeleton;axe;35` | no validator - plain builder.define(...) with a List<String> default, NOT defineList(), so there is no per-element type check and no range. Entry grammar: <CONFIG_KEY>;<property>;<chance-or-value>, except WEAPON_RANDOMIZER which is 4 parts: WEAPON_RANDOMIZER;<mob_id>;<weapon_type>;<chance>. Valid CONFIG_KEYs (BetterMobsConfigKey.java): GEAR_TYPES, HELMET_ENCHANTMENTS, CHESTPLATE_ENCHANTMENTS, LEGGINGS_ENCHANTMENTS, BOOTS_ENCHANTMENTS, ENCHANTMENT_LEVELS, ARMOR_DURABILITY, POTION_EFFECTS, ARMOR_CHANCES, WEAPON_RANDOMIZER, WEAPON_TYPES, WEAPON_ENCHANTMENTS. Unknown keys are silently skipped (BetterMobsConfig.java:530-532); a non-numeric chance throws (see notes). | Config comment: "Configuration for mobs spawned in the Nether or End dimension". Applies at every Y in those two dimensions, and it is ONE shared block for both - there is no way to configure Nether and End separately (see the TODO at BetterMobsConfig.java:287). |
+| `enabled_mobs_with_armor` | list | `minecraft:zombie, minecraft:skeleton, minecraft:husk, minecraft:wither_skeleton` | defineList with element validator o instanceof String; no id validation. | List of mob entity IDs that can receive armor. A second gate applied on top of enabled_mobs (BetterMobsModule.java:171). A mob missing here still gets weapons and potion effects, but no armor. |
+| `max_durability` | int | `100` | 1 ~ 100 | Config comment: "Maximum durability for enhanced gear as percentage (1-100%)". It is really the REMAINING durability in percent (100 = pristine, 1 = nearly broken) and it is applied ONLY to the main-hand weapon (BetterMobsModule.java:141-145), never to armor; armor uses the per-zone ARMOR_DURABILITY rolls instead. |
+| `nether_end` | list | `GEAR_TYPES;netherite;30, ARMOR_CHANCES;helmet;80, ARMOR_CHANCES;chestplate;70, ARMOR_CHANCES;leggings;65, ARMOR_CHANCES;boots;60, HELMET_ENCHANTMENTS;protection;30, HELMET_ENCHANTMENTS;fire_protection;15, HELMET_ENCHANTMENTS;blast_protection;15, HELMET_ENCHANTMENTS;projectile_protection;15, HELMET_ENCHANTMENTS;thorns;10, WEAPON_ENCHANTMENTS;sharpness;30, WEAPON_ENCHANTMENTS;fire_aspect;15, WEAPON_ENCHANTMENTS;knockback;15, WEAPON_ENCHANTMENTS;unbreaking;25, WEAPON_ENCHANTMENTS;power;25, WEAPON_ENCHANTMENTS;punch;15, WEAPON_ENCHANTMENTS;flame;15, CHESTPLATE_ENCHANTMENTS;protection;30, CHESTPLATE_ENCHANTMENTS;fire_protection;15, CHESTPLATE_ENCHANTMENTS;blast_protection;15, CHESTPLATE_ENCHANTMENTS;projectile_protection;15, CHESTPLATE_ENCHANTMENTS;thorns;10, LEGGINGS_ENCHANTMENTS;protection;30, LEGGINGS_ENCHANTMENTS;fire_protection;15, LEGGINGS_ENCHANTMENTS;blast_protection;15, LEGGINGS_ENCHANTMENTS;projectile_protection;15, LEGGINGS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;protection;30, BOOTS_ENCHANTMENTS;fire_protection;15, BOOTS_ENCHANTMENTS;blast_protection;15, BOOTS_ENCHANTMENTS;projectile_protection;15, BOOTS_ENCHANTMENTS;feather_falling;20, BOOTS_ENCHANTMENTS;thorns;10, BOOTS_ENCHANTMENTS;depth_strider;10, BOOTS_ENCHANTMENTS;frost_walker;10, ENCHANTMENT_LEVELS;min_level;2, ENCHANTMENT_LEVELS;max_level;4, ARMOR_DURABILITY;min_percent;5, ARMOR_DURABILITY;max_percent;20, POTION_EFFECTS;speed;20, POTION_EFFECTS;strength;10, POTION_EFFECTS;haste;10, POTION_EFFECTS;fire_resistance;10, WEAPON_TYPES;gold;65, WEAPON_TYPES;netherite;35, WEAPON_RANDOMIZER;minecraft:skeleton;sword;45, WEAPON_RANDOMIZER;minecraft:skeleton;axe;35` | no validator - plain builder.define(...) with a List<String> default, NOT defineList(), so there is no per-element type check and no range. Entry grammar: <CONFIG_KEY>;<property>;<chance-or-value>, except WEAPON_RANDOMIZER which is 4 parts: WEAPON_RANDOMIZER;<mob_id>;<weapon_type>;<chance>. Valid CONFIG_KEYs (BetterMobsConfigKey.java): GEAR_TYPES, HELMET_ENCHANTMENTS, CHESTPLATE_ENCHANTMENTS, LEGGINGS_ENCHANTMENTS, BOOTS_ENCHANTMENTS, ENCHANTMENT_LEVELS, ARMOR_DURABILITY, POTION_EFFECTS, ARMOR_CHANCES, WEAPON_RANDOMIZER, WEAPON_TYPES, WEAPON_ENCHANTMENTS. Unknown keys are silently skipped (BetterMobsConfig.java:530-532); a non-numeric chance throws (see notes). | Config comment: "Configuration for mobs spawned in the Nether or End dimension". Applies at every Y in those two dimensions, and it is ONE shared block for both; there is no way to configure Nether and End separately (see the TODO at BetterMobsConfig.java:287). |
 
 ## `block_glow` — Block Glow
 
-Type /blockglow iron_ore and every matching block within a set radius is outlined in glowing cyan through walls, until a timer runs out or you clear it. · [full page](../modules/block_glow.md)
+Type `/blockglow iron_ore` and every matching block around you is outlined in cyan, straight through the rock, until the timer runs out or you clear it. · [full page](../modules/block_glow.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -94,7 +94,7 @@ Type /blockglow iron_ore and every matching block within a set radius is outline
 
 ## `bluemap_signs` — BlueMap Signs
 
-Put `[bm]` on the first line of any sign and that spot shows up as a labelled, icon-picked pin on your server's BlueMap web map — plus `/bmsigns` to place and edit pins that have no sign at all. · [full page](../modules/bluemap_signs.md)
+Put `[bm]` on the first line of any sign and that spot shows up as a labelled, icon-picked pin on your server's BlueMap web map; `/bmsigns` places and edits pins that have no sign at all. · [full page](../modules/bluemap_signs.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -116,7 +116,7 @@ Tamed cats you hook up to a fish bowl or feeding station become base guards: the
 | `fed_duration_ticks` | int | `6000` | 20 ~ 144000 | How many ticks a single fish feeding keeps a cat in the 'fed' (guarding) state (20 ticks = 1 second). |
 | `glow_duration_seconds` | int | `30` | 1 ~ 300 | How many seconds the (client-side) glow lasts on associated cats when looking at their bowl. Consumed as ticks via getGlowDurationTicks() = value * 20. |
 | `guard_radius` | double | `32.0` | 2.0 ~ 128.0 | Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs. |
-| `guard_radius_y` | double | `16.0` | 2.0 ~ 128.0 | Vertical radius (blocks, Y) around the associated bowl - cats ignore mobs further away vertically. |
+| `guard_radius_y` | double | `16.0` | 2.0 ~ 128.0 | Vertical radius (blocks, Y) around the associated bowl; cats ignore mobs that are further away vertically. |
 | `max_cats_per_station` | int | `8` | 1 ~ 64 | Maximum number of cats that can be associated with a single bowl or station. Also the divisor of the feeding station's comparator output. |
 | `station_xp_capacity` | int | `5000` | 0 ~ 100000 | Maximum XP points a feeding station can hold before overflow stays on cats. |
 | `thorns_reflect_fraction` | double | `0.33` | 0.0 ~ 1.0 | Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full). |
@@ -124,20 +124,20 @@ Tamed cats you hook up to a fish bowl or feeding station become base guards: the
 
 ## `chunk_reset` — Chunk Reset Command
 
-An operator-only command that permanently deletes the chunk you're standing in — or up to an 11x11 square around you — so the world generator builds that terrain again from scratch, wiping every block, entity and structure in it. · [full page](../modules/chunk_reset.md)
+An operator-only command that permanently deletes the chunk you are standing in, or up to an 11×11 square around you, so the world generator builds that terrain again from scratch. · [full page](../modules/chunk_reset.md)
 
 No settings of its own.
 
 ## `compass_overhaul` — Compass Overhaul
 
-Your lodestone compass stops forgetting where it was bound, the needle stays steady aboard a Create Aeronautics airship, and a craftable World Compass always points true north — in the Nether and the End too. · [full page](../modules/compass_overhaul.md)
+A lodestone compass stops forgetting where it was bound, the needle stays steady aboard a Create Aeronautics airship, and a craftable World Compass always points north, in the Nether and the End as well. · [full page](../modules/compass_overhaul.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `fix_quark_compass` | boolean | `true` | — | Repairs the needle where Quark's 'Compasses Work Everywhere' takes it over (aim at block centre instead of the north-west corner, honour Sable sub-levels, keep an item frame's rotation steps); without Quark it does nothing. |
 | `fix_sublevel_needle` | boolean | `true` | — | Corrects the compass needle inside Sable sub-levels (Create Aeronautics airships), using the interpolated render pose instead of Sable's previous-tick pose; turn it off if another mod fights over the same method. |
 | `guard_lodestone_binding` | boolean | `true` | — | Keeps a lodestone compass bound unless the lodestone is provably gone, instead of dropping the binding whenever vanilla's POI lookup comes back empty (which also happens for an unloaded chunk or an unreadable POI file). |
-| `world_compass_enabled` | boolean | `true` | — | Adds the World Compass recipe — a compass that always points north in world space, including the Nether, the End and aboard a turning airship. NOTE: only the recipe is actually gated; the item itself is registered regardless (see notes). |
+| `world_compass_enabled` | boolean | `true` | — | Adds the World Compass recipe: a compass that always points north in world space, including the Nether, the End and aboard a turning airship. NOTE: only the recipe is actually gated; the item itself is registered regardless (see notes). |
 
 ## `conduit_attack_range` — Conduit Attack Range
 
@@ -145,29 +145,29 @@ Your conduit shoots hostile mobs as soon as it is active (16 frame blocks) inste
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `min_frames` | int | `16` | 1 ~ 96 (effective 16 ~ 42) | Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). Note the conduit's angry open-eye texture still needs 42 frames - the mixin does not touch updateHunting. |
+| `min_frames` | int | `16` | 1 ~ 96 (effective 16 ~ 42) | Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). The conduit's angry open-eye texture still needs 42 frames, because the mixin does not touch updateHunting. |
 | `radius_divisor` | int | `2` | 1 ~ 16 | Hostile-damage radius = Conduit Power radius (frames / 7 * 16) / this divisor, floored at 1 block. 2 (default) = half the effect radius: 16 blocks at 16 frames, 48 at 42. 1 = full effect radius (32 / 96). The module additionally clamps the value with Math.max(1, ...). |
 
 ## `copycat_pathfinding` — Copycat Pathfinding
 
-Mobs use a passage whose wall, ceiling or floor is lined with Create Copycat Panels again — walking along and under the 3-pixel plate, standing on a supported floor panel, swimming through a waterlogged one — while a panel standing squarely across the way still stops them. · [full page](../modules/copycat_pathfinding.md)
+Mobs use a passage lined with Create Copycat Panels again instead of treating the 3-pixel plate as a solid wall, while a panel standing squarely across the way still stops them. · [full page](../modules/copycat_pathfinding.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `direction_aware` | boolean | `true` | — | Blocks only those movements that actually cross a panel's plate; false makes wall and ceiling panels passable from every side, which lets mobs walk into a panel wall and get stuck against it. |
+| `direction_aware` | boolean | `true` | — | Blocks only those movements that cross a panel's plate; false makes wall and ceiling panels passable from every side, which lets mobs walk into a panel wall and get stuck against it. |
 | `floor_panels_walkable` | boolean | `true` | — | Treats a floor panel (FACING=UP) resting on something solid as walkable ground instead of a wall, fixing passages only one block high, while a floor panel with air below stays as it is so mobs keep crossing free-standing panel bridges. |
 | `water_pathfinding` | boolean | `true` | — | Lets waterlogged panels and steps count as water for swimming mobs, like vanilla slabs do, where Create blocks them outright. |
 
 ## `create_redstone_link_rebinder` — Create Redstone Link Rebinder
 
-Redstone Links that quietly stopped reaching their receivers after a chunk reload are found and reconnected, so buttons and levers on a frequency keep working instead of needing the transmitter block replaced by hand. · [full page](../modules/create_redstone_link_rebinder.md)
+Redstone Links that quietly stopped reaching their receivers after a chunk reload are found and reconnected, so a button keeps opening its door without anyone replacing the transmitter block by hand. · [full page](../modules/create_redstone_link_rebinder.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `auto_rebind_during_sweep` | boolean | `true` | — | Whether the periodic sweep may re-register missing links. This is the one that does the work in practice - turning it off effectively disables the module's automatic repair. |
+| `auto_rebind_during_sweep` | boolean | `true` | — | Whether the periodic sweep may re-register missing links. In practice the sweep does the work, so turning this off effectively disables the module's automatic repair. |
 | `auto_rebind_on_chunk_load` | boolean | `true` | — | Whether the post-load check may re-register a missing link itself. Turning it off leaves only /vparelink. |
-| `check_interval_ticks` | integer | `100` | 20-1200 | How often all tracked links are swept. Only remembered positions in loaded chunks are read - never a world scan. This is the value that matters: every one of the ten links repaired after the cold load was found here. Lowering it shortens how long a door stays dead; raising it costs only reaction time. |
-| `post_load_delay_ticks` | integer | `20` | 0-600 | Ticks between a chunk with redstone links loading and the targeted check of those links. This is the early net, for links that never register at all. Measured on games2 on 2026-09-23: after a cold load ten links were missing from their network and NOT ONE was caught here - at 20 ticks they all still looked correct and dropped out afterwards. Do not tune this hoping to catch that case; the sweep does. |
+| `check_interval_ticks` | integer | `100` | 20-1200 | How often all tracked links are swept. Only remembered positions in loaded chunks are read, so there is no world scan. Every one of the ten links repaired after the cold load was found by this sweep. Lowering it shortens how long a door stays dead; raising it costs only reaction time. |
+| `post_load_delay_ticks` | integer | `20` | 0-600 | Ticks between a chunk with redstone links loading and the targeted check of those links. This is the early net, for links that never register at all. Measured on games2 on 2026-09-23: after a cold load ten links were missing from their network and not one was caught here; at 20 ticks they all still looked correct and dropped out afterwards. Do not tune this hoping to catch that case; the sweep does. |
 
 ## `create_stock_link_keepalive` — Create Stock Link Keepalive
 
@@ -177,30 +177,30 @@ Factory Gauges stop ordering a fresh batch of something the vault is already ful
 |---|---|---|---|---|
 | `grace_ticks` | integer | `60` | 0-600 | How long factory panels are held after their chunk loads, before the condition below takes over. Covers the case where the chunks really did unload and the links have to register from scratch. |
 | `hold_on_chunk_load` | boolean | `true` | — | Whether the chunk-load hold runs at all. The keepalive above is unaffected by this key. |
-| `hold_until_network_reports` | boolean | `true` | — | Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait is always a guess; this is the fact the guess stood for. Bounded by max_hold_ticks. |
-| `keepalive_interval_ticks` | integer | `5` | 1-19 | How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks - one second - after a link last refreshed it, and only the link's own lazyTick() does that, which needs a TICKING chunk. Must stay below 20; 5 leaves a margin of four. |
-| `max_hold_ticks` | integer | `600` | 60-6000 | Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links - measured on five gauges whose network has none at all. They are then released and Create decides for itself again. |
+| `hold_until_network_reports` | boolean | `true` | — | Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait can only guess how long the links take to report; this checks whether they have. Bounded by max_hold_ticks. |
+| `keepalive_interval_ticks` | integer | `5` | 1-19 | How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks (one second) after a link last refreshed it, and only the link's own lazyTick() does that, which needs a ticking chunk. Must stay below 20; 5 leaves a margin of four. |
+| `max_hold_ticks` | integer | `600` | 60-6000 | Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links, as measured on five gauges whose network has none at all. They are then released and Create decides for itself again. |
 
 ## `create_water_wheel_unstucker` — Create Water Wheel Unstucker
 
-Create water wheels that quietly stopped turning after their chunk was unloaded and reloaded get spotted and started again - automatically only where the repair is provably harmless (Create's own stress bookkeeping), and on demand with /vpaunstuck. · [full page](../modules/create_water_wheel_unstucker.md)
+Create water wheels that quietly stopped turning after a chunk reload get spotted and started again by themselves, shortly after the chunk comes back. `/vpaunstuck` runs the identical repair on demand for everything else. · [full page](../modules/create_water_wheel_unstucker.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `auto_clear_phantom_stress` | boolean | `true` | — | Whether the automatic path may also drop an unloaded-member stress tally, not just a self-contradictory one. Subordinate to `clear_phantom_stress`. It never fires immediately: the tally must have been unchanged for ten seconds while the network stayed overstressed. That wait is what makes it safe - Create seeds the tally with the whole network when a world loads and only counts it down as members load, so a tally that is still shrinking means members are still arriving. Every such clear is logged as a warning with its numbers. |
-| `auto_fix` | boolean | `false` | — | Whether the PERIODIC SWEEP may re-initialise a stalled wheel. false (default) = the sweep only detects and settles stress bookkeeping, never touching a block. This no longer governs the chunk-load path, which has its own key `auto_unstick_on_chunk_load` (default true) - the reload stall is what the module is for, while the sweep is a safety net over wheels that stalled for some other reason. |
-| `auto_unstick_on_chunk_load` | boolean | `true` | — | Whether the targeted check that runs `post_load_delay_ticks` after a chunk with wheels loads may apply the full cure, re-initialising the wheel if nothing cheaper worked - the same thing `/vpaunstuck` does by hand. This is the situation the module exists for: a wheel loses its flow score across a chunk reload. A wheel a player has just placed uses a separate trigger and is never re-initialised. Independent of `auto_fix`, which governs only the periodic sweep. |
-| `check_interval_ticks` | int | `100` | 20 ~ 1200 | How often (in ticks) all tracked water wheels are swept for stalls; only remembered wheel positions whose footprint chunks are already loaded are checked, never a global scan. The sweep is driven by the global server tick counter (server.getTickCount() % interval == 0), so every dimension is swept in the same tick. |
-| `clear_phantom_stress` | boolean | `true` | — | Allows dropping a stale unloaded-member stress tally to cure a phantom 'Overstressed' network - automatically in the sweep when the tally is provably orphaned (stress or capacity charged while unloadedMembers == 0), and in the judgement case (real unloaded members, loaded members alone would fit) only via /vpaunstuck. false disables both paths. It does not gate the preceding network recompute, which always runs for an overstressed stalled wheel. Master switch: with it off, no path clears a tally at all. With it on, the automatic path is additionally gated by `auto_clear_phantom_stress`. |
-| `hard_kick` | boolean | `true` | — | **Currently inert — nothing reads this key.** It was meant to allow a cheaper escalation step (detach and re-attach the wheel's kinetic network, the equivalent of wrenching it out and back in) before the break-and-replace re-init. That step was never wired up: `WaterWheelKinetics.softKick` and `hardKick` exist but have no callers anywhere in the module. The key is kept rather than removed so an existing config file does not silently change meaning. |
-| `max_fix_attempts` | int | `3` | 1 ~ 10 | Consecutive re-init attempts per wheel before that wheel backs off for ~5 minutes (STALL_BACKOFF_TICKS = 6000) and the attempt counter resets; the first exhaustion also logs one WARN per wheel. Applies to every automatic trigger that may re-initialise - the chunk-load path as well as the sweep. On top of it sits a hard floor of one automatic re-init per wheel per minute (MIN_REINIT_INTERVAL_TICKS = 1200). `/vpaunstuck` ignores both, clears any pending backoff and does not count towards either. Every attempt is the same break-and-replace re-init; there is no cheaper first step. |
-| `post_load_delay_ticks` | int | `60` | 0 ~ 600 | Delay in ticks between a chunk with water wheels loading - or a wheel being placed - and the targeted stall check for those wheels, so Create can finish its own init first. |
+| `auto_clear_phantom_stress` | boolean | `true` | — | Whether the automatic path may also drop an unloaded-member stress tally that has real members behind it; a self-contradictory tally is covered anyway. Subordinate to `clear_phantom_stress`. It never fires immediately: the tally must have been unchanged for ten seconds while the network stayed overstressed. That wait makes it safe. Create seeds the tally with the whole network when a world loads and only counts it down as members load, so a tally that is still shrinking means members are still arriving. Every such clear is logged as a warning with its numbers. |
+| `auto_fix` | boolean | `false` | — | Whether the PERIODIC SWEEP may re-initialise a stalled wheel. false (default) = the sweep only detects and settles stress bookkeeping, never touching a block. The chunk-load path is governed by its own key, `auto_unstick_on_chunk_load` (default true), because the reload stall is what the module is for; the sweep is a safety net over wheels that stalled for some other reason. |
+| `auto_unstick_on_chunk_load` | boolean | `true` | — | Whether the targeted check that runs `post_load_delay_ticks` after a chunk with wheels loads may apply the full cure, re-initialising the wheel if nothing cheaper worked (the same thing `/vpaunstuck` does by hand). This is the situation the module exists for: a wheel loses its flow score across a chunk reload. A wheel a player has just placed uses a separate trigger and is never re-initialised. Independent of `auto_fix`, which governs only the periodic sweep. |
+| `check_interval_ticks` | int | `100` | 20 ~ 1200 | How often (in ticks) all tracked water wheels are swept for stalls. Only remembered wheel positions whose footprint chunks are already loaded are checked; there is no global scan. The sweep is driven by the global server tick counter (server.getTickCount() % interval == 0), so every dimension is swept in the same tick. |
+| `clear_phantom_stress` | boolean | `true` | — | Allows dropping a stale unloaded-member stress tally to cure a phantom 'Overstressed' network: automatically in the sweep when the tally is provably orphaned (stress or capacity charged while unloadedMembers == 0), and in the judgement case (real unloaded members, loaded members alone would fit) only via /vpaunstuck. false disables both paths. It does not gate the preceding network recompute, which always runs for an overstressed stalled wheel. Master switch: with it off, no path clears a tally at all. With it on, the automatic path is additionally gated by `auto_clear_phantom_stress`. |
+| `hard_kick` | boolean | `true` | — | **Currently inert: nothing reads this key.** It was meant to allow a cheaper escalation step (detach and re-attach the wheel's kinetic network, the equivalent of wrenching it out and back in) before the break-and-replace re-init. That step was never wired up: `WaterWheelKinetics.softKick` and `hardKick` exist but have no callers anywhere in the module. The key is kept so an existing config file does not silently change meaning. |
+| `max_fix_attempts` | int | `3` | 1 ~ 10 | Consecutive re-init attempts per wheel before that wheel backs off for ~5 minutes (STALL_BACKOFF_TICKS = 6000) and the attempt counter resets; the first exhaustion also logs one WARN per wheel. Applies to every automatic trigger that may re-initialise, the chunk-load path as well as the sweep. On top of it sits a hard floor of one automatic re-init per wheel per minute (MIN_REINIT_INTERVAL_TICKS = 1200). `/vpaunstuck` ignores both, clears any pending backoff and does not count towards either. Every attempt is the same break-and-replace re-init; there is no cheaper first step. |
+| `post_load_delay_ticks` | int | `60` | 0 ~ 600 | Delay in ticks between a chunk with water wheels loading (or a wheel being placed) and the targeted stall check for those wheels, so Create can finish its own init first. |
 | `reinit_flood_ticks` | int | `6` | 1 ~ 40 | Ticks the wheel stays removed during a re-init so adjacent water can flood the gap and re-establish active flow before the wheel is placed back. |
-| `reinit_large_wheels` | boolean | `false` | — | Whether large (multiblock) water wheels may be re-initialised. Off by default because Create rebuilds the multiblock through `LargeWaterWheelBlock.tick`, which calls `destroyBlock(center, false)` - without drops - so a re-init that goes wrong there costs the whole structure rather than one block. Large wheels are still detected and logged. |
+| `reinit_large_wheels` | boolean | `false` | — | Whether large (multiblock) water wheels may be re-initialised. Off by default because Create rebuilds the multiblock through `LargeWaterWheelBlock.tick`, which calls `destroyBlock(center, false)` without drops, so a re-init that goes wrong there costs the whole structure instead of one block. Large wheels are still detected and logged. |
 
 ## `custom_crafting_recipes` — Custom Crafting Recipes
 
-Lets you write extra crafting recipes straight into the config file instead of a datapack - and ships a few by default: plain rails upgrade into powered/detector/activator rails, leather plus string makes a bundle, and (with Create installed) the Netherite Ingot is crafted from scrap and Powdered Obsidian with just one gold ingot left in the middle. · [full page](../modules/custom_crafting_recipes.md)
+Extra crafting recipes written straight into the config file instead of a datapack, plus a few that ship enabled: six plain rails upgrade into six powered, detector or activator rails, leather and string make a Bundle, and with Create installed a Netherite Ingot costs one gold ingot instead of four. · [full page](../modules/custom_crafting_recipes.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -209,19 +209,19 @@ Lets you write extra crafting recipes straight into the config file instead of a
 
 ## `death_coordinates` — Death Coordinates Announcer
 
-When any player dies, everyone on the server gets a chat line naming the player, the exact X/Y/Z of the death and the dimension — and if the player who died was an operator, that line is clickable and teleports whoever clicks it to the spot, provided they themselves may run commands. · [full page](../modules/death_coordinates.md)
+When any player dies, everyone on the server gets a chat line naming the player, the exact X/Y/Z of the death and the dimension. For the operators among them that line is clickable and teleports them to the spot; everybody else gets the same text without the click. · [full page](../modules/death_coordinates.md)
 
 No settings of its own.
 
 ## `debug_overlay` — Debug Overlay
 
-Wear Engineer's Goggles and press numpad + to switch on the mod's shared debug view - chunk-loader borders, Chunk Anchor areas and the guardian pets' extended stat boxes all appear and disappear together with this one key. · [full page](../modules/debug_overlay.md)
+Put on a pair of Engineer's Goggles, press numpad +, and every debug view in the mod appears at once: chunk-loader borders, Chunk Anchor areas and the guardian pets' outline boxes all hang on that one key. · [full page](../modules/debug_overlay.md)
 
 No settings of its own.
 
 ## `dispenser_bucket_guard` — Dispenser Bucket Guard
 
-A dispenser that can't use its bucket — empty bucket with no fluid in front of it, or a water bucket aimed at a solid block — keeps the bucket instead of throwing it on the floor, so an automated water door survives a misfire. · [full page](../modules/dispenser_bucket_guard.md)
+A dispenser that cannot use its bucket keeps it instead of throwing it on the floor, so one misfire no longer kills an automated water door. · [full page](../modules/dispenser_bucket_guard.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -229,7 +229,7 @@ A dispenser that can't use its bucket — empty bucket with no fluid in front of
 
 ## `end_conduit` — End Conduit
 
-A craftable violet conduit for the End: surround it with 16 Glowstone, End Stone, End Stone Bricks or Sea Lanterns - no water needed - and it grants Conduit Power on dry End ground, which (with the End Oxygen module enabled) means you can breathe there indefinitely. · [full page](../modules/end_conduit.md)
+A craftable violet conduit for the End. Ring it with 16 Glowstone, End Stone, End Stone Bricks or Sea Lanterns (no water needed) and it grants Conduit Power on dry End ground, which with the End Oxygen module enabled means you can breathe there indefinitely. · [full page](../modules/end_conduit.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -252,7 +252,7 @@ The End has no breathable air: your air bubbles drain while you are there and yo
 
 ## `enhanced_ai_leader_loot` — Enhanced AI Leader Loot
 
-Every banner-carrying "leader" mob from the Enhanced AI mod drops a handful of golden carrots (6-12) or golden apples (3-9) when you kill it - and, at a 1% chance, a single enchanted golden apple - on top of its normal loot; exactly one of those entries drops per leader, and the whole table is a single weighted config list you can rewrite. · [full page](../modules/enhanced_ai_leader_loot.md)
+Every banner-carrying leader mob from the Enhanced AI mod drops a handful of golden carrots (6 to 12) or golden apples (3 to 9) when you kill it, or, at a 1 % chance, a single enchanted golden apple, on top of its normal loot. Exactly one of those entries drops per leader, and the whole table is a single weighted config list you can rewrite. · [full page](../modules/enhanced_ai_leader_loot.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -272,16 +272,16 @@ Adds flying fish that leap out of warm oceans, plus Flying Fish Boots that let y
 
 ## `food_effects` — Food Effects
 
-Eating a configured item hands out the potion effects listed for it - and with Tough As Nails installed, the configured drinks and stews also refill the thirst bar; every listed item additionally becomes edible even on a full hunger bar. · [full page](../modules/food_effects.md)
+Eating a configured item hands out the potion effects listed for it, and with Tough As Nails installed the configured drinks and stews also refill the thirst bar; every listed item additionally becomes edible even on a full hunger bar. · [full page](../modules/food_effects.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `food_effects` | list | `["minecraft:cookie;minecraft:speed;160;1", "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0", "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0", "vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0", "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0", "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0", "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0", "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0", "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0", "minecraft:golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25", "minecraft:glow_berries;minecraft:glowing;60;0", "toughasnails:melon_juice;minecraft:regeneration;60;0", "toughasnails:glow_berry_juice;minecraft:glowing;120;0", "toughasnails:chorus_fruit_juice;minecraft:jump_boost;240;1", "minecraft:enchanted_golden_apple;toughasnails:climate_clemency;6000;0;1.0", "create:sweet_roll;minecraft:speed;120;0", "create:bar_of_chocolate;minecraft:speed;600;0", "create:bar_of_chocolate;minecraft:jump_boost;600;0", "create:chocolate_glazed_berries;minecraft:speed;60;0", "create:chocolate_glazed_berries;minecraft:jump_boost;60;0"] - 21 entries covering 18 distinct items` | no spec range; defineList with a per-entry validator: 3 to 5 semicolon-separated parts, parts[0] and parts[1] must parse as ResourceLocations, duration_in_ticks >= 0, amplifier >= 0 (optional, default 0), chance between 0.0 and 1.0 (optional, default 1.0). The "new entry" template offered by the config UI is minecraft:apple;minecraft:speed;200;0;1.0. | Item-to-potion-effect table applied when a living entity finishes eating the item. Format: item_id;effect_id;duration_in_ticks;amplifier;chance. Several lines may target the same item (all of them are applied, each rolled separately). Entries whose item or effect is not registered are dropped silently at cache load. Every listed item is additionally made always-edible via the FOOD data component; the rest of its FOOD record - saturation, eat time and the bowl it converts to - is carried over unchanged. |
+| `food_effects` | list | `["minecraft:cookie;minecraft:speed;160;1", "minecraft:rabbit_stew;toughasnails:internal_warmth;24000;0", "minecraft:mushroom_stew;toughasnails:internal_warmth;12000;0", "vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0", "minecraft:beetroot_soup;toughasnails:internal_warmth;12000;0", "rottencreatures:magma_rotten_flesh;toughasnails:internal_warmth;6000;0", "toughasnails:sweet_berry_juice;toughasnails:internal_warmth;3600;0", "rottencreatures:frozen_rotten_flesh;toughasnails:internal_chill;6000;0", "toughasnails:cactus_juice;toughasnails:internal_chill;3600;0", "minecraft:golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:enchanted_golden_apple;toughasnails:thirst;600;0;0.25", "minecraft:golden_carrot;toughasnails:thirst;600;0;0.25", "minecraft:glow_berries;minecraft:glowing;60;0", "toughasnails:melon_juice;minecraft:regeneration;60;0", "toughasnails:glow_berry_juice;minecraft:glowing;120;0", "toughasnails:chorus_fruit_juice;minecraft:jump_boost;240;1", "minecraft:enchanted_golden_apple;toughasnails:climate_clemency;6000;0;1.0", "create:sweet_roll;minecraft:speed;120;0", "create:bar_of_chocolate;minecraft:speed;600;0", "create:bar_of_chocolate;minecraft:jump_boost;600;0", "create:chocolate_glazed_berries;minecraft:speed;60;0", "create:chocolate_glazed_berries;minecraft:jump_boost;60;0"] - 21 entries covering 18 distinct items` | no spec range; defineList with a per-entry validator: 3 to 5 semicolon-separated parts, parts[0] and parts[1] must parse as ResourceLocations, duration_in_ticks >= 0, amplifier >= 0 (optional, default 0), chance between 0.0 and 1.0 (optional, default 1.0). The "new entry" template offered by the config UI is minecraft:apple;minecraft:speed;200;0;1.0. | Item-to-potion-effect table applied when a living entity finishes eating the item. Format: item_id;effect_id;duration_in_ticks;amplifier;chance. Several lines may target the same item (all of them are applied, each rolled separately). Entries whose item or effect is not registered are dropped silently at cache load. Every listed item is additionally made always-edible via the FOOD data component; the rest of its FOOD record (saturation, eat time and the bowl it converts to) is carried over unchanged. |
 | `thirst_effects` | list | `["minecraft:beetroot_soup;6;", "minecraft:mushroom_stew;2;", "minecraft:rabbit_stew;2;", "minecraft:melon_slice;2;"] - note the trailing semicolons, which split drops, so chance defaults to 1.0` | no spec range; defineList with a per-entry validator: 2 or 3 semicolon-separated parts, parts[0] must parse as a ResourceLocation, thirst_amount >= 0, chance between 0.0 and 1.0 (optional, default 1.0). Template: minecraft:beetroot_soup;6;1.0. | Item-to-thirst table. Format: item_id;thirst_amount;chance. Only ever read when Tough As Nails is loaded (loadThirstEffects returns immediately otherwise, FoodEffectsModule.java:121-124) and only applied to Players; the restored value is capped at 20. One entry per item (a HashMap, so a second line for the same item overwrites the first). The items ARE made always-edible even without Tough As Nails. |
 
 ## `free_anvil_repair` — Free Anvil Repair
 
-Repairing a damaged tool, weapon or piece of armour in an anvil - with its material or by combining it with an unenchanted second copy - costs zero XP levels, works even on gear vanilla calls "Too Expensive!", restores 50% more durability per material unit by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow. · [full page](../modules/free_anvil_repair.md)
+Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla calls "Too Expensive!", restores 50% more durability per material unit by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow. · [full page](../modules/free_anvil_repair.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -293,19 +293,19 @@ Repairing a damaged tool, weapon or piece of armour in an anvil - with its mater
 
 ## `freecam_sublevel_noclip` — Freecam Sub-Level Noclip
 
-The Freecam camera flies through an airship the way it flies through a mountain, instead of stopping dead at the hull while the terrain underneath stays passable. · [full page](../modules/freecam_sublevel_noclip.md)
+The Freecam camera flies through an airship the way it flies through a mountain. Without the module it stops dead at the hull, while the terrain underneath stays passable. · [full page](../modules/freecam_sublevel_noclip.md)
 
 No settings of its own.
 
 ## `glider_water_repair` — Glider Water Repair
 
-A paraglider from the Gliders mod that a lightning strike left broken can be thrown into water - as a dropped item, never one sitting in a slot: it hisses, steams and glides again, though it stays as battered as the strike left it. · [full page](../modules/glider_water_repair.md)
+A paraglider from the Gliders mod that a lightning strike left broken glides again once you throw it in the water. Only the broken flag clears; the durability it lost stays lost. · [full page](../modules/glider_water_repair.md)
 
 No settings of its own.
 
 ## `glow_mushroom` — Glow Mushroom
 
-A small glowing mushroom you can dig up, replant and cook: it lights its surroundings, glows visibly in the dark, and boiled into a stew it makes you glow yourself for half a minute. · [full page](../modules/glow_mushroom.md)
+A third kind of small mushroom that lights the ground it stands on. Dig it up, replant it, eat it for a brief glow, or boil it into a stew that makes you glow for half a minute. · [full page](../modules/glow_mushroom.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -321,13 +321,13 @@ Inside Witch Villas, part of the mob spawning is taken over: spawns are swapped 
 | `area_scan_radius` | int | `8` | 2 ~ 48 | Horizontal scan radius around players used to discover and cache indoor/garden spawn spots (scanned 5 Y-levels deep, dy -2..+2). |
 | `cache_query_chunk_radius` | int | `1` | 0 ~ 4 | Chunk radius used when querying cached spots around players. |
 | `cache_refresh_interval_ticks` | int | `20` | 1 ~ 400 | Minimum ticks between movement-driven cache refresh passes per player. Values below 20 change nothing because the player tick handler itself is throttled to every 20 ticks. |
-| `cache_scan_step` | int | `3` | 1 ~ 8 | Step size for cache area scans; higher means less CPU and less precision. |
+| `cache_scan_step` | int | `3` | 1 ~ 8 | Step size for cache area scans; higher values cost less CPU and lose precision. |
 | `cache_ttl_seconds` | int | `180` | 30 ~ 1800 | How long cached spawn spots stay valid before being dropped. |
 | `cave_depth_tolerance` | int | `6` | 0 ~ 64 | How far below the terrain surface (max of MOTION_BLOCKING_NO_LEAVES and WORLD_SURFACE) a spawn is treated as cave-like and blocked. IGNORED unless spawn_preset = custom (default preset forces 8). |
 | `cave_material_threshold` | int | `8` | 1 ~ 128 | Minimum number of cave-like blocks near a position to treat it as a likely cave. A structure-material hit at or above structure_material_threshold always wins over this. |
 | `direct_spawn_attempt_chance` | double | `35.0` | 0.0 ~ 100.0 | Chance per interval to attempt a direct haunted spawn for a player standing in a haunted area. |
 | `direct_spawn_candidate_samples` | int | `10` | 1 ~ 64 | How many cached spawn spots are sampled when picking a direct haunted spawn (at most one spawn per attempt). |
-| `direct_spawn_interval_ticks` | int | `40` | 20 ~ 1200 | Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect rather than cancel: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval) - with 30 that is every 60 ticks. No value silently stops the spawner. |
+| `direct_spawn_interval_ticks` | int | `40` | 20 ~ 1200 | Tick interval between direct spawn attempts (20 ticks = 1 second). Values below 20 are clamped to 20 (`Math.max(20, ...)`, HauntedHouseModule.java:928). Two gates intersect: the player tick handler runs only on multiples of 20 (:1213) and the attempt additionally requires `tickCount % interval == 0` (:929), so attempts land on the multiples of lcm(20, interval); with 30 that is every 60 ticks. No value silently stops the spawner. |
 | `direct_spawn_max_player_distance` | int | `36` | 4 ~ 128 | Maximum distance to the player for direct haunted spawns (forced to at least min + 2). |
 | `direct_spawn_min_player_distance` | int | `8` | 0 ~ 64 | Minimum distance to the player for direct haunted spawns. |
 | `direct_spawn_replacement_chance` | double | `85.0` | 0.0 ~ 100.0 | Chance that a direct haunted spawn becomes the configured replacement entity (invisible) instead of a plain, fully visible witch. |
@@ -335,7 +335,7 @@ Inside Witch Villas, part of the mob spawning is taken over: spawns are swapped 
 | `distribution_attempts` | int | `8` | 1 ~ 64 | How many attempts are made to spread haunted spawns away from clusters. IGNORED unless spawn_preset = custom (default preset forces 16). |
 | `distribution_radius` | int | `4` | 0 ~ 24 | Horizontal offset radius in blocks used when distributing haunted spawns (grows adaptively up to 3x over the attempts). IGNORED unless spawn_preset = custom (default preset forces 8). Note the code clamps it to at least 1, so 0 behaves like 1. |
 | `enable_direct_area_spawning` | boolean | `true` | — | Enable direct haunted spawns from cached indoor/garden areas, independent of the vanilla spawn generator. Only runs while enable_fog_effect is also true. |
-| `enable_fog_effect` | boolean | `true` | — | Enable the fog (Darkness) effect for players inside target structures. Careful: this also gates the whole per-player tick pipeline - setting it to false disables the spawn-spot cache refresh AND direct area spawning too (HauntedHouseModule.java:1218 returns before both). |
+| `enable_fog_effect` | boolean | `true` | — | Enable the fog (Darkness) effect for players inside target structures. Careful: this also gates the whole per-player tick pipeline, so setting it to false disables the spawn-spot cache refresh AND direct area spawning too (HauntedHouseModule.java:1218 returns before both). |
 | `fog_cache_proximity_radius` | int | `3` | 1 ~ 16 | Radius used to inspect cached spots around the player for indoor-vs-garden fog zone detection. |
 | `fog_effect_amplifier` | int | `0` | 0 ~ 5 | Amplifier for the Darkness effect (0 = light fog, 1 = medium, 2+ = heavy). |
 | `fog_garden_base_duration_ticks` | int | `50` | 10 ~ 600 | Base Darkness duration in ticks for garden/open haunted zones. |
@@ -360,7 +360,7 @@ Inside Witch Villas, part of the mob spawning is taken over: spawns are swapped 
 
 ## `hostile_endermen` — Hostile Endermen
 
-In the End, every enderman within 16 blocks attacks you on its own without having to be stared at first — a carved pumpkin still protects you, and they drop the hunt the moment you get out of range. · [full page](../modules/hostile_endermen.md)
+In the End every enderman within 16 blocks comes after you unprovoked, no staring required. A carved pumpkin still protects you, and the hunt ends the second you are out of range. · [full page](../modules/hostile_endermen.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -373,17 +373,17 @@ In the End, every enderman within 16 blocks attacks you on its own without havin
 
 ## `hostile_zombified_piglins` — Hostile Zombified Piglins
 
-Zombified piglins come after you unprovoked - the module pins a grudge on them the moment they spawn and keeps renewing it for as long as you stay inside the detection range, so you never get the vanilla grace period; step far enough away and they forget you instantly. · [full page](../modules/hostile_zombified_piglins.md)
+Zombified piglins come after you unprovoked. The module pins a grudge on every one of them as it spawns and renews it for as long as you stay inside the detection range, so you never get the vanilla grace period; step far enough away and they forget you instantly. · [full page](../modules/hostile_zombified_piglins.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `anger_duration` | int | `200` | -1 ~ 2147483647 (Integer.MAX_VALUE) | Config comment: "How long zombified piglins stay angry in ticks (-1 for indefinite)". Effectively a two-state switch, NOT a duration. Any value >= 0 is written at HostileZombifiedPiglinsModule.java:146 and then immediately overwritten at L149 by startPersistentAngerTimer(), which in vanilla 1.21.1 rolls a fresh random 400-780 ticks (ZombifiedPiglin.java:176-177) - so 200 behaves exactly like 5 or like 2000000000. Only -1 is observably different, and it works through a separate path: maintainHostility re-sets the timer to Integer.MAX_VALUE once per second while a player is in range (L244-248). In all cases the anger is zeroed the moment no eligible player is inside detection_range. |
-| `detection_range` | int | `32` | 1 ~ 128 | Config comment: "Range in blocks to detect players and become hostile". Radius of the axis-aligned box (getBoundingBox().inflate(range), HostileZombifiedPiglinsModule.java:164-166) in which the module looks for a player to pin the piglin's grudge on, and outside of which it wipes that grudge again. It is NOT attack range: the actual chase is vanilla's NearestAttackableTargetGoal, capped at the FOLLOW_RANGE attribute (35 blocks for a zombified piglin) and requiring line of sight, so values above ~35 only extend the zone in which a grudge is kept alive, not the distance from which piglins come at you. Creative and spectator players are never detected. |
-| `target_switch_threshold` | double | `5.0` | 0.0 ~ 1.7976931348623157E308 (Double.MAX_VALUE) | Config comment: "Time in seconds before a zombified piglin can switch to a new nearest player target". Wall-clock seconds (`System.currentTimeMillis()`, converted to ms by `getTargetSwitchThresholdValue(true)`), so it is unaffected by TPS, lag or a paused single-player world. It does NOT measure how long the grudge has been held: the holder's timestamp is refreshed on every once-per-second pass in which it is still first in the query (HostileZombifiedPiglinsModule.java:213-218), so the clock only starts running once somebody else takes the front of the list. An old grudge is therefore no easier to displace than a fresh one. The "nearest" player is simply the first the level query returns - the list is never sorted - and on an actual switch the timestamp is not carried over fresh (:200-212), so the new holder settles only on the following pass. |
+| `anger_duration` | int | `200` | -1 ~ 2147483647 (Integer.MAX_VALUE) | Config comment: "How long zombified piglins stay angry in ticks (-1 for indefinite)". Effectively a two-state switch, NOT a duration. Any value >= 0 is written at HostileZombifiedPiglinsModule.java:146 and then immediately overwritten at L149 by startPersistentAngerTimer(), which in vanilla 1.21.1 rolls a fresh random 400-780 ticks (ZombifiedPiglin.java:176-177), so 200 behaves exactly like 5 or like 2000000000. Only -1 is observably different, and it works through a separate path: maintainHostility re-sets the timer to Integer.MAX_VALUE once per second while a player is in range (L244-248). In all cases the anger is zeroed the moment no eligible player is inside detection_range. |
+| `detection_range` | int | `32` | 1 ~ 128 | Config comment: "Range in blocks to detect players and become hostile". Radius of the axis-aligned box (getBoundingBox().inflate(range), HostileZombifiedPiglinsModule.java:164-166) in which the module looks for a player to pin the piglin's grudge on, and outside of which it wipes that grudge again. It is NOT attack range: the chase itself is vanilla's NearestAttackableTargetGoal, capped at the FOLLOW_RANGE attribute (35 blocks for a zombified piglin) and requiring line of sight, so values above ~35 only extend the zone in which a grudge is kept alive, not the distance from which piglins come at you. Creative and spectator players are never detected. |
+| `target_switch_threshold` | double | `5.0` | 0.0 ~ 1.7976931348623157E308 (Double.MAX_VALUE) | Config comment: "Time in seconds before a zombified piglin can switch to a new nearest player target". Wall-clock seconds (`System.currentTimeMillis()`, converted to ms by `getTargetSwitchThresholdValue(true)`), so it is unaffected by TPS, lag or a paused single-player world. It does NOT measure how long the grudge has been held: the holder's timestamp is refreshed on every once-per-second pass in which it is still first in the query (HostileZombifiedPiglinsModule.java:213-218), so the clock only starts running once somebody else takes the front of the list. An old grudge is therefore no easier to displace than a fresh one. The "nearest" player is the first one the level query returns (the list is never sorted), and when the target does switch the timestamp is not carried over fresh (:200-212), so the new holder settles only on the following pass. |
 
 ## `idle_gamerules` — Idle Gamerule Pause
 
-While nobody is online, the server stops advancing day/night, weather and seasons, and starts them again the moment the first player logs in - so you don't come back to a world that drifted through three nights and a thunderstorm without you. · [full page](../modules/idle_gamerules.md)
+While nobody is online the server stops day and night, the weather and the seasons, and the first player to log in starts them again, so you do not come back to a world that drifted through three nights and a thunderstorm without you. · [full page](../modules/idle_gamerules.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -391,25 +391,25 @@ While nobody is online, the server stops advancing day/night, weather and season
 
 ## `item_vault_viewer` — Item Vault Viewer
 
-Hold Ctrl and right-click a Create Item Vault while wearing Engineering Goggles to see everything stored inside it in a searchable, sortable read-only grid — including vaults mounted on moving contraptions, where Create itself opens nothing. · [full page](../modules/item_vault_viewer.md)
+Hold Ctrl and right-click a Create Item Vault while wearing Engineering Goggles to see everything stored inside it in a searchable, sortable read-only grid. It also works on vaults mounted on moving contraptions, where Create itself opens nothing. · [full page](../modules/item_vault_viewer.md)
 
 No settings of its own.
 
 ## `kill_items` — Kill Items
 
-An operator command that sweeps up the dropped items lying around you - sixteen blocks by default, any radius you name, with a dry run that tells you what it would clear before anything disappears. · [full page](../modules/kill_items.md)
+An operator command that sweeps up the dropped items lying around you: sixteen blocks by default or any radius you name, with a dry run that tells you what it would clear before anything disappears. · [full page](../modules/kill_items.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `default_radius` | int | `16` | 1 ~ 512 | Radius in blocks used when the command is given no radius argument. |
 | `feedback_details` | boolean | `true` | — | List the most common item types (up to three, then a +N remainder) in the answer, counted by stack size rather than by entity. |
-| `max_radius` | int | `256` | 1 ~ 2048 | Largest radius the command accepts. Checked while the command runs, not while the command tree is built - a limit baked into IntegerArgumentType.integer(1, max) would be read once at server start and then ignore edits to this file until the next /reload. |
+| `max_radius` | int | `256` | 1 ~ 2048 | Largest radius the command accepts. Checked while the command runs, not while the command tree is built: a limit baked into IntegerArgumentType.integer(1, max) would be read once at server start and then ignore edits to this file until the next /reload. |
 | `permission_level` | int | `2` | 0 ~ 4 | Permission level required to run the command. 0 opens it to every player, 2 is the usual operator level, 4 is a full server operator. Read live inside the requires predicate, so a change takes effect without a restart. |
 | `spherical` | boolean | `true` | — | Measure the radius as a true sphere. Off means the axis-aligned box handed to getEntitiesOfClass is used as-is, which is a cube whose corner reaches about 1.7 times the typed radius. |
 
 ## `minecart_chunk_loading` — Minecart Chunk Loading
 
-A craftable rail that keeps the chunks around a traveling minecart loaded, so long-distance cart lines keep running instead of stalling at the edge of the loaded world. · [full page](../modules/minecart_chunk_loading.md)
+A craftable rail that keeps the chunks around a travelling minecart loaded, so long-distance cart lines keep running instead of stalling at the edge of the loaded world. · [full page](../modules/minecart_chunk_loading.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -421,46 +421,46 @@ A craftable rail that keeps the chunks around a traveling minecart loaded, so lo
 
 ## `mo_arrows` — Mo' Arrows
 
-An arrow crafted from an arrow and a fire charge: it flies burning, sets alight whatever it hits, and starts a real fire where it lands — the part even a Flame-enchanted bow has never done. · [full page](../modules/mo_arrows.md)
+An arrow crafted from arrows and a fire charge: it flies burning, sets alight whatever it hits, and starts a real fire where it lands, which even a Flame-enchanted bow has never done. · [full page](../modules/mo_arrows.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `impact_effects` | boolean | `true` | — | Give the Fire Arrow a bang and a puff of flame where it lands: SoundEvents.GENERIC_EXPLODE at volume 0.7 and pitch 1.3-1.5 (well under the full-volume version, which is the sound of TNT and would send everyone in earshot looking for a crater), plus one EXPLOSION, eight FLAME and five SMOKE particles sent through ServerLevel.sendParticles. Purely cosmetic - no explosion, no damage, no block changed. Independent of light_fires, so a server that forbids arrow-lit fires still gets the impact; but tied to the arrow still burning, so one that was put out in water lands silently. |
-| `light_fires` | boolean | `true` | — | Lets a Fire Arrow start a fire where it lands, exactly as a thrown fire charge would. With it off the arrow still burns in flight, still sets what it hits alight for five seconds and still lights TNT, campfires and candles — it simply leaves the ground alone. Only the block half is switchable; igniting on hit is vanilla's own behaviour for a burning arrow and cannot be separated from the arrow being lit. |
+| `impact_effects` | boolean | `true` | — | Give the Fire Arrow a bang and a puff of flame where it lands: SoundEvents.GENERIC_EXPLODE at volume 0.7 and pitch 1.3-1.5 (well under the full-volume version, which is the sound of TNT and would send everyone in earshot looking for a crater), plus one EXPLOSION, eight FLAME and five SMOKE particles sent through ServerLevel.sendParticles. Purely cosmetic: there is no explosion, no damage and no block change. Independent of light_fires, so a server that forbids arrow-lit fires still gets the impact; but tied to the arrow still burning, so one that was put out in water lands silently. |
+| `light_fires` | boolean | `true` | — | Lets a Fire Arrow start a fire where it lands, exactly as a thrown fire charge would. With it off the arrow still burns in flight, still sets what it hits alight for five seconds and still lights TNT, campfires and candles, but leaves the ground alone. Only the block half is switchable; igniting on hit is vanilla's own behaviour for a burning arrow and cannot be separated from the arrow being lit. |
 
 ## `mob_cart_loader` — Mob Cart Loader
 
-Two translucent machine blocks that capture a mob out of a pen and drop it into a parked minecart (or the seat of a standing Create train) - and back out again - with the captured mob spinning visibly inside and a comparator telling you whether it is hostile or friendly. · [full page](../modules/mob_cart_loader.md)
+Two glass blocks that take a mob out of a pen and put it into a parked minecart (or the seat of a standing Create train) and back out again. The mob spins visibly inside until the way out is clear, and a comparator tells you whether it is hostile or friendly. · [full page](../modules/mob_cart_loader.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `check_interval_ticks` | int | `5` | 1 ~ 40 | How often (in ticks) each loader/unloader block scans the adjacent rail and pen; lower = more responsive, higher = cheaper. The check is global-phase (serverLevel.getGameTime() % interval), not per block, and the value is additionally clamped with Math.max(1, ...). |
 | `create_trains.enabled` | boolean | `true` | — | Also load/unload mobs into the seats of Create train carriages (inert without Create; minecart handling is unaffected either way). Checked inside findTrackTarget, so turning it off makes the blocks minecart-only. |
 | `create_trains.seat_search_radius` | double | `4.0` | 1.0 ~ 16.0 | How far (in blocks) a carriage seat may be from the found track block to still count; measured from the track block's centre, and the nearest matching seat wins. The same radius also inflates the AABB used to collect candidate carriages. |
-| `create_trains.track_search_distance` | int | `3` | 1 ~ 8 | How many positions along the relevant direction the block scans for a Create track, starting at the block directly in front of the output (loader) / input (unloader) face - so 3 means that neighbour plus two more. The scan stops at the first block with a non-empty collision shape, so it never reaches through a wall. |
+| `create_trains.track_search_distance` | int | `3` | 1 ~ 8 | How many positions along the relevant direction the block scans for a Create track, starting at the block directly in front of the output (loader) / input (unloader) face, so 3 means that neighbour plus two more. The scan stops at the first block with a non-empty collision shape, so it never reaches through a wall. |
 
 ## `mob_drops` — Mob Drops
 
-Gives any mob extra drops on death on top of its normal loot, configured as one line per drop - by default a wither skeleton drops its skull 12.5% of the time, a golden apple 40% and netherite scrap 10%, and a warden always drops 1-3 enchanted golden apples. · [full page](../modules/mob_drops.md)
+Gives any mob extra drops on death on top of its normal loot, configured as one line per drop. By default a wither skeleton drops its skull 12.5% of the time, a golden apple 40% and netherite scrap 10%, and a warden always drops 1-3 enchanted golden apples. · [full page](../modules/mob_drops.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `mob_drops` | list | `MobDropsConfig.DEFAULT_MOB_DROPS (MobDropsConfig.java:20-25) = List.of("minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.125", "minecraft:wither_skeleton;minecraft:golden_apple;0.4", "minecraft:wither_skeleton;minecraft:netherite_scrap;0.1", "minecraft:warden;minecraft:enchanted_golden_apple;1;3")` | — | List of additional mob drops. Format: mob_id;item_id;chance[;max_drops] - Example: minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.5;2 |
+| `mob_drops` | list | `MobDropsConfig.DEFAULT_MOB_DROPS (MobDropsConfig.java:20-25) = List.of("minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.125", "minecraft:wither_skeleton;minecraft:golden_apple;0.4", "minecraft:wither_skeleton;minecraft:netherite_scrap;0.1", "minecraft:warden;minecraft:enchanted_golden_apple;1;3")` | — | List of additional mob drops. Format: mob_id;item_id;chance[;max_drops]. Example: minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.5;2 |
 
 ## `mob_glow` — Mob Glow Command
 
-An operator command that puts a glowing outline on every mob of one chosen type in the dimension you are standing in - every creeper, every zombie in the loaded chunks - visible through walls until the time runs out or you clear it again. · [full page](../modules/mob_glow.md)
+An operator command that puts a glowing outline on every mob of one chosen type (every creeper, say, or every zombie) in the loaded chunks of the dimension you are standing in, visible through walls until the time runs out or you clear it again. · [full page](../modules/mob_glow.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `default_duration` | int | `-1` | -1 ~ 2147483647 | Seconds the glow lasts when no duration is typed (the implicit "infinite"). -1 means Integer.MAX_VALUE ticks (~3.4 years, reported as "indefinitely"); any other value is used as seconds and is NOT checked against max_duration. |
 | `max_duration` | int | `3600` | 0 ~ 2147483647 | Upper bound in seconds for an explicitly typed duration; 0 disables the check. It does not bound the default_duration path, and it does not reject zero or negative durations. |
-| `max_mobs_per_command` | int | `100` | 0 ~ 2147483647 | Caps only the number reported in chat and the command's Brigadier return value; 0 means uncapped. It does NOT limit how many mobs actually receive the glow - despite the config comment claiming it does. |
+| `max_mobs_per_command` | int | `100` | 0 ~ 2147483647 | Caps only the number reported in chat and the command's Brigadier return value; 0 means uncapped. It does NOT limit how many mobs receive the glow, although the config comment claims it does. |
 | `require_op` | boolean | `true` | — | Whether /mobglow needs permission level 2. Read live in the command's requires predicate, so it takes effect without a restart. false opens every subcommand, including "all clear", to every player. |
 
 ## `mob_spawn_overlay` — Mob Spawn Overlay
 
-Hold F3 and press M to light up every block around you where hostile mobs can spawn — red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a spider fits there too. · [full page](../modules/mob_spawn_overlay.md)
+Hold F3 and press M to light up every block around you where hostile mobs can spawn. Red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a spider fits there too. · [full page](../modules/mob_spawn_overlay.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -479,7 +479,7 @@ Hold F3 and press M to light up every block around you where hostile mobs can sp
 | `display.scroll_speed` | double | `0.35` | 0.0 ~ 5.0 | How fast the stripes travel (blocks per second). |
 | `display.see_through_blocks` | boolean | `false` | — | Draw markers through terrain (x-ray) instead of hiding them behind blocks. |
 | `display.shimmer_strength` | double | `0.35` | 0.0 ~ 1.0 | Strength of the additive enchantment-style shimmer; 0 skips the whole shimmer pass. |
-| `display.stripe_scale` | double | `0.5` | 0.05 ~ 4.0 | Width of one diagonal stripe in blocks — smaller means denser stripes. |
+| `display.stripe_scale` | double | `0.5` | 0.05 ~ 4.0 | Width of one diagonal stripe in blocks; smaller means denser stripes. |
 | `scan.horizontal_radius` | int | `16` | 4 ~ 48 | How far around the player spawn positions are scanned (blocks). |
 | `scan.mark_spider_spots` | boolean | `true` | — | Additionally outline positions with enough room (2x2) for a spider to spawn. |
 | `scan.max_markers` | int | `6000` | 100 ~ 60000 | Safety cap on how many markers a single scan may collect. |
@@ -489,7 +489,7 @@ Hold F3 and press M to light up every block around you where hostile mobs can sp
 
 ## `options` — VPA Options
 
-Keeps named snapshots of your client settings — the whole options.txt or just the keybinds — so you can put your controls back exactly as they were after a modpack update or a misclick wrecks them. · [full page](../modules/options.md)
+Keeps named snapshots of your client settings (the whole `options.txt` or just the keybinds), so you can put your controls back exactly as they were after a modpack update or a misclick wrecks them. · [full page](../modules/options.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -499,55 +499,55 @@ Keeps named snapshots of your client settings — the whole options.txt or just 
 
 ## `overpacked_extensions` — Overpacked Extensions
 
-Open the compartments of the giant backpack you are wearing with a keypress instead of taking it off, and dial the full-backpack movement slowdown down to anything you like — including off entirely. · [full page](../modules/overpacked_extensions.md)
+Open the compartments of the giant backpack you are wearing with a keypress instead of taking it off, and dial the full-backpack movement penalty down to anything you like, off included. · [full page](../modules/overpacked_extensions.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `backpack_keys_enabled` | boolean | `true` | — | Enable the keybinds that open the compartments of a worn giant backpack (main compartment on B by default; right/left unbound). define("backpack_keys_enabled", true) — OverpackedExtensionsConfig.java:47. Checked only server-side, in the packet handler. |
-| `slowdown_multiplier` | double | `0.0` | 0.0 ~ 10.0 | Multiplier applied to the Overpacked slowdown effect (0.0 = no slowdown at all, 0.5 = half, 1.0 = original, 2.0 = double). defineInRange("slowdown_multiplier", 0.0, 0.0, 10.0) — OverpackedExtensionsConfig.java:42. |
+| `backpack_keys_enabled` | boolean | `true` | — | Enable the keybinds that open the compartments of a worn giant backpack (main compartment on B by default; right/left unbound). Defined as define("backpack_keys_enabled", true) in OverpackedExtensionsConfig.java:47. Checked only server-side, in the packet handler. |
+| `slowdown_multiplier` | double | `0.0` | 0.0 ~ 10.0 | Multiplier applied to the Overpacked slowdown effect (0.0 = no slowdown at all, 0.5 = half, 1.0 = original, 2.0 = double). Defined as defineInRange("slowdown_multiplier", 0.0, 0.0, 10.0) in OverpackedExtensionsConfig.java:42. |
 
 ## `pathfinder_quills` — Pathfinder Quills
 
-Lets you craft Quark's Pathfinder's Quill yourself - one feather, one eye of ender and one block that matches the biome you want to find (sand for desert, podzol for old growth pine taiga, cherry leaves for cherry grove) - instead of having to trade a cartographer or wandering trader for it. · [full page](../modules/pathfinder_quills.md)
+Quark's Pathfinder's Quill becomes craftable: a Feather, an Eye of Ender and one block that stands for the biome you are looking for (Sand for the Desert, Podzol for an Old Growth Pine Taiga, Cherry Leaves for a Cherry Grove). · [full page](../modules/pathfinder_quills.md)
 
 No settings of its own.
 
 ## `pet_potions` — Pet Potions
 
-Splash a potion of Healing or Regeneration onto someone else's wolf, cat or horse that you accidentally hit, and it forgives you instead of hunting you down until you die. · [full page](../modules/pet_potions.md)
+Splash a potion of Healing or Regeneration onto someone else's wolf that you hit by accident, and it forgives you instead of hunting you down until you die. · [full page](../modules/pet_potions.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `allow_throwing_at_pets` | boolean | `true` | — | Let beneficial splash/lingering potions be thrown while aiming at a tamed animal (vanilla swallows that right-click - the client reports CONSUME for any tamed wolf - so without this the potion never leaves your hand). Gates ONLY the pass-through half (PetPotionsModule.java:140): calming still works when this is false, you just cannot aim at the animal itself. |
-| `calm_feedback` | boolean | `true` | — | Play 4 heart particles above the animal and an amethyst chime (NEUTRAL, vol 0.7, pitch 1.5) when it is calmed, so it is visible that it worked. Fires only when anger towards the thrower was actually cleared. |
+| `allow_throwing_at_pets` | boolean | `true` | — | Let beneficial splash/lingering potions be thrown while aiming at a tamed animal (vanilla swallows that right-click because the client reports CONSUME for any tamed wolf, so without this the potion never leaves your hand). Gates ONLY the pass-through half (PetPotionsModule.java:140): calming still works when this is false, you just cannot aim at the animal itself. |
+| `calm_feedback` | boolean | `true` | — | Play 4 heart particles above the animal and an amethyst chime (NEUTRAL, vol 0.7, pitch 1.5) when it is calmed, so it is visible that it worked. Fires only when anger towards the thrower was cleared. |
 | `calming_effects` | list | `List.of("minecraft:instant_health", "minecraft:regeneration")` | elements must be String (defineList validator o -> o instanceof String); new entries default to "minecraft:instant_health" | Effect ids (namespace:path) that make an angry owned animal forgive the player who threw the potion; works for splash and lingering potions alike. An empty list switches calming off entirely (isCalming returns false immediately) without affecting the throw-at-pets fix. |
-| `peace_duration_ticks` | int | `200` | 0 ~ 24000 | How long (in ticks) a calmed animal refuses to re-target the thrower; 0 disables the grace period - the anger is still cleared once, it may just come straight back. Only one window per pet exists, so a second player's calm overwrites the first player's protection. |
+| `peace_duration_ticks` | int | `200` | 0 ~ 24000 | How long (in ticks) a calmed animal refuses to re-target the thrower; 0 disables the grace period: the anger is still cleared once, but it may come straight back. Only one window per pet exists, so a second player's calm overwrites the first player's protection. |
 
 ## `pocket_crafting` — Pocket Crafting
 
-Right-click a crafting table you are carrying - in your inventory or in your half of any open chest, barrel or furnace - and the ordinary crafting window opens on the spot, recipe book and all, with Escape taking you back to where you were instead of dropping you into the world. · [full page](../modules/pocket_crafting.md)
+Right-click a crafting table you are carrying (in your inventory, or in your half of any open chest, barrel or furnace) and the ordinary crafting window opens on the spot, recipe book and all. Escape takes you back to where you were instead of dropping you into the world. · [full page](../modules/pocket_crafting.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `conflicting_mods` | list<string> | `[] (empty)` | — | Mod ids that switch the trigger off when installed, checked once in common setup via ModList.isLoaded. Empty on purpose - nothing in the current pack collides. The known candidate is 'iteminteractions', the library behind Easy Shulker Boxes, which hooks the same ScreenEvent.MouseButtonPressed.Pre on container screens. A list rather than a hard-coded set so a collision can be defused without a release. |
-| `inventory_click_enabled` | boolean | `true` | — | Whether a right-click on a crafting table in the player's own inventory opens the grid - from the survival inventory and from any container screen except a crafting screen, in survival and adventure only. Turning it off leaves the module and its server side loaded but removes the trigger, which is the setting to reach for when another mod claims the same click. Read live by the client handler, so it takes effect without a restart. |
-| `require_empty_carried` | boolean | `true` | — | Only fire while the mouse cursor carries nothing. Also what keeps Mouse Tweaks out of the way: its right-click drag only arms when the cursor is holding something, so an empty cursor is the one branch where the two cannot collide. |
-| `require_table_while_open` | boolean | `false` | — | Make stillValid() check that a crafting table is still in the main inventory or the offhand, closing the grid when it is not. Off by default because the 3x3 grid is a TransientCraftingContainer and not part of Inventory: a player who legitimately puts the table into the grid as an ingredient would read as having none and the menu would close mid-craft. Nothing is lost either way - removed() always empties the grid back into the inventory. |
-| `return_menu_types` | list<string> | `generic_9x1..9x6, generic_3x3, shulker_box, hopper, furnace, blast_furnace, smoker, brewing_stand (all minecraft:)` | — | Menu types the grid may send the player back into after Escape; anything else returns to the survival inventory. An allow-list on purpose: going back means replaying the recorded MenuProvider a second time, and a provider is not obliged to survive that - one that built a temporary entity to back its screen (Overpacked's backpack bridge) would point at a discarded entity, and its client factory dereferences that without a null check, which NeoForge answers by disconnecting the client. The defaults are vanilla containers backed by a block entity, an entity or the ender chest inventory, none of which reads extra data on the client. |
+| `conflicting_mods` | list<string> | `[] (empty)` | — | Mod ids that switch the trigger off when installed, checked once in common setup via ModList.isLoaded. Empty on purpose: nothing in the current pack collides. The known candidate is 'iteminteractions', the library behind Easy Shulker Boxes, which hooks the same ScreenEvent.MouseButtonPressed.Pre on container screens. It is a config list so that a collision can be defused without a release. |
+| `inventory_click_enabled` | boolean | `true` | — | Whether a right-click on a crafting table in the player's own inventory opens the grid, from the survival inventory and from any container screen except a crafting screen, in survival and adventure only. Turning it off leaves the module and its server side loaded but removes the trigger; this is the setting to use when another mod claims the same click. Read live by the client handler, so it takes effect without a restart. |
+| `require_empty_carried` | boolean | `true` | — | Only fire while the mouse cursor carries nothing. This also keeps Mouse Tweaks out of the way: its right-click drag only arms when the cursor is holding something, so with an empty cursor the two cannot collide. |
+| `require_table_while_open` | boolean | `false` | — | Make stillValid() check that a crafting table is still in the main inventory or the offhand, closing the grid when it is not. Off by default because the 3x3 grid is a TransientCraftingContainer and not part of Inventory: a player who legitimately puts the table into the grid as an ingredient would read as having none and the menu would close mid-craft. Nothing is lost either way, since removed() always empties the grid back into the inventory. |
+| `return_menu_types` | list<string> | `generic_9x1..9x6, generic_3x3, shulker_box, hopper, furnace, blast_furnace, smoker, brewing_stand (all minecraft:)` | — | Menu types the grid may send the player back into after Escape; anything else returns to the survival inventory. An allow-list on purpose: going back means replaying the recorded MenuProvider a second time, and a provider is not obliged to survive that. One that built a temporary entity to back its screen (Overpacked's backpack bridge) would point at a discarded entity, and its client factory dereferences that without a null check, which NeoForge answers by disconnecting the client. The defaults are vanilla containers backed by a block entity, an entity or the ender chest inventory, none of which reads extra data on the client. |
 | `return_to_inventory_on_close` | boolean | `true` | — | Escape or the inventory key goes back to where the grid was opened from: the survival inventory, or the container that was open if its menu type is listed in return_menu_types (anything else falls back to the inventory). Off means Escape behaves like a real table and lands in the world. Only covers closing it yourself: a close forced by the server arrives as a packet and never runs through Screen.onClose(). |
-| `show_tooltip` | boolean | `true` | — | Add a "Right-click to open" line to a crafting table's tooltip. Drawn exactly where the click works - a table in the player's own inventory, in any eligible container screen, in survival or adventure - because the tooltip and the trigger share one eligibility check. A table in the chest half, the creative menu or a recipe viewer gets no line. |
+| `show_tooltip` | boolean | `true` | — | Add a "Right-click to open" line to a crafting table's tooltip. The line is drawn exactly where the click works (a table in the player's own inventory, in any eligible container screen, in survival or adventure), because the tooltip and the trigger share one eligibility check. A table in the chest half, the creative menu or a recipe viewer gets no line. |
 
 ## `quark_fresh_animations` — Quark Fresh Animations
 
-Fresh Animations only covers vanilla mobs, so Quark's foxhound moves like stock Minecraft while every wolf beside it does not - this module carries a CEM pack that fills the gap and enables it automatically when Quark and a Fresh Animations pack are both installed. · [full page](../modules/quark_fresh_animations.md)
+Fresh Animations stops at vanilla mobs, so Quark's animals kept moving like stock Minecraft next to it. This module ships a CEM pack for the foxhound, crab, stoneling, wraith, shiba and toretoise in the same style and switches it on by itself when Quark and Fresh Animations are both installed. · [full page](../modules/quark_fresh_animations.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `require_fresh_animations` | boolean | `true` | — | Only enable the built-in pack when a Fresh Animations pack is found in the game's resourcepacks folder. Unlike the Quark check this is a heuristic - Fresh Animations is a resource pack, not a mod, so there is no id to ask for and the file name is the only handle. The match strips everything but letters and lower-cases the rest, so FreshAnimations_v1.10.4.zip and fresh-animations both count. Turn it off when Fresh Animations lives somewhere the check cannot see (a modpack overlay, a renamed file), and the pack then enables itself on the Quark check alone. |
+| `require_fresh_animations` | boolean | `true` | — | Only enable the built-in pack when a Fresh Animations pack is found in the game's resourcepacks folder. Unlike the Quark check this is a heuristic: Fresh Animations is a resource pack, not a mod, so there is no id to ask for and the file name is all there is to go on. The match strips everything but letters and lower-cases the rest, so FreshAnimations_v1.10.4.zip and fresh-animations both count. Turn it off when Fresh Animations lives somewhere the check cannot see (a modpack overlay, a renamed file); the pack then enables itself on the Quark check alone. |
 
 ## `special_gemstones` — Special Gemstones
 
-Two emerald-priced gemstones that make the creature you right-click one size bigger or smaller — stats and all, once each way — and the first way to grow a wolf big enough to ride. · [full page](../modules/special_gemstones.md)
+Two emerald-priced gemstones that make the creature you right-click one size bigger or smaller, stats included and one step each way. They are also the first way to grow a wolf big enough to ride. · [full page](../modules/special_gemstones.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -555,42 +555,42 @@ Two emerald-priced gemstones that make the creature you right-click one size big
 | `check_space` | boolean | `true` | — | Refuse to grow a creature when its new hitbox would not fit where it stands. Without it Entity.refreshDimensions gives up looking for a free spot and the animal suffocates inside the ceiling. |
 | `consume_item` | boolean | `true` | — | Use up the gemstone on a successful change. Creative mode never consumes it, and a refused click never consumes it either. |
 | `denied_entities` | list of strings | `minecraft:ender_dragon, minecraft:wither` | — | Entity types the gemstones refuse to touch. The Ender Dragon ignores the attribute anyway (its sanitizeScale returns a hard 1.0F), but listing it turns a gemstone that silently does nothing into a readable refusal. Ids are validated with containsKey, because ENTITY_TYPE is a DefaultedRegistry and an unknown id would otherwise resolve to minecraft:pig. |
-| `drop_factor` | double | `1.5` | 1.0 ~ 8.0 | What one rung of the size ladder is worth in LOOT when a creature dies, on the curve stat_curve picks. A fractional result is settled by a DIE ROLL rather than rounded: most mob drops are one or two items, so rounding up would make every kill a bonus kill and rounding down would erase the bonus entirely. At 1.5x a single bone is one bone plus a coin flip for a second, so ten kills really do average fifteen bones. Overflow past a stack's limit becomes further stacks rather than being clamped. A player's own drops are never touched — that would be a dupe. 1.0 switches it off. |
+| `drop_factor` | double | `1.5` | 1.0 ~ 8.0 | What one rung of the size ladder is worth in LOOT when a creature dies, on the curve stat_curve picks. A fractional result is settled by a DIE ROLL rather than rounded: most mob drops are one or two items, so rounding up would make every kill a bonus kill and rounding down would erase the bonus entirely. At 1.5x a single bone is one bone plus a coin flip for a second, so ten kills average fifteen bones. Overflow past a stack's limit becomes further stacks rather than being clamped. A player's own drops are never touched, since that would be a dupe. 1.0 switches it off. |
 | `growth_recipe` | string | `emerald block, 4 crimson wart blocks, 4 amethyst shards` | — | The crafting recipe for the Growth Gemstone, in the same format custom_crafting_recipes uses: recipe_id;result_item;result_count;pattern;keys. Editable so the pack can re-price the gemstones without a new build. An empty string makes the gemstone uncraftable. |
 | `loot_tables` | list of strings | `seven vanilla structure chests, 8% to 30%` | — | Chests that may contain a gemstone, as loot_table;chance. The chance is rolled once per chest and which of the two gemstones drops is an even 50/50. Applied through LootTableLoadEvent, so any mod's chest table can be added. |
 | `max_natural_scale` | double | `2.0` | 0.0625 ~ 16.0 | Largest NATURAL size a creature may have for the gemstones to work on it. Anything already bigger is out of their reach on purpose: an oversized wolf from a dungeon, or Sif from Grim Kingdoms, stays exactly as rare as it was found and can be neither grown further nor cut down to an ordinary size. |
-| `min_natural_scale` | double | `0.5` | 0.0625 ~ 16.0 | Smallest NATURAL size a creature may have for the gemstones to work on it — the size it was born with, read from the attribute's base value, not the size it is now. |
-| `natural_spawns.chance` | double | `0.02` | 0.0 ~ 1.0 | Chance that a naturally spawning creature comes out an odd size. Only MobSpawnType.NATURAL and CHUNK_GENERATION count — never a spawner, a spawn egg, a breeding or anything a command placed, because those are someone deliberately asking for a creature and getting a giant instead would be a nuisance rather than a surprise. 0 switches it off. |
-| `natural_spawns.extra_entities` | list of strings | `quark:foxhound` | — | Creatures that take part although they are not hostile, by entity id. Quark's Foxhound is here by default: a Nether wolf that already spawns down there and tames with coal, but it extends Wolf rather than Monster, so the hostile rule alone would pass it by. An oversized one is the closest thing to Sebi's 'nether dogs that are already +1' — the mob exists, it only needed a reason to be big. |
+| `min_natural_scale` | double | `0.5` | 0.0625 ~ 16.0 | Smallest NATURAL size a creature may have for the gemstones to work on it: the size it was born with, read from the attribute's base value, not the size it is now. |
+| `natural_spawns.chance` | double | `0.02` | 0.0 ~ 1.0 | Chance that a naturally spawning creature comes out an odd size. Only MobSpawnType.NATURAL and CHUNK_GENERATION count, never a spawner, a spawn egg, a breeding or anything a command placed, because those are someone deliberately asking for a creature and getting a giant instead would be a nuisance rather than a surprise. 0 switches it off. |
+| `natural_spawns.extra_entities` | list of strings | `quark:foxhound` | — | Creatures that take part although they are not hostile, by entity id. Quark's Foxhound is here by default: a Nether wolf that already spawns down there and tames with coal, but it extends Wolf rather than Monster, so the hostile rule alone would pass it by. An oversized one is the closest thing to Sebi's 'nether dogs that are already +1'. The mob already existed and only needed a reason to be big. |
 | `natural_spawns.hostile` | boolean | `true` | — | Let every hostile creature (anything extending Monster) take part. Off means only extra_entities does. |
 | `natural_spawns.shrink_share` | double | `0.3` | 0.0 ~ 1.0 | Of the creatures that come out odd, the share that come out SMALL rather than large. 0 makes every one of them a giant, 1 makes every one tiny. |
-| `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone — any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
-| `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute — Creeper.explodeCreeper reads a plain int field — so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
+| `require_tamed` | boolean | `false` | — | Only allow resizing creatures that belong to the player holding the gemstone: any OwnableEntity whose owner UUID matches. A safety switch for shared servers; off by default so a giant creeper stays possible. |
+| `scale_creeper_blast` | boolean | `true` | — | Let a creeper's blast follow its size, scaled by stat_factor. The explosion is the one stat that is not an attribute (Creeper.explodeCreeper reads a plain int field), so it is handled separately, by writing that field. At the defaults a grown creeper goes from 3 to 4 and a shrunk one down to 2, and a charged creeper still doubles on top. Rounding is chosen so the walk is reversible: growing floors, shrinking rounds, and 3 -> 4 -> 3 holds. |
 | `scale_experience` | boolean | `true` | — | Let the dropped experience follow drop_factor too, settled by the same die roll. Off leaves XP alone and scales only the items. |
-| `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size — shrunk, natural or grown — so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is the design: without it the gemstones would stack into arbitrarily huge mobs. |
-| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed;1.25, jump_strength;1.0, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor as a top-up against the species default. An entry may carry a CAP after a semicolon: the furthest that attribute's multiplier may get from 1 in either direction, where 1.0 pins it (no scaling at all) and anything below 1 means no limit. Speed is capped at 1.25 because a mount reads MOVEMENT_SPEED straight through — LivingEntity.getRiddenSpeed, which wolf_mount overrides to exactly that value times its own multiplier — so a size-3.25 wolf at the full 2.49x reached 0.75 movement speed, outran chunk loading and snagged on every block edge, because at nearly a block per tick the collision arrives before the step-up does. Jump strength is pinned outright: a mount that launches is worse than one that does not jump higher. A creature that lacks an attribute skips it. |
+| `scale_factor` | double | `2.0` | 1.05 ~ 8.0 | How much one gemstone changes the SIZE: the Growth Gemstone multiplies generic.scale by it, the Shrinking Gemstone divides by it. A creature is only ever one step from its natural size (shrunk, natural or grown), so with the default the reachable sizes are x0.5, x1 and x2 and nothing further. The cap is deliberate: without it the gemstones would stack into arbitrarily huge mobs. |
+| `scaled_attributes` | list of strings | `max_health, attack_damage, movement_speed;1.25, jump_strength;1.0, step_height, armor` | — | The attributes that follow the size, scaled by stat_factor as a top-up against the species default. An entry may carry a CAP after a semicolon: the furthest that attribute's multiplier may get from 1 in either direction, where 1.0 pins it (no scaling at all) and anything below 1 means no limit. Speed is capped at 1.25 because a mount reads MOVEMENT_SPEED straight through (LivingEntity.getRiddenSpeed, which wolf_mount overrides to exactly that value times its own multiplier), so a size-3.25 wolf at the full 2.49x reached 0.75 movement speed, outran chunk loading and snagged on every block edge, because at nearly a block per tick the collision arrives before the step-up does. Jump strength is pinned outright: a mount that launches is worse than one that does not jump higher. A creature that lacks an attribute skips it. |
 | `shrinking_recipe` | string | `emerald block, 4 warped wart blocks, 4 amethyst shards` | — | The crafting recipe for the Shrinking Gemstone, same format as growth_recipe. |
-| `stat_curve` | enum (ADDITIVE, MULTIPLICATIVE) | `ADDITIVE` | — | Which ladder the stats climb, from util/SizeScaling. Both agree at double size (1.5) and part company past it: ADDITIVE counts whole blocks of extra size, so 3.0 is worth 2.25 and Sif's 3.25 is 2.49; MULTIPLICATIVE counts doublings, so 3.0 is 1.90 and Sif 1.99, and shrinking becomes the exact inverse of growing. There is no right answer — switch to compare in game. |
-| `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | What one whole block of extra SIZE is worth in stats, as factor^(size-1). At the default of 1.5 a creature at twice the usual size is 1.5x, one at three times is 2.25x and Sif at 3.25 is 2.49x. The rungs are additive in size on purpose: three times as big should be worth 1.5 twice over. The bonus is derived from the size itself, so a creature that SPAWNED big earns it without a gemstone — but it only ever tops up to the species default times the multiplier and never stacks on a creature that is already stronger than that. Set to 1.0 to change size only and leave every stat alone. |
+| `stat_curve` | enum (ADDITIVE, MULTIPLICATIVE) | `ADDITIVE` | — | Which ladder the stats climb, from util/SizeScaling. Both agree at double size (1.5) and part company past it: ADDITIVE counts whole blocks of extra size, so 3.0 is worth 2.25 and Sif's 3.25 is 2.49; MULTIPLICATIVE counts doublings, so 3.0 is 1.90 and Sif 1.99, and shrinking becomes the exact inverse of growing. Neither is the correct one; switch between them to compare in game. |
+| `stat_factor` | double | `1.5` | 1.0 ~ 8.0 | What one whole block of extra SIZE is worth in stats, as factor^(size-1). At the default of 1.5 a creature at twice the usual size is 1.5x, one at three times is 2.25x and Sif at 3.25 is 2.49x. The rungs are additive in size on purpose: three times as big should be worth 1.5 twice over. The bonus is derived from the size itself, so a creature that SPAWNED big earns it without a gemstone. It only ever tops up to the species default times the multiplier and never stacks on a creature that is already stronger than that. Set to 1.0 to change size only and leave every stat alone. |
 
 ## `stackables` — Stackables
 
-Raises the maximum stack size of items that vanilla keeps small or unstackable - potions, splash and lingering potions and tipped arrows stack to 64 by default, and so do stews, soups, ender pearls, eggs and a configurable list of items from other mods (eleven Tough As Nails entries plus Create's Builder's Tea ship in the default list). · [full page](../modules/stackables.md)
+Potions, stews, soups, ender pearls and eggs stack to 64 instead of 1 or 16, and any other item can be added to that list by id; the default list already covers eleven Tough As Nails entries and Create's Builder's Tea. · [full page](../modules/stackables.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `default_potion_stack_size` | int | `64` | 1 ~ 64 | Default stack size for potions, splash potions, lingering potions and tipped arrows. Effective value is max(2, this) - setting 1 still yields 2, so vanilla's unstackable potions cannot be restored through this key (StackablesModule.java:73). The default was 16 until v0.9.3 (commit 73e2ffe). |
+| `default_potion_stack_size` | int | `64` | 1 ~ 64 | Default stack size for potions, splash potions, lingering potions and tipped arrows. Effective value is max(2, this): setting 1 still yields 2, so vanilla's unstackable potions cannot be restored through this key (StackablesModule.java:73). The default was 16 until v0.9.3 (commit 73e2ffe). |
 | `stackable_items` | list | `StackablesConfig.DEFAULT_STACKABLES (27 entries) = minecraft:mushroom_stew:64, vanillaplusadditions:glow_mushroom_stew:64, minecraft:rabbit_stew:64, minecraft:beetroot_soup:64, minecraft:suspicious_stew:64, minecraft:ender_pearl:64, minecraft:egg:64, toughasnails:dirty_water_bottle:64, toughasnails:purified_water_bottle:64, toughasnails:apple_juice:64, toughasnails:cactus_juice:64, toughasnails:chorus_fruit_juice:64, toughasnails:glow_berry_juice:64, toughasnails:melon_juice:64, toughasnails:pumpkin_juice:64, toughasnails:sweet_berry_juice:64, toughasnails:ice_cream:64, toughasnails:charc_os:64, create:builders_tea:64, endermanoverhaul:ancient_pearl:64, endermanoverhaul:bubble_pearl:64, endermanoverhaul:corrupted_pearl:64, endermanoverhaul:crimson_pearl:64, endermanoverhaul:icy_pearl:64, endermanoverhaul:soul_pearl:64, endermanoverhaul:summoner_pearl:64, endermanoverhaul:warped_pearl:64` | per entry: at least two colons (the part before the last colon must itself contain a colon) and a stack part parsing to 1 ~ 64 | List of item entries to make stackable, each in the format namespace:id:stack (e.g. minecraft:mushroom_stew:64); the last part is the desired max stack size. Ids that are not present in the item registry are skipped (WARN only with debug_logging on), malformed entries are skipped without any log. The runtime parser is looser than the config validator (see notes 10). |
 
 ## `static_fov` — Static FOV
 
-Your view stays at the same zoom level when you sprint, drink a Speed potion or fly in creative, instead of the camera pulling back every time you speed up — while zoom-in effects like drawing a bow still work normally. · [full page](../modules/static_fov.md)
+Your view stays at the same zoom level when you sprint, drink a Speed potion or fly in creative, instead of the camera pulling back every time you speed up. Zoom-in effects like drawing a bow still work normally. · [full page](../modules/static_fov.md)
 
 No settings of its own.
 
 ## `stationary_chunk_loader` — Stationary Chunk Loader
 
-A craftable Chunk Anchor block that, while it receives a redstone signal, keeps its own chunk (and optionally a ring of chunks around it) loaded and ticking with no player nearby - so farms, redstone clocks and Create contraptions keep running while you are away. · [full page](../modules/stationary_chunk_loader.md)
+A craftable Chunk Anchor block that, while it receives a redstone signal, keeps its own chunk (and optionally a ring of chunks around it) loaded and ticking with no player nearby, so farms, redstone clocks and Create contraptions keep running while you are away. · [full page](../modules/stationary_chunk_loader.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -599,11 +599,11 @@ A craftable Chunk Anchor block that, while it receives a redstone signal, keeps 
 
 ## `texture_kill` — Texture Kill
 
-Makes textures you list in the config invisible — either the whole image (the shipped default hides Create's contraption hats) or just a rectangle of it (the shipped default erases hat/accessory areas from zombie skins) — without editing a single file on disk. · [full page](../modules/texture_kill.md)
+Makes textures you list in the config invisible, either the whole image (the shipped default hides Create's contraption hats) or just a rectangle of it (the shipped default erases hat/accessory areas from zombie skins). No file on disk is edited. · [full page](../modules/texture_kill.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `erase_regions` | list | `62 entries covering 38 distinct texture files (TextureKillConfig.DEFAULT_ERASED_REGIONS, lines 23-90), e.g. "minecraft:textures/entity/zombie/drowned.png@32:0-64:16"` | — | List of rectangular texture regions to erase (make transparent) inside an otherwise untouched texture (format: namespace:textures/path.png@x1:y1-x2:y2, end coordinates exclusive; repeat the same path with different @-suffixes for multiple regions — getErasedRegions() groups them per ResourceLocation). Validator only requires the string to contain ":" and "@". |
+| `erase_regions` | list | `62 entries covering 38 distinct texture files (TextureKillConfig.DEFAULT_ERASED_REGIONS, lines 23-90), e.g. "minecraft:textures/entity/zombie/drowned.png@32:0-64:16"` | — | List of rectangular texture regions to erase (make transparent) inside an otherwise untouched texture (format: namespace:textures/path.png@x1:y1-x2:y2, end coordinates exclusive; repeat the same path with different @-suffixes for multiple regions, which getErasedRegions() groups per ResourceLocation). Validator only requires the string to contain ":" and "@". |
 | `killed_textures` | list | `List.of("create:textures/entity/train_hat.png", "create:textures/entity/logistics_hat.png") — 2 entries (TextureKillConfig.DEFAULT_KILLED_TEXTURES, lines 18-21)` | — | List of texture ResourceLocations to replace with a fully transparent 1x1 PNG (format: namespace:textures/category/name.png). Entries are accepted by the config validator if they merely contain ":"; entries that ResourceLocation.tryParse cannot parse are silently dropped at read time. |
 
 ## `tipped_arrows` — Tipped Arrows from Potions
@@ -614,7 +614,7 @@ No settings of its own.
 
 ## `train_chunk_loading` — Train Chunk Loading
 
-Adds a blue Create train track that force-loads the chunks around any train rolling over it, so the drills, deployers and item transfers on board keep running even when no player is nearby. · [full page](../modules/train_chunk_loading.md)
+A blue Create train track that force-loads the chunks around any train rolling over it, so the drills, deployers and item transfers on board keep running with no player anywhere near. · [full page](../modules/train_chunk_loading.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
@@ -626,62 +626,62 @@ Adds a blue Create train track that force-loads the chunks around any train roll
 
 ## `trial_spawner_glow` — Trial Spawner Glow
 
-Click a trial spawner and every mob it currently has out is outlined for twenty seconds, straight through the walls of the chamber - so you can see at a glance whether the wave is finished or one straggler is still hiding in a corner. · [full page](../modules/trial_spawner_glow.md)
+Click a trial spawner and every mob it currently has out is outlined for twenty seconds, straight through the walls of the chamber, so you can see at a glance whether the wave is finished or one straggler is still hiding in a corner. · [full page](../modules/trial_spawner_glow.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `feedback_message` | boolean | `true` | — | Tell the clicking player in the action bar how many mobs were highlighted. Only sent when at least one mob was reached, so a click on a spawner in cooldown stays silent. |
-| `glow_duration_seconds` | int | `20` | 1 ~ 3600 | How long the outline lasts. Clicking again re-applies it, but MobEffectInstance.update only takes the new duration when it is longer at equal amplifier - so a second click never shortens a glow that is still running; it only picks up mobs that were not there the first time. |
+| `glow_duration_seconds` | int | `20` | 1 ~ 3600 | How long the outline lasts. Clicking again re-applies it, but MobEffectInstance.update only takes the new duration when it is longer at equal amplifier. A second click therefore never shortens a glow that is still running; it only picks up mobs that were not there the first time. |
 | `require_empty_hand` | boolean | `false` | — | Only react when the main hand is empty. Off by default because in a trial chamber you are usually holding a weapon. The interaction is never cancelled either way, so placing a block against the spawner or changing its mob with a spawn egg keeps working exactly as in vanilla. |
-| `show_particles` | boolean | `false` | — | Show the effect's swirling particles. Off by default: the outline is the point, and a chamber full of particles hides more than it shows. Passed as the visible flag of the MobEffectInstance, which also drives showIcon. |
+| `show_particles` | boolean | `false` | — | Show the effect's swirling particles. Off by default: a chamber full of particles makes the outlines harder to see. Passed as the visible flag of the MobEffectInstance, which also drives showIcon. |
 
 ## `waystone_amethyst_repair` — Waystone Amethyst Repair
 
-Amethyst shards repair the Waystones Warp Stone in an anvil - 25% of its maximum durability per shard, costing one XP level per shard, or nothing at all while the Free Anvil Repair module is enabled. · [full page](../modules/waystone_amethyst_repair.md)
+A worn Waystones **Warp Stone** goes back to full in an anvil with amethyst shards: 25 % of its maximum durability per shard, one XP level per shard, or nothing at all while the Free Anvil Repair module is enabled. · [full page](../modules/waystone_amethyst_repair.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `repair_materials` | list | `List.of("minecraft:amethyst_shard")` | no spec range; per-entry validator requires a String that ResourceLocation.tryParse accepts (WaystoneAmethystRepairConfig.java:50-52) | Item ids accepted as repair material in the anvil (amethyst shards by default). Entries are trimmed and resolved into a Set<Item>; entries whose item is not installed are skipped with a debug-only log line. Any listed material repairs at the same rate - there is no per-material weighting. |
+| `repair_materials` | list | `List.of("minecraft:amethyst_shard")` | no spec range; per-entry validator requires a String that ResourceLocation.tryParse accepts (WaystoneAmethystRepairConfig.java:50-52) | Item ids accepted as repair material in the anvil (amethyst shards by default). Entries are trimmed and resolved into a Set<Item>; entries whose item is not installed are skipped with a debug-only log line. Any listed material repairs at the same rate; there is no per-material weighting. |
 | `repair_percent_per_unit` | int | `25` | 1 ~ 100 | How much of the item's maximum durability a single material unit restores, in percent (vanilla material repairs use 25). Applied as perUnit = max(1, maxDamage * percent / 100) with integer division, and units are consumed one at a time until the item is undamaged or the material stack runs out; the number of consumed units is both the material cost and (unless free_anvil_repair is enabled) the XP level cost. |
 | `target_item` | string | `"waystones:warp_stone"` | no spec range; validator requires a String that ResourceLocation.tryParse accepts (WaystoneAmethystRepairConfig.java:44-45) | The damageable item made repairable by this module (Waystones Warp Stone by default). Resolved lazily by registry id and re-resolved whenever the string changes, so it takes effect without a restart; if the id is not installed (or unparsable) the module stays inert instead of erroring. |
 
 ## `wither_skeleton` — Wither Skeleton Enforcer
 
-In chunks that belong to a Nether fortress (vanilla or Better Fortresses), a plain skeleton about to spawn is blocked and a wither skeleton takes its place - the rest of the Nether is left completely alone, despite what the README says. · [full page](../modules/wither_skeleton.md)
+In a chunk that belongs to a Nether fortress (vanilla or Better Fortresses), a plain skeleton never gets to spawn: it is turned away and a wither skeleton takes its place. The rest of the Nether is left as it is. · [full page](../modules/wither_skeleton.md)
 
 No settings of its own.
 
 ## `wolf_mount` — Wolf Mount
 
-Hold Ctrl and right-click a huge, armored, tamed wolf to ride it like a horse — steer it, charge up big jumps, swim on it, fight from its back while it bites the nearest monster for you, and stop killing it by accident with your own sword swings. · [full page](../modules/wolf_mount.md)
+Hold Ctrl and right-click a huge, armored, tamed wolf to ride it like a horse: steer it, charge up big jumps, swim on it, and fight from its back while it bites the nearest monster for you. Your own sword swings no longer kill it by accident. · [full page](../modules/wolf_mount.md)
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
 | `combat.attack_creepers` | boolean | `true` | — | Let the ridden mount attack creepers, short-circuiting Wolf.wantsToAttack's blanket refusal (covers modded creepers that extend vanilla Creeper). Only reachable while a player is riding the wolf, so loose pets keep vanilla's caution. |
 | `combat.defend_rider` | boolean | `true` | — | Master switch for the whole combat half: the mount attacks whatever attacks its rider, takes over the rider's own target when the rider strikes something, and (together with target_nearest) runs the periodic nearest-threat sweep. Off means none of the other combat.* keys do anything except attack_creepers, which is only consulted from those same paths and so goes dead too. |
 | `combat.defend_rider_radius` | double | `32.0` | 0.0 ~ 128.0 | Maximum distance between mount and attacker for the defend behaviour to trigger, and the reach for "aggressors" (mobs already targeting rider or mount) in the sweep. Vanilla's own OwnerHurtByTargetGoal is capped at follow range (16), which is why this exists. |
-| `combat.hostile_scan_radius` | double | `16.0` | 0.0 ~ 64.0 | How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on — it is only ever read from retargetNearest/isThreatTo. |
-| `combat.retarget_margin` | double | `3.0` | 0.0 ~ 32.0 | How much closer (in blocks) a new threat has to be before the mount switches to it — pure hysteresis against flip-flopping. Only consulted when target_nearest is on. |
+| `combat.hostile_scan_radius` | double | `16.0` | 0.0 ~ 64.0 | How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on; it is only ever read from retargetNearest/isThreatTo. |
+| `combat.retarget_margin` | double | `3.0` | 0.0 ~ 32.0 | How much closer (in blocks) a new threat has to be before the mount switches to it (pure hysteresis against flip-flopping). Only consulted when target_nearest is on. |
 | `combat.rider_reach_bonus` | double | `2.0` | 0.0 ~ 8.0 | Extra ENTITY_INTERACTION_RANGE while mounted (transient ADD_VALUE modifier vanillaplusadditions:wolf_mount_reach), so a rider sitting ~2.7 blocks up can still reach the ground. Applied to any player riding any Wolf, eligible or not; 0 removes the modifier. |
 | `combat.target_nearest` | boolean | `true` | — | Keep the mount on the NEAREST threat instead of the first one it locked onto. Also the second gate on the periodic sweep: retargetNearest only runs when defend_rider AND target_nearest are both true. |
 | `combat.target_recheck_ticks` | int | `10` | 1 ~ 100 | How often (in ticks, measured on the rider's tickCount) the mount re-picks the nearest threat while ridden. Dead unless defend_rider AND target_nearest are both on. |
 | `dismount_when_armor_removed` | boolean | `true` | — | Eject the rider the moment the mount's body armor is removed or breaks. Silently requires eligibility.require_body_armor to be on as well. |
 | `eligibility.min_scale` | double | `2.0` | 1.0 ~ 64.0 | Minimum generic.scale a wolf needs to be rideable (vanilla wolves are 1.0; the "Sif" wolf from Grim Kingdoms is 3.25). Ignored when require_large_scale is off. |
-| `eligibility.require_body_armor` | boolean | `true` | — | Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor — anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well. |
+| `eligibility.require_body_armor` | boolean | `true` | — | Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor, i.e. anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well. |
 | `eligibility.require_large_scale` | boolean | `true` | — | Only wolves scaled up via the vanilla generic.scale attribute can be ridden. Switching it OFF also widens protection.owner_damage_immunity to every tamed wolf you own, because that handler shares the same isLargeEnough() gate. |
 | `eligibility.require_tamed_owner` | boolean | `true` | — | Only a wolf that is tamed and belongs to the rider can be ridden. |
 | `eligibility_recheck_ticks` | int | `20` | 1 ~ 200 | How often (in ticks, on the rider's tickCount) an ongoing ride is re-checked against the eligibility rules; the same tick also re-applies or heals the reach modifier. |
 | `hud.armor_warning_threshold` | double | `0.25` | 0.0 ~ 1.0 | Below this fraction of remaining armor durability the bar pulses red and the rider gets a one-off action bar warning (message.vanillaplusadditions.wolf_mount.armor_low); 0 disables it. The latch re-arms when the armor is healthy again or the ride ends. Client-only read. |
 | `hud.compact_mount_health` | boolean | `true` | — | Cancel vanilla's multi-row VEHICLE_HEALTH layer and draw a single ten-heart row showing health as a fraction (vanilla would spend three rows on a 350 HP wolf). Client-only read. |
-| `hud.show_armor_bar` | boolean | `true` | — | Show the mount's body armor durability while riding — the number that actually matters with battle_dogs armor, since it absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server. |
+| `hud.show_armor_bar` | boolean | `true` | — | Show the mount's body armor durability while riding. With battle_dogs armor this is the number that matters, since that armor absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server. |
 | `movement.backward_multiplier` | double | `0.25` | 0.0 ~ 1.0 | Backwards input scaling (vanilla horses use 0.25); applied whenever the rider's forward input is <= 0. |
 | `movement.float_in_water` | boolean | `true` | — | Keep the mount at the surface instead of sinking, by pulsing the jump flag from tickRidden (vanilla's FloatGoal only runs server-side, while a ridden entity is driven by the client). Undocumented in the config comment: the same code also fires in LAVA (isInLava()), not only water. |
 | `movement.instant_jump` | boolean | `false` | — | Jump at full power on tap instead of charging the meter by holding the key; min_jump_charge is then ignored. |
 | `movement.jump_strength` | double | `1.6` | 0.0 ~ 8.0 | Multiplies getJumpPower(charge); a wolf's generic.jump_strength is only 0.42, and the default puts a full charge at roughly 2.5 blocks. |
 | `movement.min_jump_charge` | double | `0.15` | 0.0 ~ 1.0 | Jump scale at the shortest possible tap, as a fraction of a full charge; the client's 0..90 charge is mapped onto min_jump_charge..1.0 (vanilla horses effectively use 0.4). |
 | `movement.speed_multiplier` | double | `1.0` | 0.1 ~ 3.0 | Multiplies the wolf's movement speed attribute while ridden; MUST match between client and server or the server's "moved too quickly" check rubber-bands the rider. |
-| `movement.strafe_multiplier` | double | `0.5` | 0.0 ~ 1.0 | Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config — keep it identical on both sides. |
-| `protection.owner_damage_immunity` | boolean | `true` | — | A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts — see notes. |
-| `protection.owner_immunity_only_when_ridden` | boolean | `false` | — | Narrow the owner immunity to a wolf whose controlling passenger is that same owner — i.e. the wolf the damaging player is riding right now, not just any ridden wolf. |
-| `protection.owner_immunity_requires_armor` | boolean | `false` | — | Narrow the owner immunity to wolves that actually wear canine body armor. |
-| `protection.suppress_ridden_knockback` | boolean | `true` | — | Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player — from every source, not just the owner — because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove. |
+| `movement.strafe_multiplier` | double | `0.5` | 0.0 ~ 1.0 | Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config, so keep it identical on both sides. |
+| `protection.owner_damage_immunity` | boolean | `true` | — | A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts; see notes. |
+| `protection.owner_immunity_only_when_ridden` | boolean | `false` | — | Narrow the owner immunity to a wolf whose controlling passenger is that same owner, i.e. the wolf the damaging player is riding right now, not just any ridden wolf. |
+| `protection.owner_immunity_requires_armor` | boolean | `false` | — | Narrow the owner immunity to wolves that wear canine body armor. |
+| `protection.suppress_ridden_knockback` | boolean | `true` | — | Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player, from every source and not just the owner, because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove. |

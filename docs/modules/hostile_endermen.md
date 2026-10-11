@@ -1,7 +1,7 @@
 # Hostile Endermen
 
 > **TL;DR** — In the End every enderman within 16 blocks comes after you unprovoked, no staring
-> required; a carved pumpkin still protects you, and the hunt ends the second you are out of range.
+> required. A carved pumpkin still protects you, and the hunt ends the second you are out of range.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -18,7 +18,7 @@
 ## What it does
 
 Endermen in the **End** stop being neutral. Each one picks the nearest player inside
-`detection_range` — 16 blocks by default — and attacks on its own. Walk far enough away and it
+`detection_range` (16 blocks by default) and attacks on its own. Walk far enough away and it
 forgets you within a second. Endermen in the Overworld and the Nether are not touched at all.
 
 A **carved pumpkin** still protects you, and so does anything else a mod hangs off vanilla's
@@ -29,8 +29,8 @@ enderman AI do the hunting, so an enderman still freezes while you stare at it, 
 when you look at it from close up, and still teleports after you when you run.
 
 It also carries two switches for other mods. Permanent aggression makes two of their abilities
-unbearable — Enderman Overhaul's teleport-on-hit and EnhancedAI's teleport anti-cheese both throw
-you around for a fight you never picked — so both are capped until you hit back.
+unbearable: Enderman Overhaul's teleport-on-hit and EnhancedAI's teleport anti-cheese both throw
+you around for a fight you never picked. Both are therefore capped until you hit back.
 
 ## In detail
 
@@ -44,7 +44,7 @@ enderman.startPersistentAngerTimer();
 applyAngerTime(enderman);
 ```
 
-The UUID is the whole trick. Vanilla's `EndermanLookForPlayerGoal` builds its target predicate from
+That works because of the UUID. Vanilla's `EndermanLookForPlayerGoal` builds its target predicate from
 
 ```java
 this.isAngerInducing = p_325811_ -> (enderman.isLookingAtMe((Player)p_325811_) || enderman.isAngryAt(p_325811_))
@@ -68,7 +68,7 @@ default boolean isAngryAt(LivingEntity target) {
 So the pathing, the teleporting closer and the melee are vanilla's, unchanged. No AI goal is added
 and no mixin touches the enderman.
 
-**The order of those three calls matters.** `startPersistentAngerTimer()` is not a flag, it rolls a
+**The order of those three calls matters.** `startPersistentAngerTimer()` rolls a random
 duration:
 
 ```java
@@ -81,8 +81,8 @@ public void startPersistentAngerTimer() {
 ```
 
 `rangeOfSeconds(20, 39)` is `UniformInt.of(400, 780)`, and `sample` is inclusive. Called after
-`applyAngerTime` instead of before it, that random 400–780 ticks would overwrite the configured
-`anger_duration` every single time.
+`applyAngerTime` instead of before it, that random 400 to 780 ticks would overwrite the configured
+`anger_duration` every time.
 
 ### When the module looks
 
@@ -105,7 +105,7 @@ That once-per-second pass has three outcomes:
 | No usable current target, but a valid player is in range | angered at the nearest one |
 | No valid player within `detection_range` | calms down |
 
-Keeping the current victim is deliberate — an enderman does not swap to whoever happens to be
+Keeping the current victim is deliberate: an enderman does not swap to whoever happens to be
 closest this second.
 
 ### Who counts as a target
@@ -148,9 +148,9 @@ if (chasingPlayer) {
 
 The revenge memory goes with it. `HurtByTargetGoal` sits at target-selector priority 2, and its
 acquisition check is not bounded by our 16 at all: the `HURT_BY_TARGETING` conditions are
-`forCombat().ignoreLineOfSight().ignoreInvisibilityTesting()` and never call `.range(...)`. What that
-check does need is a fresh hit — `canUse` compares `getLastHurtByMobTimestamp()` against the value
-`start()` stored — so a stale memory on its own never re-fires it. What keeps the hunt alive after
+`forCombat().ignoreLineOfSight().ignoreInvisibilityTesting()` and never call `.range(...)`. That
+check does need a fresh hit (`canUse` compares `getLastHurtByMobTimestamp()` against the value
+`start()` stored), so a stale memory on its own never re-fires it. What keeps the hunt alive after
 the module drops the target is `TargetGoal.canContinueToUse`: with `targetMob` still set it
 re-applies `setTarget` every tick, bounded by the enderman's 64-block follow range and, because
 `HurtByTargetGoal` is built with `mustSee`, by `reducedTickDelay(300)` = 150 ticks out of sight.
@@ -165,7 +165,7 @@ Two consequences follow from that line:
 
 ### What `anger_duration` actually governs
 
-Less than it looks. Vanilla decrements the timer in `EnderMan.aiStep` via
+It governs less than it looks. Vanilla decrements the timer in `EnderMan.aiStep` via
 `updatePersistentAnger(level, true)`, and that second argument switches the countdown off entirely
 while the current target is a player:
 
@@ -178,8 +178,8 @@ if (this.getRemainingPersistentAngerTime() > 0
 On top of that the module rewrites the value every 20 ticks while you are in range, and zeroes it
 outright the moment you leave. So while the module is maintaining it, any `anger_duration` of 21 or
 more behaves identically. The value only decides how long an already-angry enderman keeps going
-once nothing tops it up any more — after `/vpa` switches the module off, for instance. `-1` is
-written as `Integer.MAX_VALUE` ticks, roughly 3.4 years of server time, not as a never-expiring
+once nothing tops it up any more, for instance after `/vpa` switches the module off. `-1` is
+written as `Integer.MAX_VALUE` ticks, roughly 3.4 years of server time; there is no never-expiring
 flag.
 
 ### Detection range is not attack range
@@ -189,20 +189,20 @@ the vanilla goal, which measures differently:
 
 | Vanilla behaviour | Bound |
 |---|---|
-| Acquiring you | `TargetingConditions.forCombat().range(getFollowDistance())` — the `FOLLOW_RANGE` attribute, 64 blocks — **and line of sight**, which `forCombat()` leaves switched on |
+| Acquiring you | `TargetingConditions.forCombat().range(getFollowDistance())` (the `FOLLOW_RANGE` attribute, 64 blocks) **and line of sight**, which `forCombat()` leaves switched on |
 | Keeping you | `continueAggroTargetConditions` is built with `.ignoreLineOfSight()`, so once it has you, walls stop mattering |
 | Blinking closer | only past 16 blocks (`distanceToSqr > 256.0`), at most once per `adjustedTickDelay(30)` = 15 ticks, landing about 16 blocks nearer |
 | Freezing when stared at | `EndermanFreezeWhenLookedAt` needs `distanceToSqr <= 256.0`, i.e. within 16 blocks |
 | Blinking away | you look at it from closer than 4 blocks (`distanceToSqr < 16.0`) |
 
-An angry enderman that has never had line of sight to you simply stands there. That is the most
-visible consequence of leaving the hunting to vanilla, and it is intentional.
+An angry enderman that has never had line of sight to you stands there and waits. This is the most
+visible consequence of leaving the hunting to vanilla, and it is intended.
 
 ### Enderman Overhaul: the teleport on hit
 
 Enderman Overhaul's endermen extend vanilla's `EnderMan`, so this module already makes them hostile
-with no extra work. Its **End Enderman** has one ability that does not survive permanent
-aggression — it blinks its victim away on hit:
+with no extra work. Its **End Enderman** blinks its victim away on hit, an ability that does not
+survive permanent aggression:
 
 ```java
 // EndEnderman.doHurtTarget, endermanoverhaul-neoforge-1.21.1-2.0.3
@@ -212,8 +212,8 @@ if (random.nextFloat() < EndermanOverhaulConfig.endEndermanTeleportChance) {  //
 ```
 
 `teleportTarget` offsets the victim by `(random − 0.5) × range` in X and Z, so range 24 is a random
-blink of up to ±12 blocks, plus `random.nextInt(24) − 8` in Y. Half of all hits, for a fight you
-never started.
+blink of up to ±12 blocks, plus `random.nextInt(24) − 8` in Y. At the shipped chance that happens on
+half of all hits, in a fight you never started.
 
 The mixin wraps that one call:
 
@@ -229,8 +229,8 @@ private boolean vpaAllowTeleportAttack(Level level, LivingEntity victim, int ran
 
 It is skipped when all of these hold: module enabled, `suppress_teleport_attack` on, the victim is a
 player, the enderman is in the End, and `enderman.getLastHurtByMob() != victim`. Vanilla drops
-`lastHurtByMob` 100 ticks after the last hit, so "hit back" means "within the last five seconds" —
-in a real duel the End Enderman keeps its full moveset, and someone who only runs is no longer
+`lastHurtByMob` 100 ticks after the last hit, so "hit back" means "within the last five seconds".
+In a real duel the End Enderman keeps its full moveset, while someone who only runs is no longer
 displaced.
 
 Left alone on purpose: the End Islands Enderman's Ender Bullet and the Corrupted Shield/Blade
@@ -259,20 +259,19 @@ return awayFromTargetTick > adjustedTickDelay(50);   // 25 ticks
 
 `start()` then calls `target.randomTeleport(…)` within ±4 blocks of the enderman, with the
 chorus-fruit sound. Anything further than 1.4 blocks counts as "away", and the navigation is "done"
-the moment the enderman has no path — so with permanent aggression, walking away or dropping off a
-ledge yanks you back after about 1.3 seconds. The CHANGELOG entry for `v1.0.0-beta.68` records the
-measurement that led here: **29 of 29** unwanted teleports in a diagnosed session came from this
+the moment the enderman has no path. With permanent aggression, walking away or dropping off a ledge
+therefore yanks you back after about 1.3 seconds. The CHANGELOG entry for `v1.0.0-beta.68` records
+the measurement that led here: **29 of 29** unwanted teleports in a diagnosed session came from this
 goal, and Enderman Overhaul's melee teleport never fired once.
 
-The mixin vetoes `canUse` at HEAD rather than skipping the teleport itself, so the goal never
-starts — no teleport, no sound, no goal bookkeeping. The same self-defence rule applies: only for an
-enderman in the End whose target is a player who has not hit it back. That restores the feature's
-original purpose. Shooting an enderman from an unreachable perch still drags you in; walking away no
-longer does. Overworld and Nether endermen, other mobs in the tag and EnhancedAI's own config are
-untouched.
+The mixin vetoes `canUse` at HEAD, so the goal never starts: there is no teleport, no sound and no
+goal bookkeeping. The same self-defence rule applies: only for an enderman in the End whose target
+is a player who has not hit it back. The goal keeps its original purpose, so shooting an enderman
+from an unreachable perch still drags you in, while walking away no longer does. Overworld and
+Nether endermen, other mobs in the tag and EnhancedAI's own config are untouched.
 
-It stays silent even under `debug_teleport_tracking` — `canUse` runs every tick per enderman, and
-the source comment puts a single session at 20 000+ log lines.
+The veto stays silent even under `debug_teleport_tracking`, because `canUse` runs every tick per
+enderman and the source comment puts a single session at 20 000+ log lines.
 
 ### Teleport diagnostics
 
@@ -283,18 +282,18 @@ the source comment puts a single session at 20 000+ log lines.
 ```
 
 `ServerPlayer#teleportTo(double, double, double)` is where `LivingEntity.randomTeleport` lands, and
-that is the route chorus fruit and both mods above take — Enderman Overhaul's
+that is the route chorus fruit and both mods above take: Enderman Overhaul's
 `ModUtils.teleportTarget` and EnhancedAI's anti-cheese goal both end in `randomTeleport`. The log
 line carries the distance, the from and to coordinates and the dimension, followed by up to 14
 caller frames with the module's own class filtered out.
 
-Three things to know about it.
+It has three limits.
 
 It is not a universal teleport hook. The two `teleportTo(ServerLevel, …)` overloads handle the
 same-dimension case themselves: each compares the target level against `this.level()` and, when they
 match, calls `this.connection.teleport(…)` directly, without ever going through
-`teleportTo(double, double, double)`. That is the path `/tp` takes, and `changeDimension` — an ender
-pearl landing, for one — does the same, so those displacements go unlogged.
+`teleportTo(double, double, double)`. That is the path `/tp` takes, and `changeDimension` (an ender
+pearl landing, for one) does the same, so those displacements go unlogged.
 
 The frame filter does not open the log at the foreign caller. It also drops everything under
 `net.geraldhofbauer.vanillaplusadditions.mixin`, but no frame ever carries that package: Mixin
@@ -302,7 +301,7 @@ merges an `@Inject` handler into its target, so both the merged handler and the 
 injected into report as `net.minecraft.server.level.ServerPlayer`. Those two are the first frames
 printed; the foreign caller is the third.
 
-And it ignores the module switch: unlike the two suppression hooks it never asks `isModuleEnabled()`.
+It also ignores the module switch: unlike the two suppression hooks it never asks `isModuleEnabled()`.
 
 ```java
 public static void logPlayerTeleport(ServerPlayer player, double x, double y, double z) {
@@ -335,11 +334,11 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | Overworld and Nether | Untouched by design. `appliesTo` tests `Level.END` literally; there is no per-dimension list. |
 | An enderman with no line of sight | Stands still, however angry. The vanilla goal has to see you once to acquire you; only after that does `ignoreLineOfSight` take over. |
-| Carved pumpkin after you struck first | A pumpkin-wearer is not a valid target, so the once-per-second pass calms the enderman — and `calmDown` clears `lastHurtByMob` too. An enderman you attacked in the End therefore drops that memory within a second while you wear one, where vanilla would have held on to it for the usual 100 ticks — but a revenge hunt already running outlives the clearing, because `TargetGoal.canContinueToUse` falls back to its own `targetMob`. Read off the source; not reproduced in this repository. |
+| Carved pumpkin after you struck first | A pumpkin-wearer is not a valid target, so the once-per-second pass calms the enderman, and `calmDown` clears `lastHurtByMob` too. An enderman you attacked in the End therefore drops that memory within a second while you wear one, where vanilla would have held on to it for the usual 100 ticks. A revenge hunt already running still outlives the clearing, because `TargetGoal.canContinueToUse` falls back to its own `targetMob`. Read off the source; not reproduced in this repository. |
 | `detection_range` above 64 | Accepted (the range goes to 128) and pointless: the vanilla goal is bounded by the enderman's 64-block follow range. Nothing in the code clamps it; only the config comment says so. |
-| Eye height versus centre | The two range checks do not measure from the same point. `findNearestTarget` searches from `getEyeY()` — 2.55 blocks up on an enderman — while `isInRange` compares position to position. At the default 16 the eye offset shifts the boundary by only about 0.2 blocks (`√(16² + 2.55²) − 16`), so it never shows — but it is an inconsistency, not a deliberate hysteresis. It only bites at a very small `detection_range`: at 2 or less the 2.55-block offset exceeds the range itself, so `findNearestTarget` stops finding a player standing at the enderman's feet while `isInRange` still calls them in range. |
-| Sneaking or invisible at a large `detection_range` | Vanilla multiplies its own range by `getVisibilityPercent` — 0.8 while crouching — before comparing, while the module's range check does not. Only bites if `detection_range` is pushed near 64. |
-| Disabling the module at runtime | Stops new anger, calms nothing down. Both handlers gate per event, so already-angry endermen keep hunting until vanilla's own timer expires — with `anger_duration = -1` that is effectively never. |
+| Eye height versus centre | The two range checks do not measure from the same point. `findNearestTarget` searches from `getEyeY()` (2.55 blocks up on an enderman) while `isInRange` compares position to position. At the default 16 the eye offset shifts the boundary by only about 0.2 blocks (`√(16² + 2.55²) − 16`), so it never shows. It is an inconsistency, though, and not a deliberate hysteresis. It only bites at a very small `detection_range`: at 2 or less the 2.55-block offset exceeds the range itself, so `findNearestTarget` stops finding a player standing at the enderman's feet while `isInRange` still calls them in range. |
+| Sneaking or invisible at a large `detection_range` | Vanilla multiplies its own range by `getVisibilityPercent` (0.8 while crouching) before comparing, while the module's range check does not. Only bites if `detection_range` is pushed near 64. |
+| Disabling the module at runtime | Stops new anger, calms nothing down. Both handlers gate per event, so already-angry endermen keep hunting until vanilla's own timer expires; with `anger_duration = -1` that is effectively never. |
 | `debug_teleport_tracking` | Ignores the module switch, and its mixin targets a vanilla class, so it is always applied. Leave the flag off in normal play. |
 | Endermite hunts | `calmDown` spares them, but the once-per-second pass still re-angers the enderman at any valid player in range, and vanilla's player goal outranks the endermite goal (target-selector priority 1 against 3). |
 | Enderman Overhaul or EnhancedAI absent | Both compat mixins use string targets; Mixin disables a mixin whose target class is missing, because the mixin config is `"required": false`. The two switches then do nothing. |
@@ -357,8 +356,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `mixin/hostile_endermen/PlayerTeleportDebugMixin.java` | the diagnostics |
 | `standalone/hostile_endermen/HostileEndermenStandalone.java` | `@Mod("vpa_hostile_endermen")`, booted through `StandaloneModuleBootstrap` |
 
-**No content surface.** No items, blocks, entities, commands, keybinds, recipes or loot; no `data/`
-or `assets/` files and not one lang key. The only switch in game is core's `/vpa`.
+**No content surface.** The module adds no items, blocks, entities, commands, keybinds, recipes or
+loot, and it has no `data/` or `assets/` files and not one lang key. The only switch in game is
+core's `/vpa`.
 
 **Lifecycle.** `onInitialize()` does one thing of substance, `NeoForge.EVENT_BUS.register(this)`
 (plus one info log); `onCommonSetup()` only debug-logs. Both handlers therefore live on the instance
@@ -369,23 +369,23 @@ in the constructor. All three static hooks null-check it.
 vanilla class targets `ServerPlayer`, and nothing in the module's six files touches a client class.
 
 **Standalone jar.** `vpa_hostile_endermen` ships the three mixins and no data files, and needs
-`vpa_core` like every module jar. Its generated mixin config is `"required": false` as well, which is
-the entire "safe without those mods" guarantee — there is no runtime mod check anywhere.
+`vpa_core` like every module jar. Its generated mixin config is `"required": false` as well. That
+flag is the entire "safe without those mods" guarantee; there is no runtime mod check anywhere.
 
 **Asymmetry in `onConfigLoad`.** The debug block null-checks `detection_range`, `anger_duration` and
 `respect_carved_pumpkin`, then also dereferences `suppress_teleport_attack`;
-`suppress_anticheese_teleport` and `debug_teleport_tracking` are never logged. Harmless in practice —
-every value is built in the same call.
+`suppress_anticheese_teleport` and `debug_teleport_tracking` are never logged. Harmless in practice,
+since every value is built in the same call.
 
 **Testing.** This repository has no unit tests. The only measurement it records is the 29-of-29
 teleport count in the `v1.0.0-beta.68` CHANGELOG entry. Exactly one commit has ever touched this
-module — `4943bd2`, which is that release commit itself; nothing has changed since.
+module: `4943bd2`, the release commit itself. Nothing has changed since.
 
 ## See also
 
-* [Hostile Zombified Piglins](hostile_zombified_piglins.md) — the same idea for the Nether, built
+* [Hostile Zombified Piglins](hostile_zombified_piglins.md): the same idea for the Nether, built
   around a UUID map instead of statelessly
-* [Enhanced AI Leader Loot](enhanced_ai_leader_loot.md) — the other module that plays alongside
+* [Enhanced AI Leader Loot](enhanced_ai_leader_loot.md): the other module that plays alongside
   EnhancedAI
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

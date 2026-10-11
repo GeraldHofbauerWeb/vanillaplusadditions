@@ -2,7 +2,7 @@
   "moduleId": "stackables",
   "displayName": "Stackables",
   "shortDescription": "Allows certain items to be stacked beyond their normal stack size.",
-  "oneLiner": "Raises the maximum stack size of items that vanilla keeps small or unstackable - potions, splash and lingering potions and tipped arrows stack to 64 by default, and so do stews, soups, ender pearls, eggs and a configurable list of items from other mods (eleven Tough As Nails entries plus Create's Builder's Tea ship in the default list).",
+  "oneLiner": "Potions, stews, soups, ender pearls and eggs stack to 64 instead of 1 or 16, and any other item can be added to that list by id; the default list already covers eleven Tough As Nails entries and Create's Builder's Tea.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -44,7 +44,7 @@
       "type": "int",
       "defaultValue": "64",
       "range": "1 ~ 64",
-      "effect": "Default stack size for potions, splash potions, lingering potions and tipped arrows. Effective value is max(2, this) - setting 1 still yields 2, so vanilla's unstackable potions cannot be restored through this key (StackablesModule.java:73). The default was 16 until v0.9.3 (commit 73e2ffe)."
+      "effect": "Default stack size for potions, splash potions, lingering potions and tipped arrows. Effective value is max(2, this): setting 1 still yields 2, so vanilla's unstackable potions cannot be restored through this key (StackablesModule.java:73). The default was 16 until v0.9.3 (commit 73e2ffe)."
     }
   ],
   "sinceVersion": "v0.4.0",

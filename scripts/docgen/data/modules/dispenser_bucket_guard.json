@@ -2,7 +2,7 @@
   "moduleId": "dispenser_bucket_guard",
   "displayName": "Dispenser Bucket Guard",
   "shortDescription": "Dispensers keep a bucket instead of throwing it out when there is nothing to pick up or place",
-  "oneLiner": "A dispenser that can't use its bucket — empty bucket with no fluid in front of it, or a water bucket aimed at a solid block — keeps the bucket instead of throwing it on the floor, so an automated water door survives a misfire.",
+  "oneLiner": "A dispenser that cannot use its bucket keeps it instead of throwing it on the floor, so one misfire no longer kills an automated water door.",
   "side": "server",
   "enabledByDefault": true,
   "registeredInBundle": true,

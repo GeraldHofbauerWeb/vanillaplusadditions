@@ -2,7 +2,7 @@
   "moduleId": "hostile_endermen",
   "displayName": "Hostile Endermen",
   "shortDescription": "Makes endermen in the End attack players without being stared at first (a carved pumpkin still protects)",
-  "oneLiner": "In the End, every enderman within 16 blocks attacks you on its own without having to be stared at first — a carved pumpkin still protects you, and they drop the hunt the moment you get out of range.",
+  "oneLiner": "In the End every enderman within 16 blocks comes after you unprovoked, no staring required. A carved pumpkin still protects you, and the hunt ends the second you are out of range.",
   "side": "server",
   "enabledByDefault": true,
   "registeredInBundle": true,

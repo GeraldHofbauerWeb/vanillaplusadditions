@@ -64,7 +64,7 @@
     "bluemap_signs.SignBlockEntityTextMixin"
   ],
   "moduleId": "bluemap_signs",
-  "oneLiner": "Put `[bm]` on the first line of any sign and that spot shows up as a labelled, icon-picked pin on your server's BlueMap web map — plus `/bmsigns` to place and edit pins that have no sign at all.",
+  "oneLiner": "Put `[bm]` on the first line of any sign and that spot shows up as a labelled, icon-picked pin on your server's BlueMap web map; `/bmsigns` places and edits pins that have no sign at all.",
   "optionalMods": [
     {
       "modId": "bluemap",

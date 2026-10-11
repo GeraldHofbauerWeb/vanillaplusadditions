@@ -31,7 +31,7 @@
       "type": "double",
       "defaultValue": "16.0D",
       "range": "2.0 ~ 128.0",
-      "effect": "Vertical radius (blocks, Y) around the associated bowl - cats ignore mobs further away vertically."
+      "effect": "Vertical radius (blocks, Y) around the associated bowl; cats ignore mobs that are further away vertically."
     },
     {
       "key": "auto_associate_radius",

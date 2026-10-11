@@ -1,13 +1,13 @@
 # Minecraft Instance Switcher
 
-The Instance Switcher is a utility script that helps manage multiple Minecraft installations and mod development environments. It's particularly useful when working with different Minecraft versions or mod configurations.
+The Instance Switcher is a script for managing several Minecraft installations and mod development environments. It helps when you work with different Minecraft versions or mod configurations.
 
 ## Features
 
 - 🔄 Switch between different Minecraft instances
 - 📦 Maintain separate mod configurations
 - 🛠️ Support for development and testing environments
-- 🔍 Easy instance management and verification
+- 🔍 Instance management and verification
 
 ## Usage
 
@@ -19,9 +19,9 @@ The Instance Switcher is a utility script that helps manage multiple Minecraft i
 
 ### Available Instances
 
-- `vanilla` - Clean Minecraft installation
-- `forge` - Forge mod development environment
-- `test` - Testing environment with specific mod configurations
+- `vanilla`: clean Minecraft installation
+- `forge`: Forge mod development environment
+- `test`: testing environment with specific mod configurations
 
 ### Examples
 
@@ -70,7 +70,7 @@ Each instance directory contains its own:
 
 ### Backing Up Instances
 
-It's recommended to regularly backup your instances:
+Back up your instances regularly:
 
 ```bash
 # Example backup command
@@ -121,7 +121,7 @@ The script performs several safety checks:
 
 ## Contributing
 
-Contributions to improve the instance switcher are welcome! Please:
+To contribute an improvement to the instance switcher:
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request

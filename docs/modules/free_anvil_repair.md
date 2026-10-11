@@ -1,8 +1,9 @@
 # Free Anvil Repair
 
-> **TL;DR** — Repairing a damaged tool, weapon or piece of armour in an anvil costs no XP levels,
-> works on gear vanilla has already priced out at *Too Expensive!*, and accepts extra materials such
-> as diamonds for netherite gear or a stick for a bow.
+> **TL;DR** — Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or
+> by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla
+> calls "Too Expensive!", restores 50% more durability per material unit by default, and accepts extra
+> materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -19,8 +20,8 @@
 ## What it does
 
 An anvil charges levels for everything it does, and the price climbs every time you use it. This
-module takes the levels off the one operation that is pure maintenance — putting a damaged item back
-together — and leaves every other anvil operation at its vanilla price.
+module takes the levels off the one operation that is pure maintenance, putting a damaged item back
+together, and leaves every other anvil operation at its vanilla price.
 
 | At the anvil | Costs |
 |---|---|
@@ -32,7 +33,7 @@ together — and leaves every other anvil operation at its vanilla price.
 | Applying an enchanted book | vanilla price |
 | Renaming on its own | vanilla price |
 
-Free means free. No levels are required and none are deducted, the red *Too Expensive!* cannot
+No levels are required and none are deducted, the red *Too Expensive!* cannot
 appear, and by default the repair does not raise the hidden prior-work penalty that makes the *next*
 anvil visit dearer. Gear that vanilla has already priced out of the anvil altogether becomes
 repairable again.
@@ -43,8 +44,8 @@ so three diamonds take a pickaxe from nearly broken back to full where vanilla w
 
 The list of accepted materials is configurable, Quark-style, in the form `item=material`. Out of the
 box netherite gear repairs with **diamonds**, Create's diving gear with diamonds or copper ingots, a
-**trident** with a prismarine shard and a **bow** with a stick — the last two are combinations
-vanilla does not have at all.
+**trident** with a prismarine shard and a **bow** with a stick; vanilla has neither of the last two
+combinations.
 
 ## Why it exists
 
@@ -74,7 +75,7 @@ if (this.cost.get() >= 40 && !this.player.getAbilities().instabuild) {
 }
 ```
 
-Forty levels is where `AnvilMenu.createResult` stops producing a result at all — the slot is emptied
+Forty levels is where `AnvilMenu.createResult` stops producing a result at all: the slot is emptied
 and the GUI writes *Too Expensive!* over it. The penalty has no way back down, so a well-used tool
 eventually cannot be repaired at any price. Repairing is what pushes it there fastest: it is the
 operation you do most often, and it is the one that buys you nothing but the durability you already
@@ -89,8 +90,8 @@ protected boolean mayPickup(Player player, boolean hasStack) {
 }
 ```
 
-`&& this.cost.get() > 0`. Setting the cost to zero is not enough — vanilla then refuses the pickup,
-creative mode included. That one clause is the whole reason this module ships a mixin.
+`&& this.cost.get() > 0`. Setting the cost to zero is not enough on its own, because vanilla then
+refuses the pickup, creative mode included. This clause is the only reason the module ships a mixin.
 
 ### A trident and a bow have no repair material
 
@@ -108,8 +109,8 @@ the only way to put durability back into either is a second copy of the item, or
 The module never patches the anvil's cost calculation. It listens to NeoForge's `AnvilUpdateEvent`,
 which fires at the top of `createResult`; when it recognises a pure repair it computes the result
 itself and sets the cost to 0. Handing the event a non-empty output makes vanilla return
-immediately, so the whole of `createResult` — the enchantment merge, the 40-level wall, the
-prior-work bump at the end — is skipped for that combination. For everything else the module leaves
+immediately, so the rest of `createResult` (the enchantment merge, the 40-level wall, the
+prior-work bump at the end) is skipped for that combination. For everything else the module leaves
 the event untouched and vanilla runs exactly as before.
 
 ### What counts as a pure repair
@@ -125,78 +126,77 @@ if (isRenaming(event.getName(), left)) {
 }
 ```
 
-The left item has to be damageable and actually damaged, the right slot has to hold something, and
+The left item has to be damageable and already damaged, the right slot has to hold something, and
 no rename may be in flight. Then one of two paths:
 
 | Path | Condition | Result |
 |---|---|---|
 | **Material** | `left.getItem().isValidRepairItem(left, right)` **or** the pair appears in `extra_repair_materials` | repaired by the material, gated on `free_material_repair` |
-| **Sacrifice** | the right stack is the same item, damageable, and free of enchantments — no `STORED_ENCHANTMENTS` component and an *empty* `ENCHANTMENTS` component | durability merge, gated on `free_combine_repair` |
+| **Sacrifice** | the right stack is the same item, damageable, and free of enchantments: no `STORED_ENCHANTMENTS` component and an *empty* `ENCHANTMENTS` component | durability merge, gated on `free_combine_repair` |
 
-The kept item may be enchanted, named and as worn as it likes — only the *sacrifice* has to be plain.
+The kept item may be enchanted, named and as worn as it likes; only the *sacrifice* has to be plain.
 An enchanted sword repaired with a second, unenchanted sword keeps every enchantment, because the
 result is `left.copy()` with nothing but the damage value changed. Custom name, attribute modifiers
 and every other data component come along untouched.
 
-**Renaming is judged, not assumed.** A name only counts as a rename if it would actually change
+**Renaming is judged, not assumed.** A name only counts as a rename if it would change
 something: a blank name counts when the item has a `CUSTOM_NAME` to clear, a non-blank one counts
-when it differs from the current display name, and `null` — no name sent at all — never counts. So
+when it differs from the current display name, and `null` (no name sent at all) never counts. So
 typing an item's own name back into the box does not cost you the free repair, while renaming *and*
 repairing in the same click keeps the full vanilla price for both.
 
-**And a name may arrive filtered, which is why the check allows for that.** Simply putting an item
-into the anvil already sends a rename — no typing needed:
+**And a name may arrive filtered, which is why the check allows for that.** Putting an item into
+the anvil already sends a rename, without any typing:
 
 | Step | What happens |
 |---|---|
 | Item enters slot 0 | `AnvilScreen.slotChanged` calls `EditBox.setValue(stack.getHoverName().getString())` |
 | `setValue` | fires the responder, i.e. `onNameChanged` |
-| `onNameChanged` | sends a `ServerboundRenameItemPacket` — the item *has* a `CUSTOM_NAME`, so the string is not blanked |
+| `onNameChanged` | sends a `ServerboundRenameItemPacket`; the item *has* a `CUSTOM_NAME`, so the string is not blanked |
 | `AnvilMenu.validateName` | runs it through `StringUtil.filterText`, which drops the section sign (167) |
 
 For an ordinary name that round trip changes nothing. For a name carrying **formatting codes** it
 does: the server sees the name without its `§` sequences, compares it against the item's real name,
 and concludes the player is renaming. A netherite sword called `§kSomething` therefore reported a
-rename on *every* anvil open and could never be repaired for free — found on games2 on 2026-09-26,
-where it cost 9 levels instead of nothing. Since `v1.0.0-beta.96` the check accepts the filtered form
+rename on *every* anvil open and could never be repaired for free. This turned up on games2 on
+2026-09-26, where it cost 9 levels instead of nothing. Since `v1.0.0-beta.96` the check accepts the filtered form
 of the current name as "unchanged" too.
 
 **With EasyAnvils the same problem runs the other way.** That mod replaces the anvil menu outright
 (`ModAnvilMenu extends AnvilMenu`, `createResult` overridden) and its whole point is that formatting
-codes in names are *allowed* — so it does not filter them. The style then lives in the name component
+codes in names are *allowed*, so it does not filter them. The style then lives in the name component
 rather than in its text:
 
 | | |
 |---|---|
-| `stack.getHoverName().getString()` | `Testschwert` — `getString()` drops the style |
-| what the client sends back | `§kTestschwert` — EasyAnvils re-renders the style as codes |
+| `stack.getHoverName().getString()` | `Testschwert` (`getString()` drops the style) |
+| what the client sends back | `§kTestschwert` (EasyAnvils re-renders the style as codes) |
 
-Different strings again, so every formatted item reported a rename on every anvil open. This is what
-actually cost the netherite sword its free repair on games2 — proven by giving a plain, unnamed,
-damaged netherite sword, which repaired for free at the same anvil. The check therefore normalises
+Different strings again, so every formatted item reported a rename on every anvil open. This was the
+real cause of the netherite sword's lost free repair on games2: a plain, unnamed, damaged netherite
+sword, given for comparison, repaired for free at the same anvil. The check therefore normalises
 **both** directions: the incoming name may arrive filtered (vanilla) or carrying codes the item's own
 text does not have (EasyAnvils).
 
 The trade is small and deliberate: changing *only* an item's formatting, with the letters untouched,
-no longer counts as a rename, so the repair stays free and the formatting is left alone — the repair
+no longer counts as a rename, so the repair stays free and the formatting is left alone; the repair
 copies the left stack and keeps its name. The alternative is worse in both directions: full price for
 every repair of every named item, and under plain vanilla a silent strip of the formatting on each
 one.
 
 ### The anvil may not be vanilla's at all
 
-Worth knowing before debugging anything here: with **EasyAnvils** installed, `AnvilUpdateEvent` is not
-automatically the last word. Its `createResult` builds two states and compares them —
+With **EasyAnvils** installed, `AnvilUpdateEvent` is not automatically the last word, which matters
+when debugging anything here. Its `createResult` builds two states and compares them:
 
 | State | What it is |
 |---|---|
-| `builtInAnvilState` | a real `AnvilMenu`, so `createResult()` fires `AnvilUpdateEvent` — this module runs |
+| `builtInAnvilState` | a real `AnvilMenu`, so `createResult()` fires `AnvilUpdateEvent`, so this module runs |
 | `vanillaAnvilState` | a hand-copied reimplementation of vanilla's `createResult` that fires **no** event |
 
 If they differ, EasyAnvils steps aside and calls `super.createResult()`, and the modded result wins.
-If they match — i.e. no mod changed anything — its own cost model applies. That is a considerate
-design, and it means this module keeps working, but only for as long as it actually produces a
-result. Bail out of `onAnvilUpdate` for any reason and EasyAnvils' prices apply, with nothing in the
+If they match (no mod changed anything), its own cost model applies. That design lets this module
+keep working, but only as long as it produces a result. Bail out of `onAnvilUpdate` for any reason and EasyAnvils' prices apply, with nothing in the
 log to say so.
 
 ### How much one material unit repairs
@@ -212,7 +212,7 @@ private int boosted(int base) {
 ```
 
 Vanilla's quarter, scaled by `repair_boost_percent` (default 50) and floored at 1. Both divisions
-truncate, so the real figure can land a shade under 37.5 % — 585 of 1561 on a diamond pickaxe.
+truncate, so the real figure can land a shade under 37.5 %: 585 of 1561 on a diamond pickaxe.
 
 | Item | Max durability | Per unit, vanilla | Per unit, default boost | Units from broken to full |
 |---|---|---|---|---|
@@ -226,8 +226,8 @@ item still costs exactly one unit. The number consumed becomes the material cost
 the stack stays in the slot.
 
 The boost applies to **every** material repair the module handles, vanilla materials and
-`extra_repair_materials` alike. It deliberately does not apply to combining two of the same item —
-there is no material there to make go further.
+`extra_repair_materials` alike. It deliberately does not apply to combining two of the same item,
+where there is no material to make go further.
 
 ### The extra materials
 
@@ -241,13 +241,13 @@ there is no material there to make go further.
 
 Entries are `item=material`, one per line, and the same item may appear several times to accept
 several materials. An entry whose item or material is not installed is skipped in silence (a debug
-line only, and only with `debug_logging` on) — that is what happens to the four Create entries in a
+line only, and only with `debug_logging` on). That is what happens to the four Create entries in a
 pack without Create. A malformed entry is logged with a warning and ignored.
 
 Only the two **copper** entries are insurance. Create's copper diving gear carries Create's own
 `COPPER` armour material, whose repair ingredient is a copper ingot, so that combination already
 goes through the ordinary material path and is already free. The netherite diving pieces are built
-on vanilla's `ArmorMaterials.NETHERITE`, whose repair ingredient is a netherite ingot — the same
+on vanilla's `ArmorMaterials.NETHERITE`, whose repair ingredient is a netherite ingot, the same
 ingot the nine plain netherite pieces want (armour through `ArmorMaterials.NETHERITE`, tools
 through `Tiers.NETHERITE`). So their entry is the same real saving as the other nine: a diamond
 instead of a netherite ingot.
@@ -278,8 +278,8 @@ if (newDamage >= left.getDamageValue()) {
 ```
 
 That is vanilla's own formula, bonus included: both items' remaining durability plus 12 % of the
-maximum. No boost, and no result when the merge would not actually help. The sacrifice is consumed
-whole — the module sets no material cost, and a material cost of zero means the entire right stack.
+maximum. There is no boost, and no result when the merge would not help. The sacrifice is consumed
+whole: the module sets no material cost, and a material cost of zero means the entire right stack.
 
 ### The prior-work penalty
 
@@ -296,9 +296,9 @@ int base = Math.max(
 result.set(DataComponents.REPAIR_COST, AnvilMenu.calculateIncreasedRepairCost(base));
 ```
 
-Note what neither setting does: lower a penalty an item has already accumulated. With the default
+Neither setting lowers a penalty an item has already accumulated. With the default
 `false` an item sitting at 63 stays at 63; with `true` it keeps climbing, 63 → 127. Either way the
-item simply becomes repairable again, while enchanting it still runs into the same wall.
+item becomes repairable again, while enchanting it still runs into the same wall.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -325,10 +325,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | No JEI installed | The extra combinations still work, they are just not listed anywhere. The plugin class is only ever loaded by JEI's own annotation scan. The pack this mod is tested against runs EMI with TooManyRecipeViewers rather than JEI, so the anvil entries reach the screen through that bridge and are untested here. |
 | JEI's displayed repair amount | The plugin hardcodes vanilla's 25 % per unit and ignores `repair_boost_percent`, so with the default boost the shown recipe understates the real repair. |
 | Quark's diamond repair | Not an integration and not a conflict. Quark patches the vanilla anvil code path; this module answers the event first and produces the result itself, so Quark's version never runs and cannot charge for the same combination. |
-| Another mod's `AnvilUpdateEvent` handler | The mixin permits the pickup of **any** non-empty cost-0 anvil result, not only ones from this module — vanilla never produces such a result, so nothing vanilla breaks, but a third-party handler's free result becomes takeable too while this module is on. |
+| Another mod's `AnvilUpdateEvent` handler | The mixin permits the pickup of **any** non-empty cost-0 anvil result, not only ones from this module. Vanilla never produces such a result, so nothing vanilla breaks, but a third-party handler's free result becomes takeable too while this module is on. |
 | Two handlers on the same combination | The module overwrites the event's output unconditionally when it recognises a pure repair; it does not check whether another handler already set one. |
-| Anvil wear and XP | `onTake` is untouched: the anvil still has its usual chance to chip, and `AnvilRepairEvent` still fires. A cost of 0 simply means no levels change hands. |
-| Module disabled | Both the event handler and the mixin's hook ask `isModuleEnabled()` on every call, so turning it off takes effect immediately — no restart, and the anvil is back to vanilla prices. |
+| Anvil wear and XP | `onTake` is untouched: the anvil still has its usual chance to chip, and `AnvilRepairEvent` still fires. A cost of 0 means no levels change hands. |
+| Module disabled | Both the event handler and the mixin's hook ask `isModuleEnabled()` on every call, so turning it off takes effect immediately, without a restart, and the anvil is back to vanilla prices. |
 | Tests | This repository has no unit tests. Everything on this page is read off the source and the decompiled 1.21.1 `AnvilMenu`. |
 
 ## Under the hood
@@ -341,8 +341,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `mixin/free_anvil_repair/AnvilMenuFreeRepairMixin.java` | lets a cost-0 result be taken |
 | `standalone/free_anvil_repair/FreeAnvilRepairStandalone.java` | `@Mod("vpa_free_anvil_repair")` |
 
-No registries, no items, no blocks, no commands, no keybinds, no lang keys, no datapack files. The
-module is one game-bus subscriber and one mixin.
+The module has no registries, items, blocks, commands, keybinds, lang keys or datapack files; it
+is one game-bus subscriber and one mixin.
 
 **Why a non-empty output wins.** NeoForge's hook sits at the top of `createResult`, before anything
 vanilla computes:
@@ -357,8 +357,8 @@ container.repairItemCountCost = e.getMaterialCost();
 return false;
 ```
 
-`false` makes `createResult` return on the spot. That is the whole trick behind the *Too Expensive!*
-bypass — the check never executes — and it is also why the module has to reimplement vanilla's repair
+`false` makes `createResult` return on the spot. That is how the *Too Expensive!* bypass
+works (the check never executes), and it is also why the module has to reimplement vanilla's repair
 maths rather than adjust it.
 
 **The mixin.**
@@ -374,15 +374,14 @@ private void vpaAllowFreeRepairPickup(Player player, boolean hasStack,
 }
 ```
 
-The boolean parameter is the result slot's `hasItem()` — `ItemCombinerMenu`'s result slot calls
+The boolean parameter is the result slot's `hasItem()`: `ItemCombinerMenu`'s result slot calls
 `mayPickup(player, this.hasItem())`. The mixin is listed in the `"mixins"` block of
 `vanillaplusadditions.mixins.json`, not in `"client"`, so it applies on both sides, and it is the
 standalone jar's only mixin.
 
-Note what it does *not* ask: who produced the result. Any non-empty cost-0 anvil output becomes
-takeable while the module is enabled. The justification in the code is that vanilla never creates
-one — which is true, but it does mean the mixin is a general-purpose zero-cost pickup, not a
-module-private one.
+It does *not* ask who produced the result. Any non-empty cost-0 anvil output becomes takeable
+while the module is enabled. The code justifies this with the fact that vanilla never creates one.
+That is true, but it makes the mixin a general-purpose zero-cost pickup, not a module-private one.
 
 **The handshake.** `allowFreePickup()` is static and reads a static `instance` field assigned in the
 constructor, so the mixin reaches the module without a hard reference through `ModuleManager`. The
@@ -390,8 +389,8 @@ standalone jar constructs the module through `FreeAnvilRepairStandalone`, so `in
 there too.
 
 **Deliberate cross-module coupling.** `waystone_amethyst_repair` asks `ModuleManager` whether
-`free_anvil_repair` is enabled and sets cost 0 when it is, riding on exactly this mixin for the
-pickup — so the Warp Stone repair is free only while this module is on, and costs one level per
+`free_anvil_repair` is enabled and sets cost 0 when it is, relying on this mixin for the
+pickup, so the Warp Stone repair is free only while this module is on, and costs one level per
 shard otherwise. `CatArmorItem` and `AxolotlArmorItem` note the same thing for their scute repairs:
 those repairs work on their own, only the zero price comes from here. The coupling is one-way; this
 module imports nothing from any other module.
@@ -408,8 +407,8 @@ int eq = s.indexOf('=');
 return eq > 0 && eq < s.length() - 1 && s.indexOf('=', eq + 1) < 0;
 ```
 
-The runtime parser is looser — it splits on the first `=` and would accept the rest as a material id
-— so an entry with two `=` is corrected away by NeoForge before the parser ever sees it. The two
+The runtime parser is looser: it splits on the first `=` and would accept the rest as a material
+id. An entry with two `=` is therefore corrected away by NeoForge before the parser ever sees it. The two
 also differ on unresolved ids: the parser checks `BuiltInRegistries.ITEM.containsKey`, while the JEI
 plugin compares the looked-up item against `Items.AIR`.
 
@@ -422,7 +421,7 @@ published dependency on it.
 
 ## See also
 
-* [Waystone Amethyst Repair](waystone_amethyst_repair.md) — free only while this module is enabled
-* [Cat Guardian](cat_guardian.md) and [Axolotl Guardian](axolotl_guardian.md) — their scute repairs cost nothing here
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Waystone Amethyst Repair](waystone_amethyst_repair.md): free only while this module is enabled
+* [Cat Guardian](cat_guardian.md) and [Axolotl Guardian](axolotl_guardian.md): their scute repairs cost nothing here
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

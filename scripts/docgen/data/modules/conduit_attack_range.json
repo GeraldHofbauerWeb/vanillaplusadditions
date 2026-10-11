@@ -32,7 +32,7 @@
       "type": "int",
       "defaultValue": "16",
       "range": "1 ~ 96 (effective 16 ~ 42)",
-      "effect": "Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). Note the conduit's angry open-eye texture still needs 42 frames - the mixin does not touch updateHunting."
+      "effect": "Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). The conduit's angry open-eye texture still needs 42 frames, because the mixin does not touch updateHunting."
     }
   ],
   "sinceVersion": "v1.0.0-beta.43",

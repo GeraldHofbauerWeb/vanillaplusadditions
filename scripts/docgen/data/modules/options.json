@@ -1,8 +1,8 @@
 {
   "moduleId": "options",
   "displayName": "VPA Options",
-  "shortDescription": "Backup & restore of client options (options.txt) incl. all keybinds — manual snapshots via command/GUI plus automatic rotating backups on change.",
-  "oneLiner": "Keeps named snapshots of your client settings — the whole options.txt or just the keybinds — so you can put your controls back exactly as they were after a modpack update or a misclick wrecks them.",
+  "shortDescription": "Backup & restore of client options (options.txt) incl. all keybinds: manual snapshots via command/GUI plus automatic rotating backups on change.",
+  "oneLiner": "Keeps named snapshots of your client settings (the whole `options.txt` or just the keybinds), so you can put your controls back exactly as they were after a modpack update or a misclick wrecks them.",
   "side": "client",
   "enabledByDefault": true,
   "registeredInBundle": true,

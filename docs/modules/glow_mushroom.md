@@ -22,7 +22,7 @@ a shroomlight-coloured cap that gives off light.
 
 It behaves like the vanilla two in every way that matters. It grows on the same ground, breaks
 instantly, drops itself, and can be replanted anywhere a mushroom would survive. What it adds is
-light level 12 — enough to keep a cave corner lit — and, unlike the vanilla mushrooms, it is edible.
+light level 12, enough to keep a cave corner lit. Unlike the vanilla mushrooms, it is also edible.
 
 | | Effect | Hunger |
 |---|---|---|
@@ -35,7 +35,7 @@ mushroom**, shapeless. The bowl comes back when you finish it.
 The warmth is not this module's doing. The stew is listed in
 [`food_effects`](food_effects.md)' default table as
 `vanillaplusadditions:glow_mushroom_stew;toughasnails:internal_warmth;12000;0`, exactly like vanilla's
-mushroom stew — so it needs Tough As Nails, it follows whatever that config says, and being on that
+mushroom stew. So it needs Tough As Nails and follows whatever that config says, and being on that
 list is also what makes it **always edible**, on a full hunger bar. Neither applies if `food_effects`
 is disabled. A config that already exists keeps its own list: the new line only reaches a server whose
 `vanillaplusadditions-common.toml` is regenerated or edited by hand.
@@ -43,25 +43,25 @@ is disabled. A config that already exists keeps its own list: the new line only 
 ## Where it comes from
 
 The block is registered by the mod, but it only *grows in the world* if the
-`vpa_mushroom_fields_plus` world datapack is installed — that pack seeds it into the ground cover of
+`vpa_mushroom_fields_plus` world datapack is installed. That pack seeds it into the ground cover of
 mushroom fields at a weight of 1 against 3 red and 3 brown. Bone meal likewise grows the big
 branched variant from that pack.
 
 **This makes the pack depend on the mod, not the other way round.** A world that has the pack but
 not the module refuses to load with a datapack error, because the pack names a block that does not
-exist. The module on its own is harmless: the mushroom is simply absent from worldgen and has to be
+exist. The module on its own is harmless: the mushroom is absent from worldgen and has to be
 crafted or spawned in.
 
 ## Two details worth knowing
 
-**The orientation is decided by the position, not by chance.** The block ships two models — one
-straight, one turned 45° — and Minecraft picks between blockstate variants by block coordinates. Put
-a glow mushroom where a red one stood and it will face the same way the red one did. That is vanilla
-behaviour, not something this module does.
+**The orientation is decided by the position, not by chance.** The block ships two models (one
+straight, one turned 45°), and Minecraft picks between blockstate variants by block coordinates. Put
+a glow mushroom where a red one stood and it will face the same way the red one did. That part is
+vanilla behaviour.
 
 The 45° turn has to live in the model's elements. A blockstate's own `y` key only accepts
-0/90/180/270, and turning a square cap by 90° leaves it looking identical — which is exactly the
-trap this module fell into on the first attempt.
+0/90/180/270, and turning a square cap by 90° leaves it looking identical. This module fell into
+exactly that trap on its first attempt.
 
 **Glowing and lighting are two separate things.** `lightLevel(12)` makes the mushroom light its
 surroundings. What makes the mushroom itself look lit is NeoForge's per-element `neoforge_data`,
@@ -74,7 +74,7 @@ The giant glow mushrooms that the world datapack grows are built from **vanilla*
 `mushroom_stem` trunk and a cap of roughly 85 % `honey_block` to 15 % `shroomlight`. Left alone that
 would make every one of them a free honey and shroomlight farm.
 
-Their loot tables cannot simply be edited, because they are global — a Nether shroomlight has to
+Their loot tables cannot be edited, because they are global: a Nether shroomlight has to
 keep dropping shroomlight, and honey blocks are load-bearing in redstone. The throttle therefore
 runs in `BlockDropsEvent` and only fires when a `mushroom_stem` stands within five blocks sideways,
 eight below or two above. Inside a mushroom that is always true; anywhere else essentially never.
@@ -91,9 +91,9 @@ eight below or two above. Inside a mushroom that is always true; anywhere else e
 ## The stew ships no texture
 
 Its model points `layer0` at `minecraft:item/mushroom_stew`, so the game draws the bowl it already
-has. This is deliberate and it is the safer way round: copying Mojang's PNG into the mod would mean
-redistributing their asset, while referencing it does not. The permanent sparkle is the
-`enchantment_glint_override` component — no enchantment involved.
+has. This is deliberate: copying Mojang's PNG into the mod would mean redistributing their asset,
+and referencing it does not. The permanent sparkle is the `enchantment_glint_override` component;
+no enchantment is involved.
 
 Both effect durations are read when the items are registered, so a change needs a restart to take
 hold.

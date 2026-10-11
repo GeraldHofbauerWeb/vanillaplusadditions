@@ -2,7 +2,7 @@
   "moduleId": "axolotl_guardian",
   "displayName": "Axolotl Guardian",
   "shortDescription": "Adds axolotl food bowls and feeding stations. Tamed, fed axolotls actively guard your underwater base against hostile mobs.",
-  "oneLiner": "Tame axolotls with raw fish, put a bowl or feeding station in your underwater base, and the fed axolotls patrol a configurable radius around it, killing hostile mobs in the water and hauling their loot and XP back to the station.",
+  "oneLiner": "Tame axolotls with fish, put a bowl or a feeding station in your underwater base, and the fed axolotls patrol the water around it, kill what swims in and carry the loot and the experience back.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -50,7 +50,7 @@
       "type": "double",
       "defaultValue": "16.0D",
       "range": "2.0 ~ 128.0",
-      "effect": "Vertical radius (blocks, Y) around the associated bowl - axolotls ignore mobs further away vertically."
+      "effect": "Vertical radius (blocks, Y) around the associated bowl; axolotls ignore mobs further away vertically."
     },
     {
       "key": "auto_associate_radius",

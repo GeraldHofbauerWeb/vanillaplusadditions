@@ -19,26 +19,26 @@
 
 ## What it does
 
-Two lists in the module config — one for shaped recipes, one for shapeless ones. Each entry is a
-single line of text: an id, a result, a grid and what the letters in it mean. On every datapack
+The module config holds two lists, one for shaped recipes and one for shapeless ones. Each entry is
+a single line of text: an id, a result, a grid and what the letters in it mean. On every datapack
 reload the module parses both lists and merges what comes out into the game's recipe set, so
-`/reload` is enough to try a recipe out. No datapack, no restart, no JSON.
+`/reload` is enough to try a recipe out, without a datapack or a restart.
 
 An entry whose recipe id is new is **added**. An entry that reuses an id that already exists
-**replaces** that recipe — which is how the shipped Netherite entry swaps vanilla's scrap-and-gold
+**replaces** that recipe. That is how the shipped Netherite entry swaps vanilla's scrap-and-gold
 recipe for one of its own.
 
 Six recipes ship in the defaults and are live as soon as the module is:
 
-* **Rail upgrades** — six plain rails plus the vanilla trimmings become six powered, detector or
-  activator rails. Purely additive; the vanilla recipes still work.
-* **Netherite Ingot** — four Netherite Scrap, four Create Powdered Obsidian and one Gold Ingot.
+* **Rail upgrades**: six plain rails plus the vanilla trimmings become six powered, detector or
+  activator rails. These only add; the vanilla recipes still work.
+* **Netherite Ingot**: four Netherite Scrap, four Create Powdered Obsidian and one Gold Ingot.
   Replaces the vanilla recipe. Inert without Create, in which case vanilla's stands.
-* **Bundle** — one leather plus one string, shapeless.
-* **Giant Backpack** — needs Overpacked and Create; Overpacked ships no recipe for it of its own.
+* **Bundle**: one leather plus one string, shapeless.
+* **Giant Backpack**: needs Overpacked and Create; Overpacked ships no recipe for it of its own.
 
 They are listed with their grids under [Items, blocks and recipes](#items-blocks-and-recipes).
-Delete the lines you do not want — they are ordinary config entries, not code.
+Delete the lines you do not want; they are ordinary config entries.
 
 Nothing here runs on the client, and the module registers no items, blocks or text of its own.
 
@@ -58,30 +58,30 @@ recipe_id;result_item;result_count;pattern;keys
 | `pattern` | The grid rows, `R R\|RGR\|RDR` or `"R R" "RGR" "RDR"`. |
 | `keys` | Comma-separated `X=ingredient` pairs, e.g. `A=minecraft:leather,B=#minecraft:planks`. |
 
-The line is split on `;` with a limit of five, so the keys part may itself contain semicolons — they
+The line is split on `;` with a limit of five, so the keys part may itself contain semicolons; they
 then end up inside an ingredient id and the entry fails to parse. Ingredients are item ids or tags
 with a leading `#`; a space in the pattern is an empty cell.
 
-Four things about the pattern are worth knowing before you write one:
+The pattern has four quirks:
 
 * **Rows in quotes are taken verbatim.** The parser first collects everything matching `"([^"]+)"`,
   and if that yields at least one row it never looks at the rest of the field.
 * **Unquoted rows are trimmed.** A row that begins or ends with an empty cell loses it. That alone
-  is harmless as long as every row loses the same amount — `shrink` strips those outer columns
-  itself, so the result is the grid you wanted anyway. Uneven trimming is what hurts: the grid comes
-  out ragged — ` S |SSS| S ` arrives as `S`, `SSS`, `S` — and `ShapedRecipePattern.shrink` then runs
-  off the end of the short row on a `substring`, taking the whole entry with it. That is what the
-  quoted form is for.
-* Rows are separated by `|`. If the field contains no `|` at all, commas are accepted instead —
-  undocumented in the config comment, but it works.
+  is harmless as long as every row loses the same amount, because `shrink` strips those outer
+  columns itself, so the result is the grid you wanted anyway. Uneven trimming breaks the entry: the
+  grid comes out ragged (` S |SSS| S ` arrives as `S`, `SSS`, `S`), and `ShapedRecipePattern.shrink`
+  then runs off the end of the short row on a `substring`, taking the whole entry with it. The quoted
+  form exists to avoid this.
+* Rows are separated by `|`. If the field contains no `|` at all, commas are accepted instead.
+  The config comment does not mention this, but it works.
 * A trailing empty row disappears (`String.split` with the zero limit drops trailing blanks), so
   `AAA|` is one row, not two.
 
-A key symbol has to be exactly one character and must not be a space — each of those has its own
+A key symbol has to be exactly one character and must not be a space; each of those has its own
 error message.
 
 **`minecraft:air` is rejected, not accepted as "empty".** Unknown ids are detected by looking the id
-up in `BuiltInRegistries.ITEM` and comparing the result against `Items.AIR` — and air legitimately
+up in `BuiltInRegistries.ITEM` and comparing the result against `Items.AIR`. Air itself
 resolves to `Items.AIR`, so writing it out lands on `Unknown result item: minecraft:air` and the
 entry is dropped. Empty cells are spaces in the pattern.
 
@@ -92,17 +92,17 @@ ingredient1,ingredient2,...->result_item[;result_count[;recipe_id]]
 ```
 
 `result_count` defaults to 1. The recipe id, when omitted, is built as
-`minecraft:shapeless_<result path>` — always in the `minecraft` namespace, never in
+`minecraft:shapeless_<result path>`, always in the `minecraft` namespace and never in
 `vanillaplusadditions`. The shipped bundle entry therefore lands on `minecraft:shapeless_bundle` and
 leaves vanilla's `minecraft:bundle` id alone, which is why it adds rather than replaces.
 
 ### Adding versus replacing
 
 The merge is a `LinkedHashMap` keyed by recipe id and seeded from the recipe set the reload has just
-built from the datapacks, so a few consequences follow directly:
+built from the datapacks, which has these consequences:
 
 * **Nothing is destroyed permanently.** Every reload starts again from the datapack set and the
-  config entries are re-applied on top. Remove an entry — or the mod it needs — and the original
+  config entries are re-applied on top. Remove an entry (or the mod it needs) and the original
   recipe is back after the next `/reload`.
 * **The map knows nothing about recipe types.** It is keyed by id alone, so reusing the id of a
   smelting, stonecutting or modded machine recipe removes that recipe and puts a crafting-table
@@ -111,8 +111,8 @@ built from the datapacks, so a few consequences follow directly:
   `advancement/recipes/misc/netherite_ingot.json` triggers on `recipe_unlocked` for
   `minecraft:netherite_ingot` and rewards the same id; the replacement keeps that id, so picking up
   Netherite Scrap still unlocks it in the recipe book. The five *added* ids have no advancement
-  anywhere in this repository, so nothing grants them — read off the shipped files, not tested in
-  game.
+  anywhere in this repository, so nothing grants them. This is read off the shipped files and
+  was not tested in game.
 * **Group and category are not configurable.** Every recipe is built with an empty group and
   `CraftingBookCategory.MISC`. Vanilla's netherite recipe carries `"group": "netherite_ingot"`,
   which the replacement loses, so it no longer shares a recipe-book slot with the
@@ -124,20 +124,21 @@ built from the datapacks, so a few consequences follow directly:
 
 ### When an entry is dropped
 
-Everything is per entry. One bad line costs that line, never the list.
+Everything is handled per entry: one bad line costs that line and leaves the rest of the list
+intact.
 
 | Situation | Log | Result |
 |---|---|---|
-| Item id from a mod that is not loaded — namespace is neither `minecraft` nor `neoforge` and `ModList` does not know it | one `DEBUG` per entry plus a single `INFO` summary naming the namespaces | entry skipped, everything else loads |
+| Item id from a mod that is not loaded (namespace is neither `minecraft` nor `neoforge` and `ModList` does not know it) | one `DEBUG` per entry plus a single `INFO` summary naming the namespaces | entry skipped, everything else loads |
 | Item id wrong while its mod *is* installed | `ERROR` `Invalid custom crafting recipe definition` plus `Reason: Unknown result item: …` | entry skipped |
-| Grid malformed — ragged rows, a symbol used but not defined, a key symbol the pattern never uses | `ERROR` `Failed to parse custom crafting recipe` plus a stack trace — all three die inside vanilla (`shrink`'s `substring`, or the `IllegalStateException` from `DataResult.getOrThrow`), never as an `IllegalArgumentException`, so this row never takes the `Reason:` branch | entry skipped |
+| Grid malformed (ragged rows, a symbol used but not defined, a key symbol the pattern never uses) | `ERROR` `Failed to parse custom crafting recipe` plus a stack trace. All three die inside vanilla (`shrink`'s `substring`, or the `IllegalStateException` from `DataResult.getOrThrow`) and never as an `IllegalArgumentException`, so this row never takes the `Reason:` branch | entry skipped |
 
-The split between the first two rows is the point of the design: a recipe extension for a mod the
-pack does not have is expected, not a defect, so it stays quiet. A typo is loud.
+The first two rows are split on purpose: a recipe extension for a mod the pack does not have is
+expected, so it stays quiet, while a typo is logged as an error.
 
 **The mod gate only covers item ids.** A `#…` ingredient is turned straight into a tag ingredient
 without ever touching the registry, so an entry whose ingredients are all tags is registered
-whatever is installed — with an empty tag it is simply uncraftable rather than skipped.
+whatever is installed; with an empty tag it is registered but uncraftable.
 
 ## Items, blocks and recipes
 
@@ -162,8 +163,8 @@ The module registers no items and no blocks. It ships six recipes.
 ```
 
 `.` marks an empty cell. Each one is vanilla's own grid with the six metal ingots swapped for six
-rails; the powered rail
-additionally keeps one gold ingot where vanilla has the stick, so it does not become gold-free:
+rails; the powered rail additionally keeps one gold ingot where vanilla has the stick, so it does not
+become gold-free:
 
 | Six of… | Vanilla | Here |
 |---|---|---|
@@ -171,9 +172,9 @@ additionally keeps one gold ingot where vanilla has the stick, so it does not be
 | Detector Rail | 6 Iron Ingot + 1 Stone Pressure Plate + 1 Redstone | 6 Rail + 1 Stone Pressure Plate + 1 Redstone |
 | Activator Rail | 6 Iron Ingot + 2 Stick + 1 Redstone Torch | 6 Rail + 2 Stick + 1 Redstone Torch |
 
-Sixteen rails cost six iron ingots and a stick, so six rails are worth about 2¼ iron. That is the
-whole idea: the metal frame is the expensive part of a special rail, and a mineshaft's worth of
-plain rails is suddenly worth carrying home. The vanilla recipes keep their own ids and are
+Sixteen rails cost six iron ingots and a stick, so six rails are worth about 2¼ iron. The metal
+frame is the expensive part of a special rail, so with these recipes a mineshaft's worth of plain
+rails becomes worth carrying home. The vanilla recipes keep their own ids and are
 untouched.
 
 ### Netherite Ingot
@@ -185,8 +186,8 @@ untouched.
 ```
 
 Vanilla's recipe is shapeless, 4 Netherite Scrap + 4 Gold Ingot. Here four of those gold ingots
-become four Powdered Obsidian and **one gold ingot stays in the middle** — the trade is most of the
-gold, not all of it. Create makes Powdered Obsidian by crushing obsidian: one crushing recipe,
+become four Powdered Obsidian and **one gold ingot stays in the middle**, so the recipe trades away most
+of the gold but not all of it. Create makes Powdered Obsidian by crushing obsidian: one crushing recipe,
 `processing_time` 500, with a 75 % chance of the obsidian coming back out alongside the powder. So
 the cost moves from gold to obsidian and machine time.
 
@@ -197,8 +198,8 @@ Without Create the entry is skipped and vanilla's shapeless recipe stands, uncha
 Shapeless, auto-generated id `minecraft:shapeless_bundle`: **1 Leather + 1 String → 1 Bundle**.
 
 In 1.21.1 vanilla's own bundle recipe (6 Rabbit Hide + 2 String) lives inside the optional `bundle`
-feature datapack — `data/minecraft/datapacks/bundle/data/minecraft/recipe/bundle.json` — so in an
-ordinary world this entry is the only recipe for a Bundle there is, and a much cheaper one.
+feature datapack (`data/minecraft/datapacks/bundle/data/minecraft/recipe/bundle.json`), so in an
+ordinary world this entry is the only Bundle recipe there is, and a much cheaper one.
 
 ### Giant Backpack
 
@@ -210,7 +211,7 @@ ordinary world this entry is the only recipe for a Bundle there is, and a much c
 ```
 
 Five leather, two string, one Item Vault, one Andesite Alloy. Overpacked 2.0.1 ships exactly two
-crafting recipes of its own — the Backpack Pocket and the dye recipe — and none for the Giant
+crafting recipes of its own (the Backpack Pocket and the dye recipe) and none for the Giant
 Backpack itself. The entry needs both mods: Overpacked for the result, Create for two ingredients.
 The result item is resolved first, so a pack without Overpacked reports `overpacked` in the summary
 line even when Create is missing as well.
@@ -252,14 +253,14 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 |---|---|
 | Create not installed | The Netherite and the Giant Backpack entries are skipped; vanilla's scrap-and-gold recipe stands. One `INFO` line names `create`. The module keeps running and the rail and bundle entries still load. |
 | Overpacked not installed | The Giant Backpack entry is skipped, nothing else is lost. |
-| Tag ingredients are never mod-gated | Only item ids are checked against `ModList`. A recipe built entirely from `#tags` is registered whatever is installed — an empty tag makes it uncraftable rather than absent. |
+| Tag ingredients are never mod-gated | Only item ids are checked against `ModList`. A recipe built entirely from `#tags` is registered whatever is installed; an empty tag leaves it registered but uncraftable. |
 | Reusing the id of a non-crafting recipe | The merge is keyed by id alone, so the original recipe of whatever type disappears and a crafting-table recipe takes its id. |
 | More than nine shapeless ingredients | Nothing checks the count. The recipe is built and registered, and can never match a 3×3 grid. |
-| A shaped grid bigger than 3×3 | Nothing checks the size either. `ShapedRecipePattern.of` only runs the unpack step, and the row/column limits sit in the JSON codec it never goes through — so a 4×4 pattern is built and registered without a word, and never matches a vanilla crafting table. |
-| An existing config keeps its old defaults | The default list is only written when the file is created. A config from before an entry was added to the defaults keeps the shorter list — observed on an instance here whose `recipes` still holds only the four pre-Netherite entries. Add the line by hand. |
+| A shaped grid bigger than 3×3 | Nothing checks the size either. `ShapedRecipePattern.of` only runs the unpack step, and the row/column limits sit in the JSON codec it never goes through. A 4×4 pattern is therefore built and registered without a word, and never matches a vanilla crafting table. |
+| An existing config keeps its old defaults | The default list is only written when the file is created. A config from before an entry was added to the defaults keeps the shorter list; this was observed on an instance here whose `recipes` still holds only the four pre-Netherite entries. Add the line by hand. |
 | Already-connected clients | Not established here. `replaceRecipes` runs server-side inside the reload listener, and this repository contains no recipe-sync code for the module; what a client that is already connected sees is whatever vanilla and NeoForge do on a reload. |
 | The recipe book | Vanilla grants a recipe through an advancement reward, and no advancement of any kind ships in this repository, so nothing unlocks the five added ids on its own. The replaced `minecraft:netherite_ingot` keeps vanilla's. Deduced from the files, not tested in game. |
-| Module turned off | `AddReloadListenerEvent` is the only hook and it is gated on the module, so a toggle takes effect on the next `/reload` or restart — the recipe set then comes straight from the datapacks again. |
+| Module turned off | `AddReloadListenerEvent` is the only hook and it is gated on the module, so a toggle takes effect on the next `/reload` or restart, and the recipe set then comes straight from the datapacks again. |
 | An entry the config validator rejects | Never reaches the parser. What `ModConfigSpec` then does with the list is NeoForge's business and is not established here. |
 
 ## Under the hood
@@ -274,7 +275,7 @@ return preparationBarrier.wait(Unit.INSTANCE)
         .thenRunAsync(() -> applyConfiguredRecipes(recipeManager), gameExecutor);
 ```
 
-There is nothing to prepare off-thread — the work is a config parse — so the listener waits at the
+There is nothing to prepare off-thread (the work is a config parse), so the listener waits at the
 barrier and does everything in the apply stage on the game executor. `applyConfiguredRecipes` copies
 `recipeManager.getRecipes()` into a `LinkedHashMap` keyed by `RecipeHolder.id()`, puts its own
 holders in (counting adds and replaces by whether `Map.put` returned anything) and hands the whole
@@ -284,20 +285,20 @@ collection back through `RecipeManager.replaceRecipes`. One `INFO` line per relo
 **The shaped parser no longer lives here.** `ConfiguredRecipes.Shaped.parse` and the ingredient
 resolution moved to `util/ConfiguredRecipes.java` when
 [`special_gemstones`](special_gemstones.md) needed the same string format for its own two recipe
-config keys; this module calls into it and still owns the shapeless half. One parser, one format —
-a second dialect for the same job would be a second place for a typo to mean something different.
+config keys; this module calls into it and still owns the shapeless half. With a single parser and
+format, a typo cannot mean one thing in one module and something different in another.
 
-Thirteen other modules use the same injection — `flying_fish`, `cat_guardian`, `battle_dogs`,
-`end_conduit`, `minecart_chunk_loading`, `pathfinder_quills`, `tipped_arrows` and the rest. Each one
-copies the recipe map as it finds it and hands back a full replacement, so they accumulate rather
-than overwrite one another.
+Thirteen other modules use the same injection, among them `flying_fish`, `cat_guardian`,
+`battle_dogs`, `end_conduit`, `minecart_chunk_loading`, `pathfinder_quills` and `tipped_arrows`.
+Each one copies the recipe map as it finds it and hands back a full replacement, so they accumulate
+rather than overwrite one another.
 
 **Logging.** The module's `debug_logging` key gates exactly one line, `No custom crafting recipes
 configured.` The per-entry skip lines are plain `logger.debug` calls on the module's SLF4J logger
 and follow the log level instead, so turning `debug_logging` on does not bring them out.
 
-**No assets at all.** No lang keys — every log line is hardcoded English and there is no
-player-facing text — no mixins, no data files, no registry objects, no commands, no keybinds. The
+**No assets at all.** There are no lang keys (every log line is hardcoded English and there is no
+player-facing text), and no mixins, data files, registry objects, commands or keybinds. The
 standalone entry in `build.gradle` is accordingly the bare two-field form: `vpa_custom_crafting_recipes`
 plus `vpa_core`, with nothing to ship alongside.
 
@@ -305,11 +306,11 @@ plus `vpa_core`, with nothing to ship alongside.
 `data/<ns>/recipe/*.json` and points at a "TODO / Roadmap" section of `docs/custom_crafting_recipes.md`.
 Neither is still there: that page was this one before the docs rebuild moved it to `docs/modules/`,
 and the section it names went in the same rebuild. The convention below is the opposite of what the
-comment proposes. Treat it as dead text.
+comment proposes.
 
 ### Convention: recipes and block loot are always done in code
 
-**Do not add recipe or loot-table JSON datapack files to this mod** — they do not load reliably
+**Do not add recipe or loot-table JSON datapack files to this mod**: they do not load reliably
 here, confirmed repeatedly with both the pre-1.21 plural folders *and* the correct 1.21 singular
 `recipe/` and `loot_table/` ones. Everything is registered in code, split by ownership:
 
@@ -325,13 +326,13 @@ here, confirmed repeatedly with both the pre-1.21 plural folders *and* the corre
 * **A foreign mod's loot table** → intercept `LootTableLoadEvent` and `setTable(…)`, see
   `EnhancedAiLeaderLootModule`; that needs no compile dependency on the other mod.
 
-This is intentional and final — there is no plan to migrate to JSON datapacks.
+This is intentional, and there is no plan to migrate to JSON datapacks.
 
 ## See also
 
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
-* [Config reference](../reference/config.md) — every module's keys in one place
-* [Pathfinder Quills](pathfinder_quills.md) — a whole recipe family in code, with its own serializer
-* [Minecart Chunk Loading](minecart_chunk_loading.md) — the template for a module's own recipe
-* [Special Gemstones](special_gemstones.md) — uses this page's recipe format in its own config keys
+* [Configuration Guide](../guides/configuration.md): where the config file lives
+* [Config reference](../reference/config.md): every module's keys in one place
+* [Pathfinder Quills](pathfinder_quills.md): a whole recipe family in code, with its own serializer
+* [Minecart Chunk Loading](minecart_chunk_loading.md): the template for a module's own recipe
+* [Special Gemstones](special_gemstones.md): uses this page's recipe format in its own config keys
 * [All modules](../../README.md#-modules)

@@ -1,6 +1,7 @@
 # Freecam Sub-Level Noclip
 
-> **TL;DR** — The Freecam camera flies through an airship the way it flies through a mountain, instead of stopping dead at the hull while the terrain underneath stays passable.
+> **TL;DR** — The Freecam camera flies through an airship the way it flies through a mountain.
+> Without the module it stops dead at the hull, while the terrain underneath stays passable.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -26,7 +27,7 @@ block.
 
 ## Why it exists
 
-Freecam does not fly through blocks by turning off collision. It answers the collision question with
+Freecam flies through blocks without turning off collision: it answers the collision question with
 "there is nothing here", in `BlockStateBaseMixin`:
 
 ```java
@@ -55,7 +56,7 @@ if (state.getBlock() instanceof ScaffoldingBlock) {
 
 The two-argument form returns `BlockStateBase.cache.collisionShape` and never asks who is colliding,
 so Freecam's mixin is never consulted for the hull. The camera therefore obeys the ship and ignores
-the world — exactly the asymmetry you see in game.
+the world, which is exactly the asymmetry you see in game.
 
 ### Why it sets a flag instead of patching Sable
 
@@ -71,8 +72,8 @@ public void move(MoverType type, Vec3 pos) {
         Vec3 vec3 = this.collide(pos);   // ← Sable's @Redirect sits here
 ```
 
-So `noPhysics` cuts off the world collision and Sable's redirect in one step — and it does so without
-naming a single Sable class.
+So `noPhysics` cuts off the world collision and Sable's redirect in one step, without naming a
+single Sable class.
 
 **Where the flag is written matters, and the first attempt got it wrong.** Setting it from a
 client-tick handler looks right and does nothing at all, because `Player.tick()` opens with
@@ -81,14 +82,14 @@ client-tick handler looks right and does nothing at all, because `Player.tick()`
 this.noPhysics = this.isSpectator();
 ```
 
-and Freecam's camera is a `LocalPlayer`, not a spectator — so the flag is wiped again before the
+and Freecam's camera is a `LocalPlayer`, not a spectator, so the flag is wiped again before the
 camera ever moves. It has to be set at HEAD of `Entity.move` itself, which is the last moment before
 that `if` is read. The alternative, injecting into
 `SubLevelEntityCollision.getSubLevelEntityCollisionShape` to restore the missing context, would be
 more faithful (Freecam's own per-block rules would keep working), but it targets a private method
 whose signature carries three Sable types (`Pose3dc`, `LevelAccelerator`, `LevelReusedVectors`), and
 this repository compiles against Sable 1.2.2 while the pack runs 2.0.5. That signature happens to be
-identical in both jars, so nothing is broken today — but a private method is free to move, and a
+identical in both jars, so nothing is broken today. A private method is free to move, though, and a
 signature that has moved does not crash; it silently does nothing, which is the worst of the three
 outcomes.
 
@@ -97,8 +98,8 @@ outcomes.
 | Limit | Effect |
 |---|---|
 | Freecam not installed | Inert. `ModList.get().isLoaded("freecam")` is false and no Freecam class is ever resolved. |
-| Sable not installed | Inert in practice — without a sub-level the camera already passes through everything, and `noPhysics` changes nothing it did not already do. |
-| Freecam set to ignore only *some* blocks | **Not fixed.** `noPhysics` is all or nothing and cannot reproduce a per-block rule, so the module declines to act at all: `ignoreAll` must be on, and the build variant must permit cheats — the same two conditions as the first branch of Freecam's `CollisionBehavior.isIgnored`. With a per-block rule the camera still sticks in a hull. |
+| Sable not installed | Inert in practice: without a sub-level the camera already passes through everything, and `noPhysics` changes nothing it did not already do. |
+| Freecam set to ignore only *some* blocks | **Not fixed.** `noPhysics` is all or nothing and cannot reproduce a per-block rule, so the module declines to act at all: `ignoreAll` must be on, and the build variant must permit cheats. These are the same two conditions as the first branch of Freecam's `CollisionBehavior.isIgnored`. With a per-block rule the camera still sticks in a hull. |
 | Freecam renames a field | The reflective lookup fails once, the module goes quiet for the session, and the game is unaffected. |
 | Module disabled at runtime | Takes effect on the next freecam toggle at the latest: the flag lives on Freecam's throwaway camera entity, which is rebuilt every time freecam is switched on. |
 

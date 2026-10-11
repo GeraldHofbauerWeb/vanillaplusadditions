@@ -10,9 +10,9 @@
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 **56 small fixes and additions that keep Minecraft feeling like Minecraft.** Nothing here adds a
-new dimension or a tech tree. Each module scratches one itch — a compass that stops forgetting its
-lodestone, cats that actually guard your base, a rail that keeps the chunks loaded while your
-minecart is somewhere else.
+new dimension or a tech tree. Each module scratches one itch: the lodestone compass stops forgetting
+its target, a fed cat guards your base, and a minecart on the chunk-loading rail keeps going while
+you are somewhere else.
 
 **Every module can be switched off, and most can be installed on their own.** Take the all-in-one
 jar and disable what you do not want, or take just the two module jars you came for.
@@ -24,18 +24,18 @@ jar and disable what you do not want, or take just the two module jars you came 
 ## 🚀 Install
 
 1. Install **NeoForge for Minecraft 1.21.1**.
-2. Take **either** the all-in-one jar **or** the individual module jars you want — never both.
-   They are declared incompatible on purpose, because installing both registers everything twice.
+2. Take **either** the all-in-one jar **or** the individual module jars you want, never both. They
+   are declared incompatible on purpose, because installing both registers everything twice.
 3. Drop the jars into `mods/` and start the game. A config file appears on first launch; see the
    [Configuration Guide](docs/guides/configuration.md).
 
 Every module jar also needs [`vpa_core.jar`](https://github.com/GeraldHofbauerWeb/vanillaplusadditions/releases/latest/download/vpa_core.jar),
-and a few need one more module jar — the table says which.
+and a few need one more module jar; the table says which.
 
 ## 🧩 Modules
 
-Pick a row. **Requires** is what the module cannot work without; anything under *better with* is
-optional and the module degrades gracefully without it.
+**Requires** is what the module cannot work without; anything under *better with* is optional,
+and the module runs without it.
 
 <!-- vpa:table:start -->
 | Module | Docs | Download | Requires |
@@ -143,7 +143,7 @@ Anything older than the floors in the table above is simply unknown, not known t
 <tr>
 <td width="110" align="center"><img src="docs/img/items/world_compass.png" width="88"></td>
 <td><b><a href="docs/modules/compass_overhaul.md">Compass Overhaul</a></b><br>
-Vanilla drops a lodestone binding whenever its lookup comes back empty — including for a chunk that
+Vanilla drops a lodestone binding whenever its lookup comes back empty, including for a chunk that
 simply is not loaded. This keeps the binding unless the lodestone is provably gone, fixes the needle
 aboard a turning airship, and adds a second compass that always points to world north.</td>
 </tr>
@@ -157,14 +157,14 @@ underwater. Both get armour, a bowl, and a feeding station with a few dozen skin
 <tr>
 <td width="110" align="center"><img src="docs/img/blocks/mob_loader.png" width="88"></td>
 <td><b><a href="docs/modules/mob_cart_loader.md">Mob Cart Loader</a></b><br>
-Two blocks that load a mob into a passing minecart and unload it again at the other end — keeping
-its UUID, so nothing is duplicated and nothing is lost.</td>
+Two blocks that load a mob into a passing minecart and unload it again at the other end, keeping
+its UUID, so nothing is duplicated or lost.</td>
 </tr>
 <tr>
 <td width="110" align="center"><img src="docs/img/items/chunk_loader_track.png" width="88"></td>
 <td><b><a href="docs/modules/train_chunk_loading.md">Chunk loading that follows you</a></b><br>
 A rail and a Create track that carry a rolling window of loaded chunks with the cart or the train,
-plus a standing anchor block that holds a fixed square around itself — so what you left running
+plus a standing anchor block that holds a fixed square around itself. What you left running
 keeps running when nobody is watching.</td>
 </tr>
 <tr>
@@ -176,7 +176,7 @@ A fish that leaps out of the water, and boots made from it that let you run acro
 <td width="110" align="center"><img src="docs/img/items/wolf_armor_netherite.png" width="88"></td>
 <td><b><a href="docs/modules/wolf_mount.md">Wolf Mount</a></b> &amp;
 <b><a href="docs/modules/battle_dogs.md">Battle Dogs</a></b><br>
-Armour your wolf in four tiers — and if it is big enough, saddle up and fight from its back.</td>
+Armour your wolf in four tiers, and if it is big enough, saddle up and fight from its back.</td>
 </tr>
 </table>
 
@@ -184,17 +184,17 @@ Armour your wolf in four tiers — and if it is big enough, saddle up and fight 
 
 One TOML file, one section per module, every key commented in place.
 
-* [Configuration Guide](docs/guides/configuration.md) — where the file is and how it works
-* [Configuration Reference](docs/reference/config.md) — every key of every module, generated
-* [Debug Logging](docs/guides/debug-logging.md) — per-module log control
+* [Configuration Guide](docs/guides/configuration.md): where the file is and how it works
+* [Configuration Reference](docs/reference/config.md): every key of every module, generated
+* [Debug Logging](docs/guides/debug-logging.md): per-module log control
 
 ## 📚 Documentation
 
-* **[Every module](#-modules)** — one page each, from a one-line summary down to the implementation
-* [Module System](docs/guides/module-system.md) — how a module is built, for contributors
-* [Companion Armor](docs/guides/companion-armor.md) — the armour tiers shared by wolves and cats
-* [Testing](docs/guides/testing.md) — test server and client
-* [Instance Switcher](docs/guides/instance-switcher.md) — the development utility
+* **[Every module](#-modules)**: one page each, from a one-line summary down to the implementation
+* [Module System](docs/guides/module-system.md): how a module is built, for contributors
+* [Companion Armor](docs/guides/companion-armor.md): the armour tiers shared by wolves and cats
+* [Testing](docs/guides/testing.md): test server and client
+* [Instance Switcher](docs/guides/instance-switcher.md): the development utility
 
 ## 🔨 Development
 
@@ -207,7 +207,7 @@ cd vanillaplusadditions
 ./gradlew moduleJars   # the standalone module jars, into build/libs/modules/
 ```
 
-The build needs four third-party jars in `libs/` that are not redistributed here — CI fetches them
+The build needs four third-party jars in `libs/` that are not redistributed here; CI fetches them
 in `.github/workflows/build.yml`, and the same URLs work locally.
 
 Documentation is generated and checked:
@@ -221,12 +221,11 @@ python3 scripts/docgen/render_models.py     # rebuild the item and block images
 
 ## 🤝 Contributing
 
-Contributions are welcome — please read the [Contributing Guidelines](CONTRIBUTING.md) first.
+Contributions are welcome; please read the [Contributing Guidelines](CONTRIBUTING.md) first.
 
 ## 📝 License
 
-MIT — see [LICENSE](LICENSE). The code is ours throughout; for the artwork, three things are worth
-knowing:
+MIT, see [LICENSE](LICENSE). The code is ours throughout. The artwork is a mixed bag:
 
 * Several textures (wolf armour, flying fish, End Conduit, station skins and a few more) are
   recoloured from vanilla Minecraft sprites. They are derived Mojang assets and not covered by the
@@ -235,9 +234,9 @@ knowing:
   Vazkii's permission (see Credits).
 * The two Quark x Fresh Animations packs (`resourcepacks/vpa_quark_fresh_animations` and
   `resourcepacks/vpa_quark_toretoise`) are Quark's entity models re-exported, with our animations
-  on top. Quark is CC BY-NC-SA 3.0, so these two folders are **CC BY-NC-SA 3.0 as well**, not
-  MIT — each carries its own `LICENSE`, inside the jar and in the standalone zip. The module's
-  Java code is ours and stays MIT.
+  on top. Quark is CC BY-NC-SA 3.0, so these two folders are **CC BY-NC-SA 3.0 as well**, not MIT;
+  each carries its own `LICENSE`, inside the jar and in the standalone zip. The module's Java
+  code is ours and stays MIT.
 * The `world_compass` needle and the Chunk Loader Track ship **no pixels at all**: they are painted
   at load time from the compass and Create track textures already installed, so they also follow
   your resource pack.
@@ -247,9 +246,11 @@ knowing:
 **Developer**: Gerald Hofbauer · **Framework**: [NeoForge](https://neoforged.net/) ·
 **Built with**: [Claude Code](https://claude.com/claude-code) as a pair programmer
 
-* **[Vazkii](https://github.com/VazkiiMods) / [Quark](https://modrinth.com/mod/quark)** — the
-  Foxhound armour textures are recolours of Quark's own, used with permission (2026-09-24).
-* **[Fresh Animations](https://modrinth.com/resourcepack/fresh-animations) by FreshLX** — the
+* **[Vazkii](https://github.com/VazkiiMods) / [Quark](https://modrinth.com/mod/quark)**: the
+  Foxhound armour textures are recolours of Quark's own, used with permission (2026-09-24), and
+  the two Quark x Fresh Animations packs are Quark's entity models re-exported, with Vazkii's OK
+  (2026-10-11; CC BY-NC-SA 3.0, see License).
+* **[Fresh Animations](https://modrinth.com/resourcepack/fresh-animations) by FreshLX**: the
   Quark mob animations in `quark_fresh_animations` are modelled after Fresh Animations' style.
   No Fresh Animations file is included; the add-on only works alongside it.
 

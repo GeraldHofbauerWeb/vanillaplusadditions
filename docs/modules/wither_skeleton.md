@@ -1,8 +1,8 @@
 # Wither Skeleton Enforcer
 
-> **TL;DR** — In a chunk that belongs to a Nether fortress a plain skeleton never gets to spawn: it
-> is turned away and a wither skeleton takes its place. The rest of the Nether is left exactly as it
-> is.
+> **TL;DR** — In a chunk that belongs to a Nether fortress (vanilla or Better Fortresses), a plain
+> skeleton never gets to spawn: it is turned away and a wither skeleton takes its place. The rest of
+> the Nether is left as it is.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -19,13 +19,13 @@
 ## What it does
 
 In the Nether, in a chunk that belongs to a fortress, a plain skeleton that is about to spawn is
-blocked, and a wither skeleton is put in its place — same position, same facing, and finalised like
-a natural spawn, so it arrives with its stone sword and its 4.0 base attack damage, and it withers
-whoever it hits like any other of its kind.
+blocked, and a wither skeleton is put in its place. It gets the same position and facing and is
+finalised like a natural spawn, so it arrives with its stone sword and its 4.0 base attack damage,
+and it withers whoever it hits like any other of its kind.
 
 Nothing else about the Nether changes. Skeletons in the open wastes and in the soul sand valleys
 spawn as they always did; the module only ever looks at fortress chunks. Blazes, magma cubes and
-zombified piglins are untouched, and so are strays, boggeds and wither skeletons themselves — the
+zombified piglins are untouched, and so are strays, boggeds and wither skeletons themselves. The
 check is `instanceof Skeleton`, and in 1.21.1 those three all extend `AbstractSkeleton` directly,
 so none of them match.
 
@@ -49,10 +49,10 @@ public static final WeightedRandomList<MobSpawnSettings.SpawnerData> FORTRESS_EN
 ```
 
 A weight of two out of twenty-eight, so about one fortress spawn roll in fourteen picks the plain
-skeleton — and that entry asks for five of them at once. Weighted by the group sizes in the list
+skeleton, and that entry asks for five of them at once. Weighted by the group sizes in the list
 above, roughly one fortress monster in eleven is an ordinary bow skeleton standing between the
-blazes, worth a bone and two arrows. That is what this module removes, by turning exactly those
-spawns into the mob the group next to them already is.
+blazes, worth a bone and two arrows. The module turns exactly those spawns into the mob the group
+next to them already is.
 
 ## In detail
 
@@ -103,8 +103,8 @@ if (category == MobCategory.MONSTER && level.getBlockState(pos.below()).is(Block
 }
 ```
 
-So a skeleton that rolled out of the ordinary biome list while standing on netherrack — never a
-fortress spawn as far as vanilla is concerned — is blocked and converted too, as long as its chunk
+So a skeleton that rolled out of the ordinary biome list while standing on netherrack (never a
+fortress spawn as far as vanilla is concerned) is blocked and converted too, as long as its chunk
 carries a fortress reference.
 
 ### What is affected, and what is not
@@ -113,17 +113,17 @@ carries a fortress reference.
 |---|---|
 | Plain skeleton, fortress chunk, Nether | blocked, wither skeleton instead |
 | Plain skeleton, anywhere else in the Nether | untouched |
-| Skeleton in the Overworld or the End | untouched — `serverLevel.dimension() != Level.NETHER` returns early |
-| Stray, bogged, wither skeleton | untouched — only `Skeleton` matches |
+| Skeleton in the Overworld or the End | untouched; `serverLevel.dimension() != Level.NETHER` returns early |
+| Stray, bogged, wither skeleton | untouched, only `Skeleton` matches |
 | Skeleton from a spawner, a spawn egg or `/summon`, fortress chunk | converted as well; the module applies no spawn-type filter |
-| Spawns during world generation | exempt — they run against a `WorldGenRegion`, and the handler needs a `ServerLevel` |
+| Spawns during world generation | exempt, because they run against a `WorldGenRegion`, and the handler needs a `ServerLevel` |
 
 There is no `MobSpawnType` check anywhere in the module, so every path that fires
 `FinalizeSpawnEvent` against a real level is covered. Two of those have side effects worth knowing:
 
 * **Spawners.** `BaseSpawner` aborts its batch when the entity cannot be added
   (`if (!level.tryAddFreshEntityWithPassengers(entity)) { this.delay(...); return; }`), so a
-  skeleton spawner in a fortress chunk produces wither skeletons — one per activation, instead of
+  skeleton spawner in a fortress chunk produces wither skeletons, one per activation instead of
   the usual group.
 * **Spawn eggs.** `SpawnEggItem` only shrinks the stack when `spawn(...)` returns non-null, and a
   cancelled spawn returns null. The module has already added its wither skeleton by then, so a
@@ -135,8 +135,8 @@ There is no `MobSpawnType` check anywhere in the module, so every path that fire
 ### The broadcast
 
 `broadcastSkeletonBlockedMessage` returns immediately unless the module's `debug_logging` resolves
-to on — `AUTO` by default, which falls through to `globalDebugLogging`, itself `false`. With it
-switched on, every player on the server gets this, once per blocked spawn:
+to on. It is `AUTO` by default, which falls through to `globalDebugLogging`, itself `false`. With
+it switched on, every player on the server gets this, once per blocked spawn:
 
 ```java
 Component message = Component
@@ -147,10 +147,9 @@ Component message = Component
 ```
 
 The coordinate line carries a `RUN_COMMAND` click event for `/tp @s x y z`, which needs permission
-level 2 — so it is attached per recipient, and players who could not run it get the same line
-without the click rather than an error on it. The text is a hardcoded English literal with no lang
-key: it is debug output, not a player-facing message, and with `debug_logging` off — the default —
-none of it is ever sent.
+level 2, so it is attached per recipient: players who could not run it get the same line without
+the click and see no error. The text is a hardcoded English literal with no lang key, since it is
+debug output. With `debug_logging` off (the default) none of it is ever sent.
 
 ### The labels used to say the opposite
 
@@ -164,9 +163,9 @@ around it claimed otherwise, and in a way that is easy to trip over while readin
 | README, class javadoc | "optionally replaces them with Wither Skeletons" | The replacement is unconditional; no switch exists |
 | Module description | "broadcasts messages about blocked spawns" | Only with `debug_logging` on, which is off by default |
 
-All four have been corrected to describe the code. The scope itself was left alone: fortress-only
-is a defensible design — it is where a fortress spawner would otherwise dilute wither skeletons —
-and widening it to the whole Nether would be a gameplay decision, not a repair.
+All four have been corrected to describe the code. The scope itself was left alone. Fortress-only
+is a defensible design (it is where a fortress spawner would otherwise dilute wither skeletons), and
+widening it to the whole Nether would be a gameplay decision that no bug fix calls for.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -182,29 +181,29 @@ This module has no settings of its own.
 
 | Limit | Effect |
 |---|---|
-| YUNG's Better Nether Fortresses | `betterfortresses:fortress` is accepted next to the vanilla structure, matched by registry key alone — no compile dependency, no `ModList.isLoaded`, and the module works without the mod. Whether those fortresses use vanilla's fortress spawn list at all depends on the structure's own `spawn_overrides`; the module does not care either way. |
+| YUNG's Better Nether Fortresses | `betterfortresses:fortress` is accepted next to the vanilla structure, matched by registry key alone, with no compile dependency and no `ModList.isLoaded`; the module works without the mod. Whether those fortresses use vanilla's fortress spawn list at all depends on the structure's own `spawn_overrides`; the module does not care either way. |
 | The replacement bypasses every other spawn hook | It is built by hand and `finalizeSpawn` is called directly instead of `EventHooks.finalizeMobSpawn`, so no other mod's `FinalizeSpawnEvent` handler sees the wither skeleton, no spawn-placement rule is consulted, and it is not counted against the mob cap. |
-| Mob-cap bookkeeping is off by one, briefly | In a natural spawn pass the skeleton that never appeared is still counted — vanilla increments its pack counters and runs `afterSpawn` after the refused add — while the wither skeleton the module adds is counted nowhere. Both wash out on the next pass, which recounts from the entities actually present. |
-| A failed replacement is near-silent | `EntityType.WITHER_SKELETON.create` returning null logs a warning, anything thrown is caught and logged as an error — in both cases the skeleton stays blocked and nothing takes its place. |
+| Mob-cap bookkeeping is off by one, briefly | In a natural spawn pass the skeleton that never appeared is still counted (vanilla increments its pack counters and runs `afterSpawn` after the refused add), while the wither skeleton the module adds is counted nowhere. Both wash out on the next pass, which recounts from the entities actually present. |
+| A failed replacement is near-silent | `EntityType.WITHER_SKELETON.create` returning null logs a warning, anything thrown is caught and logged as an error. In both cases the skeleton stays blocked and nothing takes its place. |
 | Another mod could clear the flag | The handler runs at `EventPriority.HIGH` and does not cancel the event, so later handlers still run. One calling `setSpawnCancelled(false)` would give you the skeleton *and* the wither skeleton; the module never re-checks. |
 | Debug logging is loud | With it on, a busy fortress messages every player on the server and writes an `INFO` line per blocked spawn. |
-| Module disabled at startup | `ModuleManager.initializeModules` only calls `initialize()` for modules that were enabled when the config was read, and only `onInitialize` registers the handler, so enabling it later needs a restart. Turning it **off** works at once — `/vpa module disable wither_skeleton`, a command the bundle registers — because `isModuleEnabled()` is re-checked on every event. In the standalone jar the bootstrap always boots the module, so both directions work live. |
+| Module disabled at startup | `ModuleManager.initializeModules` only calls `initialize()` for modules that were enabled when the config was read, and only `onInitialize` registers the handler, so enabling it later needs a restart. Turning it **off** works at once (`/vpa module disable wither_skeleton`, a command the bundle registers), because `isModuleEnabled()` is re-checked on every event. In the standalone jar the bootstrap always boots the module, so both directions work live. |
 
 ## Under the hood
 
-One handler, one file, no mixins and no assets. `onInitialize` registers the module on
+The module is a single handler in one file, with no mixins and no assets. `onInitialize` registers the module on
 `NeoForge.EVENT_BUS`; everything else hangs off `FinalizeSpawnEvent` at `EventPriority.HIGH`:
 
 | Step | Line of defence |
 |---|---|
 | 1 | `isModuleEnabled()` |
-| 2 | `event.getLevel().isClientSide()` — dead code, the event is only fired on the logical server |
+| 2 | `event.getLevel().isClientSide()` (dead code: the event is only fired on the logical server) |
 | 3 | `event.getEntity() instanceof Skeleton` |
 | 4 | `event.getLevel() instanceof ServerLevel`, and its `dimension()` must be `Level.NETHER` |
 | 5 | the fortress reference lookup described above |
 
 **How the block is enforced.** The module calls `event.setSpawnCancelled(true)` and leaves the
-event itself uncancelled. That flag is honoured late — NeoForge watches for it on the entity's way
+event itself uncancelled. That flag is honoured late. NeoForge watches for it on the entity's way
 into the world:
 
 ```java
@@ -218,22 +217,22 @@ public void builtinMobSpawnBlocker(EntityJoinLevelEvent event) {
 ```
 
 Because the event was not cancelled, `EventHooks.finalizeMobSpawn` still calls the skeleton's own
-`finalizeSpawn` afterwards. The doomed skeleton therefore gets fully rolled — equipment,
-enchantments, group data — and is only dropped when it tries to join the level.
+`finalizeSpawn` afterwards. The doomed skeleton therefore gets fully rolled (equipment,
+enchantments, group data) and is only dropped when it tries to join the level.
 
 **How the replacement is made.** `replaceWithWitherSkeleton` creates the mob with
 `EntityType.WITHER_SKELETON.create(level)`, copies position and rotation from the skeleton with
 `moveTo`, calls `finalizeSpawn` with the local difficulty and the *original* `MobSpawnType`, and
 adds it with `level.addFreshEntity`. That `finalizeSpawn` call is what hands it the stone sword and
 sets `ATTACK_DAMAGE` to 4.0. The spawn type it is handed changes nothing about persistence or
-despawning: `Mob.finalizeSpawn` only records it on the mob — readable as `Mob#getSpawnType`, saved
-as the `neoforge:spawn_type` NBT tag — and nothing in the wither skeleton's `finalizeSpawn` chain
+despawning: `Mob.finalizeSpawn` only records it on the mob (readable as `Mob#getSpawnType`, saved
+as the `neoforge:spawn_type` NBT tag), and nothing in the wither skeleton's `finalizeSpawn` chain
 reads it or sets `persistenceRequired`. The replacement despawns like any other non-persistent mob.
 The whole block sits in a `try`/`catch (Exception)`.
 
 | File | Contents |
 |---|---|
-| `modules/wither_skeleton/WitherSkeletonModule.java` | The handler, the broadcast and the replacement — 203 lines, the whole module |
+| `modules/wither_skeleton/WitherSkeletonModule.java` | The handler, the broadcast and the replacement: 203 lines, the whole module |
 | `modules/wither_skeleton/config/WitherSkeletonConfig.java` | `buildModuleSpecificConfig` is empty; the module has only the framework's own keys |
 | `standalone/wither_skeleton/WitherSkeletonStandalone.java` | `@Mod("vpa_wither_skeleton")`, boots through `StandaloneModuleBootstrap` |
 
@@ -242,7 +241,7 @@ to [Mob Drops](mob_drops.md).
 
 ## See also
 
-* [Mob Drops](mob_drops.md) — the skull, golden apple and netherite scrap rolls
-* [Debug Logging](../guides/debug-logging.md) — how to switch the broadcast on
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Mob Drops](mob_drops.md): the skull, golden apple and netherite scrap rolls
+* [Debug Logging](../guides/debug-logging.md): how to switch the broadcast on
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

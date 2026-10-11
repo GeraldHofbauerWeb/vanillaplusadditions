@@ -18,28 +18,27 @@
 
 ## What it does
 
-Create keeps a train moving whether or not anyone is watching. What it does not keep doing is run
-the machinery bolted to it: outside loaded chunks the carriage's contraption is not there to tick,
-so a mounted drill cuts nothing, a deployer places nothing, and a Portable Storage Interface moves
-nothing. The train reaches the far station on time and empty.
+Create keeps a train moving whether or not anyone is watching, but the machinery bolted to it stops.
+Outside loaded chunks the carriage's contraption is not there to tick, so mounted drills, deployers
+and Portable Storage Interfaces do nothing, and the train reaches the far station on time and empty.
 
-The **Chunk Loader Track** is a real Create track — same placement, same curves, slopes, girders and
-crossings, blue instead of brown. While a carriage is over one, a square of chunks around it stays
-force-loaded *and ticking*, and is released again a quarter of a minute after the last carriage has
-gone. Lay a few along a line and the loaded corridor rolls with the train.
+The **Chunk Loader Track** is a real Create track with the same placement, curves, slopes, girders
+and crossings, only blue instead of brown. While a carriage is over one, a square of chunks around
+it stays force-loaded *and ticking*, and is released again a quarter of a minute after the last
+carriage has gone. Lay a few along a line and the loaded corridor rolls with the train.
 
 <img src="../img/items/chunk_loader_track.png" width="64" alt="Chunk Loader Track">
 
-One rule decides whether a line works, and it is the one thing worth reading twice: **a loader track
-that is itself in an unloaded chunk cannot see the train.** Tracks must therefore be spaced no
-further apart than `chunk_load_radius × 16` blocks — 32 blocks at the defaults — so that each one is
-already inside the square the previous one is holding open. A Ponder entry (hold **W** on the item)
-walks through this in game.
+One rule decides whether a line works: **a loader track that is itself in an unloaded chunk
+cannot see the train.** Tracks must therefore be spaced no further apart than
+`chunk_load_radius × 16` blocks (32 blocks at the defaults), so that each one is already inside the
+square the previous one is holding open. A Ponder entry (hold **W** on the item) walks through this
+in game.
 
 ## Why it exists
 
-The carriage entity is created and destroyed with the chunk under it. Read out of Create 6.0.9's
-shipped bytecode — Create is here only as a binary jar
+The carriage entity is created and destroyed with the chunk under it. The outline below is read out
+of Create 6.0.9's shipped bytecode, because Create is here only as a binary jar
 (`implementation files("libs/create-1.21.1-6.0.9.jar")` in `build.gradle`), not as a source
 dependency:
 
@@ -56,10 +55,10 @@ com.simibubi.create.content.trains.entity.Carriage
               → dimensional.removeAndSaveEntity(entity, …)
 ```
 
-`Train.tick` calls `Carriage.travel(…)` in the same pass, so the *travelling* never stops — the
-train keeps advancing along the track graph, arrives, brakes, departs again. Only the
+`Train.tick` calls `Carriage.travel(…)` in the same pass, so the *travelling* never stops: the
+train keeps advancing along the track graph, arrives, brakes and departs again. Only the
 `CarriageContraptionEntity`, and with it every block entity mounted on the carriage, blinks out of
-existence the moment `isActiveChunk` says no. That is the whole gap this module closes, and it is
+existence the moment `isActiveChunk` says no. That is the gap this module closes, and it is
 also why the module's own detection is entity-based: where the carriage entity exists, the
 contraption already works; a track only has to notice it and hold the neighbourhood open long enough
 for the next track to take over.
@@ -68,10 +67,10 @@ for the next track to take over.
 
 ### Spacing
 
-An active track forces a Chebyshev square of `(2R + 1)²` chunks centred on its own chunk — 25 chunks,
-80 × 80 blocks, at the default radius of 2. What the square guarantees is not 80 blocks in every
-direction but `R × 16`: in the worst case the track sits flush against the edge of its own chunk, and
-then only `R` whole chunks lie ahead of it. Hence the rule of thumb, and hence its exact form:
+An active track forces a Chebyshev square of `(2R + 1)²` chunks centred on its own chunk: 25 chunks,
+80 × 80 blocks, at the default radius of 2. The square does not guarantee 80 blocks in every
+direction, only `R × 16`. In the worst case the track sits flush against the edge of its own chunk,
+and then only `R` whole chunks lie ahead of it. That gives the spacing rule its exact form:
 
 | `chunk_load_radius` | Forced square | Maximum spacing |
 |---|---|---|
@@ -81,7 +80,7 @@ then only `R` whole chunks lie ahead of it. Hence the rule of thumb, and hence i
 | 4 | 9 × 9 | 64 blocks |
 | 8 | 17 × 17 | 128 blocks |
 
-Radius 0 is a corner case rather than a setting: the square never reaches past the track's own chunk,
+Radius 0 is a corner case: the square never reaches past the track's own chunk,
 so nothing ahead of the train is ever opened and the chain cannot advance on its own.
 
 ### Marking a track active
@@ -96,10 +95,10 @@ if ((carriage.tickCount + (carriage.getId() & 7)) % SCAN_INTERVAL != 0) {
 ```
 
 Each carriage scans on one tick in ten, and the low three bits of the entity id spread the carriages
-of one train across eight of those ten phases rather than having them all scan together.
+of one train across eight of those ten phases, so they do not all scan together.
 
-The scan walks the carriage's whole bounding box footprint — `floor(minX)…floor(maxX)` by
-`floor(minZ)…floor(maxZ)` — over a four-block-tall band from **two blocks below** the box's floor to
+The scan walks the carriage's whole bounding box footprint (`floor(minX)…floor(maxX)` by
+`floor(minZ)…floor(maxZ)`) over a four-block-tall band from **two blocks below** the box's floor to
 **one above** it. Two below is what catches the bogey offset and the block a carriage is climbing off
 on an ascending section; the footprint rather than the entity anchor is what catches long and
 diagonally rotated carriages. Every Chunk Loader Track in that band is stamped with the current game
@@ -115,15 +114,14 @@ time.
 | Last seen ≤ timeout, already forced | Nothing |
 | Last seen **>** timeout | Release its chunks, drop it from the saved data, forget it |
 
-The chunks go in as **ticking** tickets — `controller.forceChunk(level, railPos, x, z, true, true)`
-— because a merely loaded chunk would not run the machines, which is the entire point. The ticket
+The chunks go in as **ticking** tickets (`controller.forceChunk(level, railPos, x, z, true, true)`),
+because a chunk that is merely loaded would not run the machines. The ticket
 owner is the track's own `BlockPos`, so two tracks whose squares overlap hold their tickets
 independently and neither can release the other's.
 
 Worst case from carriage to loaded chunk is nine ticks waiting for the next scan plus nine waiting
 for the next reconcile: **18 ticks, a little under a second**. A train has to cross a whole chunk
-in less than that to outrun the corridor, which is why the spacing rule and not the latency is the
-thing that bites.
+in less than that to outrun the corridor, so the spacing rule matters far more than the latency.
 
 The timeout comparison is strict (`now - lastSeen > timeoutTicks`), so the default 15 seconds is
 300 ticks of grace after the last carriage left.
@@ -139,9 +137,9 @@ any work:
 * **on → off** (the last player leaving): `releaseAll()` drops every ticket this module holds and
   clears the in-memory active set, but **keeps** the persisted positions.
 
-The asymmetry is deliberate. A track that simply timed out went through the release path, which
-*does* remove it from the persisted set — so only tracks that genuinely had a train standing on them
-when the server emptied are resumed. `resume()` stamps them with the current game time, so if the
+The asymmetry is deliberate. A track that timed out went through the release path, which *does*
+remove it from the persisted set, so only tracks that had a train standing on them when the server
+emptied are resumed. `resume()` stamps them with the current game time, so if the
 train has since gone the entry lives one more timeout and then clears itself.
 
 The persisted set is a `SavedData` named `vanillaplusadditions_train_chunk_loader`, holding a single
@@ -152,7 +150,7 @@ active set is rebuilt from the saved data and from train movement, never from st
 ### The debug overlay
 
 `ChunkLoaderTrackBorderRenderer` plugs into the mod's [shared debug overlay](debug_overlay.md), so it
-appears only while that overlay is switched on (numpad **+**) *and* the player is wearing goggles —
+appears only while that overlay is switched on (numpad **+**) *and* the player is wearing goggles:
 Create's Engineer's Goggles in the helmet or a Curios slot, or anything in the
 `vanillaplusadditions:arm_goggles` tag. Every chunk within `overlay.chunk_border_scan_radius` that
 contains a loader track is outlined over `overlay.chunk_border_vertical_span` blocks above and below
@@ -160,8 +158,8 @@ the track: **blue** for idle, **red** for currently loaded. Only the outer bound
 same-state region gets a translucent fill; internal walls between neighbouring chunks of the same
 colour are culled, or the fills would stack into fog.
 
-Two honest caveats. The red state is computed client-side from the carriages the client can see, with
-no networking — it is a good approximation of the server's forced set, not a readout of it. And the
+Two caveats. The red state is computed client-side from the carriages the client can see, with no
+networking, so it approximates the server's forced set without reading it. And the
 scan behind it is brute force: every ten client ticks it walks `(2r+1)²` chunks × all non-empty
 sections × 16³ blocks, up to 33 × 33 chunks at the maximum radius of 16. It runs only while the
 overlay is live, so it costs nothing passively, but raising the scan radius is expensive.
@@ -170,9 +168,9 @@ overlay is live, so it costs nothing passively, but raising the scan radius is e
 
 | | Block / item | Details |
 |---|---|---|
-| <img src="../img/items/chunk_loader_track.png" width="40"> | **Chunk Loader Track** | `vanillaplusadditions:chunk_loader_track`. A `TrackBlock` carrying the four properties Create's own track sets (map colour `METAL`, strength 0.8, metal sound, no occlusion), but built from a bare `BlockBehaviour.Properties.of()` rather than Create's andesite base and without Create's `forceSolidOn()`. On a custom `TrackMaterial` `vanillaplusadditions:chunk_loader`, track type `STANDARD`. The item is Create's `TrackBlockItem`, so placement — curves, bezier connections, the drag-to-connect preview — behaves exactly like the normal track. |
+| <img src="../img/items/chunk_loader_track.png" width="40"> | **Chunk Loader Track** | `vanillaplusadditions:chunk_loader_track`. A `TrackBlock` carrying the four properties Create's own track sets (map colour `METAL`, strength 0.8, metal sound, no occlusion), but built from a bare `BlockBehaviour.Properties.of()` rather than Create's andesite base and without Create's `forceSolidOn()`. On a custom `TrackMaterial` `vanillaplusadditions:chunk_loader`, track type `STANDARD`. The item is Create's `TrackBlockItem`, so placement (curves, bezier connections, the drag-to-connect preview) behaves exactly like the normal track. |
 
-**Recipe** — shaped, category *misc*, eight tracks in and eight out:
+**Recipe** (shaped, category *misc*, eight tracks in and eight out):
 
 ```
  T T T        T = Create Train Track
@@ -183,23 +181,23 @@ overlay is live, so it costs nothing passively, but raising the scan radius is e
 Per the project convention it is registered in code rather than as a datapack JSON: a reload listener
 added in `AddReloadListenerEvent` merges `vanillaplusadditions:chunk_loader_track` into the
 `RecipeManager` on every datapack reload, gated on the module being enabled. If `create:track`
-resolves to `minecraft:air` the recipe is skipped and a warning is logged rather than a broken
-recipe registered.
+resolves to `minecraft:air` the recipe is skipped and a warning is logged, so no broken recipe gets
+registered.
 
-**Drops** — `getDrops` is overridden to return exactly one of the block, ignoring the loot
+**Drops**: `getDrops` is overridden to return exactly one of the block, ignoring the loot
 parameters entirely. That covers breaking it by hand, by explosion, and Create's wrench pickup, which
 goes through `Block.getDrops` as well. There is no loot table JSON, by the same convention.
 
-**Tags** — two small datapack files add the block to Create's own `#create:tracks` and
+**Tags**: two small datapack files add the block to Create's own `#create:tracks` and
 `#create:girdable_tracks`, both with `"replace": false` and the entry marked `"required": false` so
 they are inert without Create. Create's own copies of both tags contain exactly `create:track`.
 
 ### Models and textures
 
 Nothing here is new geometry. The 76 blockstate variants (19 shapes × turn × waterlogged) resolve to
-12 models of ours plus `minecraft:block/air` for `shape=none`. Four of the twelve simply inherit from
+12 models of ours plus `minecraft:block/air` for `shape=none`. Four of the twelve inherit from
 a `create:block/track/…` parent and swap the textures (`x_ortho`, `z_ortho`, `cross_ortho`,
-`teleport`); the other eight load one of Create's OBJ meshes through the NeoForge OBJ loader — the
+`teleport`); the other eight load one of Create's OBJ meshes through the NeoForge OBJ loader: the
 ascending piece, five crossings and two diagonals. Curved bezier connections add three more meshes of
 the same kind, wrapped as Flywheel `PartialModel`s: `tie.obj`, `segment_left.obj` and
 `segment_right.obj`.
@@ -220,7 +218,7 @@ A resource pack that redraws Create's track now gets a blue version of *its* tra
 The atlas entry lives in `atlases/blocks/train_chunk_loading.json`, not under `src/main/resources`:
 Minecraft reads one `assets/minecraft/atlases/blocks.json` per pack, so the build merges every
 module's part for the bundle and gives each standalone jar only its own (see `atlases/README.md`).
-The sprite source type is registered whether Create is present or not; without Create it simply
+The sprite source type is registered whether Create is present or not; without Create it
 finds no textures and adds nothing.
 
 <!-- vpa:config:start -->
@@ -243,9 +241,9 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| Create absent | Nothing is registered and nothing runs: `onInitialize()` sits behind `shouldInitialize()`, which is `ModList.get().isLoaded("create")`. No block, no item, no handlers, no recipe — and no setup either, because `AbstractModule` remembers whether `onInitialize()` actually ran and short-circuits `commonSetup()`, `loadComplete()` and `clientSetup()` when it did not. <br><br>That gate is new, and it was this module that showed why it was needed. `ModuleManager` dispatches the three setup phases to every config-*enabled* module, so they used to run here regardless. `onCommonSetup()` died on its own argument — `CHUNK_LOADER_TRACK.get()` on a register that was never bound to the bus throws `NullPointerException: Trying to access unbound value` before `ChunkLoaderTrackCompat` is even entered. In the bundle `ModuleManager` wraps each call in `catch (Exception …)`, which swallowed that. `onClientSetup()` then ran on, and its two statements fared differently: registering `ChunkLoaderTrackBorderRenderer` with the overlay survived, because the renderer's only Create reference (`CarriageContraptionEntity`) sits inside `clientTick`, not in a field or the constructor. The call after it, `ChunkLoaderTrackPonder.register()` → `PonderIndex.addPlugin`, resolves the `PonderPlugin` interface; those are `net.createmod.ponder` types, which ship inside Create's jar-in-jar, so without Create that was a `NoClassDefFoundError` — an `Error`, not an `Exception`, which the guard does not catch. |
-| Standalone jar without Create | `vpa_train_chunk_loading` declares required dependencies on `vpa_core` and `vpa_debug_overlay` and **no dependency on `create`**, so it will happily load into a pack that has no Create. This is where the missing gate hurt most: `StandaloneModuleBootstrap` forwards `FMLCommonSetupEvent` and `FMLClientSetupEvent` to the module with no `try`/`catch` at all, so the `PonderIndex.addPlugin` call ended client setup and took the game with it. With the setup phases now skipped for a module that never initialised, the jar stays inert instead. Read off the source, not reproduced — install Create if you install this jar. |
-| Loader track in an unloaded chunk | Cannot see the train and never activates. This is the spacing rule, not a bug — Create's simulated train has no entity for anything to notice. |
+| Create absent | Nothing is registered and nothing runs: `onInitialize()` sits behind `shouldInitialize()`, which is `ModList.get().isLoaded("create")`. No block, no item, no handlers, no recipe, and no setup either: `AbstractModule` remembers whether `onInitialize()` ran and short-circuits `commonSetup()`, `loadComplete()` and `clientSetup()` when it did not. <br><br>That gate is new, and it was this module that showed why it was needed. `ModuleManager` dispatches the three setup phases to every config-*enabled* module, so they used to run here regardless. `onCommonSetup()` died on its own argument: `CHUNK_LOADER_TRACK.get()` on a register that was never bound to the bus throws `NullPointerException: Trying to access unbound value` before `ChunkLoaderTrackCompat` is even entered. In the bundle `ModuleManager` wraps each call in `catch (Exception …)`, which swallowed that. `onClientSetup()` then ran on, and its two statements fared differently: registering `ChunkLoaderTrackBorderRenderer` with the overlay survived, because the renderer's only Create reference (`CarriageContraptionEntity`) sits inside `clientTick`, not in a field or the constructor. The call after it, `ChunkLoaderTrackPonder.register()` → `PonderIndex.addPlugin`, resolves the `PonderPlugin` interface; those are `net.createmod.ponder` types, which ship inside Create's jar-in-jar, so without Create that was a `NoClassDefFoundError`. That is an `Error`, not an `Exception`, so the guard does not catch it. |
+| Standalone jar without Create | `vpa_train_chunk_loading` declares required dependencies on `vpa_core` and `vpa_debug_overlay` and **no dependency on `create`**, so it loads into a pack that has no Create without complaint. This is where the missing gate hurt most: `StandaloneModuleBootstrap` forwards `FMLCommonSetupEvent` and `FMLClientSetupEvent` to the module with no `try`/`catch` at all, so the `PonderIndex.addPlugin` call ended client setup and took the game with it. With the setup phases now skipped for a module that never initialised, the jar stays inert instead. Read off the source, not reproduced. Install Create if you install this jar. |
+| Loader track in an unloaded chunk | Cannot see the train and never activates. This is the spacing rule, not a bug: Create's simulated train has no entity for anything to notice. |
 | Module disabled while the server runs | The carriage scan, the reconcile, the player gate and the recipe listener all return early on `isModuleEnabled()`, including the reconcile that would release chunks. Tickets already held stay held until the level unloads (the validation callback then drops them on the next world load). Disable it with nothing running, or restart. |
 | Create updated, `validBlocks` reflection fails | Logged as a warning at common setup. The track still places, connects and loads chunks; only the block entities carrying **curved** connection data stop surviving a chunk reload, so bezier curves come back straight. That warning line is the symptom to look for after a Create update. |
 | Overlay colours | Mirrored client-side from visible carriages with no networking. Red means "this client thinks a carriage is on a track within the radius", not "the server has this chunk forced". |
@@ -289,23 +287,23 @@ sets therefore never touch each other, and a change to the loading semantics of 
 declared as plain `DeferredBlock<Block>` / `DeferredItem<BlockItem>`, and only their *supplier*
 bodies (`ChunkLoaderTrackCompat::createBlock`, `::createItem`) name a Create type. The registers are
 bound to the mod bus inside `onInitialize`, which only runs once `shouldInitialize()` has confirmed
-Create is loaded — so on a Create-less start no Create class is ever resolved from this module's
+Create is loaded, so on a Create-less start no Create class is ever resolved from this module's
 registration path. The same pattern keeps `ChunkLoaderTrackModels` (a Flywheel type) off a dedicated
 server: it is reached only through the lazy suppliers Create evaluates inside its own
 `executeOnClientOnly`.
 
-**The `TrackMaterial`.** Create has no registry event for track materials — `TrackMaterialFactory
+**The `TrackMaterial`.** Create has no registry event for track materials; `TrackMaterialFactory
 .build()` self-registers into `TrackMaterial.ALL`. The material is therefore constructed in
 `ChunkLoaderTrackCompat`'s static initialiser, which runs during block registration: early enough for
 model baking, late enough that Create is known to be present. Its `.sleeper(…)` and `.rails(…)`
-ingredients look like a recipe and are not one — they are metadata for Create's own datagen, which
-this repository does not run. The real ingredients are the eight tracks and the ender pearl above.
+ingredients look like a recipe but are only metadata for Create's own datagen, which this
+repository does not run. The real ingredients are the eight tracks and the ender pearl above.
 
 **The reflection.** `extendTrackBlockEntityType` takes Create's track `BlockEntityType`, reads the
 private `validBlocks` set, copies it, adds our block and writes it back. NeoForge runs official
 Mojang mappings at runtime so the field name is stable, and `ReflectiveOperationException` and
-`ClassCastException` are both caught and downgraded to a warning — the failure mode is lost curve
-persistence, never a crash.
+`ClassCastException` are both caught and downgraded to a warning, so the worst case is lost curve
+persistence and never a crash.
 
 **Ponder.** `PonderIndex.addPlugin` at client setup, one scene `chunk_loader_track/spacing` attached
 to the item, structure NBT at `assets/vanillaplusadditions/ponder/chunk_loader_track/spacing.nbt`.
@@ -322,9 +320,9 @@ module. Everything above is read from the source and from Create 6.0.9's bytecod
 
 ## See also
 
-* [Minecart Chunk Loading](minecart_chunk_loading.md) — the same mechanics on an ordinary rail, and
+* [Minecart Chunk Loading](minecart_chunk_loading.md): the same mechanics on an ordinary rail, and
   the other user of the shared `ChunkLoaderManager`
-* [Stationary Chunk Loader](stationary_chunk_loader.md) — a redstone-powered anchor for a fixed spot
-* [Debug Overlay](debug_overlay.md) — the toggle and the goggles requirement for the chunk borders
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Stationary Chunk Loader](stationary_chunk_loader.md): a redstone-powered anchor for a fixed spot
+* [Debug Overlay](debug_overlay.md): the toggle and the goggles requirement for the chunk borders
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

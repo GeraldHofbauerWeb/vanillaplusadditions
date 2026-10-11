@@ -2,7 +2,7 @@
   "moduleId": "mob_drops",
   "displayName": "Mob Drops",
   "shortDescription": "Adds custom drops to mobs based on configuration",
-  "oneLiner": "Gives any mob extra drops on death on top of its normal loot, configured as one line per drop - by default a wither skeleton drops its skull 12.5% of the time, a golden apple 40% and netherite scrap 10%, and a warden always drops 1-3 enchanted golden apples.",
+  "oneLiner": "Gives any mob extra drops on death on top of its normal loot, configured as one line per drop. By default a wither skeleton drops its skull 12.5% of the time, a golden apple 40% and netherite scrap 10%, and a warden always drops 1-3 enchanted golden apples.",
   "side": "server",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -22,7 +22,7 @@
       "type": "list",
       "defaultValue": "MobDropsConfig.DEFAULT_MOB_DROPS (MobDropsConfig.java:20-25) = List.of(\"minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.125\", \"minecraft:wither_skeleton;minecraft:golden_apple;0.4\", \"minecraft:wither_skeleton;minecraft:netherite_scrap;0.1\", \"minecraft:warden;minecraft:enchanted_golden_apple;1;3\")",
       "range": "",
-      "effect": "List of additional mob drops. Format: mob_id;item_id;chance[;max_drops] - Example: minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.5;2"
+      "effect": "List of additional mob drops. Format: mob_id;item_id;chance[;max_drops]. Example: minecraft:wither_skeleton;minecraft:wither_skeleton_skull;0.5;2"
     }
   ],
   "events": [

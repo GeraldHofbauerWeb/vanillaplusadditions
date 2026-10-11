@@ -1,7 +1,7 @@
 # Copycat Pathfinding
 
-> **TL;DR** — Mobs use a passage lined with Create Copycat Panels again, instead of treating a
-> 3-pixel plate as a solid wall.
+> **TL;DR** — Mobs use a passage lined with Create Copycat Panels again instead of treating the
+> 3-pixel plate as a solid wall, while a panel standing squarely across the way still stops them.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -20,10 +20,10 @@
 Create's **Copycat Panel** is a 3-pixel plate stuck to one face of its block; the other 13 pixels of
 that block are air. For mob pathfinding it counts as a solid wall. A cat refuses to use a crawl
 passage whose floor or ceiling carries a panel, an axolotl will not swim past a waterlogged one, and
-a corridor one block wide becomes impassable the moment you line a wall with panels — even though the
+a corridor one block wide becomes impassable the moment you line a wall with panels, even though the
 mob physically fits through the 13 pixels that are left.
 
-This module gives mobs the finer answer. A panel blocks only the movements that actually cross its
+This module gives mobs the finer answer. A panel blocks only the movements that cross its
 plate: walking along a panel-lined wall, under a ceiling panel or over a supported floor panel works
 again, while a panel standing squarely across the way still stops them. Free-standing panel bridges
 and `copycat_step` keep their vanilla-slab behaviour.
@@ -36,7 +36,7 @@ and `copycat_step` keep their vanilla-slab behaviour.
 | `copycat_step` | unchanged | waterlogged counts as water |
 
 **Pathfinding is not collision.** The plate still stops mobs physically, whatever the path finder
-believes. A panel standing squarely across a doorway stays impassable — which is precisely why the
+believes. A panel standing squarely across a doorway stays impassable, and that is why the
 direction check exists: without it the path finder would send mobs into the plate, where they would
 bump against it and give up.
 
@@ -62,7 +62,7 @@ if (!blockstate.isPathfindable(PathComputationType.LAND)) {
 
 `BLOCKED` carries a malus of `-1.0F`, and `findAcceptedNode` only creates a node where
 `mob.getPathfindingMalus(type)` is `>= 0`. That malus is a per-mob value and can be overridden, but
-no vanilla mob overrides it for `BLOCKED`, so the cell is not merely expensive — it does not exist
+no vanilla mob overrides it for `BLOCKED`, so the cell is not just expensive: it does not exist
 for the A\* search at all. `getPathTypeOfMob` widens the damage for anything taller than one block:
 it scans the whole mob bounding box, and the first cell with a negative malus is returned as the type
 of the entire node.
@@ -71,12 +71,12 @@ For two of the four cases Create's `false` is in fact right, and the module keep
 
 * A **floor panel** answering "not pathfindable" is what makes the cell *above* it walkable. That is
   how mobs cross panel floors and free-standing panel bridges today.
-* **`copycat_step`** does on land exactly what `SlabBlock` does — vanilla's own slab returns `false`
-  for `LAND` too. Nothing to repair.
+* **`copycat_step`** does on land exactly what `SlabBlock` does (vanilla's own slab returns `false`
+  for `LAND` too), so there is nothing to repair.
 
-Genuinely wrong are **wall panels**, **ceiling panels**, and **waterlogged** copycats of either kind:
-`SlabBlock` hands swimming mobs `state.getFluidState().is(FluidTags.WATER)`, Create's copycats hand
-them `false`.
+Create gets it wrong for **wall panels**, **ceiling panels**, and **waterlogged** copycats of
+either kind: `SlabBlock` hands swimming mobs `state.getFluidState().is(FluidTags.WATER)`, Create's
+copycats hand them `false`.
 
 ## In detail
 
@@ -85,8 +85,8 @@ them `false`.
 `BlockStateBaseCopycatMixin` injects at HEAD of `BlockBehaviour.BlockStateBase.isPathfindable`,
 which does nothing but delegate to the block. Where the mixin answers at all, it answers with
 vanilla's own expressions from the block-level default
-`BlockBehaviour.isPathfindable(BlockState, PathComputationType)` — the very implementation Create
-overrides — copied, not approximated:
+`BlockBehaviour.isPathfindable(BlockState, PathComputationType)`, the implementation Create
+overrides, copied verbatim:
 
 | Block | `LAND` | `WATER` | `AIR` |
 |---|---|---|---|
@@ -100,9 +100,9 @@ overrides — copied, not approximated:
 
 ### Where the plate sits
 
-The load-bearing detail of the whole module: **the plate sticks to `FACING.getOpposite()`, not to
-`FACING`.** Create builds the shape from `AllShapes.CASING_3PX`, which is `shape(0, 0, 0, 16, 3, 16)`
-— a *floor* plate anchored at `UP` — and rotates it by `FACING`; placement is
+The whole module depends on one detail: **the plate sticks to `FACING.getOpposite()`, not to
+`FACING`.** Create builds the shape from `AllShapes.CASING_3PX`, which is `shape(0, 0, 0, 16, 3, 16)`,
+a *floor* plate anchored at `UP`, and rotates it by `FACING`; placement is
 
 ```java
 state.setValue(FACING, context.getNearestLookingDirection().getOpposite())
@@ -127,16 +127,16 @@ return fromPlate == step || toPlate == step.getOpposite();
 ```
 
 A straight move costs exactly two block lookups no matter how many axes change, because both plate
-faces are fetched once and then tested per axis. The diagonal variant checks three legs — root to the
+faces are fetched once and then tested per axis. The diagonal variant checks three legs: root to the
 one neighbour, root to the other, and root to `(xNode.x, root.y, zNode.z)`.
 
-That third leg reaches the actual diagonal cell for only half of the diagonals. Vanilla calls
+That third leg reaches the diagonal cell itself for only half of the diagonals. Vanilla calls
 `isDiagonalValid(node, reusableNeighbors[dir], reusableNeighbors[dir.getClockWise()])`, so the pairs
-handed in are (north, east), (east, south), (south, west) and (west, north) — the parameter named
+handed in are (north, east), (east, south), (south, west) and (west, north). The parameter named
 `xNode` is *not* always the x-axis neighbour. For (east, south) and (west, north) the expression is
 the diagonal cell; for (north, east) and (south, west) it collapses to `root` itself, every delta is
 then zero and `crosses` answers false, so that leg does nothing. The two straight legs are checked
-for all four diagonals, the cell itself only for two of them — see the limits table below. (Within a
+for all four diagonals, the cell itself only for two of them (see the limits table below). (Within a
 leg the x and z coordinates are the ones vanilla produces: `findAcceptedNode` only ever shifts a node
 in y.)
 
@@ -147,8 +147,8 @@ neighbour, never add one.
 ### The floor-panel upgrade
 
 A floor panel keeps Create's `false`, which leaves its cell `BLOCKED` and the cell above walkable.
-The cost of that is a passage exactly one block high — a crawl space whose floor is a panel has no
-cell above to walk in, and the mob gives up.
+That breaks passages exactly one block high: a crawl space whose floor is a panel has no cell above
+to walk in, and the mob gives up.
 
 `vpaFloorPanelWalkable` injects at `RETURN` of `WalkNodeEvaluator.getPathTypeStatic` and promotes
 that one cell. It fires only when
@@ -180,7 +180,7 @@ therefore cannot dive through a floor or ceiling plate; a cod can.
 ### What a config change reaches, and when
 
 `PathTypeCache` is a 4096-slot direct-mapped cache per level, keyed by packed block position, and it
-caches `getPathTypeFromState` — the very place `isPathfindable` is consulted. So:
+caches `getPathTypeFromState`, which is where `isPathfindable` is consulted. So:
 
 | Key | Cached? | Takes effect |
 |---|---|---|
@@ -197,7 +197,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `direction_aware` | boolean | `true` | — | Blocks only those movements that actually cross a panel's plate; false makes wall and ceiling panels passable from every side, which lets mobs walk into a panel wall and get stuck against it. |
+| `direction_aware` | boolean | `true` | — | Blocks only those movements that cross a panel's plate; false makes wall and ceiling panels passable from every side, which lets mobs walk into a panel wall and get stuck against it. |
 | `floor_panels_walkable` | boolean | `true` | — | Treats a floor panel (FACING=UP) resting on something solid as walkable ground instead of a wall, fixing passages only one block high, while a floor panel with air below stays as it is so mobs keep crossing free-standing panel bridges. |
 | `water_pathfinding` | boolean | `true` | — | Lets waterlogged panels and steps count as water for swimming mobs, like vanilla slabs do, where Create blocks them outright. |
 <!-- vpa:config:end -->
@@ -207,14 +207,14 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Limit | Effect |
 |---|---|
 | Pure water mobs | Fish, dolphins and guardians use `SwimNodeEvaluator`, whose `isNodeValid(Node)` sees only the neighbour and no source node. They get the waterlogged fix but no direction awareness, and swim straight through a plate. |
-| Flying mobs | Parrots, bees and allays go through `FlyNodeEvaluator.isOpen(Node)` — same shape, same limitation. |
+| Flying mobs | Parrots, bees and allays go through `FlyNodeEvaluator.isOpen(Node)`, which has the same shape and the same limitation. |
 | Jump and fall diagonals | Checked between source and target cell only, never for the cells passed on the way: `crosses` looks at the sign of the y delta, not at its size. In practice the mob lands on the plate a little earlier. |
 | North-east and south-west diagonals | Only the two straight legs are checked there, because `blocksDiagonal`'s third leg collapses to `root` for those two neighbour pairs (see above). A plate sitting in the diagonal cell itself is not seen, so a mob can still be routed diagonally into it. The other two diagonals are covered. |
 | Ceiling panels and tall mobs | The cell becomes walkable although a mob two blocks high does not quite fit under the plate. Irrelevant for cats and axolotls. |
 | Floor panel on a damaging block | Vanilla gives an *open* cell above magma, fire or a lit campfire `DAMAGE_FIRE` from the switch over the cell below. The promotion here only excludes `OPEN`/`WATER`/`LAVA`/`WALKABLE` and then calls `checkNeighbourBlocks`, whose 3×3×3 scan deliberately skips the column directly below, so a floor panel laid on magma reads as ordinary walkable ground. Read off the source; nothing in this repository tests it. |
-| `create:copycat_bars` | Not a copycat block at all — a plain `WrenchableDirectionalBlock` that overrides neither `isPathfindable` nor its shape, so it keeps the default full collision cube and vanilla answers `BLOCKED` for it on its own. That is the correct answer here: the block is solid, mobs cannot pass it physically either. It also carries no block item — the builder chain never calls `.item()` and its loot table drops `minecraft:air` — and the only place Create's own code touches it is `CopycatPanelModel`, which borrows its default state to draw a panel filled with iron bars. Untouched. |
+| `create:copycat_bars` | Not a copycat block at all, despite the name: a plain `WrenchableDirectionalBlock` that overrides neither `isPathfindable` nor its shape, so it keeps the default full collision cube and vanilla answers `BLOCKED` for it on its own. That is the correct answer here: the block is solid, mobs cannot pass it physically either. It also carries no block item (the builder chain never calls `.item()` and its loot table drops `minecraft:air`), and the only place Create's own code touches it is `CopycatPanelModel`, which borrows its default state to draw a panel filled with iron bars. The module leaves it untouched. |
 | Create's orientation convention changes | The self-check disables every panel fix and logs a `WARN`. Note the asymmetry: only the *panel* reference is nulled, so the `water_pathfinding` repair for `copycat_step` keeps running while the waterlogged-*panel* half goes silent with it. |
-| Registry lookup fails | `ensureResolved` sets its `resolved` flag before the lookups, so any failure inside leaves both references `null` and the module inert for the rest of the session. Fail-safe, but entirely silent — only the orientation mismatch above logs anything. |
+| Registry lookup fails | `ensureResolved` sets its `resolved` flag before the lookups, so any failure inside leaves both references `null` and the module inert for the rest of the session. Fail-safe, but silent: only the orientation mismatch above logs anything. |
 | No Create | Both references stay `null`, all three hooks fall through on the first comparison, and the jar loads and runs inert. The bundle declares Create as `type="optional"`; the generated standalone `vpa_copycat_pathfinding` declares no Create dependency at all. |
 
 ## Under the hood
@@ -226,12 +226,12 @@ three mixins.
 
 | Mixin | Target | Purpose |
 |---|---|---|
-| `BlockStateBaseCopycatMixin` | `BlockBehaviour$BlockStateBase#isPathfindable`, HEAD | The single choke point both node evaluators ask — one injection covers land and water |
+| `BlockStateBaseCopycatMixin` | `BlockBehaviour$BlockStateBase#isPathfindable`, HEAD | The single choke point both node evaluators ask, so one injection covers land and water |
 | `WalkNodeEvaluatorCopycatMixin` | `isNeighborValid`, `isDiagonalValid`, `getPathTypeStatic`, all at RETURN | The direction check for straight and diagonal moves, plus the floor-panel promotion |
 | `NodeEvaluatorContextAccessor` | `NodeEvaluator#currentContext`, `@Accessor` | Read access to the region the path finder is working on |
 
 All three sit in the both-sides `mixins` block of `vanillaplusadditions.mixins.json`, although every
-caller — node evaluators, spawn placement — runs server-side. Both mixin configs, bundle and
+caller (node evaluators, spawn placement) runs server-side. Both mixin configs, bundle and
 generated, are `"required": false`, so a missing target disables the mixin rather than crashing the
 game.
 
@@ -244,8 +244,8 @@ game.
 | `standalone/copycat_pathfinding/CopycatPathfindingStandalone` | `@Mod("vpa_copycat_pathfinding")` entry point |
 
 **No Create class is ever named.** The two blocks are resolved from `BuiltInRegistries.BLOCK` by id
-(with `getOptional`, not `get` — the block registry is defaulted and would hand back `AIR`), and
-`BlockStateProperties.FACING` is the very same property instance Create's `CopycatPanelBlock`
+(with `getOptional`, not `get`, because the block registry is defaulted and would hand back `AIR`),
+and `BlockStateProperties.FACING` is the same property instance Create's `CopycatPanelBlock`
 registers. The module therefore compiles and links without Create on the classpath.
 
 **Resolution is lazy on purpose.** `ModuleManager.loadComplete()` only calls back into modules that
@@ -261,10 +261,10 @@ round: `PanelGeometry.blocksMove` is evaluated before the config gate, so with C
 
 **What `isActive()` really gates.** `AbstractModule.initialize` assigns `modEventBus` *before* the
 `shouldInitialize()` check, and `isModuleEnabled()` keys off that field being non-null. Without Create
-the module skips `onInitialize()`, but `isActive()` still returns `true` — it reflects the `enabled`
-switch alone. The Create guard on all three hooks is the `null` block reference, not `isActive()`.
-The three feature gates behave the other way round when the module instance is `null`: they return
-`true` (`module == null || …`), which is harmless because every hook also checks `isActive()`.
+the module skips `onInitialize()`, but `isActive()` still returns `true`, because it reflects the
+`enabled` switch alone. The Create guard on all three hooks is the `null` block reference, not
+`isActive()`. The three feature gates behave the other way round when the module instance is `null`:
+they return `true` (`module == null || …`), which is harmless because every hook also checks `isActive()`.
 
 **Two spellings of one test.** `BlockStateBaseCopycatMixin` singles out the floor panel with
 `FACING.getOpposite() == DOWN`, `WalkNodeEvaluatorCopycatMixin` with `FACING != UP`. Equivalent, but
@@ -274,7 +274,7 @@ inner class that Mixin would then have to relocate into the target.
 
 ## See also
 
-* [Cat Guardian](cat_guardian.md) — the cat that has to find its way to you
-* [Axolotl Guardian](axolotl_guardian.md) — covered for free through `AmphibiousNodeEvaluator`
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Cat Guardian](cat_guardian.md): the cat that has to find its way to you
+* [Axolotl Guardian](axolotl_guardian.md): covered for free through `AmphibiousNodeEvaluator`
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

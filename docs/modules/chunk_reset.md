@@ -1,7 +1,7 @@
 # Chunk Reset Command
 
-> **TL;DR** — An operator-only command that deletes the chunk you are standing in — or up to an
-> 11×11 square around you — so the world generator builds that terrain again from scratch.
+> **TL;DR** — An operator-only command that permanently deletes the chunk you are standing in, or
+> up to an 11×11 square around you, so the world generator builds that terrain again from scratch.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -19,7 +19,7 @@
 
 Stand where the terrain should go away and type `/chunkreset`. Nothing is deleted yet: the command
 prints a warning with the chunk coordinates and two clickable buttons. Only a radius greater than 0
-gets the chunk count and the `s×s` side length as well — this is what `/chunkreset 1` prints:
+gets the chunk count and the `s×s` side length as well. This is what `/chunkreset 1` prints:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -32,18 +32,18 @@ All blocks, entities and structures will be LOST!
 Plain `/chunkreset` is the same block with a singular middle line: `Chunk [x=12, z=-4] will be
 PERMANENTLY deleted and regenerated.`
 
-Click `[✓ Confirm Reset]` — or type `/chunkreset confirm`, the buttons only run that same command —
+Click `[✓ Confirm Reset]` (or type `/chunkreset confirm`; the buttons only run that same command)
 and the chunks' entries are cleared from the region file. The next time something loads one of those
-positions, the generator builds it again from the current seed and the current datapacks. That is
-what the command is for: picking up a worldgen change on ground somebody has already explored,
-resetting a test area, or handing a builder's plot back to vanilla terrain.
+positions, the generator builds it again from the current seed and the current datapacks. Use it to
+pick up a worldgen change on ground somebody has already explored, to reset a test area, or to hand
+a builder's plot back to vanilla terrain.
 
 `/chunkreset <radius>` takes a square around you instead of the single chunk, up to radius 5.
 
-Two things to know before using it. There is no undo — the old region data is gone, and what comes
-back is whatever the generator produces today. And the deletion does not always take: a chunk that is
-still in memory with unsaved changes is written straight back into the entry that was just cleared.
-Both are spelled out below.
+Before using it, know that there is no undo. The old region data is gone, and what comes back is
+whatever the generator produces today. The deletion also does not always take: a chunk that is still
+in memory with unsaved changes is written straight back into the entry that was just cleared. Both
+points are covered in detail below.
 
 ## In detail
 
@@ -87,14 +87,14 @@ fields:
 private record PendingReset(ChunkPos center, int radius) { }
 ```
 
-That has consequences worth knowing before the first click:
+Before the first click, note how that plays out:
 
 * **The dimension is part of it.** The pending entry records the level the request was made in,
   and the confirm refuses outright if you are somewhere else by then, naming both dimensions. Run
   `/chunkreset` in the Nether, walk through a portal and click the button, and nothing happens
   except a red line telling you why.
 * **A pending reset dies with the session.** Confirm, cancel or logging out all drop it. It does
-  still survive indefinitely while you stay online — clicking a confirm button hours later works.
+  still survive indefinitely while you stay online; clicking a confirm button hours later works.
 * **Only the newest one exists.** A second `/chunkreset` replaces the first, and says so: the
   warning block names the square it just displaced.
 
@@ -105,8 +105,8 @@ chunk reset to cancel." when there was not.
 
 For every chunk in the square, `resetSingleChunk` does exactly two things:
 
-1. `level.setChunkForced(pos.x, pos.z, false)` — removes the position from `ForcedChunksSavedData`
-   and tells the chunk cache about it.
+1. `level.setChunkForced(pos.x, pos.z, false)`, which removes the position from
+   `ForcedChunksSavedData` and tells the chunk cache about it.
 2. Calls `ChunkStorage.write(ChunkPos, CompoundTag)` on the level's `ChunkMap` with a **null** tag.
 
 `ChunkMap` extends `ChunkStorage` and does not override `write`, so the call ends up on the region
@@ -129,8 +129,8 @@ The write is asynchronous. `ChunkStorage.write` returns a `CompletableFuture` th
 on the floor, so the per-chunk "succeeded" count means *the deletion was queued*, not *the region
 file changed*. A failure inside the worker is logged by vanilla and never reaches chat.
 
-Nothing else is touched. No unload is forced and no flush is requested — but the write only ever
-happens for a chunk that is **not** in memory, which is what makes it stick. See
+Nothing else is touched. No unload is forced and no flush is requested. The write only ever happens
+for a chunk that is **not** in memory, which is what makes it stick. See
 [waiting for the chunk](#waiting-for-the-chunk).
 
 ### Why a write to a loaded chunk would undo itself
@@ -144,7 +144,7 @@ this.write(chunkpos, compoundtag).exceptionally(…);
 ```
 
 A loaded chunk is therefore one autosave away from being written back into the entry that was just
-cleared — at 20 tps that is at most 6000 ticks, five minutes, and it happens again when the chunk
+cleared. At 20 tps that is at most 6000 ticks (five minutes), and it happens again when the chunk
 unloads and when the server shuts down. The one thing that stops it is the guard at the top of
 `save`:
 
@@ -159,8 +159,8 @@ reverted for one that has. `LevelChunk.setBlockState` sets that flag, so does a 
 and so does a freshly generated chunk. A crop growing, a leaf decaying or a single block placed
 between the reset and the unload would be enough.
 
-And the chunk you are standing in is loaded by definition, so for a `radius 0` reset this was not
-an edge case — it was the normal path.
+The chunk you are standing in is loaded by definition, so for a `radius 0` reset this was the
+normal path.
 
 ### Taking the write away
 
@@ -176,20 +176,19 @@ private static void holdClean(ServerLevel level, ChunkPos pos) {
 }
 ```
 
-That is the entire mechanism, and it works because of the guard quoted above: `ChunkMap.save`
-returns `false` for a chunk that is not unsaved, so a chunk held clean is never written — not by
-the autosave, not by the unload, not at shutdown. The flag is cleared **every tick**, not on an
-interval, because the world sets it again on every block change and an autosave landing in the gap
-would undo the whole thing.
+It works because of the guard quoted above: `ChunkMap.save` returns `false` for a chunk that is not
+unsaved, so a chunk held clean is never written, whether by the autosave, the unload or the
+shutdown. The flag is cleared **every tick** because the world sets it again on every block change,
+and an autosave landing in a gap between two clears would undo the whole thing.
 
-Anything a player builds in such a chunk while it is held is discarded. For a chunk that is being
-reset, that is the point.
+Anything a player builds in such a chunk while it is held is discarded, which is intended for a
+chunk that is being reset.
 
-**Two earlier attempts got this wrong**, and both are worth knowing about because the reasoning
-sounds right until you measure it:
+**Two earlier attempts got this wrong**; the reasoning behind each sounds right until you measure
+it:
 
 1. *Write immediately and warn if the chunk is loaded.* The write lands, then the next autosave puts
-   the chunk back over it. Silent and reliable — reliably wrong.
+   the chunk back over it, silently and every time.
 2. *Wait for the chunk to unload, then write.* This cannot work.
    `ChunkMap.processUnloads` removes the chunk from the map `getVisibleChunkIfPresent` reads, and
    only afterwards does `scheduleUnload` call `save(chunkaccess)`. So "no longer loaded" arrives
@@ -201,37 +200,37 @@ The give-up timer is still there: after **ten minutes** of a chunk refusing to l
 is released with a WARN, because holding a chunk unsaved forever would quietly cost every change
 made in it.
 
-The queue is **not** gated on the module's `enabled` flag — what is in it was already confirmed by
-an operator, and switching the module off should stop it taking new orders, not make it forget one
-it accepted. It does not survive a restart, which does not matter: after a restart nothing has
-loaded the chunks yet, so the command takes the immediate path.
+The queue is **not** gated on the module's `enabled` flag. What is in it was already confirmed by
+an operator, so switching the module off stops new orders and lets the accepted ones finish. The
+queue does not survive a restart and does not need to: after a restart nothing has loaded the chunks
+yet, so the command takes the immediate path.
 
 **Verified in game** on 2026-09-24 against a live 1.21.1 server: `/chunkreset` on a chunk holding a
 small stone-brick build, then flying out and back. The region-file header entry for that chunk went
-from two sectors to one — the freshly generated chunk written in place of the build.
+from two sectors to one, with the freshly generated chunk written in place of the build.
 
 ### What survives a reset
 
 | Data | Folder | Cleared? |
 |---|---|---|
-| Blocks, block entities, heightmaps, structure starts | `region/` | Yes — that is the entry the null write clears |
-| Persistent entities (mobs, item frames, armour stands, dropped items) | `entities/` | **No** — `ServerLevel` keeps them in a separate `EntityStorage`, which the module never touches |
-| Points of interest (beds, workstations, portals) | `poi/` | **No** — same, a separate `SectionStorage` |
+| Blocks, block entities, heightmaps, structure starts | `region/` | Yes; that is the entry the null write clears |
+| Persistent entities (mobs, item frames, armour stands, dropped items) | `entities/` | **No**: `ServerLevel` keeps them in a separate `EntityStorage`, which the module never touches |
+| Points of interest (beds, workstations, portals) | `poi/` | **No**: they sit in a separate `SectionStorage` as well |
 
 Entities have lived in their own region files since 1.17 and are loaded per `ChunkPos` independently
 of the chunk data, so the mobs that were standing in a reset chunk come back with the regenerated
-terrain — on top of whatever the generator has since put there. The chat warning saying "All blocks,
-entities and structures will be LOST!" is accurate for blocks and wrong for entities. Again: deduced
-from the source, not reproduced in game.
+terrain, on top of whatever the generator has since put there. The chat warning saying "All blocks,
+entities and structures will be LOST!" is accurate for blocks and wrong for entities. This, too, is
+deduced from the source and has not been reproduced in game.
 
 ### Chunks that stay loaded anyway
 
 Step 1 above removes a **vanilla `/forceload` ticket and nothing else**. `ServerLevel.setChunkForced`
 only touches vanilla's forceload bookkeeping: it drops the position from `ForcedChunksSavedData` and,
 when the position really was in there, calls `ServerChunkCache.updateChunkForced`, which removes the
-matching `FORCED` ticket from the `DistanceManager`. Nothing beyond that. Every other reason a chunk
-might be loaded survives: NeoForge chunk tickets, the spawn chunks, a nearby player, a Create train —
-and this mod's own [Stationary Chunk Loader](stationary_chunk_loader.md), [Minecart Chunk
+matching `FORCED` ticket from the `DistanceManager`. Every other reason a chunk might be loaded
+survives: NeoForge chunk tickets, the spawn chunks, a nearby player, a Create train, and this mod's
+own [Stationary Chunk Loader](stationary_chunk_loader.md), [Minecart Chunk
 Loading](minecart_chunk_loading.md) and [Train Chunk Loading](train_chunk_loading.md). A chunk held
 by one of those never unloads, which puts it squarely in the rewrite case above.
 
@@ -248,15 +247,15 @@ double safeZ = ((center.z + radius) * 16.0) + 17.0;
 nearby.teleportTo(safeX, nearby.getY(), safeZ);
 ```
 
-Note what that is not. The Y coordinate is kept, and there is no ground search, no collision check
-and no dimension change — `ServerPlayer.teleportTo(double, double, double)` is a plain connection
-teleport that keeps the rotation. A player at y = 12 in a cave lands at y = 12 one chunk to the
+The Y coordinate is kept, and there is no ground search, no collision check and no dimension change:
+`ServerPlayer.teleportTo(double, double, double)` is a plain connection teleport that keeps the
+rotation. A player at y = 12 in a cave lands at y = 12 one chunk to the
 south, which may be solid stone or open air. Nothing stops them from walking straight back in
 either; the chunks are still loaded.
 
 Only entries of `level.players()` are considered. Players in other dimensions are irrelevant, and
-mobs, item frames and dropped items are not moved at all — although, per the table above, the
-persistent ones among them are not actually deleted.
+mobs, item frames and dropped items are not moved at all. Per the table above, the persistent ones
+among them are not deleted anyway.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -272,12 +271,12 @@ This module has no settings of its own.
 
 | Limit | Effect |
 |---|---|
-| A still-loaded chunk | Cleared at once and then held unsaved, so nothing writes it back — see [taking the write away](#taking-the-write-away). The blocks stay visible until the chunk leaves memory once; leave the area and come back and it has regenerated. |
+| A still-loaded chunk | Cleared at once and then held unsaved, so nothing writes it back; see [taking the write away](#taking-the-write-away). The blocks stay visible until the chunk leaves memory once; leave the area and come back and it has regenerated. |
 | Anything built in a held chunk | Discarded. The hold works by marking the chunk as already saved, so changes made while it is held are never written. |
 | A chunk that never leaves memory | After ten minutes the hold is released with a WARN, and from then on a save can write it back. Run the command again when the area is not loaded. |
 | The queue does not survive a restart | Outstanding entries are logged at shutdown and dropped. Run the command again afterwards; nothing has loaded the chunks yet, so it takes the immediate path. |
 | Confirming in a different dimension | Refused. The pending reset records its dimension and the confirm compares it against the level you are in. |
-| Entities and POIs | Not deleted — they live in `entities/` and `poi/`, which the module never touches, and the chat warning claims otherwise. |
+| Entities and POIs | Not deleted: they live in `entities/` and `poi/`, which the module never touches, and the chat warning claims otherwise. |
 | Mod chunk loaders, spawn chunks, nearby players | Untouched: only a vanilla `/forceload` ticket is removed. Such a chunk cannot unload, so the deletion cannot stick. |
 | Failures are reported | A reset where every write threw prints a red line instead of the green ✓, and a partial one adds a red count of what did not make it. The reason stays in the log. |
 | The teleport lands on the surface | The destination column's height is looked up (`MOTION_BLOCKING_NO_LEAVES`), so nobody is dropped inside terrain or left in mid-air. Nothing stops a player from walking straight back in, though. |
@@ -286,14 +285,14 @@ This module has no settings of its own.
 | Console and command blocks | Rejected. All three handlers call `getPlayerOrException()`. |
 | Command name | Plain `chunkreset`, no mod namespace, so it can collide with another chunk-management mod's command. |
 | No translations | Every message is a hardcoded English `Component.literal`; the module owns no lang keys at all. |
-| Disabled in the config at startup (bundle) | The module is never initialised, never subscribes, and `/vpa module enable chunk_reset` cannot bring the command back — the subscription does not exist. Restart with `enabled = true`. |
+| Disabled in the config at startup (bundle) | The module is never initialised, never subscribes, and `/vpa module enable chunk_reset` cannot bring the command back, because the subscription does not exist. Restart with `enabled = true`. |
 | Disabled at runtime (bundle or standalone jar) | `isModuleEnabled()` is only consulted while commands are being registered, so the already-registered `/chunkreset` keeps working until the next command re-registration. |
 | Not verified in game | The module's logic has not changed since `v1.0.0-beta.2` (the standalone entry point followed in `v1.0.0-beta.23`) and this repository has no tests. Every statement on this page is read off the module and off vanilla's decompiled 1.21.1 sources. |
 
 ## Under the hood
 
-One implementation file of 234 lines, `ChunkResetModule.java`, plus the standalone entry point. No
-mixins, no assets, no data files, no registries, no packets, no config class of its own.
+One implementation file of 234 lines, `ChunkResetModule.java`, plus the standalone entry point.
+There are no mixins, assets, data files, registries or packets, and no config class of its own.
 
 | Event | Bus | Purpose |
 |---|---|---|
@@ -330,12 +329,12 @@ for (Method m : ChunkStorage.class.getDeclaredMethods()) {
 
 The comment in the code gives the reason: the method name is not hardcoded, so a mapping difference
 does not break the call. In 1.21.1 `write(ChunkPos, CompoundTag)` is the only declared method with
-that shape, which makes "first match" deterministic there. The one field hop on the way —
-`ServerChunkCache.chunkMap` — needs no accessor, because the field is `public final` and `ChunkMap`
+that shape, which makes "first match" deterministic there. The one field hop on the way,
+`ServerChunkCache.chunkMap`, needs no accessor, because the field is `public final` and `ChunkMap`
 is a public subclass of `ChunkStorage`; there is no Mixin dependency anywhere in this module. The
 cache is written without synchronisation, which is harmless: two threads would resolve the same
 `Method`. If no such method is found, the `NoSuchMethodException` is caught per chunk in
-`resetSingleChunk`, logged, and counted as a failure — see the `radius 0` row above for what that
+`resetSingleChunk`, logged, and counted as a failure; see the `radius 0` row above for what that
 does *not* show in chat.
 
 **A dead branch.** `executeConfirm` guards with
@@ -345,9 +344,9 @@ declared `public ServerLevel getLevel()`.
 
 ## See also
 
-* [Stationary Chunk Loader](stationary_chunk_loader.md) — one of the things that keeps a reset chunk
+* [Stationary Chunk Loader](stationary_chunk_loader.md): one of the things that keeps a reset chunk
   loaded, and so alive
-* [Minecart Chunk Loading](minecart_chunk_loading.md), [Train Chunk Loading](train_chunk_loading.md)
-  — the same, on rails
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [Minecart Chunk Loading](minecart_chunk_loading.md), [Train Chunk Loading](train_chunk_loading.md):
+  the same, on rails
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

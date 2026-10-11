@@ -25,7 +25,7 @@
     },
     {
       "defaultValue": "true",
-      "effect": "Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor — anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well.",
+      "effect": "Only a wolf wearing canine body armor (vanilla minecraft:wolf_armor or Battle Dogs armor, i.e. anything that is an AnimalArmorItem with BodyType.CANINE) can be ridden. Switching it OFF silently disables dismount_when_armor_removed as well.",
       "key": "eligibility.require_body_armor",
       "range": "",
       "type": "boolean"
@@ -39,7 +39,7 @@
     },
     {
       "defaultValue": "0.5",
-      "effect": "Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config — keep it identical on both sides.",
+      "effect": "Sideways input scaling (vanilla horses use 0.5). Read client-side from a non-synced COMMON config, so keep it identical on both sides.",
       "key": "movement.strafe_multiplier",
       "range": "0.0 ~ 1.0",
       "type": "double"
@@ -81,28 +81,28 @@
     },
     {
       "defaultValue": "true",
-      "effect": "A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts — see notes.",
+      "effect": "A tamed wolf that passes the scale gate takes no damage at all from the player that owns it, sweeping-edge splash included. Cancelled at LivingIncomingDamageEvent/HIGHEST, so no i-frames are burned, lastHurtByMob is never set, the sword and the wolf armor take no durability, and Thorns cannot reflect. NOTE: with the defaults this is NOT limited to mounts; see notes.",
       "key": "protection.owner_damage_immunity",
       "range": "",
       "type": "boolean"
     },
     {
       "defaultValue": "false",
-      "effect": "Narrow the owner immunity to wolves that actually wear canine body armor.",
+      "effect": "Narrow the owner immunity to wolves that wear canine body armor.",
       "key": "protection.owner_immunity_requires_armor",
       "range": "",
       "type": "boolean"
     },
     {
       "defaultValue": "false",
-      "effect": "Narrow the owner immunity to a wolf whose controlling passenger is that same owner — i.e. the wolf the damaging player is riding right now, not just any ridden wolf.",
+      "effect": "Narrow the owner immunity to a wolf whose controlling passenger is that same owner, i.e. the wolf the damaging player is riding right now, not just any ridden wolf.",
       "key": "protection.owner_immunity_only_when_ridden",
       "range": "",
       "type": "boolean"
     },
     {
       "defaultValue": "true",
-      "effect": "Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player — from every source, not just the owner — because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove.",
+      "effect": "Cancel LivingKnockBackEvent for any wolf whose controlling passenger is a Player, from every source and not just the owner, because vanilla applies sweep knockback before the damage, so cancelling the damage cannot undo the shove.",
       "key": "protection.suppress_ridden_knockback",
       "range": "",
       "type": "boolean"
@@ -130,7 +130,7 @@
     },
     {
       "defaultValue": "3.0",
-      "effect": "How much closer (in blocks) a new threat has to be before the mount switches to it — pure hysteresis against flip-flopping. Only consulted when target_nearest is on.",
+      "effect": "How much closer (in blocks) a new threat has to be before the mount switches to it (pure hysteresis against flip-flopping). Only consulted when target_nearest is on.",
       "key": "combat.retarget_margin",
       "range": "0.0 ~ 32.0",
       "type": "double"
@@ -144,7 +144,7 @@
     },
     {
       "defaultValue": "16.0",
-      "effect": "How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on — it is only ever read from retargetNearest/isThreatTo.",
+      "effect": "How far the sweep looks for Enemy mobs that have NOT attacked yet; 0 makes the mount purely retaliatory, and bosses (Warden, Wither, Ender Dragon) are never picked up unprovoked. Dead unless defend_rider AND target_nearest are both on; it is only ever read from retargetNearest/isThreatTo.",
       "key": "combat.hostile_scan_radius",
       "range": "0.0 ~ 64.0",
       "type": "double"
@@ -165,7 +165,7 @@
     },
     {
       "defaultValue": "true",
-      "effect": "Show the mount's body armor durability while riding — the number that actually matters with battle_dogs armor, since it absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server.",
+      "effect": "Show the mount's body armor durability while riding. With battle_dogs armor this is the number that matters, since that armor absorbs the damage. Draws nothing (and consumes no HUD row) when the armor is absent or undamageable. Client-only read; may differ between client and server.",
       "key": "hud.show_armor_bar",
       "range": "",
       "type": "boolean"
@@ -226,7 +226,7 @@
   "moduleDeps": [],
   "moduleId": "wolf_mount",
   "notes": "PROVABLE FACTS A DOC WRITER NEEDS (every line read off the sources named; nothing was compiled or run):\n\n1. MOUNT-DISTANCE CONSTANT IS DOUBLE-SQUARED (WolfMountModule.java:51-52, 214). `MAX_MOUNT_DISTANCE_SQR = 64.0D` is documented as \"interaction range guard ... squared\", but the check is `player.distanceToSqr(wolf) > MAX_MOUNT_DISTANCE_SQR * MAX_MOUNT_DISTANCE_SQR` (= 4096). The effective server-side mount range is therefore 64 blocks, not the 8 blocks the constant's name and value imply. Harmless in practice (the client gesture requires an actual right-click), but do not document \"8 blocks\".\n\n2. DEAD CODE: `WolfMountRules.isRiddenByOwner(Wolf)` (WolfMountRules.java:117-126) is public and never called anywhere in src/ (verified by repo-wide grep).\n\n3. `dismount_when_armor_removed` SILENTLY DEPENDS ON `require_body_armor` (WolfMountModule.java:319-325). The handler returns early unless BOTH are true, so turning `eligibility.require_body_armor` off also disables the eject-on-armor-break behaviour, whatever `dismount_when_armor_removed` says. Neither config comment nor docs/modules/wolf_mount.md mentions this.\n\n4. THE COMBAT SWEEP HAS A SECOND UNDOCUMENTED GATE (WolfMountModule.java:293-299). `retargetNearest` — and with it `hostile_scan_radius`, `target_recheck_ticks` and `retarget_margin`'s sweep half — only runs when `defend_rider` AND `target_nearest` are BOTH true. Neither the config comments nor the docs say that `hostile_scan_radius` is inert with `target_nearest=false`; the docs present the two-radius scan as a property of `target_nearest` alone. `attack_creepers` is likewise only ever consulted from `isAttackable`, which is only reached from the defend/sweep paths, so it too does nothing with `defend_rider=false`.\n\n5. OWNER IMMUNITY IS NOT LIMITED TO MOUNTS BY DEFAULT (WolfMountModule.java:382-406). With the defaults (`owner_immunity_only_when_ridden=false`, `owner_immunity_requires_armor=false`) EVERY tamed wolf you own that passes `isLargeEnough()` is immune to you — armor or not, ridden or not. And `isLargeEnough()` returns true unconditionally when `require_large_scale=false` (WolfMountRules.java:63-68), so switching that gate off makes ALL of a player's tamed wolves immune to their owner, module-wide. Worth calling out explicitly.\n\n6. CLIENT MIXIN READS A NON-SYNCED COMMON CONFIG. The spec is registered as `ModConfig.Type.COMMON` (StandaloneModuleBootstrap.java:45, VanillaPlusAdditions.java:134; class javadoc WolfMountConfig.java:13-14) and NeoForge does not sync it, yet WolfMountMixin reads `getStrafeMultiplier`/`getBackwardMultiplier`/`getSpeedMultiplier`/`getJumpStrength`/`getMinJumpCharge`/`isInstantJump`/`isFloatInWater` on the client, which is authoritative for a ridden entity. `getControllingPassenger` deliberately consults ONLY `isModuleActive()` for exactly this reason (mixin javadoc lines 74-77). Mismatch => frozen mount or \"moved too quickly\". The `hud` section is the documented exception (config comment lines 188-189): read client-side only, so it may safely differ.\n\n7. THE KEYBIND REGISTERS EVEN WITH THE MODULE DISABLED. `WolfMountKeybinds` is an unconditional `@EventBusSubscriber(Dist.CLIENT, Bus.MOD)` and `onRegisterKeyMappings` (lines 31-34) registers the mapping with no gate — \"Mount Wolf\" shows up in the Controls screen regardless of `enabled`. The other two client subscribers (WolfMountClientEvents, WolfMountArmorHud) are registered unconditionally too but gate at runtime on `isModuleActive()`. With the module disabled, ModuleManager never calls `initialize()` (ModuleManager.java:95-111), so the static `instance` stays null, `isModuleActive()` is false and the mixin's mounting path is inert — although the mixin itself is still applied, so every Wolf remains `instanceof PlayerRideableJumping`.\n\n8. DOC/README GAPS AND CONTRADICTIONS:\n   - README.md has NO descriptive paragraph for this module at all — only the doc link on line 309, `- [Wolf Mount](docs/wolf_mount.md)`. That link is stale in the current working tree (staged rename to `docs/modules/wolf_mount.md`), as are ALL the other module links in that README list; CHANGELOG.md:325 and the config class javadoc (WolfMountConfig.java:14) carry the same stale path.\n   - docs/modules/wolf_mount.md contradicts itself on creepers: line 105-106 says \"it still refuses to attack creepers, ghasts and the owner's other pets\", and line 129 then says \"Creepers are the one vanilla exclusion this module overrides\". The code (WolfMountModule.java:557-559) matches the SECOND statement — with the default `attack_creepers=true`, creepers ARE attacked.\n   - The doc's \"Summoning a test Sif\" commands (lines 216 and 232) equip `vanillaplusadditions:wolf_armor_netherite`, which is a battle_dogs item (BattleDogsModule.java:77) — so the shipped test command quietly needs the battle_dogs module enabled, three sections after the doc states battle_dogs is not needed.\n\n9. KNOWN LIMITATION, documented (docs/modules/wolf_mount.md:93-95) and confirmed by the code: an UNRIDDEN owned wolf still takes the harmless 0.4-strength sweep knockback nudge, because `suppress_ridden_knockback` only matches wolves whose controlling passenger is a Player (WolfMountModule.java:421). Zero damage, just a shove.\n\n10. SURPRISING-BUT-INTENTIONAL COUPLINGS worth repeating in the docs: no AI is suppressed anywhere (vanilla's ridden pipeline discards the AI's movement output, which is exactly why the target goals keep working and the mount fights alongside the rider); the mixin re-clears `isOrderedToSit()` every tick server-side as a backstop against the vanilla right-click that races MountWolfPacket; `vpaKeepAfloat` must clear the jump flag again or the mount hops forever after its first swim, and it treats lava like water; the passenger seat position is left to vanilla (EntityType.WOLF's attachment scales with generic.scale), only the dismount location is overridden so the rider is set down beside the wolf instead of dropped from its back.\n\n11. TRANSLATIONS: the keybind label and the low-armor warning exist in en_us.json (lines 148-149), de_de.json and es_es.json only. cs_cz, de_at and fr_fr have no wolf_mount strings and fall back to English.\n\n12. NO TODO/FIXME/HACK comments anywhere in the module, mixin or standalone sources.\n\n13. FEATURE HISTORY: the initial commit 3c9457b (2026-09-03, first tagged v1.0.0-beta.74) shipped mounting/steering/immunity with 20 config keys. The nearest-threat sweep (`target_nearest`, `retarget_margin`, `target_recheck_ticks`, `hostile_scan_radius`, `attack_creepers`) and the whole HUD (`show_armor_bar`, `compact_mount_health`, `armor_warning_threshold`) arrived only in f13ed27 (2026-09-07), first tagged v1.0.0-beta.75. Those are the only two commits that ever touched the module.",
-  "oneLiner": "Hold Ctrl and right-click a huge, armored, tamed wolf to ride it like a horse — steer it, charge up big jumps, swim on it, fight from its back while it bites the nearest monster for you, and stop killing it by accident with your own sword swings.",
+  "oneLiner": "Hold Ctrl and right-click a huge, armored, tamed wolf to ride it like a horse: steer it, charge up big jumps, swim on it, and fight from its back while it bites the nearest monster for you. Your own sword swings no longer kill it by accident.",
   "optionalMods": [
     {
       "displayName": "Grim Kingdoms: structures & ruins",
@@ -257,7 +257,7 @@
     "battle_dogs"
   ],
   "requiredMods": [],
-  "shortDescription": "Ride a big, armored, tamed wolf like a horse — steer it, jump with it, fight from its back, and stop hurting it by accident.",
+  "shortDescription": "Ride a big, armored, tamed wolf like a horse: steer it, jump with it, fight from its back, and stop hurting it by accident.",
   "side": "both",
   "sinceCommit": "3c9457b",
   "sinceVersion": "v1.0.0-beta.74"

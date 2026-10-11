@@ -20,29 +20,29 @@
 
 A conduit is sold as two things at once: a source of Conduit Power, and a turret that shoots
 drowned. The second half almost never happens. Vanilla only lets a conduit attack once its frame is
-**complete at 42 blocks**, and even then it reaches **8 blocks** — the water immediately around the
+**complete at 42 blocks**, and even then it reaches **8 blocks**, the water immediately around the
 conduit. Anything smaller than a full frame is a lamp.
 
 This module gives the attack the same scale the beneficial effect already has. A conduit attacks as
-soon as it is **active** — 16 frame blocks, the smallest frame the game accepts — and it reaches
+soon as it is **active** (16 frame blocks, the smallest frame the game accepts), and it reaches
 **half its Conduit Power radius**: 16 blocks at 16 frames, rising to 48 blocks at a full frame.
 
 Damage and rate stay exactly vanilla: **4 magic damage every 2 seconds, to one mob at a time**. That
-is a nuisance to a drowned, not a death ray. What changes is that the nuisance now exists at all,
-and that it covers the water you actually swim in rather than the block you are standing on.
+is a nuisance to a drowned and no more. The change is that the nuisance now exists at all, and that
+it covers the water you swim in instead of only the 8 blocks around the conduit.
 
 The attack animation works at the new range too: the nautilus sparkle that vanilla draws *on the
-victim*, and only for targets within 8 blocks, now appears for far targets as well. There is a catch
-that is not the module's doing — nautilus particles are culled beyond 32 blocks from your camera, so
+victim*, and only for targets within 8 blocks, now appears for far targets as well. One catch is not
+the module's doing: nautilus particles are culled beyond 32 blocks from your camera, so
 you have to be near the mob, not near the conduit, to see it.
 
 ## Why it exists
 
-Both limits sit as literals in `ConduitBlockEntity.updateDestroyTarget` (quoted lightly reformatted
-throughout this section — vanilla's generated identifiers shortened, casts dropped, and the leading
-`LivingEntity livingentity = blockEntity.destroyTarget;` snapshot elided: vanilla compares that
+Both limits sit as literals in `ConduitBlockEntity.updateDestroyTarget`. The quotes in this section
+are lightly reformatted: vanilla's generated identifiers are shortened, casts dropped, and the leading
+`LivingEntity livingentity = blockEntity.destroyTarget;` snapshot is left out. (Vanilla compares that
 snapshot against the new target at the end of the same method to decide whether to
-`sendBlockUpdated`, which is how the client learns of a new target at all):
+`sendBlockUpdated`, which is how the client learns of a new target at all.) The method:
 
 ```java
 // ...
@@ -82,15 +82,14 @@ int i = positions.size();
 int j = i / 7 * 16;          // 32 blocks at 16 frames, 96 at a full 42
 ```
 
-So a full conduit hands out Conduit Power for 96 blocks and shoots for 8. The two numbers describe
-different buildings. Halving the effect radius gives a hostile range that grows with the frame the
-player actually built, which is what the frame is for.
+So a full conduit hands out Conduit Power for 96 blocks and shoots for 8. Halving the effect radius
+gives a hostile range that grows with the frame the player built.
 
 ## In detail
 
 ### Who gets shot
 
-Untouched — the module changes *where* and *when*, never *what*. Vanilla's own predicate still
+That part is untouched: the module changes *where* and *when*, never *what*. Vanilla's own predicate still
 decides: the target must be a `LivingEntity` that is an `Enemy` **and** `isInWaterOrRain()`. A
 skeleton under a dry overhang two blocks from the conduit is safe; the same skeleton in the rain is
 not. There is exactly one target at a time, drawn at random from everything in range, and it keeps
@@ -114,11 +113,11 @@ sides of that use vanilla's integer division, so the radius rises in steps of se
 with `Math.max(1, …)` on top of the config's own 1–16 range, so a hand-edited `0` cannot divide by
 zero.
 
-**Acquisition is a cube, retention is a sphere.** That mismatch is vanilla's, inherited rather than
-introduced: targets are collected from `new AABB(…).inflate(radius)`, a cube of edge `2·radius + 1`,
+**Acquisition is a cube, retention is a sphere.** The mismatch is inherited from vanilla:
+targets are collected from `new AABB(…).inflate(radius)`, a cube of edge `2·radius + 1`,
 while the "is it still in range" check two seconds later is `closerThan(…, radius)`, which is
-`distSqr < radius²`. A mob sitting in a corner of the cube — up to `radius·√3`, so about 83 blocks
-at the default full-frame 48 — is therefore picked up, hit once, and dropped again on the next pass.
+`distSqr < radius²`. A mob sitting in a corner of the cube (up to `radius·√3`, so about 83 blocks
+at the default full-frame 48) is therefore picked up, hit once, and dropped again on the next pass.
 It is re-acquired from the cube on the pass after that, so a corner mob takes its 4 damage every
 4 seconds instead of every 2. At vanilla's radius of 8 the same thing happens; it is only visible
 once the numbers get large.
@@ -143,37 +142,37 @@ The whole attack cycle runs on vanilla's clock: `serverTick` does its work when
 The visible attack is one `ParticleTypes.NAUTILUS` per client tick, spawned in `animationTick` at
 the target's eye position and given a random offset as its speed triple. Nautilus is a
 `FlyTowardsPositionParticle`: it starts at spawn point *plus* offset and interpolates back to the
-spawn point as it ages. The particles therefore start at random points in a box around the mob —
-`(-0.5 + rand) × (3.0 + bbWidth)` per horizontal axis, so about 1.8 blocks to either side of a
-drowned, and `-1.0 + rand × bbHeight` vertically, from one block below the eye up to body height —
+spawn point as it ages. The particles therefore start at random points in a box around the mob
+(`(-0.5 + rand) × (3.0 + bbWidth)` per horizontal axis, so about 1.8 blocks to either side of a
+drowned, and `-1.0 + rand × bbHeight` vertically, from one block below the eye up to body height)
 and sink inward **onto its body**: the interpolation target is the eye position, minus a 1.2-block
-droop the particle picks up as it ages. It is a sparkle on the victim, not a link to the conduit —
-the conduit's own sparkle is a separate loop in the same method that flies a particle in from each
+droop the particle picks up as it ages. It is a sparkle on the victim and draws no link to the
+conduit. The conduit's own sparkle is a separate loop in the same method that flies a particle in from each
 *frame* block, and nothing is ever drawn on the line between conduit and mob.
 
-The victim particle is drawn only when the **client** has resolved `destroyTarget` — and the client
+The victim particle is drawn only when the **client** has resolved `destroyTarget`, and the client
 only ever receives the target's **UUID** in the block entity update packet. It resolves that UUID
 through `findDestroyTarget`, which looks inside `getDestroyRangeAABB(pos)`: the same fixed 8-block
 box.
 
 So without a fourth edit a mob damaged at 30 blocks would still be hit, and would still make the
 attack sound: `updateDestroyTarget` plays `SoundEvents.CONDUIT_ATTACK_TARGET` at the target's own
-coordinates on every hit, server-side and regardless of what the client resolved — though that is an
-ordinary variable-range sound event, so the server only sends it to players within 16 blocks of the
-mob, and like the sparkle you have to be near the victim rather than at the conduit to notice it.
-Only the sparkle on the mob would be missing — the conduit itself would keep sparkling as usual.
-The mixin widens that one lookup to `maxHostileRadius()` — the hostile radius at 42 frames, 48
-blocks by default. Because `hostileRadius` only grows with the frame count, that bound covers every
+coordinates on every hit, server-side and regardless of what the client resolved. That is an
+ordinary variable-range sound event, though, so the server only sends it to players within 16 blocks
+of the mob; as with the sparkle, you have to be near the victim rather than at the conduit to notice
+it. Only the sparkle on the mob would be missing, while the conduit itself would keep sparkling as
+usual. The mixin widens that one lookup to `maxHostileRadius()`, the hostile radius at 42 frames (48
+blocks by default). Because `hostileRadius` only grows with the frame count, that bound covers every
 conduit in the world, whatever size it is.
 
-Resolving the target is not the same as seeing it. `ParticleTypes.NAUTILUS` is registered with
+Even with the target resolved, you may not see the sparkle. `ParticleTypes.NAUTILUS` is registered with
 `overrideLimiter = false`, so the client throws away any nautilus particle spawned more than 32
 blocks from the camera. Stand at the conduit and a hit at the default full-frame 48 blocks shows you
 nothing; you have to be near the mob.
 
 The widened box is not a per-tick cost. `updateClientTarget` calls `findDestroyTarget` only when the
-UUID it has is not the one already resolved, and clears the UUID when the lookup comes back empty —
-at most one entity query per target change. On the server the same call happens once after a
+UUID it has is not the one already resolved, and clears the UUID when the lookup comes back empty,
+so there is at most one entity query per target change. On the server the same call happens once after a
 chunk reload, to restore the target saved in NBT.
 
 ### The eye stays shut
@@ -188,7 +187,7 @@ private static void updateHunting(ConduitBlockEntity blockEntity, List<BlockPos>
 
 `ConduitRenderer` picks `OPEN_EYE_TEXTURE` from that flag, and the mixin's `@ModifyConstant` is
 scoped to `updateDestroyTarget` only. With the default `min_frames = 16` a half-sized conduit
-therefore shoots mobs while looking perfectly calm. Cosmetic, but it is the one thing a player sees
+therefore shoots mobs while looking calm. This is cosmetic, but it is the one thing a player sees
 that disagrees with what the block is doing.
 
 <!-- vpa:config:start -->
@@ -200,7 +199,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `min_frames` | int | `16` | 1 ~ 96 (effective 16 ~ 42) | Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). Note the conduit's angry open-eye texture still needs 42 frames - the mixin does not touch updateHunting. |
+| `min_frames` | int | `16` | 1 ~ 96 (effective 16 ~ 42) | Minimum frame-block count at which a conduit starts attacking hostiles, replacing vanilla's hardcoded 42. Values below 16 do nothing (vanilla only runs the attack tick on an ACTIVE conduit, which needs 16 frames) and values above 42 switch attacking off entirely (a vanilla frame caps at 42). The conduit's angry open-eye texture still needs 42 frames, because the mixin does not touch updateHunting. |
 | `radius_divisor` | int | `2` | 1 ~ 16 | Hostile-damage radius = Conduit Power radius (frames / 7 * 16) / this divisor, floored at 1 block. 2 (default) = half the effect radius: 16 blocks at 16 frames, 48 at 42. 1 = full effect radius (32 / 96). The module additionally clamps the value with Math.max(1, ...). |
 <!-- vpa:config:end -->
 
@@ -208,8 +207,8 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| The standalone jar | Works. It was inert for a long time — the jar was built and published without a `standalone/conduit_attack_range` package, so nothing ever constructed `ConduitAttackRangeModule`, `instance` stayed null, `isActive()` returned false and all four injections handed back vanilla values. The missing `@Mod` entry point has since been added. Not yet confirmed in game. |
-| The angry eye still needs 42 frames | See above — `updateHunting` is untouched, so a sub-42 conduit attacks with a closed eye. |
+| The standalone jar | Works. It was inert for a long time: the jar was built and published without a `standalone/conduit_attack_range` package, so nothing ever constructed `ConduitAttackRangeModule`, `instance` stayed null, `isActive()` returned false and all four injections handed back vanilla values. The missing `@Mod` entry point has since been added. Not yet confirmed in game. |
+| The angry eye still needs 42 frames | See above: `updateHunting` is untouched, so a sub-42 conduit attacks with a closed eye. |
 | Corner targets are hit half as often | Cube acquisition versus spherical retention, inherited from vanilla. See *How far*. |
 | `min_frames` outside 16–42 | Silently does nothing, or silently disables the attack. Nothing validates the value. |
 | The **End Conduit** is not affected | `EndConduitBlockEntity extends BlockEntity`, not `ConduitBlockEntity`, and carries no attack code of its own. This module's mixin never sees it. |
@@ -237,7 +236,7 @@ single log line; every behaviour lives in the mixin.
 | 3 | `updateDestroyTarget` | `@Redirect` on `BlockPos.closerThan(Vec3i, D)` | the `8.0` retain check | the same scaled radius, so a far-acquired target is not dropped on the next pass |
 | 4 | `findDestroyTarget` | `@Redirect` on `getDestroyRangeAABB` | `inflate(8)` | `inflate(maxHostileRadius())` |
 
-Injections 2 and 3 need the frame count, which is not in scope in a plain redirect — they take it
+Injections 2 and 3 need the frame count, which is not in scope in a plain redirect, so they take it
 from `updateDestroyTarget`'s own `List<BlockPos> positions` parameter, which `@Redirect` passes
 through after the redirected call's arguments. Injection 4 has no frame count available at all,
 which is why it uses the upper bound instead.
@@ -252,7 +251,7 @@ server. There is no rendering code, no `Dist.CLIENT`, no `Minecraft.getInstance(
 `isActive()` is `instance != null && isModuleEnabled()`, and `isModuleEnabled()` goes through
 `ModuleManager.resolveModuleEnabled`, which consults the runtime override map before the config
 value. Both config values are re-read on every call. `enabled`, `radius_divisor` and `min_frames`
-therefore take effect immediately — editing the toml or running
+therefore take effect immediately; editing the toml or running
 `/vpa module disable conduit_attack_range` needs no reload and no restart.
 
 One framework quirk to expect in the log: `ModuleManager.initializeModules` runs before the config
@@ -261,8 +260,8 @@ module is switched off in the toml. The real gate is the per-call check, not tha
 
 ## See also
 
-* [End Conduit](end_conduit.md) — a separate block entity, deliberately without an attack
-* [End Oxygen](end_oxygen.md) — the other half of what an End conduit is for
-* [Module System](../guides/module-system.md) — how a module is registered, gated and configured
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [End Conduit](end_conduit.md): a separate block entity, deliberately without an attack
+* [End Oxygen](end_oxygen.md): the other half of what an End conduit is for
+* [Module System](../guides/module-system.md): how a module is registered, gated and configured
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

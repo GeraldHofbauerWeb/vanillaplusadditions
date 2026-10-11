@@ -2,7 +2,7 @@
   "moduleId": "pathfinder_quills",
   "displayName": "Pathfinder Quills",
   "shortDescription": "Craft Quark's biome-targeted Pathfinder's Quills instead of only trading for them.",
-  "oneLiner": "Lets you craft Quark's Pathfinder's Quill yourself - one feather, one eye of ender and one block that matches the biome you want to find (sand for desert, podzol for old growth pine taiga, cherry leaves for cherry grove) - instead of having to trade a cartographer or wandering trader for it.",
+  "oneLiner": "Quark's Pathfinder's Quill becomes craftable: a Feather, an Eye of Ender and one block that stands for the biome you are looking for (Sand for the Desert, Podzol for an Old Growth Pine Taiga, Cherry Leaves for a Cherry Grove).",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,

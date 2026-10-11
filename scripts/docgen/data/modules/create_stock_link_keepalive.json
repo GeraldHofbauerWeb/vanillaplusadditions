@@ -4,7 +4,7 @@
   "configKeys": [
     {
       "defaultValue": "5",
-      "effect": "How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks - one second - after a link last refreshed it, and only the link's own lazyTick() does that, which needs a TICKING chunk. Must stay below 20; 5 leaves a margin of four.",
+      "effect": "How often every tracked logistics link is re-stamped in Create's LINKS cache. That cache expires 20 ticks (one second) after a link last refreshed it, and only the link's own lazyTick() does that, which needs a ticking chunk. Must stay below 20; 5 leaves a margin of four.",
       "key": "keepalive_interval_ticks",
       "range": "1-19",
       "type": "integer"
@@ -18,14 +18,14 @@
     },
     {
       "defaultValue": "true",
-      "effect": "Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait is always a guess; this is the fact the guess stood for. Bounded by max_hold_ticks.",
+      "effect": "Keep holding a gauge past grace_ticks while its network summary has no contributing links at all (InventorySummary.contributingLinks == 0). A fixed wait can only guess how long the links take to report; this checks whether they have. Bounded by max_hold_ticks.",
       "key": "hold_until_network_reports",
       "range": "",
       "type": "boolean"
     },
     {
       "defaultValue": "600",
-      "effect": "Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links - measured on five gauges whose network has none at all. They are then released and Create decides for itself again.",
+      "effect": "Ceiling on how long one gauge may be held, counted from its chunk load. Only reached when a network genuinely has no contributing links, as measured on five gauges whose network has none at all. They are then released and Create decides for itself again.",
       "key": "max_hold_ticks",
       "range": "60-6000",
       "type": "integer"

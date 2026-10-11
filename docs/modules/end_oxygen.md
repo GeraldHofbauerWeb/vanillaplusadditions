@@ -1,9 +1,8 @@
 # End Oxygen
 
-> **TL;DR** — The End has no breathable air: your bubbles drain the whole time you are there and you
-> start taking damage once they run out, unless you stand in Conduit Power — or carry a Create
-> backtank, which also wants a diving helmet unless you set `backtank.requires_full_set = false`
-> (see [below](#the-diving-helmet)).
+> **TL;DR** — The End has no breathable air: your air bubbles drain while you are there and you
+> start taking damage once they run out, unless you carry a Create backtank (by default a diving
+> helmet is required alongside it) or stand in Conduit Power, e.g. from an End Conduit.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -21,7 +20,7 @@
 
 Step through the portal and the air bar appears. It does not fill back up. Your air drains whatever
 you are standing on, and once the bar is empty you take damage every second until you leave, find
-breathing gear or die — the death message reads *"&lt;name&gt; ran out of oxygen"*.
+breathing gear or die. The death message reads *"&lt;name&gt; ran out of oxygen"*.
 
 With the defaults that is one air unit every 2 ticks, so a full bar of 300 buys about **30 seconds**
 after you arrive, and then 2 damage (one heart before armour) per second.
@@ -31,7 +30,7 @@ Four things change that:
 | | Effect |
 |---|---|
 | **Water Breathing** | Slows the drain rather than stopping it: 90 seconds at level I, 2½ minutes at level II. |
-| **Create backtank** | Real breathing. The bar refills while the tank drains, roughly 15 minutes out of a full one. By default it also wants a diving helmet — see [below](#the-diving-helmet). |
+| **Create backtank** | Real breathing. The bar refills while the tank drains, roughly 15 minutes out of a full one. By default it also wants a diving helmet (see [below](#the-diving-helmet)). |
 | **Conduit Power** | Full air every tick, no damage at all. The [End Conduit](end_conduit.md) is the source built for this; any Conduit Power does it. |
 | **Creative or Spectator** | Skipped entirely. |
 
@@ -64,10 +63,10 @@ the order is what produces most of the edge cases below:
 
 | # | Branch | What it sets |
 |---|---|---|
-| 1 | Conduit Power (and `conduit_power_grants_air`) | `canBreathe = true`, refill `getMaxAirSupply()` — then **returns**, so the damage block never runs |
+| 1 | Conduit Power (and `conduit_power_grants_air`) | `canBreathe = true`, refill `getMaxAirSupply()`, then **returns**, so the damage block never runs |
 | 2 | Floor | `air < 1` is lifted back to 1 |
 | 3 | Backtank with air (and the helmet gate) | `canBreathe = true`, refill 1, and one air unit out of the tank every `backtank_depletion_rate` ticks |
-| 4 | Otherwise | `canBreathe = false`, consume 1 — but only on the ticks the interval allows |
+| 4 | Otherwise | `canBreathe = false`, consume 1, but only on the ticks the interval allows |
 | 5 | Damage | `air <= 1` and `tickCount % damage_tick == 0` → `vanillaplusadditions:out_of_oxygen` |
 
 Step 5 is **not** inside an `else`. It runs on the backtank path too.
@@ -96,7 +95,7 @@ potion widens the gap between depletion steps instead of stopping it:
 
 Because the module *assigns* the consume amount, it also overwrites what NeoForge put there.
 Vanilla passes in `airSupply - decreaseAirSupply(airSupply)`, which is 0 whenever the
-`OXYGEN_BONUS` attribute — Respiration — wins its roll. That value is thrown away here, so
+`OXYGEN_BONUS` attribute (Respiration) wins its roll. That value is thrown away here, so
 **Respiration does nothing in the End**. Water Breathing is the only enchantment-or-potion lever,
 and only through the config key above.
 
@@ -113,7 +112,7 @@ if (player.getAirSupply() < 1) {
 ```
 
 NeoForge does post a `LivingDrownEvent` once air reaches 0, but its vanilla-populated constructor is
-`this(entity, entity.getAirSupply() <= -20, 2.0F, 8)` — at 0 the entity is not "actively drowning",
+`this(entity, entity.getAirSupply() <= -20, 2.0F, 8)`. At 0 the entity is not "actively drowning",
 so there are no bubble particles and no `minecraft:drown` damage. Every point of damage you take in
 the End comes from this module, at this module's rate.
 
@@ -126,12 +125,12 @@ player.hurt(outOfOxygen, getConfig().getOutOfAirDamage());
 
 `data/vanillaplusadditions/damage_type/out_of_oxygen.json` declares `exhaustion` 0.1, the message id
 `vanillaplusadditions.out_of_oxygen` and `when_caused_by_living_non_player` scaling. What it does
-*not* declare is any tag, and the repository ships no damage-type tag files at all — so this is an
-ordinary damage source where vanilla drowning is a special one:
+*not* declare is any tag, and the repository ships no damage-type tag files at all, so this is an
+ordinary damage source, while vanilla drowning is a special one:
 
 | | `minecraft:drown` | `vanillaplusadditions:out_of_oxygen` |
 |---|---|---|
-| In `#minecraft:bypasses_armor` | yes | **no** — armour points reduce it |
+| In `#minecraft:bypasses_armor` | yes | **no**; armour points reduce it |
 | In `#minecraft:no_impact`, `#no_knockback` | yes | no |
 | `effects` | `drowning`, the gurgle | unset, so the plain hurt sound |
 | Exhaustion per hit | 0.0 | 0.1 |
@@ -139,7 +138,7 @@ ordinary damage source where vanilla drowning is a special one:
 Invulnerability frames apply as well: `LivingEntity.hurt` drops a hit of equal strength while
 `invulnerableTime > 10`, and a hit that lands sets that to 20. For a player the counter is
 decremented in `ServerPlayer.tick`, which the server runs before the breathe hook, so the handler
-sees 20 minus the ticks since the last hit — after ten ticks it reads exactly 10, and the next hit
+sees 20 minus the ticks since the last hit. After ten ticks it reads exactly 10, and the next hit
 gets through. `damage_tick = 10` therefore still doubles the damage rate; nothing below it goes any
 faster, and because only a hit that lands resets the counter, a shorter interval can come out
 slower: at `damage_tick = 9` every second attempt is swallowed and the damage arrives every 18
@@ -167,8 +166,8 @@ module always takes `backtanks.get(0)`, so with two tanks on you it drains the e
 only moves to the fuller one once the first is spent. The HUD reads the same slot, so the timer is
 the emptier tank's, not the total.
 
-While a tank supplies air the bar refills at 1 per tick — a bar emptied before you found the tank
-takes 300 ticks, 15 seconds, to fill again — and one air unit leaves the tank every
+While a tank supplies air the bar refills at 1 per tick (a bar emptied before you found the tank
+takes 300 ticks, 15 seconds, to fill again), and one air unit leaves the tank every
 `backtank_depletion_rate` ticks. Against Create's own defaults (`airInBacktank` 900, plus 300 per
 level of Capacity) that works out as:
 
@@ -179,8 +178,8 @@ level of Capacity) that works out as:
 | `backtank_depletion_rate = 0` | — | never depletes; an infinite tank |
 
 When the tank does run dry it drops out of `getAllWithAir`, the handler falls through to step 4, and
-the bar starts from wherever it was — full, in practice, so you get the ordinary 30 seconds of grace
-to get out.
+the bar starts from wherever it was. In practice that is full, so you get the ordinary 30 seconds
+of grace to get out.
 
 ### The diving helmet
 
@@ -193,23 +192,23 @@ if (!backtanks.isEmpty() && (!getConfig().requiresFullSet() || hasDivingHelmet))
 ```
 
 `DIVING_HELMETS` is the item tag `vanillaplusadditions:diving_helmets`, and since `v1.0.0-beta.97`
-the mod ships it — Create's copper and netherite diving helmets, both `required: false` so the tag
+the mod ships it: Create's copper and netherite diving helmets, both `required: false` so the tag
 loads in a pack without Create. A datapack can add other mods' helmets on top.
 
 **Until beta.97 nothing filled that tag, and that was the bug.** An item tag nothing defines is not
-absent, it is **empty**, and an empty tag matches no item — so the condition could never be true and
-a Create backtank supplied no air whatsoever on the default config. The failure was completely
-silent: no warning, no log line, just a player suffocating in the End with a full tank on their back.
+absent, it is **empty**, and an empty tag matches no item, so the condition could never be true and
+a Create backtank supplied no air whatsoever on the default config. The failure was silent: nothing
+was logged, and the player suffocated in the End with a full tank on their back.
 This page described the fault from the source alone for some time, with a TODO to confirm it in game;
 Gerry hit it on games2 on 2026-09-26 and the TODO is now closed.
 
-Two lessons worth carrying: **a missing tag file does not fail loudly, it fails empty** — so any
-`TagKey` a gate depends on has to be shipped, or the gate is simply off. And the module's other
+Two lessons came out of it. First, **a missing tag file does not fail loudly, it fails empty**, so
+any `TagKey` a gate depends on has to be shipped, or the gate is off. Second, the module's other
 `TagKey`, `vanillaplusadditions:backtanks`, was declared but never read by anything; it was removed
-in the same change rather than left to suggest a tag that likewise did not exist.
+in the same change so that it would not suggest a tag that likewise did not exist.
 
 If you would rather have a bare backtank work with no helmet, set `backtank.requires_full_set` to
-`false` — that path never depended on the tag.
+`false`; that path never depended on the tag.
 
 ### Conduit Power
 
@@ -221,11 +220,11 @@ if (getConfig().conduitPowerGrantsAir() && player.hasEffect(MobEffects.CONDUIT_P
 }
 ```
 
-A refill of 300 is clamped against the maximum by NeoForge, so the bar is simply full again every
-tick. The `return` is the important part: this branch skips the damage block entirely, so Conduit
-Power is the one state in which the module cannot hurt you even for a single tick.
+A refill of 300 is clamped against the maximum by NeoForge, so the bar is full again every tick.
+Because of the `return`, this branch skips the damage block entirely, so Conduit Power is the one
+state in which the module cannot hurt you even for a single tick.
 
-The [End Conduit](end_conduit.md) exists for this — it grants `CONDUIT_POWER` for 260 ticks to every
+The [End Conduit](end_conduit.md) exists for this: it grants `CONDUIT_POWER` for 260 ticks to every
 player in range on dry End ground. But the branch only asks for the effect, so a vanilla conduit in a
 pool of water you hauled into the End, or an `/effect` command, opens it just the same.
 
@@ -247,12 +246,12 @@ if (player.getAirSupply() >= player.getMaxAirSupply()) {
 }
 ```
 
-299 of 300 still rounds to ten full bubbles, so the bar looks untouched — and the server resyncs the
-real value on its next entity-data update anyway. It is a display trick and nothing else.
+299 of 300 still rounds to ten full bubbles, so the bar looks untouched, and the server resyncs the
+real value on its next entity-data update anyway.
 
 The `Post` hook on the same layer draws the backtank overlay, and only if Create is loaded and a tank
-with air is worn: the item itself at `guiWidth/2 + 90`, `guiHeight - 53` — the right-hand end of the
-status rows — with `MM:SS` printed 16 pixels to its right. A stack carrying
+with air is worn: the item itself at `guiWidth/2 + 90`, `guiHeight - 53` (the right-hand end of the
+status rows), with `MM:SS` printed 16 pixels to its right. A stack carrying
 `DataComponents.FIRE_RESISTANT`, i.e. Create's netherite backtank, is drawn 9 pixels lower.
 
 | Detail | Behaviour |
@@ -260,7 +259,7 @@ status rows — with `MM:SS` printed 16 pixels to its right. A stack carrying
 | Time shown | `max(0, air - 1) × backtank_depletion_rate ÷ tickrate`, in seconds. At default tick rate and depletion rate that is one second per air unit. |
 | `backtank_depletion_rate = 0` | Hardcoded to 5999 s, so it reads a permanent `99:59`. |
 | Cap | Minutes above 99 clamp to `99:59`. |
-| Colour | White, flipping to red while `air < 60 && air % 2 == 0` — with the defaults that is an alternating flash once a second over the last minute. |
+| Colour | White, flipping to red while `air < 60 && air % 2 == 0`; with the defaults that is an alternating flash once a second over the last minute. |
 
 The position is fixed, not stacked onto vanilla's `rightHeight`, so a crowded HUD can overlap it.
 
@@ -291,7 +290,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Only `minecraft:the_end` | The check is `player.level().dimension() == Level.END`, a literal dimension key. A modded End-like dimension, or a second End from a datapack, is not covered. |
 | Only players | `LivingBreatheEvent` fires for every living entity; the handler filters to `Player`. Mobs in the End are untouched. |
 | Respiration | Overwritten, see above. It has no effect on the drain in the End. |
-| Water Breathing | Never grants breathing here — it only widens the interval. Being submerged in water in the End changes nothing either: the module overrides NeoForge's answer whichever way it came out. |
+| Water Breathing | Never grants breathing here; it only widens the interval. Being submerged in water in the End changes nothing either: the module overrides NeoForge's answer whichever way it came out. |
 | Armour | Reduces `out_of_oxygen` damage, unlike vanilla drowning. A player in full netherite takes noticeably longer to die of suffocation than one in nothing. |
 | Another mod on `LivingBreatheEvent` | The handler runs at default priority and sets the values rather than cancelling, so a later handler wins. Nothing here guards against that. |
 | Module disabled at runtime | Works in both directions: the handler is registered unconditionally at startup (`shouldInitialize()` is not overridden) and re-reads `isModuleEnabled()` on every event. The HUD class is annotation-registered and independent of module initialisation, and checks the same flag. |
@@ -316,7 +315,7 @@ server ever deals the damage. Only the HUD class is `Dist.CLIENT`.
 |---|---|
 | `modules/end_oxygen/EndOxygenModule.java` | The handler, the damage-type key, the two tag keys |
 | `modules/end_oxygen/config/EndOxygenConfig.java` | The seven config values |
-| `modules/end_oxygen/compat/CreateCompat.java` | "Is Create there?" — names no Create type |
+| `modules/end_oxygen/compat/CreateCompat.java` | "Is Create there?", naming no Create type |
 | `modules/end_oxygen/compat/CreateBacktankCompat.java` | Every `BacktankUtil` call, vanilla types in its signatures |
 | `modules/end_oxygen/client/EndOxygenClientEvents.java` | The air-bar trick and the backtank overlay |
 | `standalone/end_oxygen/EndOxygenStandalone.java` | `@Mod("vpa_end_oxygen")` entry point |
@@ -326,14 +325,14 @@ server ever deals the damage. Only the HUD class is `Dist.CLIENT`.
 class whether Create is installed would resolve, link and verify it, and the JVM verifier may load
 the Create types out of its method bodies. The question therefore lives in `CreateCompat`, which
 names no Create type and caches `ModList.get().isLoaded("create")` once. `v1.0.0-beta.72` split it
-out for exactly this reason, after the same trap had taken down `overpacked_extensions` — the
+out for exactly this reason, after the same trap had taken down `overpacked_extensions`. The
 changelog calls it hardening rather than a live crash, because Create happened to be present on both
 distribution paths at the time.
 
 **Timing is keyed off `player.tickCount`,** not a countdown that starts when you enter the End. Both
 the consumption interval and `damage_tick` are `tickCount % n == 0`, so the phase is whatever the
-player entity's age happens to be — it makes no difference to how long you survive, but it does mean
-the first depletion step after a portal can land anywhere in the interval.
+player entity's age happens to be. That makes no difference to how long you survive, but the first
+depletion step after a portal can land anywhere in the interval.
 
 **Loose ends in the module,** all harmless and all worth knowing before editing it:
 
@@ -341,12 +340,12 @@ the first depletion step after a portal can land anywhere in the interval.
   final` and read by nothing. Backtank detection runs entirely through Create. The page that used to
   live here claimed the tag "controls which items count"; it never did.
 * `message.action_bar.low_oxygen_alert` and `message.action_bar.remaining_oxygen` sit in `en_us.json`
-  with no reference anywhere in Java — leftovers from an earlier HUD, not features.
+  with no reference anywhere in Java; they are leftovers from an earlier HUD.
 * `EndOxygenConfig.conduitPowerGrantsAir()` is written as `conduitPowerGrantsAir == null ||
   conduitPowerGrantsAir.get()`, so it answers `true` before the spec is built. The other six getters
   have no such guard.
 
-**Standalone jar.** `vpa_end_oxygen` ships `modules/end_oxygen/**` — the HUD class included — plus
+**Standalone jar.** `vpa_end_oxygen` ships `modules/end_oxygen/**` (the HUD class included) plus
 the entry point and `out_of_oxygen.json`; the death-message lang string travels in `vpa_core`, which
 every module jar requires. The generated per-module `neoforge.mods.toml` declares only `vpa_core`,
 `neoforge`, `minecraft` and an `incompatible` against the bundle; it does **not** carry the optional
@@ -359,6 +358,6 @@ backs.
 
 ## See also
 
-* [End Conduit](end_conduit.md) — the block that makes Conduit Power available on dry End ground
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
+* [End Conduit](end_conduit.md): the block that makes Conduit Power available on dry End ground
+* [Configuration Guide](../guides/configuration.md): where the config file lives
 * [All modules](../../README.md#-modules)

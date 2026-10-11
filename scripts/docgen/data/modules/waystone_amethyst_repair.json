@@ -2,7 +2,7 @@
   "moduleId": "waystone_amethyst_repair",
   "displayName": "Waystone Amethyst Repair",
   "shortDescription": "Repair the Waystones Warp Stone with amethyst in an anvil (free while the Free Anvil Repair module is enabled)",
-  "oneLiner": "Amethyst shards repair the Waystones Warp Stone in an anvil - 25% of its maximum durability per shard, costing one XP level per shard, or nothing at all while the Free Anvil Repair module is enabled.",
+  "oneLiner": "A worn Waystones **Warp Stone** goes back to full in an anvil with amethyst shards: 25 % of its maximum durability per shard, one XP level per shard, or nothing at all while the Free Anvil Repair module is enabled.",
   "side": "server",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -38,7 +38,7 @@
       "type": "list",
       "defaultValue": "List.of(\"minecraft:amethyst_shard\")",
       "range": "no spec range; per-entry validator requires a String that ResourceLocation.tryParse accepts (WaystoneAmethystRepairConfig.java:50-52)",
-      "effect": "Item ids accepted as repair material in the anvil (amethyst shards by default). Entries are trimmed and resolved into a Set<Item>; entries whose item is not installed are skipped with a debug-only log line. Any listed material repairs at the same rate - there is no per-material weighting."
+      "effect": "Item ids accepted as repair material in the anvil (amethyst shards by default). Entries are trimmed and resolved into a Set<Item>; entries whose item is not installed are skipped with a debug-only log line. Any listed material repairs at the same rate; there is no per-material weighting."
     },
     {
       "key": "repair_percent_per_unit",

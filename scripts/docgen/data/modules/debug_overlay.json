@@ -18,7 +18,7 @@
   ],
   "mixins": [],
   "moduleId": "debug_overlay",
-  "oneLiner": "Wear Engineer's Goggles and press numpad + to switch on the mod's shared debug view - chunk-loader borders, Chunk Anchor areas and the guardian pets' extended stat boxes all appear and disappear together with this one key.",
+  "oneLiner": "Put on a pair of Engineer's Goggles, press numpad +, and every debug view in the mod appears at once: chunk-loader borders, Chunk Anchor areas and the guardian pets' outline boxes all hang on that one key.",
   "optionalMods": [
     {
       "modId": "create",

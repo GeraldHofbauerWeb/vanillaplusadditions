@@ -73,7 +73,7 @@
   ],
   "mixins": [],
   "moduleId": "arm_target_overlay",
-  "oneLiner": "Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm to see glowing boxes around every block it takes from (orange) and deposits into (teal) - even through walls.",
+  "oneLiner": "Hold Left Ctrl while wearing goggles and looking at a Create Mechanical Arm, and every block it takes from is outlined in orange, every block it deposits into in teal, even through walls.",
   "optionalMods": [
     {
       "modId": "create",

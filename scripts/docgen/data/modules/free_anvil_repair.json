@@ -2,7 +2,7 @@
   "moduleId": "free_anvil_repair",
   "displayName": "Free Anvil Repair",
   "shortDescription": "Makes pure anvil repairs (repair material or unenchanted sacrifice item) cost no XP levels",
-  "oneLiner": "Repairing a damaged tool, weapon or piece of armour in an anvil - with its material or by combining it with an unenchanted second copy - costs zero XP levels, works even on gear vanilla calls \"Too Expensive!\", restores 50% more durability per material unit by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.",
+  "oneLiner": "Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla calls \"Too Expensive!\", restores 50% more durability per material unit by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,

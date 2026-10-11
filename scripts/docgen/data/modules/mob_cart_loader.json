@@ -2,7 +2,7 @@
   "moduleId": "mob_cart_loader",
   "displayName": "Mob Cart Loader",
   "shortDescription": "Two blocks that load/unload mobs into minecarts on the adjacent rail, showing the mob as a spinning model and (with Create goggles) its stats.",
-  "oneLiner": "Two translucent machine blocks that capture a mob out of a pen and drop it into a parked minecart (or the seat of a standing Create train) - and back out again - with the captured mob spinning visibly inside and a comparator telling you whether it is hostile or friendly.",
+  "oneLiner": "Two glass blocks that take a mob out of a pen and put it into a parked minecart (or the seat of a standing Create train) and back out again. The mob spins visibly inside until the way out is clear, and a comparator tells you whether it is hostile or friendly.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -62,7 +62,7 @@
       "type": "int",
       "defaultValue": "3",
       "range": "1 ~ 8",
-      "effect": "How many positions along the relevant direction the block scans for a Create track, starting at the block directly in front of the output (loader) / input (unloader) face - so 3 means that neighbour plus two more. The scan stops at the first block with a non-empty collision shape, so it never reaches through a wall."
+      "effect": "How many positions along the relevant direction the block scans for a Create track, starting at the block directly in front of the output (loader) / input (unloader) face, so 3 means that neighbour plus two more. The scan stops at the first block with a non-empty collision shape, so it never reaches through a wall."
     },
     {
       "key": "create_trains.seat_search_radius",

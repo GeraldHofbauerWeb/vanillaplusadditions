@@ -2,7 +2,7 @@
   "moduleId": "compass_overhaul",
   "displayName": "Compass Overhaul",
   "shortDescription": "Keeps lodestone bindings, fixes the needle aboard airships and adds a compass that always points north",
-  "oneLiner": "Your lodestone compass stops forgetting where it was bound, the needle stays steady aboard a Create Aeronautics airship, and a craftable World Compass always points true north — in the Nether and the End too.",
+  "oneLiner": "A lodestone compass stops forgetting where it was bound, the needle stays steady aboard a Create Aeronautics airship, and a craftable World Compass always points north, in the Nether and the End as well.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -36,7 +36,7 @@
       "type": "boolean",
       "defaultValue": "true",
       "range": "",
-      "effect": "Adds the World Compass recipe — a compass that always points north in world space, including the Nether, the End and aboard a turning airship. NOTE: only the recipe is actually gated; the item itself is registered regardless (see notes)."
+      "effect": "Adds the World Compass recipe: a compass that always points north in world space, including the Nether, the End and aboard a turning airship. NOTE: only the recipe is actually gated; the item itself is registered regardless (see notes)."
     }
   ],
   "items": [

@@ -26,7 +26,7 @@ work; only the recipe's centre ingredient is widened, and no new tipped arrow ty
  A A A      → 8 Tipped Arrows carrying the centre potion's effect
 ```
 
-This is vanilla's own recipe, widened in place — same id `minecraft:tipped_arrow`, same layout, same
+This is vanilla's own recipe, widened in place: same id `minecraft:tipped_arrow`, same layout, same
 eight-arrow output. There is no second recipe next to it, so nothing changes about how the craft
 looks or what it costs beyond the bottle you put in the middle. Turn the module off and vanilla's
 lingering-only recipe is back untouched: no config migration, no stranded items.
@@ -35,7 +35,7 @@ lingering-only recipe is back untouched: no config migration, no stranded items.
 
 Vanilla's tipped arrow recipe accepts `minecraft:lingering_potion` in the centre slot and nothing
 else. A lingering potion is a splash potion plus Dragon's Breath, and Dragon's Breath means an ender
-dragon — so the cheapest possible arrow of, say, Slowness sits behind a boss fight and two brewing
+dragon. So the cheapest possible arrow of, say, Slowness sits behind a boss fight and two brewing
 steps, for an effect the plain potion already carries.
 
 The whole difference is one predicate:
@@ -46,8 +46,8 @@ private static boolean isPotionSource(ItemStack stack) {
 }
 ```
 
-Everything else in `PotionTippedArrowRecipe` — the 3×3 layout, the eight arrows around the centre,
-the eight-arrow result with `POTION_CONTENTS` copied across — mirrors what vanilla already did.
+Everything else in `PotionTippedArrowRecipe` (the 3×3 layout, the eight arrows around the centre,
+the eight-arrow result with `POTION_CONTENTS` copied across) mirrors what vanilla already did.
 
 ## In detail
 
@@ -58,7 +58,7 @@ the eight-arrow result with `POTION_CONTENTS` copied across — mirrors what van
 | Slot | Requirement | Notes |
 |---|---|---|
 | The eight outer slots | `minecraft:arrow` | Spectral or already-tipped arrows do not match. |
-| The centre slot | `minecraft:potion` or `minecraft:lingering_potion` | **Splash** potions are not accepted — same as vanilla. |
+| The centre slot | `minecraft:potion` or `minecraft:lingering_potion` | **Splash** potions are not accepted, same as vanilla. |
 | Any slot | must not be empty | A partly filled grid never matches. |
 
 `matches()` wants a 3×3 grid (`input.width() != 3 || input.height() != 3` → no match), but the grid
@@ -74,18 +74,18 @@ which can never crop up to 3×3, is out. `canCraftInDimensions` is the more gene
 
 `assemble()` builds `new ItemStack(Items.TIPPED_ARROW, 8)` and copies
 `DataComponents.POTION_CONTENTS` from the centre item verbatim. Whatever sits in that component
-travels — the potion holder, custom effects, a custom colour, potions added by other mods. Nothing
+travels: the potion holder, custom effects, a custom colour, potions added by other mods. Nothing
 else is copied: a custom item name on the bottle stays on the bottle.
 
 `getRemainingItems()` is not overridden, so the glass bottle behaves exactly as it does for vanilla's
-recipe — it is consumed with the potion.
+recipe: it is consumed with the potion.
 
 ### The centre item's contents are never inspected
 
 `isPotionSource` tests the item type and only the item type. It never asks what is in the bottle, so
 every brew qualifies, including the ones with no effect at all: Water Bottle, Mundane, Thick,
 Awkward. Each yields eight tipped arrows carrying exactly those contents. That matches vanilla's
-own behaviour for the lingering variant, which is equally uninterested in the contents — the
+own behaviour for the lingering variant, which is equally uninterested in the contents. The
 difference is that a plain, non-lingering water bottle now works too.
 
 <!-- TODO: vanilla calls water-content tipped arrows "Arrows of Splashing" and normally wants a
@@ -93,13 +93,13 @@ difference is that a plain, non-lingering water bottle now works too.
      vanilla behaviour and are not provable from this repository, so they are left unstated. -->
 
 One edge case falls out of the same lines: a potion stack whose `potion_contents` component has been
-removed still matches, and `result.set(POTION_CONTENTS, null)` simply leaves the component off the
+removed still matches, and `result.set(POTION_CONTENTS, null)` leaves the component off the
 result. You get eight plain, effectless tipped arrows rather than a failed craft.
 
 ### When the swap happens
 
 On every datapack reload and every server start, not once at load. The reload listener waits on the
-reload barrier before it writes, so it lands after the datapack's own recipes have been parsed — a
+reload barrier before it writes, so it lands after the datapack's own recipes have been parsed. A
 datapack that ships its own `minecraft:tipped_arrow` is therefore overwritten again while the module
 is on.
 
@@ -117,9 +117,9 @@ This module has no settings of its own.
 
 | Limit | Effect |
 |---|---|
-| Not in the vanilla recipe book | `PotionTippedArrowRecipe` extends `CustomRecipe` and overrides neither `getResultItem` nor `isSpecial`, so it stays a special recipe with an empty result item — the recipe book cannot surface it, exactly as it cannot surface vanilla's. |
-| Without JEI | Nothing is lost functionally: the recipe works at any crafting table, it is simply invisible in every recipe browser. |
-| With JEI | One display entry **per registered potion** — flavourless mundane/thick/awkward brews and every modded potion included — so the crafting category gets long. |
+| Not in the vanilla recipe book | `PotionTippedArrowRecipe` extends `CustomRecipe` and overrides neither `getResultItem` nor `isSpecial`, so it stays a special recipe with an empty result item. The recipe book cannot surface it, exactly as it cannot surface vanilla's. |
+| Without JEI | Nothing is lost functionally: the recipe works at any crafting table, but it is invisible in every recipe browser. |
+| With JEI | One display entry **per registered potion** (flavourless mundane/thick/awkward brews and every modded potion included), so the crafting category gets long. |
 | `/vpa module disable tipped_arrows` | Not instant. The enabled check runs when the reload listener is added, so the already-replaced recipe stays live until the next datapack reload. |
 | `/vpa module enable tipped_arrows` | Cannot work at runtime at all. `onInitialize()` only runs for modules that were enabled at startup, so for a module that started disabled the event-bus registration never happened and there is no handler to enable. Restart with the config set. |
 | Client with the module off, server with it on | **Suspected hazard, not verified in game.** The serializer is registered inside `onInitialize()`, so a disabled module means `vanillaplusadditions:potion_tipped_arrow` is absent from the client's registry while the server syncs a `minecraft:tipped_arrow` recipe that needs it. Keep both sides configured the same. This is a mod-wide pattern, not specific to this module. |
@@ -130,26 +130,26 @@ fills a slot quickly. There is no code link between the two modules in either di
 
 ## Under the hood
 
-Four Java files, no mixins, no access transformer, no assets, no lang keys, no data files — the
-recipe, its two pieces of plumbing, and the one-line `@Mod` entrypoint `TippedArrowsStandalone`
+The module is four Java files, with no mixins, access transformer, assets, lang keys or data files:
+the recipe, its two pieces of plumbing, and the one-line `@Mod` entrypoint `TippedArrowsStandalone`
 that boots the same module out of the `vpa_tipped_arrows` jar.
 
 **The replacement.** `AddReloadListenerEvent` (the module's only event handler, and it returns
 early unless `isModuleEnabled()`) adds a `PreparableReloadListener` named
 `vanillaplusadditions_tipped_arrow_recipe`. It waits on the barrier, then on the game thread copies
 every recipe currently in the `RecipeManager` into a `LinkedHashMap`, overwrites the single key
-`ResourceLocation.withDefaultNamespace("tipped_arrow")` — `LinkedHashMap.put` keeps the original
-insertion position — and calls `recipeManager.replaceRecipes(...)`. This snapshot-and-replace dance
-is house style rather than a one-off: thirteen other modules do the same thing, and because each
-listener snapshots when its own task runs on the game thread, they compose instead of clobbering one
-another. JSON datapack recipes do not load reliably in this mod, which is why every recipe here is
-built in code — see [Custom Crafting Recipes](custom_crafting_recipes.md).
+`ResourceLocation.withDefaultNamespace("tipped_arrow")` (`LinkedHashMap.put` keeps the original
+insertion position) and calls `recipeManager.replaceRecipes(...)`. Thirteen other modules use the
+same snapshot-and-replace approach, and because each listener snapshots when its own task runs on
+the game thread, they compose without clobbering one another. JSON datapack recipes do not load
+reliably in this mod, which is why every recipe here is built in code (see
+[Custom Crafting Recipes](custom_crafting_recipes.md)).
 
 **The serializer.** `SimpleCraftingRecipeSerializer<PotionTippedArrowRecipe>`, registered through a
 `DeferredRegister` as `vanillaplusadditions:potion_tipped_arrow`. It is not a craftable thing; it
 exists so the replaced `minecraft:tipped_arrow` recipe can be synced to clients at all.
 
-**Why the side is "both".** The gameplay half is server-side — the event carries the server
+**Why the side is "both".** The gameplay half is server-side: the event carries the server
 resources, and `matches`/`assemble` run in the server's crafting menu. But the `DeferredRegister`
 goes on the *mod* event bus, i.e. both physical sides, and the client instantiates
 `PotionTippedArrowRecipe` itself when the server syncs the recipe. The JEI plugin is client-only on
@@ -163,7 +163,7 @@ contents) under ids `vanillaplusadditions:tipped_arrow_display/<potion path>`. T
 `registration.addRecipes(RecipeTypes.CRAFTING, ...)` and never enter the `RecipeManager`. JEI is
 `compileOnly` plus `localRuntime` and appears in no dependency block of `neoforge.mods.toml`; the
 `@JeiPlugin` class is only ever loaded by JEI's own annotation scan, so no `ModList.isLoaded` gate is
-needed. The plugin gates on `TippedArrowsModule.isModuleActive()` — a static that goes through the
+needed. The plugin gates on `TippedArrowsModule.isModuleActive()`, a static that goes through the
 module instance rather than a `ModuleManager` lookup by id, because that singleton is only filled by
 the bundle's entrypoint and comes back empty in the standalone jar. A module that is off (or never
 initialised) shows nothing.
@@ -173,7 +173,7 @@ module.
 
 ## See also
 
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
-* [Custom Crafting Recipes](custom_crafting_recipes.md) — why recipes are built in code here
-* [Stackables](stackables.md) — potion and tipped arrow stack sizes
+* [Configuration Guide](../guides/configuration.md): where the config file lives
+* [Custom Crafting Recipes](custom_crafting_recipes.md): why recipes are built in code here
+* [Stackables](stackables.md): potion and tipped arrow stack sizes
 * [All modules](../../README.md#-modules)

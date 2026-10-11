@@ -2,7 +2,7 @@
   "moduleId": "texture_kill",
   "displayName": "Texture Kill",
   "shortDescription": "Replaces configured textures with a fully transparent texture. Useful to hide cosmetic textures from other mods (e.g., Create contraption hats).",
-  "oneLiner": "Makes textures you list in the config invisible — either the whole image (the shipped default hides Create's contraption hats) or just a rectangle of it (the shipped default erases hat/accessory areas from zombie skins) — without editing a single file on disk.",
+  "oneLiner": "Makes textures you list in the config invisible, either the whole image (the shipped default hides Create's contraption hats) or just a rectangle of it (the shipped default erases hat/accessory areas from zombie skins). No file on disk is edited.",
   "side": "client",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -24,7 +24,7 @@
       "type": "list",
       "defaultValue": "62 entries covering 38 distinct texture files (TextureKillConfig.DEFAULT_ERASED_REGIONS, lines 23-90), e.g. \"minecraft:textures/entity/zombie/drowned.png@32:0-64:16\"",
       "range": "",
-      "effect": "List of rectangular texture regions to erase (make transparent) inside an otherwise untouched texture (format: namespace:textures/path.png@x1:y1-x2:y2, end coordinates exclusive; repeat the same path with different @-suffixes for multiple regions — getErasedRegions() groups them per ResourceLocation). Validator only requires the string to contain \":\" and \"@\"."
+      "effect": "List of rectangular texture regions to erase (make transparent) inside an otherwise untouched texture (format: namespace:textures/path.png@x1:y1-x2:y2, end coordinates exclusive; repeat the same path with different @-suffixes for multiple regions, which getErasedRegions() groups per ResourceLocation). Validator only requires the string to contain \":\" and \"@\"."
     }
   ],
   "items": [],

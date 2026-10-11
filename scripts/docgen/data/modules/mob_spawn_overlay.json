@@ -2,7 +2,7 @@
   "moduleId": "mob_spawn_overlay",
   "displayName": "Mob Spawn Overlay",
   "shortDescription": "F3+M overlay marking every position where hostile mobs can spawn",
-  "oneLiner": "Hold F3 and press M to light up every block around you where hostile mobs can spawn — red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a spider fits there too.",
+  "oneLiner": "Hold F3 and press M to light up every block around you where hostile mobs can spawn. Red fields spawn them right now, yellow ones as soon as it gets dark, and a violet outline means a spider fits there too.",
   "side": "client",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -79,7 +79,7 @@
       "type": "double",
       "defaultValue": "0.5D",
       "range": "0.05 ~ 4.0",
-      "effect": "Width of one diagonal stripe in blocks — smaller means denser stripes."
+      "effect": "Width of one diagonal stripe in blocks; smaller means denser stripes."
     },
     {
       "key": "display.scroll_speed",

@@ -1,8 +1,9 @@
 # Enhanced AI Leader Loot
 
-> **TL;DR** — Killing one of Enhanced AI's banner-carrying leader mobs now pays: a handful of golden
-> carrots, a handful of golden apples, or — once in a hundred — an enchanted golden apple, on top of
-> its normal loot.
+> **TL;DR** — Every banner-carrying leader mob from the Enhanced AI mod drops a handful of golden
+> carrots (6 to 12) or golden apples (3 to 9) when you kill it, or, at a 1 % chance, a single
+> enchanted golden apple, on top of its normal loot. Exactly one of those entries drops per leader,
+> and the whole table is a single weighted config list you can rewrite.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -19,8 +20,8 @@
 ## What it does
 
 Enhanced AI's *Leaders* feature promotes random Zombie- and Skeleton-family mobs to banner-carrying
-leaders. It also rolls a second, separate loot table for them when they die — and ships that table
-empty, so that extra roll yields nothing at all. A leader is a harder fight for the same handful of
+leaders. It also rolls a second, separate loot table for them when they die, and ships that table
+empty, so the extra roll yields nothing at all. A leader is a harder fight for the same handful of
 rotten flesh.
 
 This module fills that table. Every leader kill yields **exactly one** of these, in addition to the
@@ -28,16 +29,16 @@ mob's ordinary death loot:
 
 | Item | Weight | Count | Chance |
 |---|---|---|---|
-| Golden Carrot | 50 | 6–12 | 50 % |
-| Golden Apple | 49 | 3–9 | 49 % |
+| Golden Carrot | 50 | 6 to 12 | 50 % |
+| Golden Apple | 49 | 3 to 9 | 49 % |
 | Enchanted Golden Apple | 1 | 1 | 1 % |
 
-There is no "nothing" outcome — a leader is always worth walking over to. The whole table is one
+There is no "nothing" outcome; a leader is always worth walking over to. The whole table is one
 config list, so the items, the weights and the counts are yours to rewrite.
 
-The counts above are the current ones. `v1.0.0-beta.73` shipped 3–9 golden carrots and 1–3 golden
-apples; `v1.0.0-beta.74` raised them to 6–12 and 3–9. The enchanted golden apple has always been a
-single one at weight 1.
+The counts above are the current ones. `v1.0.0-beta.73` shipped 3 to 9 golden carrots and 1 to 3
+golden apples; `v1.0.0-beta.74` raised them to 6 to 12 and 3 to 9. The enchanted golden apple has
+always been a single one at weight 1.
 
 Without Enhanced AI installed the module is inert.
 
@@ -49,16 +50,16 @@ Enhanced AI ships no public sources. The mechanism below was read out of the dec
 `Leaders.class` (`javap -c` on `enhancedai-4.2.2.1.jar`, the version this mod is played against) and
 is therefore the one thing on this page that cannot be checked against this repository:
 
-* Leaders are drawn from two tags — `#enhancedai:overworld_zombies` (Zombie, Drowned, Giant, Husk,
+* Leaders are drawn from two tags: `#enhancedai:overworld_zombies` (Zombie, Drowned, Giant, Husk,
   Zombie Villager) and `#enhancedai:overworld_skeletons` (Skeleton, Stray, Bogged).
 * `Leaders.onDeath(LivingDeathEvent)` checks the dying mob's `EAIData LEADER` flag, builds a standard
   `LootParams` (Entity, Origin, Damage Source, Attacker …) for `LootContextParamSets.ENTITY` and
   rolls a **separate** loot table through
-  `server.reloadableRegistries().getLootTable(LEADER_LOOT_TABLE)` — *in addition to* the mob's own
-  death loot, not instead of it.
+  `server.reloadableRegistries().getLootTable(LEADER_LOOT_TABLE)`, *in addition to* the mob's own
+  death loot.
 * That table is `enhancedai:leader_mob` (`data/enhancedai/loot_table/leader_mob.json` inside the
-  jar), and it ships as `{"type": "minecraft:empty"}` — deliberately empty, an extension point
-  waiting for exactly this kind of addition.
+  jar), and it ships as `{"type": "minecraft:empty"}`: deliberately empty, an extension point for
+  exactly this kind of addition.
 
 ### The table we put there
 
@@ -73,7 +74,7 @@ Four consequences worth knowing:
 * **Always exactly one entry.** The pool carries no `when(...)`, so it cannot decline to drop, and
   the roll count is constant. One leader, one bonus item stack.
 * **Counts are uniform and inclusive.** `SetItemCountFunction.setCount(UniformGenerator.between(min,
-  max))`, and `UniformGenerator.getInt` is `Mth.nextInt(random, min, max)` — with 6–12 each of the
+  max))`, and `UniformGenerator.getInt` is `Mth.nextInt(random, min, max)`; with 6 to 12 each of the
   seven counts is equally likely, 9 on average.
 * **Weights are relative, not percentages.** The defaults read as 50 / 49 / 1 % only because they
   happen to sum to 100. Add a fourth entry at weight 50 and the carrot is down to a third.
@@ -87,7 +88,7 @@ with.
 
 ### Writing your own table
 
-One line per entry, `item_id;weight;min_count;max_count`. The namespace may be dropped —
+One line per entry, `item_id;weight;min_count;max_count`. The namespace may be dropped:
 `ResourceLocation.parse` fills in `minecraft`, so `golden_carrot;50;6;12` is the same entry as the
 default. Every field is required: `String.split(";")` discards trailing empty fields, so
 `minecraft:golden_carrot;50;6;` parses as three parts and is rejected.
@@ -96,7 +97,7 @@ A line passes two gates, and they check different things:
 
 | Gate | What it checks | What a failure does |
 |---|---|---|
-| The config validator, `EnhancedAiLeaderLootConfig` | exactly four `;`-separated parts, a parsable id, `weight ≥ 1`, `min_count ≥ 1`, `max_count ≥ min_count` | NeoForge drops the line when it corrects the file against the spec — it disappears from your config file. If that leaves the list empty, the whole key reverts to the three defaults, because `defineList` demands a non-empty list. |
+| The config validator, `EnhancedAiLeaderLootConfig` | exactly four `;`-separated parts, a parsable id, `weight ≥ 1`, `min_count ≥ 1`, `max_count ≥ min_count` | NeoForge drops the line when it corrects the file against the spec; it disappears from your config file. If that leaves the list empty, the whole key reverts to the three defaults, because `defineList` demands a non-empty list. |
 | The parser, `buildLeaderLootTable()` | that the item actually exists | The entry is skipped and the rest of the table is built as usual. With [debug logging](../guides/debug-logging.md) on you get `Leader bonus loot: item not found: …`; otherwise nothing is said. |
 
 The second gate is the one that will bite, because the validator never asks the registry:
@@ -122,18 +123,18 @@ Two things follow from that sentinel:
   out, so the only switch that gives a leader nothing is `enabled = false`.
 
 If *every* surviving entry names an item that does not exist, the pool ends up with no entries at
-all. That is harmless rather than fatal: `LootPool.addRandomItem` guards the pick with
+all. That is harmless: `LootPool.addRandomItem` guards the pick with
 `if (mutableint.intValue() != 0 && i != 0)`, so the table produces nothing and throws nothing, and
-leaders drop only their normal loot. (Read off the 1.21.1 code this mod builds against, not off this
-repository.)
+leaders drop only their normal loot. (Read off the 1.21.1 code this mod builds against, which lives
+outside this repository.)
 
 ### When a change takes effect
 
 The table is built inside the `LootTableLoadEvent` handler, and that event only fires when the
 server loads or reloads its resources. Editing `leader_bonus_loot`, flipping `enabled` or running
 `/vpa module disable enhanced_ai_leader_loot` (bundle only; the standalone jar ships no `/vpa`
-command) therefore changes nothing on its own — the table
-already in memory stays as it is until `/reload`, a world rejoin or a restart.
+command) therefore changes nothing on its own; the table already in memory stays as it is until
+`/reload`, a world rejoin or a restart.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -151,21 +152,21 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| Enhanced AI not installed | `shouldInitialize()` is false, so `onInitialize()` never runs and the handler is never registered — the module is completely inert. It is still registered, still writes its config section and — in the bundle — still appears in `/vpa module status`, and nothing really points at the missing mod: `enhancedai` is not declared in `neoforge.mods.toml`, so NeoForge never complains. The only trace is one INFO line at startup — `Module 'Enhanced AI Leader Loot' is unavailable and will not be initialized` — which says the module refused rather than that it was switched off; the gate is runtime only. |
+| Enhanced AI not installed | `shouldInitialize()` is false, so `onInitialize()` never runs and the handler is never registered; the module is completely inert. It is still registered, still writes its config section and (in the bundle) still appears in `/vpa module status`, and nothing points at the missing mod: `enhancedai` is not declared in `neoforge.mods.toml`, so NeoForge never complains. The only trace is one INFO line at startup, `Module 'Enhanced AI Leader Loot' is unavailable and will not be initialized`, which says the module refused rather than that it was switched off; the gate is runtime only. |
 | Leaders switched off in Enhanced AI's own config | No leaders, no rolls. This module supplies the contents of a table; it never decides who becomes a leader or when the table is rolled. |
-| Enhanced AI renaming or dropping `enhancedai:leader_mob` | The match is a hardcoded `ResourceLocation` comparison, so the handler simply stops firing. No crash and no warning — the bonus loot would just be gone. |
+| Enhanced AI renaming or dropping `enhancedai:leader_mob` | The match is a hardcoded `ResourceLocation` comparison, so the handler stops firing. No crash and no warning; the bonus loot would be gone. |
 | A datapack carrying its own `enhancedai/leader_mob.json` | Overwritten. `event.setTable(...)` replaces whatever was loaded under that name, datapack contents included. |
 | Another mod handling the same event | Last handler on the bus wins. This one does not merge with an existing table, it replaces it. |
-| Config changed at runtime | Takes effect at the next resource reload only — see above. |
+| Config changed at runtime | Takes effect at the next resource reload only; see above. |
 | `max_count` above the item's stack size | Accepted. The validator only requires `max_count ≥ min_count`, and `SetItemCountFunction` sets the count outright instead of capping it at the stack limit. <!-- TODO: whether an oversize stack is then split into several depends on which getRandomItems overload Enhanced AI calls; not verified for 4.2.2.1. --> |
 | Ordinary Enhanced AI mobs | Untouched. Only the leader table is replaced. |
-| Standalone jar | `vpa_enhanced_ai_leader_loot` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. It carries no compile-time dependency on Enhanced AI either way — the leader table is replaced through `LootTableLoadEvent` by resource-location name, so the jar loads and stays inert when Enhanced AI is absent. |
+| Standalone jar | `vpa_enhanced_ai_leader_loot` is listed in `build.gradle`'s `standaloneModules` and needs `vpa_core`. It carries no compile-time dependency on Enhanced AI either way: the leader table is replaced through `LootTableLoadEvent` by resource-location name, so the jar loads and stays inert when Enhanced AI is absent. |
 
 ## Under the hood
 
-Two files, 158 lines together, plus a 23-line standalone entrypoint. No mixin, no client code, no
-assets, no data files, no registry entries, no command, no keybind and no lang key — nothing
-user-visible beyond the config comments.
+Two files, 158 lines together, plus a 23-line standalone entrypoint. There is no mixin, client
+code, asset, data file, registry entry, command, keybind or lang key; nothing is user-visible beyond
+the config comments.
 
 | File | Role |
 |---|---|
@@ -193,8 +194,8 @@ resources are loaded or reloaded".
 
 **No compile-time dependency on Enhanced AI.** Not one of its classes is named anywhere in the
 module; the only thing that crosses the boundary is the string `enhancedai:leader_mob` and the
-`ModList` lookup. This is the fourth of the four recipe-and-loot cases in `CLAUDE.md` — a foreign
-mod's own extension point, taken over from code rather than by shipping a loot-table JSON — and this
+`ModList` lookup. This is the fourth of the four recipe-and-loot cases in `CLAUDE.md` (a foreign
+mod's own extension point, taken over from code rather than by shipping a loot-table JSON), and this
 module is the template named there for it.
 
 **Two dead safety nets, deliberately kept.** A line with the wrong number of parts is skipped
@@ -210,8 +211,8 @@ toggled at runtime.
 
 ## See also
 
-* [Mob Drops](mob_drops.md) — the other loot list, with one independent chance roll per rule
-* [Custom Crafting Recipes](custom_crafting_recipes.md) — the same "content as a config list" idea, for recipes
-* [Configuration Guide](../guides/configuration.md) — where the config file lives
-* [Debug Logging](../guides/debug-logging.md) — how to see the skipped-item warning
+* [Mob Drops](mob_drops.md): the other loot list, with one independent chance roll per rule
+* [Custom Crafting Recipes](custom_crafting_recipes.md): the same "content as a config list" idea, for recipes
+* [Configuration Guide](../guides/configuration.md): where the config file lives
+* [Debug Logging](../guides/debug-logging.md): how to see the skipped-item warning
 * [All modules](../../README.md#-modules)

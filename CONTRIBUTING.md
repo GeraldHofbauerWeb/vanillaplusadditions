@@ -1,6 +1,6 @@
 # Contributing to VanillaPlusAdditions
 
-Thank you for your interest in contributing to VanillaPlusAdditions! We welcome contributions from the community to help make this mod even better.
+Contributions to VanillaPlusAdditions are welcome, whether they are bug reports, ideas or code.
 
 ## Ways to Contribute
 - **Bug Reports**: If you find a bug, please open an issue on GitHub with details on how to reproduce it.
@@ -13,7 +13,7 @@ See the [Development section in README.md](README.md#development) for instructio
 ## Coding Standards
 - Follow the existing code style and naming conventions.
 - Use `AbstractModule` and `AbstractModuleConfig` for new features where possible.
-- Ensure your code is well-commented, especially for complex logic.
+- Comment your code, especially complex logic.
 - Add debug logging where appropriate using the module's logger.
 
 ## AI Usage Guidelines
