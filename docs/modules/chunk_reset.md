@@ -80,16 +80,17 @@ as an admin command, subject to the usual `sendCommandFeedback` and `logAdminCom
 
 ### What the prompt remembers, and what it does not
 
-A pending reset is one entry in a plain `HashMap<UUID, PendingReset>`, and the record holds two
+A pending reset is one entry in a plain `HashMap<UUID, PendingReset>`, and the record holds three
 fields:
 
 ```java
-private record PendingReset(ChunkPos center, int radius) { }
+private record PendingReset(ChunkPos center, int radius, ResourceKey<Level> dimension) { }
 ```
 
 Before the first click, note how that plays out:
 
-* **The dimension is part of it.** The pending entry records the level the request was made in,
+* **The dimension is part of it** since beta.91 (`81c9867`); before that the record knew only the
+  centre and the radius and confirmed into whatever level you stood in. The entry records the level,
   and the confirm refuses outright if you are somewhere else by then, naming both dimensions. Run
   `/chunkreset` in the Nether, walk through a portal and click the button, and nothing happens
   except a red line telling you why.
@@ -129,9 +130,9 @@ The write is asynchronous. `ChunkStorage.write` returns a `CompletableFuture` th
 on the floor, so the per-chunk "succeeded" count means *the deletion was queued*, not *the region
 file changed*. A failure inside the worker is logged by vanilla and never reaches chat.
 
-Nothing else is touched. No unload is forced and no flush is requested. The write only ever happens
-for a chunk that is **not** in memory, which is what makes it stick. See
-[waiting for the chunk](#waiting-for-the-chunk).
+Nothing else is touched. No unload is forced and no flush is requested. The write happens for every
+target at once, loaded or not; for a chunk that is still in memory it would not stick on its own,
+which is what [taking the write away](#taking-the-write-away) deals with.
 
 ### Why a write to a loaded chunk would undo itself
 
@@ -196,6 +197,9 @@ it:
    does not save it either: measured on a server with `view-distance=32`, the chunk was back in
    memory **291 ms** after unloading, long before the delay expired.
 
+That unload hook is still in the code, now behind the hold: when a held chunk does leave memory, its
+entry is cleared once more five ticks later (`POST_UNLOAD_DELETE_DELAY_TICKS`).
+
 The give-up timer is still there: after **ten minutes** of a chunk refusing to leave memory the hold
 is released with a WARN, because holding a chunk unsaved forever would quietly cost every change
 made in it.
@@ -243,15 +247,17 @@ chunk beyond the **+Z** edge of the square:
 ```java
 double safeX = center.getMiddleBlockX();
 double safeZ = ((center.z + radius) * 16.0) + 17.0;
+double safeY = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+        BlockPos.containing(safeX, level.getMinBuildHeight(), safeZ)).getY();
 …
-nearby.teleportTo(safeX, nearby.getY(), safeZ);
+nearby.teleportTo(safeX, safeY, safeZ);
 ```
 
-The Y coordinate is kept, and there is no ground search, no collision check and no dimension change:
+The height is looked up once for that column, on the `MOTION_BLOCKING_NO_LEAVES` heightmap, so
+everyone lands on its surface: a player at y = 12 in a cave comes out on top, one chunk to the
+south. There is no collision check beyond that and no dimension change;
 `ServerPlayer.teleportTo(double, double, double)` is a plain connection teleport that keeps the
-rotation. A player at y = 12 in a cave lands at y = 12 one chunk to the
-south, which may be solid stone or open air. Nothing stops them from walking straight back in
-either; the chunks are still loaded.
+rotation. Nothing stops them from walking straight back in either; the chunks are still loaded.
 
 Only entries of `level.players()` are considered. Players in other dimensions are irrelevant, and
 mobs, item frames and dropped items are not moved at all. Per the table above, the persistent ones
@@ -287,11 +293,11 @@ This module has no settings of its own.
 | No translations | Every message is a hardcoded English `Component.literal`; the module owns no lang keys at all. |
 | Disabled in the config at startup (bundle) | The module is never initialised, never subscribes, and `/vpa module enable chunk_reset` cannot bring the command back, because the subscription does not exist. Restart with `enabled = true`. |
 | Disabled at runtime (bundle or standalone jar) | `isModuleEnabled()` is only consulted while commands are being registered, so the already-registered `/chunkreset` keeps working until the next command re-registration. |
-| Not verified in game | The module's logic has not changed since `v1.0.0-beta.2` (the standalone entry point followed in `v1.0.0-beta.23`) and this repository has no tests. Every statement on this page is read off the module and off vanilla's decompiled 1.21.1 sources. |
+| Verified in game once | The module dates from `v1.0.0-beta.2` (the standalone entry point followed in `v1.0.0-beta.23`); beta.91 (`81c9867`) added the dimension check, the surface lookup and the hold-clean mechanism. That version was checked in game on 2026-09-24 (see above). This repository has no tests, and everything else on this page, the entity and POI behaviour included, is read off the module and off vanilla's decompiled 1.21.1 sources. |
 
 ## Under the hood
 
-One implementation file of 234 lines, `ChunkResetModule.java`, plus the standalone entry point.
+One implementation file of 535 lines, `ChunkResetModule.java`, plus the standalone entry point.
 There are no mixins, assets, data files, registries or packets, and no config class of its own.
 
 | Event | Bus | Purpose |
@@ -334,8 +340,8 @@ that shape, which makes "first match" deterministic there. The one field hop on 
 is a public subclass of `ChunkStorage`; there is no Mixin dependency anywhere in this module. The
 cache is written without synchronisation, which is harmless: two threads would resolve the same
 `Method`. If no such method is found, the `NoSuchMethodException` is caught per chunk in
-`resetSingleChunk`, logged, and counted as a failure; see the `radius 0` row above for what that
-does *not* show in chat.
+`resetSingleChunk`, logged, and counted as a failure; the `Failures are reported` row above says
+what of that reaches chat.
 
 **A dead branch.** `executeConfirm` guards with
 `if (!(source.getLevel() instanceof ServerLevel serverLevel))`, whose failure message reads "This

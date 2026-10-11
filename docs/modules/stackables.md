@@ -29,7 +29,8 @@ maximum stack size of items that already exist:
   `default_potion_stack_size`, which is 64.
 * **Everything else** comes from a list of `namespace:id:stack` entries. Twenty-seven of them ship by
   default: the four vanilla stews and soups plus our own glow mushroom stew, ender pearls, eggs,
-  eleven Tough As Nails drinks, Create's Builder's Tea and Enderman Overhaul's eight pearls.
+  eleven Tough As Nails items (nine drinks, ice cream and Charc-Os), Create's Builder's Tea and
+  Enderman Overhaul's eight pearls.
 
 Any item from any mod can be added to that list by id. An id that no installed mod provides is
 skipped, so the shipped Tough As Nails and Create entries cost nothing in a pack without those mods.
@@ -294,18 +295,19 @@ place where the number **16** still appears (three of the four construct
 `new Item.Properties().stacksTo(16)`), which is where the old README's "default 16" came from. The
 live default has been 64 since `v0.9.3`.
 
-**Logging.** Almost every line in the module is gated on `shouldDebugLog()`. Four are not, and all
-four log at INFO or above: the mod-event-bus fallback in `onInitialize` and `Failed to patch potion
+**Logging.** Almost every line in the module is gated on `shouldDebugLog()`. Six are not. Four of
+them log at INFO or above: the mod-event-bus fallback in `onInitialize` and `Failed to patch potion
 default components`, both at WARN, `✗ Failed to patch {}` at ERROR, and, in
-`StackablesConfig.onConfigLoad`, an unconditional INFO line:
+`StackablesConfig.onConfigLoad`, an unconditional INFO line, here with the default list:
 
 ```
-StackablesConfig loaded - potion stack size: 64, stackable items count: 18
+StackablesConfig loaded - potion stack size: 64, stackable items count: 27
 ```
 
-Both config getters also fall back to the hardcoded defaults (`DEFAULT_STACKABLES` and 64):
-silently while the `ConfigValue` field is still null, and, when `get()` throws, with a debug-level
-note that is itself ungated, so it prints whenever the log level allows it, `debug_logging` or not.
+The other two sit in the config getters, which fall back to the hardcoded defaults
+(`DEFAULT_STACKABLES` and 64): silently while the `ConfigValue` field is still null, and, when
+`get()` throws, with a debug-level note that is not gated on `debug_logging`, so it prints whenever
+the log level allows it.
 Either way the module patches something sensible even if it runs before the config file is read.
 
 **Standalone jar.** `vpa_stackables` carries no mixins and no data files; its generated

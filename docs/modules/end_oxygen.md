@@ -285,7 +285,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Limit | Effect |
 |---|---|
-| `requires_full_set = true` with no datapack | The default. `vanillaplusadditions:diving_helmets` is empty in this repository, so the backtank branch is unreachable and a backtank gives you nothing. Set it to `false` or fill the tag. |
+| `requires_full_set = true` with no datapack | The default. Since beta.97 the mod ships `vanillaplusadditions:diving_helmets` with Create's copper and netherite diving helmets, so a backtank needs one of those on your head. Another mod's helmet needs a datapack entry in the tag, or set the key to `false`. Up to beta.96 the tag was empty and a backtank gave you nothing. |
 | No Create installed | `CreateCompat.isLoaded()` is false, the backtank branch and the whole HUD overlay are skipped, and the module degrades to plain breath-holding plus Water Breathing and Conduit Power. The changelog records the bundle booting and the End breathing working on a bare NeoForge server without the library mods (`v1.0.0-beta.25`). |
 | Only `minecraft:the_end` | The check is `player.level().dimension() == Level.END`, a literal dimension key. A modded End-like dimension, or a second End from a datapack, is not covered. |
 | Only players | `LivingBreatheEvent` fires for every living entity; the handler filters to `Player`. Mobs in the End are untouched. |
@@ -336,9 +336,6 @@ depletion step after a portal can land anywhere in the interval.
 
 **Loose ends in the module,** all harmless and all worth knowing before editing it:
 
-* `EndOxygenModule.BACKTANKS`, the `TagKey` `vanillaplusadditions:backtanks`, is `public static
-  final` and read by nothing. Backtank detection runs entirely through Create. The page that used to
-  live here claimed the tag "controls which items count"; it never did.
 * `message.action_bar.low_oxygen_alert` and `message.action_bar.remaining_oxygen` sit in `en_us.json`
   with no reference anywhere in Java; they are leftovers from an earlier HUD.
 * `EndOxygenConfig.conduitPowerGrantsAir()` is written as `conduitPowerGrantsAir == null ||
@@ -352,8 +349,9 @@ every module jar requires. The generated per-module `neoforge.mods.toml` declare
 `create` dependency the bundle's own toml has, which only affects load ordering, since
 `ModList.isLoaded` is answerable either way.
 
-**Testing.** This repository has no unit tests, and nothing in it records an in-game test of the
-default backtank path (see the TODO above). The Create-free boot is the one claim the changelog
+**Testing.** This repository has no unit tests. The default backtank path was seen in game once,
+failing: Gerry hit the empty-tag fault on games2 on 2026-09-26 (see above). Nothing records an
+in-game test of the fixed path since beta.97. The Create-free boot is the other claim the changelog
 backs.
 
 ## See also

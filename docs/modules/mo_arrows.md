@@ -174,10 +174,10 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 `AddReloadListenerEvent` and re-applied on every server resource reload. Datapack recipe files do
 not load reliably here; see [Custom Crafting Recipes](custom_crafting_recipes.md) for the reasoning.
 
-**Testing.** This repository has no unit tests, and the module's fact sheet still marks it
-`NOT VERIFIED IN GAME YET (2026-09-20)`: it compiled and passed Checkstyle, and the client deploy
-was still pending. Check in game: craft one, shoot a grass block and a mob, then shoot through water and
-confirm the wet arrow lays nothing.
+**Testing.** This repository has no unit tests. The module was written on 2026-09-20 without an
+in-game test; the in-game check is the one from 2026-09-24 described above. To repeat it: craft a
+batch, shoot a grass block and a mob, then shoot through water and confirm the wet arrow lays
+nothing.
 
 ## See also
 

@@ -137,8 +137,7 @@ def sidebar(pages: dict[Path, str]) -> str:
     lines += ["**For contributors**", "",
               link("docs/guides/module-system.md", "Module system"),
               link("docs/guides/testing.md", "Testing"),
-              link("docs/guides/companion-armor.md", "Companion armour"),
-              link("docs/guides/instance-switcher.md", "Instance switcher")]
+              link("docs/guides/companion-armor.md", "Companion armour")]
     return "\n".join(lines) + "\n"
 
 

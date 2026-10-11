@@ -73,6 +73,11 @@ default Log4j configuration filters `latest.log` down to `INFO` and above, and r
 full `DEBUG` stream into a separate file next to it. Both are in the same `logs/` directory,
 so if a module looks silent, check `debug.log` before concluding that debug logging is off.
 
+A few modules also send their debug lines to the chat of every player on the server, in grey italics
+with a `[DEBUG]` prefix: `food_effects` and `haunted_house` through `util/MessageBroadcaster`, and
+`wither_skeleton` with its own blocked-spawn message. Switching their debug logging on on a shared
+server is visible to everyone.
+
 ## Example: Debugging Food Effects
 
 1. Open `config/vanillaplusadditions-common.toml`.
@@ -85,9 +90,11 @@ so if a module looks silent, check `debug.log` before concluding that debug logg
 3. Restart the server.
 4. Eat a configured food item and check `logs/debug.log` for output like:
    ```
-   [DEBUG] Food effects cache reloaded. 5 items configured.
-   [DEBUG] Applied 1 effects to Steve after eating cookie
+   Food effects cache reloaded. 5 items configured (5 effects, 0 thirst).
+   Applied effects to Steve after eating minecraft:cookie
    ```
+   Every player's chat shows `[DEBUG] Consumed food item: item.minecraft.cookie` and the cache
+   summary at the same time.
 
 ## Tips
 

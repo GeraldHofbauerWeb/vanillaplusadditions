@@ -62,7 +62,7 @@
   "registeredInBundle": true,
   "relatedModules": [],
   "requiredMods": [],
-  "shortDescription": "Quality-of-life extensions for Overpacked giant backpacks: configurable slowdown override, keybinds to open worn compartments, and a Quark-style sort button.",
+  "shortDescription": "Quality-of-life extensions for Overpacked giant backpacks: configurable slowdown override and keybinds to open worn compartments. Sorting and searching come from Quark's own buttons through its config whitelist.",
   "side": "both",
   "sinceCommit": "09907a8",
   "sinceVersion": "v1.0.0-beta.56"

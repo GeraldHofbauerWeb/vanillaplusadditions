@@ -109,7 +109,7 @@
     },
     {
       "defaultValue": "true",
-      "effect": "Master switch for the whole combat half: the mount attacks whatever attacks its rider, takes over the rider's own target when the rider strikes something, and (together with target_nearest) runs the periodic nearest-threat sweep. Off means none of the other combat.* keys do anything except attack_creepers, which is only consulted from those same paths and so goes dead too.",
+      "effect": "Master switch for the whole combat half: the mount attacks whatever attacks its rider, takes over the rider's own target when the rider strikes something, and (together with target_nearest) runs the periodic nearest-threat sweep. Off means none of the other combat.* keys do anything, attack_creepers included, since it is only consulted from those same paths. The one exception is rider_reach_bonus, which is applied on mounting and on the eligibility recheck regardless of this switch.",
       "key": "combat.defend_rider",
       "range": "",
       "type": "boolean"

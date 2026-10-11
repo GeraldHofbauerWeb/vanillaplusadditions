@@ -345,7 +345,7 @@ of any kind, and no lang keys either: every line the command prints is hardcoded
 | `…/WaterWheelRegistry` | Per-dimension set of wheel **centres**. The only place Create's *Block* classes are referenced at compile time. |
 | `…/WaterWheelStallManager` | The per-wheel state machine, the sweep, the stress ladder, the re-init and its outcome log. |
 | `…/WaterWheelKinetics` | The reflection layer. The only path to Create's block-entity and network API. |
-| `…/config/CreateWaterWheelUnstuckerConfig` | The seven keys. |
+| `…/config/CreateWaterWheelUnstuckerConfig` | The ten keys. |
 | `standalone/create_water_wheel_unstucker/CreateWaterWheelUnstuckerStandalone` | `@Mod("vpa_create_water_wheel_unstucker")`. |
 
 **Events**, all on the NeoForge game bus:
@@ -400,17 +400,19 @@ Failures inside the accessors go through a `warnOnce` guarded by a single static
 very first one is ever printed for the whole class.
 
 **What ends up in the log.** Only the last three lines need `debug_logging = true`; everything above
-them is printed regardless, though the backoff WARN never comes up without `auto_fix`:
+them is printed regardless, though the two backoff WARNs only come up for an automatic re-init,
+which needs `auto_unstick_on_chunk_load` (on by default) or `auto_fix`:
 
 | Line | Needs |
 |---|---|
 | `Create Water Wheel Unstucker module initialized (Create reflection available: …)` | — (once, at startup) |
 | `Unstuck wheel at … - now spinning at …` | — (a sweep cure landed) |
-| `Water wheel at … still stalled after N re-init attempts; backing off ~5 minutes` | `auto_fix`, once per wheel (WARN) |
+| `Water wheel at … still stalled after N re-init attempts; backing off ~5 minutes` | an automatic re-init (chunk load or sweep), once per wheel (WARN) |
+| `Water wheel at … survived N full backoff rounds without restarting …` | the same, once, when the wheel is given up (WARN) |
 | everything `/vpaunstuck` writes, including the per-wheel outcome | — |
 | `discovery: N wheel(s) in chunk …` | `debug_logging` |
 | `Wheel at … recovered, speed …` | `debug_logging`, and only for a wheel that had attempts counted |
-| `STALLED wheel at …: speed 0, not overstressed …` | `debug_logging` **and** `auto_fix` |
+| `STALLED wheel at …: speed 0, not overstressed …` | `debug_logging` **and** an automatic re-init starting (`auto_unstick_on_chunk_load` or `auto_fix`) |
 
 ## See also
 

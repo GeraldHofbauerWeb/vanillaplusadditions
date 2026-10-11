@@ -14,8 +14,12 @@ Each standalone jar carries its own file with the global settings plus its own m
 running three module jars gives you three small config files instead of one large one.
 
 The config is a NeoForge `COMMON` config: on a dedicated server it lives in the server's `config/`
-folder, in single player in your instance's `config/` folder. Values are read at startup; the file
-is not re-read while the game is running.
+folder, in single player in your instance's `config/` folder. Values are read at startup, and
+NeoForge also watches the file: when you save it, it fires a reload that `ModulesConfig` passes on
+to every module (`onConfigLoad`). A key the code reads each time it is used takes effect at once,
+and modules that cache their lists (`food_effects`, `mob_drops`) rebuild them on that reload. Some
+keys only apply to what is created afterwards, and switching a module on in the all-in-one jar
+still needs a restart; each module page says where a key behaves differently.
 
 ## Structure
 
@@ -62,7 +66,8 @@ A module whose required mod is missing stays inert regardless of `enabled`; for 
 * **Lists.** Used where a module takes any number of entries, such as `target_structures` or
   `food_effects`.
 * **Formatted strings.** A few modules pack several fields into one string, separated by `;`.
-  `food_effects` uses `item_id;effect_id;duration_in_ticks;amplifier`, and the Better Mobs zone
+  `food_effects` uses `item_id;effect_id;duration_in_ticks;amplifier;chance`, where `amplifier`
+  (default 0) and `chance` (default 1.0) may be left off, and the Better Mobs zone
   lists use entries such as `GEAR_TYPES;gold;10` or
   `WEAPON_RANDOMIZER;minecraft:skeleton;sword;12`. The exact format is documented on each module's
   own page.

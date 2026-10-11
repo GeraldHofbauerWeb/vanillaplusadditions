@@ -143,7 +143,7 @@ public static boolean isDarkEnoughToSpawn(ServerLevelAccessor level, BlockPos po
 }
 ```
 
-The colours answer the question "can both rolls still fail here?":
+The colours answer the question "can either roll still fail here?":
 
 ```java
 boolean spawnsNow = localBrightness <= alwaysDarkEnough

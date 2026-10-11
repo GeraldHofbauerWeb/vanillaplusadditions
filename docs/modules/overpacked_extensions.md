@@ -265,9 +265,9 @@ empty). Because placed and worn backpacks use the
 same `GiantBackpackScreen`, the buttons appear in both, and the close-write-back persists a sort into
 the worn item. It is a client-side feature, so ship the line in the modpack's config.
 
-This module contains **no** Quark code, no Quark type and no `ModList` check for Quark. Its own
-description string still advertises a "Quark-style sort button"; that is a leftover from a feature
-that was dropped in favour of the config line above.
+This module contains **no** Quark code, no Quark type and no `ModList` check for Quark. The
+description string in its Java source still advertises a "Quark-style sort button"; that is a
+leftover from a feature that was dropped in favour of the config line above.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -294,7 +294,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Keybind clash, Overpacked 2.x | `key.overpacked.take_off_backpack` also defaults to **B**. Ours uses the four-argument `KeyMapping` constructor, i.e. the `UNIVERSAL` conflict context, so on a fresh profile both fire. Rebind one of them. |
 | Keybinds with the module off | `BackpackKeybinds` and `BackpackKeysClientEvents` are plain `@EventBusSubscriber(Dist.CLIENT)` classes with no module gate: all three mappings always appear in Controls and a keypress always sends. The server-side handler is what drops it. |
 | Module disabled on only one side | The payload is registered in `onInitialize`, which a disabled module never reaches, and the registrar is not `optional()`. A client and a server that disagree about this module should therefore fail NeoForge's channel negotiation. Read off the source, not reproduced. |
-| Someone hits the helper entity | `hurt` adds `amount × 10` to a counter that decays by 1 per tick; once it passes 40 (or at once on a hit from a creative player), the entity is discarded, after spawning `get_stack()` as an item if `doEntityDrops` is on. That is about eight full-strength bare-hand hits: the counter loses 1 per tick and an empty hand needs 5 ticks to recharge, so every swing after the first nets roughly +5. A single swing of anything dealing more than 4 damage (stone sword upwards) does it at once. The close that follows still writes the same contents back into the worn item. The spawn-inside-the-player fallback exists to keep the helper out of the crosshair, but another player can still reach it. Read off the source, not reproduced. |
+| Someone hits the helper entity | Since beta.94-96 the helper is spawned with `setInvulnerable(true)` and parked 2.5 blocks below the player, so a survival player's hit or a cactus does nothing: `GiantBackpack.hurt` returns early when `isInvulnerableTo` says so. Vanilla's invulnerability lets two things through, a creative player's hit and damage in `#minecraft:bypasses_invulnerability` (`/kill`, the void). A creative hit discards the entity at once, after spawning `get_stack()` as an item if `doEntityDrops` is on, and the close that follows still writes the same contents back into the worn item, so that drop is a copy. Read off the source, not reproduced. |
 | Hard crash or restart with the GUI open | The edited items sit on the transient entity in the world rather than in the worn item. Recoverable in-world, but not where you would look for them. The helper itself no longer survives: it carries the entity tag `vpa_backpack_helper`, and `EntityJoinLevelEvent` discards any tagged helper that comes back from disk. **Before `v1.0.0-beta.87` it did survive**, with two consequences worth knowing if an old world still has one: it sits inside the player, where Overpacked's `place_predicate` silently refuses every in-hand backpack placement, and its contents are a copy of the worn backpack's, so breaking it duplicates them. Observed in play on 2026-09-20. |
 | Upgrade across `v1.0.0-beta.56` | This module was merged out of `overpacked_slowdown` (v0.7.0) and `overpacked_backpack_keys` (v1.0.0-beta.31). The old config sections are not migrated; `slowdown_multiplier` has to be set again in the new section. |
 

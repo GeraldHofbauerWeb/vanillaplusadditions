@@ -32,7 +32,17 @@ To add a new feature:
 1. Create a new package under `net.geraldhofbauer.vanillaplusadditions.modules`.
 2. Create a configuration class extending `AbstractModuleConfig`.
 3. Create a module class extending `AbstractModule`.
-4. Register your module in the `VanillaPlusAdditions` main class.
+4. Register your module in the `VanillaPlusAdditions` main class (`registerModules()`), which puts
+   it into the all-in-one jar.
+5. For its standalone jar, add an entry point `standalone/<module>/<Name>Standalone.java`
+   (`@Mod("vpa_<module>")`, one call to `StandaloneModuleBootstrap.boot`) and a line in
+   `standaloneModules` in `build.gradle`, listing the module's own data files, its dependencies on
+   other module jars and its mixins there.
+6. Put mixins in their own `mixin/<module>/` package and list them in
+   `vanillaplusadditions.mixins.json` for the bundle.
+7. Add a fact sheet `scripts/docgen/data/modules/<module>.json` and an entry in
+   `scripts/docgen/data/categories.json`; `python3 scripts/docgen/gen_meta.py` then writes a
+   skeleton page `docs/modules/<module>.md`, and `check_docs.py` fails while any module has no page.
 
 ## Benefits
 - **Isolation**: Features don't interfere with each other.

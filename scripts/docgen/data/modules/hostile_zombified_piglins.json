@@ -42,7 +42,7 @@
   "recipes": [],
   "registeredInBundle": true,
   "requiredMods": [],
-  "shortDescription": "Makes zombified piglins always aggressive towards players, which makes the Nether harder",
+  "shortDescription": "Makes zombified piglins always aggressive towards players in every dimension, the Nether included",
   "side": "server",
   "sinceCommit": "c48d6c3",
   "sinceVersion": "v0.1.0",

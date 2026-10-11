@@ -194,7 +194,6 @@ One TOML file, one section per module, every key commented in place.
 * [Module System](docs/guides/module-system.md): how a module is built, for contributors
 * [Companion Armor](docs/guides/companion-armor.md): the armour tiers shared by wolves and cats
 * [Testing](docs/guides/testing.md): test server and client
-* [Instance Switcher](docs/guides/instance-switcher.md): the development utility
 
 ## 🔨 Development
 

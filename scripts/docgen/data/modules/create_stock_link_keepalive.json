@@ -71,7 +71,7 @@
       "modId": "create"
     }
   ],
-  "shortDescription": "Stops Create Factory Gauges from re-ordering stock they already have, right after a chunk load.",
+  "shortDescription": "Stops Create Factory Gauges from re-ordering stock they already have after a player rejoins, by keeping the logistics links reporting while their chunks do not tick.",
   "side": "server",
   "sinceCommit": "13749b2",
   "sinceVersion": "v1.0.0-beta.88"

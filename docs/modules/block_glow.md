@@ -269,7 +269,8 @@ against overflow the way it appears to.
 
 ## See also
 
-* [Mob Glow](mob_glow.md): the same idea for entities, but server-side and OP-gated
+* [Mob Glow](mob_glow.md): the same idea for entities, run as a server command; like this one it
+  needs permission level 2
 * [Mob Spawn Overlay](mob_spawn_overlay.md): the other client-side x-ray view in this mod
 * [Configuration Guide](../guides/configuration.md): where the config file lives
 * [Module System](../guides/module-system.md): enabling and disabling modules

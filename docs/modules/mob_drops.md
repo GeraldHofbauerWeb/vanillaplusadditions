@@ -121,13 +121,6 @@ non-spectator, and it does so exactly once: it overrides `die` outright and neve
 
 ### A typo names a pig
 
-```java
-EntityType<?> mobType = BuiltInRegistries.ENTITY_TYPE.get(mobRl);
-Item item = BuiltInRegistries.ITEM.get(itemRl);
-
-if (mobType == null) {                       // ← unreachable
-```
-
 `ENTITY_TYPE` is a `DefaultedRegistry`, and its default is the pig:
 
 ```java
@@ -137,15 +130,21 @@ public static final DefaultedRegistry<EntityType<?>> ENTITY_TYPE = registerDefau
 ```
 
 `DefaultedMappedRegistry.get(ResourceLocation)` is `@Nonnull` and hands back `defaultValue` instead
-of null. The null branch can never be taken, its "Mob not found" warning can never print, and
-`minecraft:wither_skelton` quietly attaches its rule to `minecraft:pig`. If a rule stops firing, or
-pigs start dropping something odd, that is the first thing to check.
+of null. Up to beta.90 the parser called `get` and then tested for null, a branch that could never be
+taken, so `minecraft:wither_skelton` quietly attached its rule to `minecraft:pig`. Since beta.91
+(`81c9867`) it asks first:
 
-The item half is right by accident. `BuiltInRegistries.ITEM` is defaulted too (to `air`), and the
-code happens to test `item == Items.AIR` instead of `null`, so a misspelt item id is caught and
-skipped. The price is that a deliberate `minecraft:air` drop is discarded as though it were a
-typo. The sibling `mob_glow` module does the check properly, with
-`BuiltInRegistries.ENTITY_TYPE.containsKey(id)` before `get(id)`.
+```java
+if (!BuiltInRegistries.ENTITY_TYPE.containsKey(mobRl)) {
+    getLogger().warn("Mob drops config: Mob not found: {} (rule ignored)", parts[0]);
+    continue;
+}
+```
+
+The item half was right by accident and still is. `BuiltInRegistries.ITEM` is defaulted too (to
+`air`), and the code tests `item == Items.AIR` instead of `null`, so a misspelt item id is caught and
+skipped with its own WARN line. The price is that a deliberate `minecraft:air` drop is discarded as
+though it were a typo. The sibling `mob_glow` module uses the same `containsKey` check.
 
 ### Two different ideas of a valid rule
 
@@ -209,7 +208,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Limit | Effect |
 |---|---|
 | Unknown or misspelt `mob_id` | Skipped, with a WARN line naming the id. The lookup asks `containsKey` first, which is what makes the warning possible at all; `get` alone would hand back a pig. |
-| `minecraft:air` as `item_id` | Skipped, with the same message an unknown item gets, and only when debug logging is on. |
+| `minecraft:air` as `item_id` | Skipped, with the same WARN line an unknown item gets. |
 | One invalid entry | Deleted from the list by NeoForge's config correction. If every entry is invalid the four defaults come back. |
 | `chance = 0.0` | Passes validation and never fires. Nothing is logged; it looks exactly like a rule that is not working. |
 | Duplicate rules | Never merged or de-duplicated. The same mob and item listed twice is rolled twice, and both may drop. |
@@ -249,9 +248,9 @@ to appear twice for one mob today.
 
 **Logging.** With `debug_logging = ON` the module logs each rule it accepted with its chance and
 maximum, the number of mob types in the finished cache, and every drop it awards with the item,
-count, mob type and block position. Both registry-lookup warnings sit behind the same flag, so a
-misspelt item id is invisible at default log levels; a malformed line, by contrast, always warns, and
-an exception during parsing is always logged as an error.
+count, mob type and block position. The warnings do not depend on that flag: an unknown mob id, an
+unknown item id, a malformed line and an unparsable `max_drops` always warn, and an exception during
+parsing is always logged as an error.
 
 **Side.** Server. `LivingDropsEvent` has exactly one call site, `LivingEntity.dropAllDeathLoot`,
 which only ever runs with a `ServerLevel`, and the module references nothing client-side.

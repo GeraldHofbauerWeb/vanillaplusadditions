@@ -140,8 +140,8 @@ behaviour untouched. The two kinds coexist on the same wolf population, one piec
 
 ### Damage absorption
 
-**Most hits never reach this module.** `Wolf.actuallyHurt` forks before `LivingEntity.actuallyHurt`
-is ever called:
+**Vanilla's own absorption never runs for this armour.** `Wolf.actuallyHurt` forks before
+`LivingEntity.actuallyHurt` is ever called:
 
 ```java
 if (!this.canArmorAbsorb(source)) {
@@ -151,19 +151,23 @@ if (!this.canArmorAbsorb(source)) {
 }
 ```
 
-So while a wolf wears body armour, **vanilla** absorbs the damage and wears the armour itself, and
-`onWolfHurt` is reached only by damage types in `#minecraft:bypasses_wolf_armor`. The net effect on
-health is the same either way (the wolf takes nothing), but everything this module hangs off that
-handler, Thorns included, is limited to the bypassing types. Finding this took a round of debugging
-when a netherite wolf kept losing durability on a magma block after `v1.0.0-beta.99`.
+`canArmorAbsorb` starts with `hasArmor()`, and that is `getBodyArmorItem().is(Items.WOLF_ARMOR)`
+(`Wolf.java:568-570` in the 1.21.1 sources): the vanilla item and nothing else. For a wolf in one of
+ours it is false, so every hit takes the first branch, `LivingDamageEvent.Pre` fires, and
+`onWolfHurt` absorbs it, Thorns included. The same `hasArmor()` is why Quark's Foxhound needs its own
+armour layer from this module. The `v1.0.0-beta.99.1` changelog read the fork the other way round,
+as vanilla absorbing the hit so that only `#minecraft:bypasses_wolf_armor` types reached the
+handler. That was during a round of debugging when a netherite wolf kept losing durability in the
+Nether after `v1.0.0-beta.99`; the measurement in `beta.99.2` found burning (`on_fire`, `in_fire`)
+doing the wear, and both went into the heat-proof tag.
 
-The no-wear rule therefore does not live in that handler at all. It runs in
-`onWolfIncomingDamage`, on `LivingIncomingDamageEvent`, which `LivingEntity.hurt` fires **before**
-it sets `hurtTime`, before `playHurtSound` and before either branch above. Cancelling there makes
-`hurt()` return false outright (no red flash, no armour clink, no damage, no wear), and it fires
-whichever branch would have followed. A mixin on `actuallyHurt` did the job in `v1.0.0-beta.99.1`
-and was dropped again in `beta.99.3`: it worked, but it silenced neither the flash nor the sound,
-and the event needs no bytecode surgery.
+The no-wear rule is checked before that handler ever runs, in `onWolfIncomingDamage`, on
+`LivingIncomingDamageEvent`, which `LivingEntity.hurt` fires **before** it sets `hurtTime`, before
+`playHurtSound` and before either branch above. Cancelling there makes `hurt()` return false
+outright (no red flash, no armour clink, no damage, no wear), regardless of which branch would have
+followed. A mixin on `actuallyHurt` did the job in `v1.0.0-beta.99.1` and was dropped again in
+`beta.99.3`: it worked, but it silenced neither the flash nor the sound, and the event needs no
+bytecode surgery.
 
 The same handler swallows **fall damage up to `fall_absorb_blocks`** (default 5). The test is on the
 wolf's `fallDistance`, not on the damage number, so the setting reads the way it sounds; vanilla
@@ -198,10 +202,13 @@ question is asked through the `util/PetArmor` interface. It is an interface and 
 because a tag nothing fills is silently empty and the rule never fires, which is how the End
 backtanks broke (see [`end_oxygen`](end_oxygen.md)). A missing implementation is a compile error.
 
-The rule lives in `util/MobArmorDamage.wearArmor`, shared by all three pet armours so the rounding
-and the floor of 1 cannot drift apart between them.
+The tags themselves are asked in `util/MobArmorDamage`, shared by all three pet armours so the
+rounding and the floor of 1 cannot drift apart between them. `onWolfIncomingDamage` uses
+`absorbsWithoutWear`, and `onWolfHurt` charges the wear through `wearArmor`, which repeats the same
+test for cats and axolotls.
 
-It asks two questions only: is the victim a `Wolf`, and does its body slot hold a `WolfArmorItem`.
+`onWolfHurt` itself asks two questions only: is the victim a `Wolf`, and does its body slot hold a
+`WolfArmorItem`.
 It does not check whether the wolf is tame or whose it is, so a wild wolf handed a piece with `/item`
 is just as invulnerable as yours until the armour breaks.
 
@@ -370,7 +377,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | Module disabled | The items are never registered at all: the `DeferredRegister` is attached inside `onInitialize`, which only runs for an enabled module. Existing stacks and equipped pieces become unknown items. The permanent attack modifier is only ever removed by the equipment-change handler, which is itself gated on the module, so a wolf that was wearing armour keeps its bonus. |
 | `BiteDirections` never evicts | Entries expire logically after 500 ms but are never removed; the static map keeps one entry per wolf entity id that ever bit near you, for the lifetime of the client session. Its javadoc calls this deliberate: a stale entry is never read again. |
 | Debug latches | Both mixins announce themselves once per JVM, not once per wolf, and only with `debug_logging = true`. |
-| [Wolf Mount](wolf_mount.md) | Composes cleanly, in one direction. `wolf_mount` never imports a class from here (it tests `AnimalArmorItem` with `BodyType.CANINE` and colours its armour HUD by item id), so it works with this module absent. Its rider immunity cancels on `LivingIncomingDamageEvent`, which fires well before the `LivingDamageEvent.Pre` all three handlers here use, so on that path the absorption is never reached. |
+| [Wolf Mount](wolf_mount.md) | Composes cleanly, in one direction. `wolf_mount` never imports a class from here (it tests `AnimalArmorItem` with `BodyType.CANINE` and colours its armour HUD by item id), so it works with this module absent. Its owner-damage immunity cancels on `LivingIncomingDamageEvent` at `HIGHEST` priority, ahead of this module's own `HIGH` no-wear and fall handlers on the same event and well before the `LivingDamageEvent.Pre` that `onWolfHurt` uses, so on that path the absorption is never reached. |
 | [Quark](https://modrinth.com/mod/quark)'s Foxhound | Supported, through a layer of our own (see [Quark's Foxhound](#quarks-foxhound)). A damaged set shows no cracks there; the vanilla crack textures are laid out for a different model. |
 | [JEI](https://modrinth.com/mod/jei) | Optional. `BattleDogsJeiPlugin` is loaded by JEI's own annotation scan (there is no `jei` entry in `neoforge.mods.toml`) and adds the armadillo-scute anvil repairs and the possible enchantments to the recipe viewer. Without JEI both still work, they are just undiscoverable, because vanilla anvil repair is code-only and JEI's anvil list is hardcoded vanilla. |
 

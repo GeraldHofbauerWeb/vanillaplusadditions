@@ -56,19 +56,10 @@ never saved. That `null` is deliberate: the first tick after a start always coun
 so the module writes the correct state once at boot instead of trusting whatever is in the save.
 The steady-state cost is one enabled check plus one player-count read per tick.
 
-The write itself is one `/gamerule` command per configured rule, through the server's own
-command source:
-
-```java
-CommandSourceStack source = server.createCommandSourceStack().withSuppressedOutput();
-for (String rule : getConfig().getGamerules()) {
-    server.getCommands().performPrefixedCommand(source, "gamerule " + rule + " " + value);
-}
-```
-
-`MinecraftServer.createCommandSourceStack()` hands out permission level 4 named *Server*, so
-`/gamerule`'s own level-2 requirement is never in the way. `withSuppressedOutput()` keeps the
-`commands.gamerule.set` message out of chat and out of the admin broadcast.
+The write itself goes straight to the server's `GameRules`, one `set(value, server)` per configured
+rule; the loop is shown under [rule names are checked](#rule-names-are-checked) below. No command is
+run, so nothing appears in chat or in the admin broadcast. `BooleanValue.set` still calls the rule's
+`onChanged` callback, the same one `/gamerule` triggers.
 
 ### What the three defaults actually pause
 
@@ -129,11 +120,11 @@ instead of a fresh roll.
 
 ### One write covers every dimension
 
-The module runs the command once, not once per level, and that is enough: gamerules are a single
-object for the whole server. `/gamerule` writes to the server's copy:
+The module writes the rules once, not once per level, and that is enough: gamerules are a single
+object for the whole server. The module writes to the server's copy:
 
 ```java
-T t = commandsourcestack.getServer().getGameRules().getRule(gameRule);
+GameRules rules = server.getGameRules();
 ```
 
 `MinecraftServer.getGameRules()` returns `this.overworld().getGameRules()`, and every other
@@ -199,8 +190,9 @@ public void sendFailure(Component message) {
 ```
 
 The log line also printed the whole configured list regardless, so the symptom was "the log says
-it set `doSeasonCycle`, but nothing happened". Checking the rule by hand with
-`/gamerule doSeasonCycle` is the only feedback there is.
+it set `doSeasonCycle`, but nothing happened", and checking the rule by hand with
+`/gamerule doSeasonCycle` was the only feedback there was. Since beta.91 (`81c9867`) the WARN line
+above takes its place.
 
 <!-- vpa:config:start -->
 ## Configuration
@@ -230,15 +222,16 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 ## Under the hood
 
-Two files, 62 + 38 lines, plus a 19-line standalone entrypoint. There are no mixins, commands,
+Two files, 143 + 40 lines, plus a 19-line standalone entrypoint. There are no mixins, commands,
 keybinds, registry entries, assets, data files or lang keys; the module brings no
 in-game text of its own beyond the display name that the core prints in `/vpa module status` and the
-comments it writes into the config file. At runtime it produces one INFO line per transition and
-nothing else.
+comments it writes into the config file. At runtime it logs one INFO line per transition that
+applied at least one rule, one WARN line per transition when configured names are not boolean
+gamerules, and one INFO line when an empty server shuts down and the rules are restored.
 
 | File | Role |
 |---|---|
-| `modules/idle_gamerules/IdleGamerulesModule.java` | the tick handler, the transition check, the command loop |
+| `modules/idle_gamerules/IdleGamerulesModule.java` | the tick handler, the transition check, the rule lookup and the direct writes |
 | `modules/idle_gamerules/config/IdleGamerulesConfig.java` | the one config value |
 | `standalone/idle_gamerules/IdleGamerulesStandalone.java` | `@Mod("vpa_idle_gamerules")`, boots through `StandaloneModuleBootstrap` |
 

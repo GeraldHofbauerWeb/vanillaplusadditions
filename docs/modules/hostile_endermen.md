@@ -372,14 +372,14 @@ vanilla class targets `ServerPlayer`, and nothing in the module's six files touc
 `vpa_core` like every module jar. Its generated mixin config is `"required": false` as well. That
 flag is the entire "safe without those mods" guarantee; there is no runtime mod check anywhere.
 
-**Asymmetry in `onConfigLoad`.** The debug block null-checks `detection_range`, `anger_duration` and
-`respect_carved_pumpkin`, then also dereferences `suppress_teleport_attack`;
-`suppress_anticheese_teleport` and `debug_teleport_tracking` are never logged. Harmless in practice,
-since every value is built in the same call.
+**Gap in `onConfigLoad`.** The debug block null-checks and logs `detection_range`,
+`anger_duration`, `respect_carved_pumpkin` and `suppress_teleport_attack` (the fourth check came in
+beta.91, `81c9867`); `suppress_anticheese_teleport` and `debug_teleport_tracking` are never logged.
 
 **Testing.** This repository has no unit tests. The only measurement it records is the 29-of-29
-teleport count in the `v1.0.0-beta.68` CHANGELOG entry. Exactly one commit has ever touched this
-module: `4943bd2`, the release commit itself. Nothing has changed since.
+teleport count in the `v1.0.0-beta.68` CHANGELOG entry. Two commits have touched the module's
+code: `4943bd2`, the release commit itself, and `81c9867` (beta.91), which only rewrote two comments,
+dropped a dead mixin-package check from the teleport diagnostics and added the null check above.
 
 ## See also
 

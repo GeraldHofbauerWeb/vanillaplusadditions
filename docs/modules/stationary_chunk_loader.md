@@ -63,8 +63,8 @@ The player gate is deliberately blunt: it counts players on the server
 anchor in the Nether keeps loading while its owner is in the Overworld, and stops when the last
 person leaves the server. Set the key to `false` and the anchors run on an empty server as well.
 An overnight farm needs exactly that, and it is why the key exists. On a dedicated server there is
-nothing more to it; in single-player the same key has a catch, which the limits table below
-spells out.
+nothing more to it. Single-player had a catch with the same key until beta.91; the limits table
+below spells out what it was and how it is handled now.
 
 ### The radius counts chunks, not blocks
 
@@ -243,7 +243,9 @@ And `ChunkAnchorData`'s javadoc said an anchor "keeps its chunk loaded until the
 which skipped the falling redstone edge. Both now say what the code does.
 
 **Testing.** This repository has no unit tests, and nothing here records a runtime test of this
-module. Its whole directory was written in one commit and never touched again.
+module. Its directory was written in beta.21 (`2a3c7d6`) and touched once since, in beta.91
+(`81c9867`: the two comments above, the `ServerStopped` reset and a border renderer that drops the
+previous world's anchors).
 
 ## See also
 

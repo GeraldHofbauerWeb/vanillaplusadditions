@@ -349,7 +349,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `mixin/compass_overhaul/LodestoneTrackerMixin.java` | part A (server) |
 | `mixin/compass_overhaul/CompassAngleSubLevelMixin.java` | part B (client) |
 | `mixin/compass_overhaul/QuarkCompassAngleMixin.java` | part D (client) |
-| `scripts/gen_world_compass_textures.py` | the 32 frames and 32 models |
+| `scripts/gen_world_compass_textures.py` | the 32 model files (the base model and 31 sub-models); the reference implementation of the recolouring, no longer a texture build step |
 
 **Mixins.** `LodestoneTrackerMixin` injects at HEAD of `LodestoneTracker.tick` with the default
 `require = 1`; the method only ever runs server-side. `CompassAngleSubLevelMixin` targets
@@ -381,8 +381,9 @@ turns; `QuarkCompassAngleMixin` multiplies by 2π, `CompassAngleSubLevelMixin` p
 through. This is easy to get wrong when editing either.
 
 **Standalone jar.** `vpa_compass_overhaul` ships `LodestoneTrackerMixin` plus the two client mixins
-and carries no data files of its own; the 32 models, the 32 textures and the lang entry live in
-`vpa_core`, which every module jar requires.
+and carries no data files of its own. Its one asset is its part of the `minecraft:blocks` atlas
+file (see above). The 32 model files and the lang entry live in `vpa_core`, which every module jar
+requires; the 32 textures are in no jar at all, since they are built at load time.
 
 **Testing.** This repo has no unit tests. Quark and Zeta are deliberately `compileOnly` with no
 `localRuntime` (see the comment in `build.gradle`), so part D cannot be exercised in `runClient` at

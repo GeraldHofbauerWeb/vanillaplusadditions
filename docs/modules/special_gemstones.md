@@ -57,9 +57,9 @@ keeps very large creatures noticeably tamer. Neither is the correct one; `stat_c
 fall figures above follow `battle_dogs`' own copy of the same choice.
 
 So a wolf that **spawned** three times the usual size earns its 2.25 without anyone ever clicking it,
-and armour that covers twice the animal covers twice the landing. The rungs are additive in size
-(each whole block of extra size is worth another 1.5) rather than keyed to `log2(size)`, which would
-make three times as big worth only 1.87.
+and armour that covers twice the animal covers twice the landing. By default the rungs are additive in
+size (each whole block of extra size is worth another 1.5). Keyed to `log2(size)`, the
+`MULTIPLICATIVE` choice, three times as big would be worth only 1.90.
 
 ### Not every stat may travel the whole way
 
@@ -341,7 +341,7 @@ Run it with `--check` to verify the committed PNGs are current.
 | `modules/special_gemstones/config/SpecialGemstonesConfig.java` | the config keys and their defaults |
 | `mixin/special_gemstones/CreeperExplosionRadiusAccessor.java` | the one private field a gemstone has to reach |
 | `util/ConfiguredRecipes.java` | the shared recipe-string parser, lifted out of `custom_crafting_recipes` so both modules speak one format |
-| `util/SizeScaling.java` | the one ladder, `factor^(size-1)`, that this module and `battle_dogs` both read |
+| `util/SizeScaling.java` | the size ladder in both shapes, `factor^(size-1)` (`ADDITIVE`) and `factor^log2(size)` (`MULTIPLICATIVE`), that this module and `battle_dogs` both read |
 | `scripts/gen_gemstone_textures.py` | the two item icons, generated and verifiable with `--check` |
 
 <!-- vpa:config:start -->

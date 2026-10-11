@@ -134,8 +134,8 @@ scans per jar without ever asking VPA's `ModuleManager`, and nothing anywhere in
 What the switch does reach is the other end. `ModuleManager.clientSetup()` iterates only the enabled
 modules, so a disabled `minecart_chunk_loading`, `stationary_chunk_loader` or `train_chunk_loading`
 never reaches its `onClientSetup()` and never registers its renderer. To lose the chunk borders,
-switch off the chunk-loader module; switching off `debug_overlay` leaves you with a live toggle and
-nothing plugged into it.
+switch off the chunk-loader module; switching off `debug_overlay` leaves the toggle and every
+renderer already plugged into it working exactly as before.
 
 <!-- vpa:config:start -->
 ## Configuration

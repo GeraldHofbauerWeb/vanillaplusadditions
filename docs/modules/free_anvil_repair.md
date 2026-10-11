@@ -158,9 +158,8 @@ the anvil already sends a rename, without any typing:
 For an ordinary name that round trip changes nothing. For a name carrying **formatting codes** it
 does: the server sees the name without its `§` sequences, compares it against the item's real name,
 and concludes the player is renaming. A netherite sword called `§kSomething` therefore reported a
-rename on *every* anvil open and could never be repaired for free. This turned up on games2 on
-2026-09-26, where it cost 9 levels instead of nothing. Since `v1.0.0-beta.96` the check accepts the filtered form
-of the current name as "unchanged" too.
+rename on *every* anvil open and could never be repaired for free. Since `v1.0.0-beta.96` the check
+accepts the filtered form of the current name as "unchanged" too.
 
 **With EasyAnvils the same problem runs the other way.** That mod replaces the anvil menu outright
 (`ModAnvilMenu extends AnvilMenu`, `createResult` overridden) and its whole point is that formatting
@@ -173,7 +172,8 @@ rather than in its text:
 | what the client sends back | `§kTestschwert` (EasyAnvils re-renders the style as codes) |
 
 Different strings again, so every formatted item reported a rename on every anvil open. This was the
-real cause of the netherite sword's lost free repair on games2: a plain, unnamed, damaged netherite
+real cause of the netherite sword's lost free repair on games2 on 2026-09-26, where EasyAnvils runs
+the anvil and the repair cost 9 levels instead of nothing: a plain, unnamed, damaged netherite
 sword, given for comparison, repaired for free at the same anvil. The check therefore normalises
 **both** directions: the incoming name may arrive filtered (vanilla) or carrying codes the item's own
 text does not have (EasyAnvils).
