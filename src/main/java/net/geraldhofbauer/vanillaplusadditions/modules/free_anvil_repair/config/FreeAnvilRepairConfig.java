@@ -34,12 +34,15 @@ public class FreeAnvilRepairConfig
             "create:copper_diving_helmet=minecraft:copper_ingot",
             "create:copper_diving_boots=minecraft:copper_ingot",
             "minecraft:trident=minecraft:prismarine_shard",
-            "minecraft:bow=minecraft:stick"
+            "minecraft:bow=minecraft:stick",
+            "minecraft:netherite_spear=minecraft:diamond",
+            "quark:flamerang=minecraft:diamond"
     );
 
     private ModConfigSpec.BooleanValue freeMaterialRepair;
     private ModConfigSpec.BooleanValue freeCombineRepair;
     private ModConfigSpec.BooleanValue increasePriorWorkPenalty;
+    private ModConfigSpec.BooleanValue singleUnitFullRepair;
     private ModConfigSpec.IntValue repairBoostPercent;
     private ModConfigSpec.ConfigValue<List<? extends String>> extraRepairMaterials;
 
@@ -68,11 +71,19 @@ public class FreeAnvilRepairConfig
                         + "Default false: repairing doesn't make later enchant operations more expensive.")
                 .define("increase_prior_work_penalty", false);
 
+        singleUnitFullRepair = builder
+                .comment("One unit of the repair material (one diamond, one iron ingot, one stick for a bow) "
+                        + "restores the item to full durability, however worn it is, so a material repair "
+                        + "always uses exactly one item. Overrides repair_boost_percent while true. "
+                        + "Does NOT apply to combining two of the same item.")
+                .define("single_unit_full_repair", true);
+
         repairBoostPercent = builder
                 .comment("Extra durability restored when repairing an item with its resource material "
                         + "(e.g. diamond sword + diamond), in percent. 0 = vanilla amounts; 50 = each "
                         + "material unit restores 50% more (still capped at full durability, so it just needs "
-                        + "fewer materials to fully repair). Does NOT apply to combining two of the same item.")
+                        + "fewer materials to fully repair). Ignored while single_unit_full_repair is true. "
+                        + "Does NOT apply to combining two of the same item.")
                 .defineInRange("repair_boost_percent", 50, 0, 500);
 
         extraRepairMaterials = builder
@@ -116,6 +127,15 @@ public class FreeAnvilRepairConfig
      */
     public boolean isIncreasePriorWorkPenaltyValue() {
         return increasePriorWorkPenalty != null && increasePriorWorkPenalty.get();
+    }
+
+    /**
+     * Whether one material unit fully repairs an item (overrides {@code repair_boost_percent}).
+     *
+     * @return true if a material repair always consumes exactly one unit and restores full durability
+     */
+    public boolean isSingleUnitFullRepairValue() {
+        return singleUnitFullRepair == null || singleUnitFullRepair.get();
     }
 
     /**

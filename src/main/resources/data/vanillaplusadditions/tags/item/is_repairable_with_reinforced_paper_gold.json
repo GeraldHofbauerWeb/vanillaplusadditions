@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "vc_gliders:paraglider_gold",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "mowziesmobs:geomancer_beads",
+      "required": false
+    },
+    {
+      "id": "mowziesmobs:geomancer_robe",
+      "required": false
+    },
+    {
+      "id": "mowziesmobs:geomancer_belt",
+      "required": false
+    },
+    {
+      "id": "mowziesmobs:geomancer_sandals",
+      "required": false
+    },
+    {
+      "id": "mowziesmobs:sculptor_staff",
+      "required": false
+    }
+  ]
+}

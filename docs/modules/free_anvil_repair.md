@@ -2,8 +2,8 @@
 
 > **TL;DR** — Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or
 > by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla
-> calls "Too Expensive!", restores 50% more durability per material unit by default, and accepts extra
-> materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.
+> calls "Too Expensive!", needs only a single unit of material for a full repair by default, and accepts
+> extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.
 
 <!-- vpa:meta:start -->
 |  |  |
@@ -38,9 +38,10 @@ appear, and by default the repair does not raise the hidden prior-work penalty t
 anvil visit dearer. Gear that vanilla has already priced out of the anvil altogether becomes
 repairable again.
 
-Each material unit also goes further than in vanilla: 37.5 % of maximum durability instead of 25 %,
-so three diamonds take a pickaxe from nearly broken back to full where vanilla wants four. That is
-`repair_boost_percent`, and setting it to `0` restores vanilla's amounts exactly.
+One unit of material is enough for a full repair: a single diamond puts a pickaxe back to full
+durability, however worn it was, where vanilla wants four. That is `single_unit_full_repair`. Switch it
+off and `repair_boost_percent` decides how far each unit goes, 37.5 % of maximum durability by default
+(three diamonds instead of four) and vanilla's 25 % at `0`.
 
 The list of accepted materials is configurable, Quark-style, in the form `item=material`. Out of the
 box netherite gear repairs with **diamonds**, Create's diving gear with diamonds or copper ingots, a
@@ -203,6 +204,9 @@ log to say so.
 
 ```java
 private int repairPerUnit(int maxDamage) {
+    if (getConfig().isSingleUnitFullRepairValue()) {
+        return Math.max(1, maxDamage);
+    }
     return Math.max(1, boosted(maxDamage / 4));
 }
 
@@ -211,10 +215,17 @@ private int boosted(int base) {
 }
 ```
 
-Vanilla's quarter, scaled by `repair_boost_percent` (default 50) and floored at 1. Both divisions
-truncate, so the real figure can land a shade under 37.5 %: 585 of 1561 on a diamond pickaxe.
+With `single_unit_full_repair` on, which is the default, one unit restores the whole bar, so every
+material repair uses exactly one item. A `repair_boost_percent` of 300 looks like the same thing and
+is not: `maxDamage / 4` truncates before the boost multiplies it. A trident (250) then comes out one
+point short of a full bar and a netherite pickaxe (2031) two, and both want a second unit for the
+last scrap.
 
-| Item | Max durability | Per unit, vanilla | Per unit, default boost | Units from broken to full |
+With the switch off, each unit restores vanilla's quarter, scaled by `repair_boost_percent`
+(default 50) and floored at 1. Both divisions truncate, so the real figure can land a shade under
+37.5 %: 585 of 1561 on a diamond pickaxe.
+
+| Item | Max durability | Per unit, vanilla | Per unit, boost 50 | Units from broken to full, boost 50 |
 |---|---|---|---|---|
 | Bow | 384 | 96 | 144 | 3 sticks |
 | Trident | 250 | 62 | 93 | 3 prismarine shards |
@@ -225,9 +236,9 @@ Units are consumed one at a time and the last one only repairs what is left, so 
 item still costs exactly one unit. The number consumed becomes the material cost, and the rest of
 the stack stays in the slot.
 
-The boost applies to **every** material repair the module handles, vanilla materials and
-`extra_repair_materials` alike. It deliberately does not apply to combining two of the same item,
-where there is no material to make go further.
+Both settings apply to **every** material repair the module handles, vanilla materials and
+`extra_repair_materials` alike. Neither applies to combining two of the same item, where there is no
+material to make go further.
 
 ### The extra materials
 
@@ -266,6 +277,55 @@ if (left.getItem().isValidRepairItem(left, right) || isExtraRepairMaterial(left,
 With the flag off the module hands the combination back to vanilla, and vanilla has never heard of a
 netherite sword plus a diamond: the result slot stays empty. Only the repairs vanilla already knows
 fall back to being merely expensive.
+
+### Item tags
+
+The jar ships one item tag per repair material, `vanillaplusadditions:is_repairable_with_<material>`,
+listing what that material repairs on the anvil. Datapacks, recipe viewers and filters that accept
+tags can use them.
+
+| Tag | Material | What it repairs |
+|---|---|---|
+| `is_repairable_with_planks` | any planks | wooden tools, shield, the wooden spear, the sand rake from Mowzie's Mobs |
+| `is_repairable_with_cobblestone` | cobblestone, blackstone or cobbled deepslate (`#minecraft:stone_tool_materials`) | stone tools, the stone spear, the spear from Mowzie's Mobs |
+| `is_repairable_with_leather` | leather | leather armour, the three hoods from Enderman Overhaul |
+| `is_repairable_with_iron` | iron ingot | iron tools and armour, chainmail, iron cat armour, the iron spear, the corrupted blade from Enderman Overhaul |
+| `is_repairable_with_gold` | gold ingot | golden tools and armour, golden cat armour, the golden spear |
+| `is_repairable_with_diamond` | diamond | diamond tools and armour, **all netherite gear**, flying fish boots, diamond and netherite cat armour, netherite axolotl and wolf armour, Create's netherite diving gear, the diamond spear, Quark's pickarang and flamerang |
+| `is_repairable_with_netherite` | netherite ingot | netherite tools and armour, netherite cat armour, Create's netherite diving gear, the netherite spear, Quark's flamerang |
+| `is_repairable_with_copper` | copper ingot | Create's copper diving gear |
+| `is_repairable_with_turtle_scute` | turtle scute | turtle shell, axolotl armour |
+| `is_repairable_with_armadillo_scute` | armadillo scute | wolf armour (vanilla's and this mod's four tiers), cat armour |
+| `is_repairable_with_phantom_membrane` | phantom membrane | elytra |
+| `is_repairable_with_breeze_rod` | breeze rod | mace |
+| `is_repairable_with_stick` | stick | bow |
+| `is_repairable_with_prismarine_shard` | prismarine shard | trident |
+| `is_repairable_with_amethyst_shard` | amethyst shard | the Warp Stone from Waystones |
+| `is_repairable_with_cardboard` | Create's cardboard | Create's cardboard armour and cardboard sword |
+| `is_repairable_with_enderman_tooth` | enderman tooth from Enderman Overhaul | its corrupted blade and corrupted shield |
+| `is_repairable_with_bluff_rod` | bluff rod from Mowzie's Mobs | the four geomancer pieces, the sculptor staff |
+| `is_repairable_with_naga_fang` | naga fang from Mowzie's Mobs | the naga fang dagger |
+| `is_repairable_with_reinforced_paper`, `…_iron`, `…_gold`, `…_diamond`, `…_netherite` | the reinforced paper of that tier from Gliders | the paraglider of the same tier |
+
+Netherite gear is in two tags: vanilla repairs it with a netherite ingot, and `extra_repair_materials`
+adds the diamond. That includes the netherite spear from Spear Backport and Quark's flamerang.
+
+Vanilla items are required entries. Everything else is optional: this mod's own gear and the items
+from Create, Waystones, Quark, Mowzie's Mobs, Enderman Overhaul, Gliders and Spear Backport (whose
+spears use the `minecraft` namespace). A missing module or mod leaves the tag intact.
+
+The tags are fixed files and describe the default configuration. Taking an entry out of
+`extra_repair_materials`, or switching the module off, leaves the item in its tag.
+
+Other mods decide their repairs in code, item by item, and nothing in their jars says what repairs
+what. `/vparepairtags` (operators only) asks the running game instead: it tries every registered item
+against every damageable one and writes the result to `vanillaplusadditions/repair_report.json` in the
+game directory, together with the damageable items that have no repair material at all. The entries
+for other mods' gear come from that report.
+
+The report only sees repairs an item declares itself, plus `extra_repair_materials`. A repair that
+another anvil handler adds, such as [Waystone Amethyst Repair](waystone_amethyst_repair.md), does not
+show up in it, so the amethyst tag was written by hand.
 
 ### Combining two of the same item
 
@@ -309,11 +369,12 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 
 | Key | Type | Default | Range | Effect |
 |---|---|---|---|---|
-| `extra_repair_materials` | list | `minecraft:netherite_sword=minecraft:diamond, minecraft:netherite_pickaxe=minecraft:diamond, minecraft:netherite_axe=minecraft:diamond, minecraft:netherite_shovel=minecraft:diamond, minecraft:netherite_hoe=minecraft:diamond, minecraft:netherite_helmet=minecraft:diamond, minecraft:netherite_chestplate=minecraft:diamond, minecraft:netherite_leggings=minecraft:diamond, minecraft:netherite_boots=minecraft:diamond, create:netherite_diving_helmet=minecraft:diamond, create:netherite_diving_boots=minecraft:diamond, create:copper_diving_helmet=minecraft:copper_ingot, create:copper_diving_boots=minecraft:copper_ingot, minecraft:trident=minecraft:prismarine_shard, minecraft:bow=minecraft:stick` | — | Additional anvil repair materials (Quark-style, format item=material, one item may appear in several entries). These repairs are computed by this module and are free like regular material repairs (and follow repair_boost_percent). Entries whose item or material is not installed are skipped silently; the config validator additionally rejects entries with no '=', with '=' at either end, or with a second '='. |
+| `extra_repair_materials` | list | `minecraft:netherite_sword=minecraft:diamond, minecraft:netherite_pickaxe=minecraft:diamond, minecraft:netherite_axe=minecraft:diamond, minecraft:netherite_shovel=minecraft:diamond, minecraft:netherite_hoe=minecraft:diamond, minecraft:netherite_helmet=minecraft:diamond, minecraft:netherite_chestplate=minecraft:diamond, minecraft:netherite_leggings=minecraft:diamond, minecraft:netherite_boots=minecraft:diamond, create:netherite_diving_helmet=minecraft:diamond, create:netherite_diving_boots=minecraft:diamond, create:copper_diving_helmet=minecraft:copper_ingot, create:copper_diving_boots=minecraft:copper_ingot, minecraft:trident=minecraft:prismarine_shard, minecraft:bow=minecraft:stick, minecraft:netherite_spear=minecraft:diamond, quark:flamerang=minecraft:diamond` | — | Additional anvil repair materials (Quark-style, format item=material, one item may appear in several entries). These repairs are computed by this module and are free like regular material repairs (and follow single_unit_full_repair and repair_boost_percent). Entries whose item or material is not installed are skipped silently; the config validator additionally rejects entries with no '=', with '=' at either end, or with a second '='. |
 | `free_combine_repair` | boolean | `true` | — | Combining two items of the same type costs no XP levels, as long as the sacrifice item is damageable and carries neither enchantments nor stored enchantments (pure durability merge). The kept item may be enchanted. |
 | `free_material_repair` | boolean | `true` | — | Repairing with the item's repair material (e.g. diamonds) costs no XP levels. Also the master switch for extra_repair_materials: with false, those non-vanilla combinations stop working altogether instead of just costing XP. |
 | `increase_prior_work_penalty` | boolean | `false` | — | Whether free repairs still double the hidden prior-work penalty (REPAIR_COST component via AnvilMenu.calculateIncreasedRepairCost) like vanilla does; default false so repairing does not make later enchant operations more expensive. |
-| `repair_boost_percent` | int | `50` | 0 ~ 500 | Extra durability restored per material unit on every module-handled MATERIAL repair, vanilla material and extra_repair_materials alike: perUnit = max(1, maxDamage/4 * (100+value)/100). 0 = vanilla 25%/unit; the default 50 = 37.5%/unit, so 3 units fully repair an item instead of 4. Does NOT apply to combining two of the same item, and the JEI display ignores it. |
+| `repair_boost_percent` | int | `50` | 0 ~ 500 | Extra durability restored per material unit on every module-handled MATERIAL repair, vanilla material and extra_repair_materials alike: perUnit = max(1, maxDamage/4 * (100+value)/100). 0 = vanilla 25%/unit; the default 50 = 37.5%/unit, so 3 units fully repair an item instead of 4. Ignored while single_unit_full_repair is true. Does NOT apply to combining two of the same item, and the JEI display ignores it. |
+| `single_unit_full_repair` | boolean | `true` | — | One unit of the repair material restores the item to full durability, however worn it is, so every module-handled MATERIAL repair (vanilla material and extra_repair_materials alike) uses exactly one item. Overrides repair_boost_percent while true; a boost of 300 is not the same thing, because maxDamage/4 truncates and leaves a trident or a netherite tool one or two points short. Does NOT apply to combining two of the same item. |
 <!-- vpa:config:end -->
 
 ## Compatibility and known limits
@@ -323,7 +384,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `free_material_repair = false` | The extra combinations stop working altogether, not just for free. Vanilla does not recognise them, so the result slot stays empty. |
 | No Create installed | The four `create:` entries are skipped in silence. Nothing else changes; there is no compile-time or runtime dependency on Create in this module. |
 | No JEI installed | The extra combinations still work, they are just not listed anywhere. The plugin class is only ever loaded by JEI's own annotation scan. The pack this mod is tested against runs EMI with TooManyRecipeViewers rather than JEI, so the anvil entries reach the screen through that bridge and are untested here. |
-| JEI's displayed repair amount | The plugin hardcodes vanilla's 25 % per unit and ignores `repair_boost_percent`, so with the default boost the shown recipe understates the real repair. |
+| JEI's displayed repair amount | With `single_unit_full_repair` on, the recipe shows one unit repairing the item completely, which matches the game. With it off, the plugin shows vanilla's 25 % per unit and ignores `repair_boost_percent`, so with a boost the shown recipe understates the real repair. |
 | Quark's diamond repair | Not an integration and not a conflict. Quark patches the vanilla anvil code path; this module answers the event first and produces the result itself, so Quark's version never runs and cannot charge for the same combination. |
 | Another mod's `AnvilUpdateEvent` handler | The mixin permits the pickup of **any** non-empty cost-0 anvil result, not only ones from this module. Vanilla never produces such a result, so nothing vanilla breaks, but a third-party handler's free result becomes takeable too while this module is on. |
 | Two handlers on the same combination | The module overwrites the event's output unconditionally when it recognises a pure repair; it does not check whether another handler already set one. |
@@ -336,13 +397,15 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | File | Role |
 |---|---|
 | `modules/free_anvil_repair/FreeAnvilRepairModule.java` | the event handler and all the arithmetic |
-| `modules/free_anvil_repair/config/FreeAnvilRepairConfig.java` | the five keys and the list validator |
+| `modules/free_anvil_repair/config/FreeAnvilRepairConfig.java` | the six keys and the list validator |
 | `modules/free_anvil_repair/compat/jei/FreeAnvilRepairJeiPlugin.java` | the extra combinations in JEI's anvil tab |
+| `modules/free_anvil_repair/RepairTagReport.java` | the report behind `/vparepairtags` |
+| `data/vanillaplusadditions/tags/item/is_repairable_with_*.json` | the 24 material tags |
 | `mixin/free_anvil_repair/AnvilMenuFreeRepairMixin.java` | lets a cost-0 result be taken |
 | `standalone/free_anvil_repair/FreeAnvilRepairStandalone.java` | `@Mod("vpa_free_anvil_repair")` |
 
-The module has no registries, items, blocks, commands, keybinds, lang keys or datapack files; it
-is one game-bus subscriber and one mixin.
+The module has no registries, items, blocks, keybinds or lang keys. It is one game-bus subscriber
+(the anvil event and `/vparepairtags`), one mixin and the 24 tag files.
 
 **Why a non-empty output wins.** NeoForge's hook sits at the top of `createResult`, before anything
 vanilla computes:
@@ -397,7 +460,7 @@ module imports nothing from any other module.
 
 **Caching and live config.** `isModuleEnabled()` and every config getter are read per event, and
 `extra_repair_materials` is re-parsed whenever the config list stops equalling the cached one. All
-five keys plus `enabled` therefore take effect without a restart.
+six keys plus `enabled` therefore take effect without a restart.
 
 **Validator versus parser.** The config spec rejects an entry with no `=`, with `=` at either end, or
 with a *second* `=`:

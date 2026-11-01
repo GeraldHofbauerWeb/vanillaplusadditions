@@ -2,7 +2,7 @@
   "moduleId": "free_anvil_repair",
   "displayName": "Free Anvil Repair",
   "shortDescription": "Makes pure anvil repairs (repair material or unenchanted sacrifice item) cost no XP levels",
-  "oneLiner": "Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla calls \"Too Expensive!\", restores 50% more durability per material unit by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.",
+  "oneLiner": "Repairing a damaged tool, weapon or piece of armour in an anvil (with its material or by combining it with an unenchanted second copy) costs zero XP levels, works even on gear vanilla calls \"Too Expensive!\", needs only a single unit of material for a full repair by default, and accepts extra materials such as diamonds for netherite gear, prismarine shards for a trident or sticks for a bow.",
   "side": "both",
   "enabledByDefault": true,
   "registeredInBundle": true,
@@ -11,7 +11,7 @@
   "optionalMods": [
     {
       "modId": "jei",
-      "whatItAdds": "With JEI installed, FreeAnvilRepairJeiPlugin registers one anvil recipe per extra_repair_materials entry whose item AND material resolve and whose item is damageable (fully damaged item + material -> item repaired by a hardcoded 25%), so players can look the extra combos up in JEI's anvil tab. Nothing is lost without JEI: the class is loaded solely by JEI's own annotation scan (compileOnly API + localRuntime, no dependency in neoforge.mods.toml), and the repairs work regardless. The JEI entries also disappear when the module is disabled or free_material_repair is false, and the displayed 25% ignores repair_boost_percent (see notes 8).",
+      "whatItAdds": "With JEI installed, FreeAnvilRepairJeiPlugin registers one anvil recipe per extra_repair_materials entry whose item AND material resolve and whose item is damageable (fully damaged item + material -> item fully repaired while single_unit_full_repair is on, otherwise repaired by a hardcoded 25%), so players can look the extra combos up in JEI's anvil tab. Nothing is lost without JEI: the class is loaded solely by JEI's own annotation scan (compileOnly API + localRuntime, no dependency in neoforge.mods.toml), and the repairs work regardless. The JEI entries also disappear when the module is disabled or free_material_repair is false, and with single_unit_full_repair off the displayed 25% ignores repair_boost_percent (see notes 8).",
       "evidence": "src/main/java/net/geraldhofbauer/vanillaplusadditions/modules/free_anvil_repair/compat/jei/FreeAnvilRepairJeiPlugin.java:31-98 (gates at :44-54, damageable filter at :77-80, hardcoded maxDamage*3/4 at :85-86); build.gradle:106-113 (compileOnly jei common/neoforge API, localRuntime full JEI); no jei entry in src/main/resources/META-INF/neoforge.mods.toml"
     },
     {
@@ -28,13 +28,16 @@
   "items": [],
   "blocks": [],
   "entities": [],
-  "commands": [],
+  "commands": [
+    "/vparepairtags - operators only (Commands.LEVEL_GAMEMASTERS). Writes <game dir>/vanillaplusadditions/repair_report.json: every damageable item with the items that repair it (Item.isValidRepairItem tried against the whole item registry, plus extra_repair_materials while the module and free_material_repair are on), and the damageable items without a repair material. Source for tag entries covering other mods' gear."
+  ],
   "keybinds": [],
   "mixins": [
     "free_anvil_repair.AnvilMenuFreeRepairMixin (BOTH sides - listed in the \"mixins\" block of vanillaplusadditions.mixins.json:21, not in \"client\", and as the standalone jar's only mixin in build.gradle:433-434; targets net.minecraft.world.inventory.AnvilMenu with a single cancellable @Inject at HEAD of mayPickup(Player, boolean) that sets the return value to true when the result slot is filled, getCost() == 0 and FreeAnvilRepairModule.allowFreePickup() - i.e. for ANY cost-0 output, not only this module's)"
   ],
   "events": [
-    "net.neoforged.neoforge.event.AnvilUpdateEvent (FreeAnvilRepairModule.onAnvilUpdate, @SubscribeEvent; the module instance is registered on NeoForge.EVENT_BUS in onInitialize, FreeAnvilRepairModule.java:63-67)"
+    "net.neoforged.neoforge.event.AnvilUpdateEvent (FreeAnvilRepairModule.onAnvilUpdate, @SubscribeEvent; the module instance is registered on NeoForge.EVENT_BUS in onInitialize, FreeAnvilRepairModule.java:63-67)",
+    "net.neoforged.neoforge.event.RegisterCommandsEvent (FreeAnvilRepairModule.onRegisterCommands, registers /vparepairtags)"
   ],
   "recipes": [
     "No crafting/datapack recipes and no loot hooks. What it does inject are anvil repair COMBINATIONS from extra_repair_materials (defaults: all 9 netherite tools/armour pieces + diamond, Create's 4 diving-gear pieces + diamond/copper ingot, trident + prismarine shard, bow + stick), handled purely in code via AnvilUpdateEvent and mirrored into JEI's anvil tab by FreeAnvilRepairJeiPlugin when JEI is present. These extra combinations only exist while free_material_repair is true."
@@ -62,18 +65,25 @@
       "effect": "Whether free repairs still double the hidden prior-work penalty (REPAIR_COST component via AnvilMenu.calculateIncreasedRepairCost) like vanilla does; default false so repairing does not make later enchant operations more expensive."
     },
     {
+      "key": "single_unit_full_repair",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "One unit of the repair material restores the item to full durability, however worn it is, so every module-handled MATERIAL repair (vanilla material and extra_repair_materials alike) uses exactly one item. Overrides repair_boost_percent while true; a boost of 300 is not the same thing, because maxDamage/4 truncates and leaves a trident or a netherite tool one or two points short. Does NOT apply to combining two of the same item."
+    },
+    {
       "key": "repair_boost_percent",
       "type": "int",
       "defaultValue": "50",
       "range": "0 ~ 500",
-      "effect": "Extra durability restored per material unit on every module-handled MATERIAL repair, vanilla material and extra_repair_materials alike: perUnit = max(1, maxDamage/4 * (100+value)/100). 0 = vanilla 25%/unit; the default 50 = 37.5%/unit, so 3 units fully repair an item instead of 4. Does NOT apply to combining two of the same item, and the JEI display ignores it."
+      "effect": "Extra durability restored per material unit on every module-handled MATERIAL repair, vanilla material and extra_repair_materials alike: perUnit = max(1, maxDamage/4 * (100+value)/100). 0 = vanilla 25%/unit; the default 50 = 37.5%/unit, so 3 units fully repair an item instead of 4. Ignored while single_unit_full_repair is true. Does NOT apply to combining two of the same item, and the JEI display ignores it."
     },
     {
       "key": "extra_repair_materials",
       "type": "list",
-      "defaultValue": "minecraft:netherite_sword=minecraft:diamond, minecraft:netherite_pickaxe=minecraft:diamond, minecraft:netherite_axe=minecraft:diamond, minecraft:netherite_shovel=minecraft:diamond, minecraft:netherite_hoe=minecraft:diamond, minecraft:netherite_helmet=minecraft:diamond, minecraft:netherite_chestplate=minecraft:diamond, minecraft:netherite_leggings=minecraft:diamond, minecraft:netherite_boots=minecraft:diamond, create:netherite_diving_helmet=minecraft:diamond, create:netherite_diving_boots=minecraft:diamond, create:copper_diving_helmet=minecraft:copper_ingot, create:copper_diving_boots=minecraft:copper_ingot, minecraft:trident=minecraft:prismarine_shard, minecraft:bow=minecraft:stick",
+      "defaultValue": "minecraft:netherite_sword=minecraft:diamond, minecraft:netherite_pickaxe=minecraft:diamond, minecraft:netherite_axe=minecraft:diamond, minecraft:netherite_shovel=minecraft:diamond, minecraft:netherite_hoe=minecraft:diamond, minecraft:netherite_helmet=minecraft:diamond, minecraft:netherite_chestplate=minecraft:diamond, minecraft:netherite_leggings=minecraft:diamond, minecraft:netherite_boots=minecraft:diamond, create:netherite_diving_helmet=minecraft:diamond, create:netherite_diving_boots=minecraft:diamond, create:copper_diving_helmet=minecraft:copper_ingot, create:copper_diving_boots=minecraft:copper_ingot, minecraft:trident=minecraft:prismarine_shard, minecraft:bow=minecraft:stick, minecraft:netherite_spear=minecraft:diamond, quark:flamerang=minecraft:diamond",
       "range": "",
-      "effect": "Additional anvil repair materials (Quark-style, format item=material, one item may appear in several entries). These repairs are computed by this module and are free like regular material repairs (and follow repair_boost_percent). Entries whose item or material is not installed are skipped silently; the config validator additionally rejects entries with no '=', with '=' at either end, or with a second '='."
+      "effect": "Additional anvil repair materials (Quark-style, format item=material, one item may appear in several entries). These repairs are computed by this module and are free like regular material repairs (and follow single_unit_full_repair and repair_boost_percent). Entries whose item or material is not installed are skipped silently; the config validator additionally rejects entries with no '=', with '=' at either end, or with a second '='."
     }
   ],
   "sinceVersion": "v1.0.0-beta.25",

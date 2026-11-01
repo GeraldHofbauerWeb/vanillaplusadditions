@@ -82,8 +82,11 @@ public class FreeAnvilRepairJeiPlugin implements IModPlugin {
             ItemStack damagedFully = new ItemStack(item);
             damagedFully.setDamageValue(maxDamage);
 
-            ItemStack repairedQuarter = new ItemStack(item);
-            repairedQuarter.setDamageValue(maxDamage * 3 / 4); // one material unit restores ~25%
+            // One material unit: the full bar with single_unit_full_repair, otherwise vanilla's ~25%
+            // (the display ignores repair_boost_percent).
+            ItemStack repairedByOneUnit = new ItemStack(item);
+            repairedByOneUnit.setDamageValue(
+                    module.getConfig().isSingleUnitFullRepairValue() ? 0 : maxDamage * 3 / 4);
 
             ResourceLocation uid = ResourceLocation.fromNamespaceAndPath(
                     VanillaPlusAdditions.MODID, "anvil.extra_repair." + itemId.getPath());
@@ -91,7 +94,7 @@ public class FreeAnvilRepairJeiPlugin implements IModPlugin {
             recipes.add(factory.createAnvilRecipe(
                     damagedFully,
                     List.of(new ItemStack(material)),
-                    List.of(repairedQuarter),
+                    List.of(repairedByOneUnit),
                     uid));
         }
 

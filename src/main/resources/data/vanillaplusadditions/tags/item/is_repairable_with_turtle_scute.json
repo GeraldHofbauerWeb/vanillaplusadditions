@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:turtle_helmet",
+    {
+      "id": "vanillaplusadditions:axolotl_armor_iron",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:axolotl_armor_gold",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:axolotl_armor_diamond",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:axolotl_armor_netherite",
+      "required": false
+    }
+  ]
+}

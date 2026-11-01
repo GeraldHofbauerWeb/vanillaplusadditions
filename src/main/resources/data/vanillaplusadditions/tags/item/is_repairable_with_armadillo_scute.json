@@ -1,0 +1,38 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:wolf_armor",
+    {
+      "id": "vanillaplusadditions:cat_armor_iron",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:cat_armor_gold",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:cat_armor_diamond",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:cat_armor_netherite",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:wolf_armor_iron",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:wolf_armor_gold",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:wolf_armor_diamond",
+      "required": false
+    },
+    {
+      "id": "vanillaplusadditions:wolf_armor_netherite",
+      "required": false
+    }
+  ]
+}

@@ -1,10 +1,13 @@
 package net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair;
 
 import net.geraldhofbauer.vanillaplusadditions.core.AbstractModule;
+import com.mojang.brigadier.Command;
 import net.geraldhofbauer.vanillaplusadditions.modules.free_anvil_repair.config.FreeAnvilRepairConfig;
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringUtil;
 import net.minecraft.world.inventory.AnvilMenu;
@@ -14,7 +17,9 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -77,6 +82,36 @@ public class FreeAnvilRepairModule
     public static boolean allowFreePickup() {
         FreeAnvilRepairModule module = instance;
         return module != null && module.isModuleEnabled();
+    }
+
+    /**
+     * Registers {@code /vparepairtags} (op-only): writes a report of every damageable item in the
+     * running game and the items that repair it on the anvil. It is what the
+     * {@code is_repairable_with_*} tags are kept in step with for gear from other mods, whose repair
+     * rules live in code. Extra materials count while material repairs are on.
+     *
+     * @param event The command registration event
+     */
+    @SubscribeEvent
+    public void onRegisterCommands(RegisterCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal("vparepairtags")
+                .requires(source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .executes(ctx -> {
+                    try {
+                        RepairTagReport.Result result = RepairTagReport.write((left, right) ->
+                                isModuleEnabled() && getConfig().isFreeMaterialRepairValue()
+                                        && isExtraRepairMaterial(left, right));
+                        ctx.getSource().sendSuccess(() -> Component.literal("[Free Anvil Repair] "
+                                + result.damageable() + " damageable items, " + result.withMaterial()
+                                + " with an anvil repair material. Report: " + result.file()), false);
+                        return Command.SINGLE_SUCCESS;
+                    } catch (IOException e) {
+                        getLogger().error("Could not write the repair report", e);
+                        ctx.getSource().sendFailure(Component.literal(
+                                "[Free Anvil Repair] Could not write the report: " + e.getMessage()));
+                        return 0;
+                    }
+                }));
     }
 
     /**
@@ -205,10 +240,17 @@ public class FreeAnvilRepairModule
     }
 
     /**
-     * Durability restored per repair material unit: vanilla's 25% of max, boosted by the
-     * configured {@code repair_boost_percent}. At least 1 so a tiny boost still repairs.
+     * Durability restored per repair material unit. With {@code single_unit_full_repair} (default)
+     * that is the whole bar, so one unit always repairs completely (Sebi's request, 2026-11-01).
+     * Otherwise vanilla's 25% of max, boosted by {@code repair_boost_percent}, at least 1 so a tiny
+     * boost still repairs. The full bar is returned as-is rather than reached through a 300% boost,
+     * because {@code maxDamage / 4} truncates first: a trident (250) comes out one point short and a
+     * netherite tool (2031) two, so both would still need a second unit.
      */
     private int repairPerUnit(int maxDamage) {
+        if (getConfig().isSingleUnitFullRepairValue()) {
+            return Math.max(1, maxDamage);
+        }
         return Math.max(1, boosted(maxDamage / 4));
     }
 
@@ -219,8 +261,8 @@ public class FreeAnvilRepairModule
 
     /**
      * Vanilla material repair (AnvilMenu.createResult): each material unit repairs up to 25% of
-     * max durability (boosted by {@code repair_boost_percent}); consumed units become the material
-     * cost. Level cost is set to 0.
+     * max durability (boosted by {@code repair_boost_percent}, or the full bar with
+     * {@code single_unit_full_repair}); consumed units become the material cost. Level cost is set to 0.
      */
     private void applyMaterialRepair(AnvilUpdateEvent event, ItemStack left, ItemStack right) {
         ItemStack result = left.copy();

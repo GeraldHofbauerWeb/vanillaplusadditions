@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "endermanoverhaul:corrupted_blade",
+      "required": false
+    },
+    {
+      "id": "endermanoverhaul:corrupted_shield",
+      "required": false
+    }
+  ]
+}
