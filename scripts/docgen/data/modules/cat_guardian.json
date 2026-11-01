@@ -81,6 +81,13 @@
       "defaultValue": "0.33D",
       "range": "0.0 ~ 1.0",
       "effect": "Base fraction of absorbed damage reflected back to the attacker, scaled by the armor's Thorns level (0.0 = none, 1.0 = full)."
+    },
+    {
+      "key": "fight_slimes",
+      "type": "boolean",
+      "defaultValue": "true",
+      "range": "",
+      "effect": "Guardian cats also attack slimes and magma cubes. Vanilla does not count them as monsters (Slime is a plain Mob that implements Enemy), so without this a slime hops through a guarded base untouched. Slimes deal contact damage only to players and iron golems, so the cats take no hits."
     }
   ],
   "displayName": "Cat Guardian",

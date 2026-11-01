@@ -43,7 +43,6 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.animal.Cat;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
@@ -1458,14 +1457,14 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
         MobArmorEnchantments.reflectThorns(cat, event.getSource(), absorbed, thornsLevel,
                 getConfig().getThornsReflectFraction());
 
-        // Retaliation: if hit by a Monster in zone, re-run full path-length target selection.
+        // Retaliation: if hit by a guard target in zone, re-run full path-length target selection.
         // CAT_FLEEING cats ignore this — they're already running home.
         if (!cat.level().isClientSide() && isGuardianCat(cat)
                 && !cat.getData(CAT_FLEEING.get())) {
             Entity direct = event.getSource().getDirectEntity();
             Entity indirect = event.getSource().getEntity();
-            LivingEntity attacker = direct instanceof Monster m ? m
-                    : indirect instanceof Monster m2 ? m2 : null;
+            LivingEntity attacker = CatGuardTargets.isGuardTarget(direct) ? (LivingEntity) direct
+                    : CatGuardTargets.isGuardTarget(indirect) ? (LivingEntity) indirect : null;
             if (attacker != null && !attacker.isDeadOrDying()
                     && isWithinGuardZone(cat, attacker.getX(), attacker.getY(), attacker.getZ(),
                     TARGET_ZONE_BUFFER)) {
@@ -1898,7 +1897,7 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             }
         }
 
-        private boolean isBlocked(Monster m) {
+        private boolean isBlocked(LivingEntity m) {
             Long until = blockedTargets.get(m.getId());
             if (until == null) {
                 return false;
@@ -1946,13 +1945,13 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
          * AmphibiousPathNavigation produces underwater nodes, so endNodeNear and isPathWithinZone
          * work uniformly for both land and submerged targets.
          */
-        private Monster selectTargetByPathLength(List<Monster> candidates) {
+        private LivingEntity selectTargetByPathLength(List<LivingEntity> candidates) {
             candidates.sort(Comparator.comparingDouble(cat::distanceToSqr));
             int limit = Math.min(8, candidates.size());
-            Monster best = null;
+            LivingEntity best = null;
             double bestLength = Double.MAX_VALUE;
             for (int i = 0; i < limit; i++) {
-                Monster mob = candidates.get(i);
+                LivingEntity mob = candidates.get(i);
                 net.minecraft.world.level.pathfinder.Path path =
                         cat.getNavigation().createPath(mob.getX(), mob.getY(), mob.getZ(), 0);
                 if (!instance.endNodeNear(path,
@@ -1981,12 +1980,12 @@ public class CatGuardianModule extends AbstractModule<CatGuardianModule, CatGuar
             double radius = instance != null ? instance.getConfig().getGuardRadius() : 32.0;
             double radiusY = instance != null ? instance.getConfig().getGuardRadiusY() : 16.0;
             AABB searchBox = new AABB(bowlPos).inflate(radius, radiusY, radius);
-            List<Monster> hostiles = cat.level().getEntitiesOfClass(
-                    Monster.class, searchBox, m -> !m.isDeadOrDying() && !isBlocked(m) && !m.isUnderWater());
+            List<LivingEntity> hostiles = cat.level().getEntitiesOfClass(LivingEntity.class, searchBox,
+                    m -> CatGuardTargets.isGuardTarget(m) && !m.isDeadOrDying() && !isBlocked(m) && !m.isUnderWater());
             if (hostiles.isEmpty()) {
                 return false;
             }
-            Monster best = selectTargetByPathLength(hostiles);
+            LivingEntity best = selectTargetByPathLength(hostiles);
             if (best == null) {
                 cat.setData(CAT_RETURNING.get(), true); // no reachable in-zone mob → go home
                 return false;

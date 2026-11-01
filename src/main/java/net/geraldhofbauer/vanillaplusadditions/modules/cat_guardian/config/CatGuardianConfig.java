@@ -17,6 +17,7 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
     private ModConfigSpec.IntValue stationXpCapacity;
     private ModConfigSpec.IntValue xpPerBottle;
     private ModConfigSpec.DoubleValue thornsReflectFraction;
+    private ModConfigSpec.BooleanValue fightSlimes;
 
     public CatGuardianConfig(CatGuardianModule module) {
         super(module);
@@ -58,6 +59,10 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
                 .comment("Base fraction of absorbed damage reflected back to the attacker, scaled "
                         + "by the armor's Thorns level (0.0 = none, 1.0 = full).")
                 .defineInRange("thorns_reflect_fraction", 0.33D, 0.0D, 1.0D);
+        fightSlimes = builder
+                .comment("Guardian cats also attack slimes and magma cubes. Vanilla does not count them as "
+                        + "monsters, so without this a slime can hop through a guarded base untouched.")
+                .define("fight_slimes", true);
     }
 
     public double getAssociationRadius() {
@@ -105,6 +110,10 @@ public class CatGuardianConfig extends AbstractModuleConfig<CatGuardianModule, C
 
     public double getThornsReflectFraction() {
         return thornsReflectFraction != null ? thornsReflectFraction.get() : 0.33D;
+    }
+
+    public boolean isFightSlimes() {
+        return fightSlimes == null || fightSlimes.get();
     }
 
 }

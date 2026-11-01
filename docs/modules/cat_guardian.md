@@ -134,7 +134,12 @@ cats never take damage to heal in the first place.
 ### Picking a target
 
 The scan box is the bowl's block inflated by `guard_radius` (32) horizontally and `guard_radius_y`
-(16) vertically. Candidates are `Monster`s that are alive, not blacklisted and not fully submerged.
+(16) vertically. Candidates are `Monster`s that are alive, not blacklisted and not fully submerged,
+plus slimes and magma cubes while `fight_slimes` is on. Vanilla does not file slimes under
+`Monster` (a slime is a plain `Mob` that implements `Enemy`), so before that key a slime could hop
+through a guarded base and no cat looked up. A slime cannot hurt a cat back: its contact damage
+only reaches players and iron golems. Each split counts as a new target, so a big slime keeps the
+cats busy until the last small one is gone.
 
 Selection is not "nearest as the crow flies". The candidates are sorted by distance, the closest
 eight get a real path computed, and a candidate survives only if
@@ -157,7 +162,7 @@ zone; a mob that leads the cat out through a cave mouth is blacklisted rather th
 target that dives under water is let go, without a blacklist, and re-engaged when it
 surfaces.
 
-Retaliation bypasses the search cooldown, but only for an armored cat. A `Monster` that hits the
+Retaliation bypasses the search cooldown, but only for an armored cat. A guard target that hits the
 cat inside the zone triggers an immediate re-target, but the handler that does it (`onCatHurt`)
 returns early for a cat that wears no cat armor. An unarmored guardian gets no instant reaction at
 all; it has to wait for the ordinary scan to find its attacker again, because a guardian has no
@@ -419,6 +424,7 @@ Every module also has the universal `enabled` and `debug_logging` keys — see t
 | `auto_associate_radius` | double | `1.5` | 0.5 ~ 4.0 | Radius (blocks) within which a cat without a bowl is automatically associated with a nearby bowl. |
 | `cat_xp_capacity` | int | `500` | 0 ~ 10000 | Maximum XP points a single cat can hold before XP drops normally. |
 | `fed_duration_ticks` | int | `6000` | 20 ~ 144000 | How many ticks a single fish feeding keeps a cat in the 'fed' (guarding) state (20 ticks = 1 second). |
+| `fight_slimes` | boolean | `true` | — | Guardian cats also attack slimes and magma cubes. Vanilla does not count them as monsters (Slime is a plain Mob that implements Enemy), so without this a slime hops through a guarded base untouched. Slimes deal contact damage only to players and iron golems, so the cats take no hits. |
 | `glow_duration_seconds` | int | `30` | 1 ~ 300 | How many seconds the (client-side) glow lasts on associated cats when looking at their bowl. Consumed as ticks via getGlowDurationTicks() = value * 20. |
 | `guard_radius` | double | `32.0` | 2.0 ~ 128.0 | Horizontal radius (blocks, XZ) around the associated bowl in which a fed cat scans for and attacks hostile mobs. |
 | `guard_radius_y` | double | `16.0` | 2.0 ~ 128.0 | Vertical radius (blocks, Y) around the associated bowl; cats ignore mobs that are further away vertically. |
