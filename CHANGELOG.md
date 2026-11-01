@@ -4,6 +4,32 @@ All notable changes to VanillaPlusAdditions will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-11-01
+
+### Changed
+- **Free Anvil Repair: one unit of material repairs completely.** A single diamond, ingot, shard or
+  stick now puts a tool, weapon or piece of armour back to full durability, however worn it is. The
+  new key `single_unit_full_repair` (default `true`) controls this. With it off, `repair_boost_percent`
+  applies again and a full repair takes three units. JEI's anvil tab shows the full repair as well.
+  Combining two copies of the same item works as before.
+- **Repair material tags.** 24 item tags, `vanillaplusadditions:is_repairable_with_<material>`,
+  list what each material repairs on the anvil: vanilla gear, this mod's armour, Create's diving
+  and cardboard gear, the extra materials of Free Anvil Repair, and gear from Quark, Mowzie's Mobs,
+  Enderman Overhaul, Gliders and Spear Backport. Netherite tools and armour are in both the netherite
+  and the diamond tag. `/vparepairtags` writes a report of every repair in the running game, which is
+  where the entries for other mods' gear come from.
+- **Netherite spear and flamerang repair with diamonds.** `extra_repair_materials` gained
+  `minecraft:netherite_spear=minecraft:diamond` (Spear Backport) and `quark:flamerang=minecraft:diamond`,
+  so they work like the rest of the netherite gear. An existing config keeps its old list: add the two
+  entries by hand, or delete the key and let the game write the new default.
+- **Guardian cats fight slimes.** Slimes and magma cubes are now targets too. Vanilla does not count
+  them as monsters, so until now a slime could hop through a guarded base untouched. They cannot hurt
+  the cats back. The new key `fight_slimes` (default `true`) in `[modules.cat_guardian]` turns it off.
+- **Quark x Fresh Animations zip on GitHub only.** The standalone pack is no longer uploaded to
+  Modrinth. Every GitHub release still carries it, and the copy built into the mod is unchanged.
+- **New logo.** The grass block with V+ was redrawn by hand. It replaces the old icon in the mod
+  list, in every standalone jar and in the README banner.
+
 ## [1.1.1] - 2026-10-11
 
 ### Changed
