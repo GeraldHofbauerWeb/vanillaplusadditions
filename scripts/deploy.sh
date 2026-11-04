@@ -177,16 +177,28 @@ if [[ "$DO_SERVER" == 1 ]]; then
     echo '    server mods now:'; docker exec $CONTAINER ls -la $SERVER_MODS/ | grep -i vanillaplus
   "
   if [[ "$DO_RESTART" == 1 ]]; then
+    # Right after the restart latest.log is still the PREVIOUS run's log, Done line included, until
+    # the new server rolls it. Waiting for any "Done (" therefore returned at once and reported a
+    # server that was not up yet (2026-11-01). Wait for a Done line that differs from the one in
+    # place before the restart: every line carries its own timestamp.
+    last_done() {
+      ssh "$SERVER_SSH" "docker exec $CONTAINER sh -c 'grep \"Done (\" /AMP/Minecraft/logs/latest.log 2>/dev/null | tail -1'"
+    }
+    OLD_DONE="$(last_done || true)"
     ssh "$SERVER_SSH" "echo '    restarting container ...'; docker restart $CONTAINER >/dev/null"
     echo "==> Waiting for server to come back up ..."
-    ssh "$SERVER_SSH" '
-      for i in $(seq 1 40); do
-        if docker exec '"$CONTAINER"' sh -c "grep -q \"Done (\" /AMP/Minecraft/logs/latest.log 2>/dev/null"; then break; fi
-        sleep 5
-      done
-      docker exec '"$CONTAINER"' sh -c "grep -iE \"vanillaplusadditions.*->|Dedicated server took|caught exception|Fatal\" /AMP/Minecraft/logs/latest.log | tail -5"
-    '
-    echo "    server OK (restarted)"
+    UP=0
+    for _ in $(seq 1 60); do
+      NEW_DONE="$(last_done || true)"
+      if [[ -n "$NEW_DONE" && "$NEW_DONE" != "$OLD_DONE" ]]; then UP=1; break; fi
+      sleep 5
+    done
+    ssh "$SERVER_SSH" "docker exec $CONTAINER sh -c 'grep -iE \"vanillaplusadditions.*->|Dedicated server took|caught exception|Fatal\" /AMP/Minecraft/logs/latest.log | tail -5'"
+    if [[ "$UP" != 1 ]]; then
+      echo "!! no new 'Done (' line after 5 minutes — check the server by hand" >&2
+      exit 1
+    fi
+    echo "    server OK (restarted): ${NEW_DONE##*]: }"
   else
     echo "    jar pushed, NOT restarted (--no-restart) — restart later to load it."
   fi
@@ -308,7 +320,7 @@ except Exception:
     echo "!! upload_asset fehlgeschlagen - Eintrag $CRAFT_ENTRY hat jetzt KEINE Datei." >&2
     echo "!! Antwort: $(printf '%s' "$UPLOAD_RESPONSE" | head -c 300)" >&2
     echo "!! Die Datei liegt noch unter $WEB_TMP/$WEB_FILE. Nach dem Beheben der Ursache genuegt" >&2
-    echo "!! ein erneutes '$0 --modpack-only', um Upload und Verknuepfung nachzuholen." >&2
+    echo "!! ein erneutes '$0 --modpack --no-build', um Upload und Verknuepfung nachzuholen." >&2
     exit 1
   fi
   echo "    asset $OLD_ASSET -> $NEW_ASSET (same filename, so the public URL is unchanged)"
@@ -318,7 +330,9 @@ except Exception:
 import io, json, re, sys
 desc = io.open(sys.argv[1], encoding="utf-8").read()
 short = re.sub(r'^1\.0\.0-', '', sys.argv[2])
-desc = re.sub(r'\(beta\.\d+\)', '(%s)' % short, desc)
+# Only the version in brackets right after the mod's name. The old pattern matched "(beta.N)" alone,
+# so once a release number stood there it would never have been updated again.
+desc = re.sub(r'(Vanilla-Plus-Additions \()[^)]*(\))', lambda m: m.group(1) + short + m.group(2), desc)
 print(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {
     "name": "update_entry",
     "arguments": {"id": int(sys.argv[3]),
