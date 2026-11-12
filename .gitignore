@@ -81,6 +81,8 @@ unused_assets/
 .claude/memory/
 .claude/plans/
 .claude/jobs/
+# Claude Code: lokale Freigaben können Befehle samt Zugangsdaten enthalten (SEC-8)
+.claude/settings.local.json
 
 # NeoForge installer logs land next to the installer jar you ran (<name>.jar.log)
 /*.jar.log
